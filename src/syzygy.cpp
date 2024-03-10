@@ -152,7 +152,7 @@ MOVE Board::convertPyrrhicMove(unsigned result) const
     if (ep == 0u && promo == 0u)
         return Move::CODE(from, to, pieceOn[from], pieceOn[to], NO_TYPE, Move::FLAG_NONE); // MoveMake(from, to, NORMAL_MOVE);
     else if (ep != 0u)
-        return Move::CODE(from, ep_square, PAWN, PAWN, NO_TYPE, Move::FLAG_ENPASSANT);
+        return Move::CODE(from, ep_square, PAWN, PAWN, NO_TYPE, Move::FLAG_ENPASSANT_MASK);
     else /* if (promo != 0u) */
     {
         PieceType p = static_cast<PieceType>(6-promo);

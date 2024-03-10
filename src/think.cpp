@@ -243,9 +243,9 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
     {
         // Trust TT if not a pvnode and the entry depth is sufficiently high
         if (   (tt_depth >= depth && !isPVNode)
-            && (   (tt_flag & BOUND_EXACT)
-                || (tt_flag & BOUND_LOWER && tt_score >= beta)
-                || (tt_flag & BOUND_UPPER && tt_score <= alpha)))
+            && (   (tt_flag == BOUND_EXACT)
+                || (tt_flag == BOUND_LOWER && tt_score >= beta)
+                || (tt_flag == BOUND_UPPER && tt_score <= alpha)))
         {
             return tt_score;
         }
@@ -258,9 +258,9 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
         td->tbhits++;
 
         // Check to see if the WDL value would cause a cutoff
-        if (    tbBound & BOUND_EXACT
-            || (tbBound & BOUND_LOWER && tbScore >= beta)
-            || (tbBound & BOUND_UPPER && tbScore <= alpha))
+        if (    tbBound == BOUND_EXACT
+            || (tbBound == BOUND_LOWER && tbScore >= beta)
+            || (tbBound == BOUND_UPPER && tbScore <= alpha))
         {
             transpositionTable.store(board.hash, Move::MOVE_NONE, tbScore, NOSCORE, tbBound, depth, MAX_PLY);
             return tbScore;
@@ -270,14 +270,14 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
         if (isPVNode)
         {
             // Never score something worse than the known Syzygy value
-            if (tbBound & BOUND_LOWER)
+            if (tbBound == BOUND_LOWER)
             {
                 best_score = tbScore;
                 alpha = std::max(alpha, tbScore);
             }
 
             // Never score something better than the known Syzygy value
-            if (tbBound & BOUND_UPPER)
+            if (tbBound == BOUND_UPPER)
             {
                 max_score = tbScore;
             }
@@ -382,7 +382,7 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
         if (depth >= 5
             && abs(beta) < TBWIN_IN_X
             && !(   tt_hit
-                 && tt_flag & BOUND_UPPER
+                 && tt_flag == BOUND_UPPER
                  && tt_score < beta))
         {
             int threshold = beta + 200;

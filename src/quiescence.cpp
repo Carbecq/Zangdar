@@ -56,9 +56,9 @@ int Search::quiescence(int ply, int alpha, int beta, ThreadData* td)
    // // note : on ne teste pas la profondeur, car dasn la Quiescence, elle est à 0
    // if (tt_hit)
    // {
-   //     if (   (tt_flag & BOUND_EXACT)
-   //         || (tt_flag & BOUND_LOWER && tt_score >= beta)
-   //         || (tt_flag & BOUND_UPPER && tt_score <= alpha))
+   //     if (   (tt_flag == BOUND_EXACT)
+   //         || (tt_flag == BOUND_LOWER && tt_score >= beta)
+   //         || (tt_flag == BOUND_UPPER && tt_score <= alpha))
    //         return tt_score;
    // }
 

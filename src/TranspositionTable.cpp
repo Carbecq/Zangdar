@@ -140,7 +140,7 @@ void TranspositionTable::update_age(void)
 //========================================================
 //! \brief  Ecriture dans la hashtable d'une nouvelle donnée
 //--------------------------------------------------------
-void TranspositionTable::store(U64 hash, MOVE move, Score score, Score eval, int flag, int depth, int ply)
+void TranspositionTable::store(U64 hash, MOVE move, Score score, Score eval, int bound, int depth, int ply)
 {
     /*
      *   https://www.talkchess.com/forum3/viewtopic.php?f=7&t=59047&sid=a772c728def68198d66e038c6905f820&start=10
@@ -196,7 +196,7 @@ void TranspositionTable::store(U64 hash, MOVE move, Score score, Score eval, int
     replace->eval  = eval;
     replace->depth = depth;
     replace->date  = tt_date;
-    replace->flag  = flag;
+    replace->bound = bound;
 
 #endif
 }
@@ -211,12 +211,12 @@ void TranspositionTable::store(U64 hash, MOVE move, Score score, Score eval, int
 //! \param{in]  depth
 //! \param{in]  ply
 //--------------------------------------------------------
-bool TranspositionTable::probe(U64 hash, int ply, MOVE& move, Score& score, Score& eval, int &flag, int& depth)
+bool TranspositionTable::probe(U64 hash, int ply, MOVE& move, Score& score, Score& eval, int &bound, int& depth)
 {
     move  = Move::MOVE_NONE;
     score = NOSCORE;
     eval  = NOSCORE;
-    flag  = BOUND_NONE;
+    bound = BOUND_NONE;
 
     // extract the 32-bit key from the 64-bit zobrist hash
     U32 key32 = hash >> 32;
@@ -232,7 +232,7 @@ bool TranspositionTable::probe(U64 hash, int ply, MOVE& move, Score& score, Scor
             entry->date = tt_date;
 
             move  = entry->move;
-            flag  = entry->flag;
+            bound = entry->bound;
             depth = entry->depth;
             score = ScoreFromTT(entry->score, ply);
             eval  = entry->eval;

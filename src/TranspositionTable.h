@@ -5,10 +5,12 @@
 //  Voir le site de Moreland
 //  Code provenant du code Sungorus (merci à lui)
 
-static constexpr int BOUND_NONE  = 0;
-static constexpr int BOUND_LOWER = 1;   // hash_beta    Cut-nodes (Knuth's Type 2), otherwise known as fail-high nodes, are nodes in which a beta-cutoff was performed.
-static constexpr int BOUND_UPPER = 2;   // hash_alpha   All-nodes (Knuth's Type 3), otherwise known as fail-low nodes, are nodes in which no move's score exceeded alpha
-static constexpr int BOUND_EXACT = 4;   //              PV-node   (Knuth's Type 1) are nodes that have a score that ends up being inside the window
+// https://www.chessprogramming.org/Node_Types
+
+static constexpr int BOUND_NONE  = 0;   //
+static constexpr int BOUND_EXACT = 1;   // PV-node   (Knuth's Type 1) : alpha < score < beta  ; the value returned is EXACT (not a BOUND)
+static constexpr int BOUND_LOWER = 2;   // Cut-nodes (Knuth's Type 2) : score >= beta         ; appelé aussi FAIL-HIGH
+static constexpr int BOUND_UPPER = 3;   // All-nodes (Knuth's Type 3) : score <= alpha        ; appelé aussi FAIL-LOW
 
 class TranspositionTable;
 
@@ -16,12 +18,12 @@ class TranspositionTable;
 
 struct HashEntry {
     U32   hash;     // 32 bits
-    MOVE  move;     // 32 bits  (packing = 24 bits)
+    MOVE  move;     // 32 bits  (seuls 24 bits sont utilisés)
     I16   score;    // 16 bits
     I16   eval;     // 16 bits
     U08   depth;    //  8 bits
     U08   date;     //  8 bits
-    U08   flag;     //  8 bits  (3 bits nécessaires seulement)
+    U08   bound;    //  8 bits  (2 bits nécessaires seulement)
 };
 
 //----------------------------------------------------------
@@ -74,8 +76,8 @@ public:
 
     void clear(void);
     void update_age(void);
-    void store(U64 hash, MOVE move, Score score, Score eval, int flag, int depth, int ply);
-    bool probe(U64 hash, int ply, MOVE &code, Score &score, Score &eval, int &flag, int &depth);
+    void store(U64 hash, MOVE move, Score score, Score eval, int bound, int depth, int ply);
+    bool probe(U64 hash, int ply, MOVE &code, Score &score, Score &eval, int &bound, int &depth);
     void stats();
     int  hash_full();
 

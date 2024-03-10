@@ -112,7 +112,7 @@ constexpr void Board::legal_evasions(MoveList& ml) noexcept
             if ( !(Attacks::bishop_moves(K, pieceBB) & bq & colorPiecesBB[Them]) &&
                 !(Attacks::rook_moves(K, pieceBB)   & rq & colorPiecesBB[Them]) )
             {
-               add_capture_move(ml, from, to, PAWN, PAWN, Move::FLAG_ENPASSANT);
+               add_capture_move(ml, from, to, PAWN, PAWN, Move::FLAG_ENPASSANT_MASK);
             }
         }
 
@@ -124,7 +124,7 @@ constexpr void Board::legal_evasions(MoveList& ml) noexcept
             if ( !(Attacks::bishop_moves(K, pieceBB) & bq & colorPiecesBB[Them]) &&
                 !(Attacks::rook_moves(K, pieceBB)   & rq & colorPiecesBB[Them]) )
             {
-                add_capture_move(ml, from, to, PAWN, PAWN, Move::FLAG_ENPASSANT);
+                add_capture_move(ml, from, to, PAWN, PAWN, Move::FLAG_ENPASSANT_MASK);
             }
         }
     }
@@ -146,7 +146,7 @@ constexpr void Board::legal_evasions(MoveList& ml) noexcept
 
     push_pawn_quiet_moves(ml, attackBB & ~PromotionRank[C], pawn_push, Move::FLAG_NONE);
     attackBB = (C ? (((pieceBB & RankMask8[6]) >> 8) & ~occupiedBB) >> 8 : (((pieceBB & RankMask8[1]) << 8) & ~occupiedBB) << 8) & emptyBB;
-    push_pawn_quiet_moves(ml, attackBB, 2 * pawn_push, Move::FLAG_DOUBLE);
+    push_pawn_quiet_moves(ml, attackBB, 2 * pawn_push, Move::FLAG_DOUBLE_MASK);
 
     // knight
 
