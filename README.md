@@ -65,3 +65,5 @@ By default, the opening book is disabled. It can be re-enabled by using an uci o
 You must have a C++ compiler that use at least C++20. I use QtCreator on Windows 11, that compiles with mingw.
 I provide also binaries for several architectures.
 
++ **Old Releases**
+As I was very ignorant of git, the first repositery was extremely bad done. So I decided to redo it, and uses git tools. But the ancient one is still here, named Zangdar_0.
