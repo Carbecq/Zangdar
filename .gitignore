@@ -1,0 +1,14 @@
+/build-Zangdar*/*
+src/*.o
+src/*/*.o
+Zangdar.pro.user.*
+Makefile
+src/Z/
+doc/
+test/
+ignore_src/
+.vs/
+x64/
+
+
+
