@@ -85,6 +85,7 @@ void ThreadPool::init()
         // empty unneeded data
         std::memset(threadData[i].move_stack,     0, sizeof(threadData[i].move_stack));
         std::memset(threadData[i].eval_stack,     0, sizeof(threadData[i].eval_stack));
+        std::memset(threadData[i].order.excluded, 0, sizeof(threadData[i].order.excluded));
 
         // memset(threadData[i].results.scores, 0,               sizeof(threadData[i].results.scores));
         // memset(threadData[i].results.moves,  Move::MOVE_NONE, sizeof(threadData[i].results.moves));

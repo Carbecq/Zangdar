@@ -16,7 +16,7 @@ void OrderInfo::clear_all()
     std::memset(killer2, 0, sizeof(killer2));
     std::memset(history, 0, sizeof(history));
     std::memset(counter, 0, sizeof(counter));
-
+    std::memset(excluded, 0, sizeof(excluded));
 }
 
 //=========================================================

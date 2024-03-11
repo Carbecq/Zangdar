@@ -70,9 +70,6 @@ constexpr U32 FLAG_CASTLE_MASK    = 0b0000100000000000000000000000;
 
 constexpr U32 MOVE_DEPL_MASK      = 0b00000000111111111000000000000000;
 
-//                                            FFFPPPCCCMMMDDDDDDFFFFFF
-constexpr U32 MOVE_MOVE_MASK      = 0b00000000111111111111111111111111;
-
 // NULL_MOVE                                 NFFFPPPCCCMMMDDDDDDFFFFFF
 constexpr U32 MOVE_NULL           = 0b00000001000000000000000000000000;
 
@@ -165,12 +162,6 @@ constexpr U32 MOVE_NULL           = 0b00000001000000000000000000000000;
 //! \brief Détermine si le coup est tactique : prise ou promotion ou prise en passant
 [[nodiscard]] constexpr bool is_tactical(const U32 move) noexcept {
     return (move & (MOVE_CAPT_MASK | MOVE_PROMO_MASK | FLAG_ENPASSANT_MASK));
-}
-
-//! \brief Détermine si les 2 coups sont identiques
-[[nodiscard]] constexpr bool same_move(const MOVE& m1, const MOVE& m2) {
-    // toggle all bits in m1 by m2 and check if no bits are toggled in the least significant 24 bits
-    return ((m1 ^ m2) & MOVE_MOVE_MASK) == 0;
 }
 
 //=================================================

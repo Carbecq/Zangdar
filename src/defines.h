@@ -18,7 +18,7 @@
 #define USE_INTERNAL_ITERATIVE_DEEPENING
 //#define USE_FUTILITY_PRUNING
 #define USE_LATE_MOVE_PRUNING
-//#define USE_SINGULAR_EXTENSION
+#define USE_SINGULAR_EXTENSION
 #define USE_LATE_MOVE_REDUCTION
 
 #define USE_TC_WEISS
@@ -28,7 +28,7 @@
 // NE PAS UTILISER PRETTY avec
 //      + Arena (score mal affiché)
 //      + test STS
-//#define USE_PRETTY
+// #define USE_PRETTY
 
 #define TT_SUNGORUS
 

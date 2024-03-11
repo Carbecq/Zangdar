@@ -16,6 +16,7 @@ public:
     MOVE   killer2[MAX_PLY+2];
     int    history[N_COLORS][N_PIECES][N_SQUARES];  // bonus history
     MOVE   counter[N_COLORS][N_PIECES][N_SQUARES];  // counter move
+    MOVE   excluded[MAX_PLY+2];
 
     void clear_all();
     void clear_killers();

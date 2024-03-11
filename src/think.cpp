@@ -203,7 +203,7 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
     int  best_score = -INFINITE;        // initially assume the worst case
     MOVE best_move  = Move::MOVE_NONE;  // meilleur coup local
     int  max_score  = INFINITE;         // best possible
-
+    MOVE excluded   = td->order.excluded[ply];
 
     //  Check Extension
     if (inCheck == true && depth + 1 < MAX_PLY)
@@ -232,20 +232,20 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
     }
 
     //  Recherche de la position actuelle dans la table de transposition
-    Score tt_score;
-    Score tt_eval;
-    MOVE  tt_move;
-    int   tt_flag;
-    int   tt_depth;
-    bool  tt_hit   = transpositionTable.probe(board.hash, ply, tt_move, tt_score, tt_eval, tt_flag, tt_depth);
+    Score tt_score = NOSCORE;
+    Score tt_eval  = NOSCORE;
+    MOVE  tt_move  = Move::MOVE_NONE;
+    int   tt_bound = BOUND_NONE;
+    int   tt_depth = -1;
+    bool  tt_hit   = excluded ? false : transpositionTable.probe(board.hash, ply, tt_move, tt_score, tt_eval, tt_bound, tt_depth);
 
     if (tt_hit)
     {
         // Trust TT if not a pvnode and the entry depth is sufficiently high
         if (   (tt_depth >= depth && !isPVNode)
-            && (   (tt_flag == BOUND_EXACT)
-                || (tt_flag == BOUND_LOWER && tt_score >= beta)
-                || (tt_flag == BOUND_UPPER && tt_score <= alpha)))
+            && (   (tt_bound == BOUND_EXACT)
+                || (tt_bound == BOUND_LOWER && tt_score >= beta)
+                || (tt_bound == BOUND_UPPER && tt_score <= alpha)))
         {
             return tt_score;
         }
@@ -292,12 +292,17 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
     {
         td->eval[ply] = static_eval = -MATE + ply;
     }
+    else if (excluded)
+    {
+        static_eval = td->eval[ply];
+    }
     else
     {
-        td->eval[ply] = static_eval = board.evaluate();
+        if (tt_eval != NOSCORE)
+            td->eval[ply] = static_eval = tt_eval;
+        else
+            td->eval[ply] = static_eval = board.evaluate();
     }
-    if (tt_hit)
-        td->eval[ply] = static_eval = tt_eval;
 
 
     /*  Avons-nous amélioré la position ?
@@ -306,11 +311,10 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
     if (ply > 2)
         improving = !inCheck && (static_eval > td->eval[ply-2]);
 
-
     //  Controle si on va pouvoir utiliser des techniques de coupe pre-move
     int  score;
 
-    if (!inCheck && !isRoot && !isPVNode)
+    if (!inCheck && !isRoot && !isPVNode && !td->order.excluded[ply])
     {
 #if defined USE_RAZORING
         //---------------------------------------------------------------------
@@ -353,6 +357,7 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
             && static_eval >= beta
             && td->move[ply-1] != Move::MOVE_NULL
             && td->move[ply-2] != Move::MOVE_NULL
+            && !excluded
             && board.non_pawn_count<C>() > 0)
         {
             int R = 3 + depth / 5 + std::min(3, (static_eval - beta)/256); //ZZZEVAL
@@ -382,7 +387,7 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
         if (depth >= 5
             && abs(beta) < TBWIN_IN_X
             && !(   tt_hit
-                 && tt_flag == BOUND_UPPER
+                 && tt_bound == BOUND_UPPER
                  && tt_score < beta))
         {
             int threshold = beta + 200;
@@ -441,6 +446,9 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
     // Boucle sur tous les coups
     while ( (move = movePicker.next_move() ) != Move::MOVE_NONE )
     {
+        if (move == excluded)
+            continue;
+
         bool isQuiet = !Move::is_tactical(move);    // capture, promotion (avec capture ou non), prise en-passant
 
 #ifdef ACC
@@ -457,6 +465,29 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
         //-------------------------------------------------
         //  SINGULAR EXTENSION
         //-------------------------------------------------
+        if (   depth > 8
+            && ply < 2 * depth
+            && excluded == Move::MOVE_NONE
+            && !isRoot
+            && move == tt_move
+            && tt_depth > depth - 3
+            && tt_bound == BOUND_LOWER
+            && abs(tt_score) < TBWIN_IN_X)
+        {
+            // Search to reduced depth with a zero window a bit lower than ttScore
+            int sing_beta  = tt_score - depth*2;
+            int sing_depth = (depth-1)/2;
+            PVariation sing_pv;
+            sing_pv.length = 0;
+
+            td->order.excluded[ply] = move;
+            score = alpha_beta<C>(ply, sing_beta-1, sing_beta, sing_depth, sing_pv, td);
+            td->order.excluded[ply] = Move::MOVE_NONE;
+
+            // Extend as this move seems forced
+            if (score < sing_beta)
+                extension = 1;
+        }
 
 
 #endif
@@ -585,7 +616,7 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
     // don't let our score inflate too high (tb)
     best_score = std::min(best_score, max_score);
 
-    if (!td->stopped)
+    if (!td->stopped && !excluded)
     {
         //  si on est ici, c'est que l'on a trouvé au moins 1 coup
         //  et de plus : score < beta
