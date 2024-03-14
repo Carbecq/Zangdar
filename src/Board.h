@@ -488,6 +488,8 @@ public:
     //! fin de partie :         =  0 :          = 0,5
     int get_phase256(int phase24) { return (phase24 * 256 + 12) / 24; }
 
+    template <Color US> int get_material();
+
     //------------------------------------------------------------Syzygy
     void TBScore(const unsigned wdl, const unsigned dtz, int &score, int &bound) const;
     bool probe_wdl(int &score, int &bound, int ply) const;

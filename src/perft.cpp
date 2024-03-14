@@ -27,7 +27,7 @@ template <Color C>
     // ml.moves est un "array", il faut utiliser ml.count
     for (size_t index = 0; index < ml.count; index++)
     {
-        move = (ml.moves[index]);
+        move = (ml.mlmoves[index].move);
         //        std::cout << "   " <<decal <<  Move::name(move) << " : " << std::endl;
 
         make_move<C>(move);
@@ -49,7 +49,7 @@ template <Color C> [[nodiscard]] std::uint64_t Board::divide(const int depth) no
 
     for (size_t index = 0; index < ml.count; index++)
     {
-        move = ml.moves[index];
+        move = ml.mlmoves[index].move;
 
 //        const auto to       = Move::dest(move);
 //        const auto from     = Move::from(move);

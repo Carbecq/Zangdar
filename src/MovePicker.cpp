@@ -117,7 +117,7 @@ MovePicker::MovePicker(Board* _board, const OrderInfo* _order_info,
 //=====================================================
 //! \brief  Sélection du prochain coup
 //-----------------------------------------------------
-MOVE MovePicker::next_move()
+mlmove MovePicker::next_move()
 {
     switch (stage)
     {
@@ -129,7 +129,7 @@ MOVE MovePicker::next_move()
 
         stage = STAGE_GENERATE_NOISY;
         if (is_legal(tt_move))
-            return tt_move;
+            return mlmove{tt_move, 0};
 
         /* fallthrough */
 
@@ -155,7 +155,7 @@ MOVE MovePicker::next_move()
         if (mln.count != 0)
         {
             int  best     = get_best(mln);
-            MOVE bestMove = mln.moves[best];
+            MOVE bestMove = mln.mlmoves[best].move;
 
             // Don't play the table move twice
             if (bestMove == tt_move)
@@ -202,7 +202,7 @@ MOVE MovePicker::next_move()
             //     score_quiet();
             // }
             if (is_legal(killer1))
-                return killer1;
+                return mlmove{killer1, 0};
         }
 
         /* fallthrough */
@@ -226,7 +226,7 @@ MOVE MovePicker::next_move()
             //     score_quiet();
             // }
             if (is_legal(killer2))
-                return killer2;
+                return mlmove{killer2, 0};
         }
 
         /* fallthrough */
@@ -252,7 +252,7 @@ MOVE MovePicker::next_move()
             //     score_quiet();
             // }
             if (is_legal(counter))
-                return counter;
+                return mlmove{counter, 0};
         }
 
         /* fallthrough */
@@ -283,12 +283,12 @@ MOVE MovePicker::next_move()
         if (mlq.count > 0 && !skipQuiets)
         {
             int  best     = get_best(mlq);
-            MOVE bestMove = pop_move(mlq, best);
+            mlmove bestMove = pop_move(mlq, best);
 
-            if (   bestMove == tt_move
-                || bestMove == killer1
-                || bestMove == killer2
-                || bestMove == counter )
+            if (   bestMove.move == tt_move
+                || bestMove.move == killer1
+                || bestMove.move == killer2
+                || bestMove.move == counter )
                 return next_move();
             else
                 return bestMove;
@@ -304,13 +304,13 @@ MOVE MovePicker::next_move()
         if (mlb.count > 0)
         {
             int  best     = get_best(mlb);
-            MOVE bestMove = pop_move(mlb, best);
+            mlmove bestMove = pop_move(mlb, best);
 
             // Don't play the table move twice
-            if (   bestMove == tt_move
-                || bestMove == killer1
-                || bestMove == killer2
-                || bestMove == counter )
+            if (   bestMove.move == tt_move
+                || bestMove.move == killer1
+                || bestMove.move == killer2
+                || bestMove.move == counter )
                 return next_move();
             return bestMove;
         }
@@ -320,11 +320,11 @@ MOVE MovePicker::next_move()
         /* fallthrough */
 
     case STAGE_DONE:
-        return Move::MOVE_NONE;
+        return mlmove(Move::MOVE_NONE, 0);
 
     default:
         assert(0);
-        return Move::MOVE_NONE;
+        return mlmove(Move::MOVE_NONE, 0);
     }
 }
 
@@ -338,7 +338,7 @@ void MovePicker::score_noisy()
 
     for (size_t i = 0; i < mln.count; i++)
     {
-        move     = mln.moves[i];
+        move     = mln.mlmoves[i].move;
 
         // Use the standard MVV-LVA
         // PieceType dest_type = board->piece_on(Move::dest(move));  // pièce prise ou promotion
@@ -361,7 +361,7 @@ void MovePicker::score_noisy()
             value = MvvLvaScores[PAWN][PAWN];
                 // eg_value[PAWN] - PAWN;
 
-        mln.values[i] = value;
+        mln.mlmoves[i].value = value;
     }
 }
 
@@ -372,7 +372,7 @@ void MovePicker::score_quiet()
 {
     // Use the History score from the Butterfly Bitboards for sorting
     for (size_t i = 0; i < mlq.count; i++)
-        mlq.values[i] = order_info->get_history(board->turn(), mlq.moves[i]);
+        mlq.mlmoves[i].value = order_info->get_history(board->turn(), mlq.mlmoves[i].move);
 }
 
 //====================================================
@@ -385,7 +385,7 @@ int MovePicker::get_best(const MoveList& ml)
     // Find highest scoring move
     for (int i = 1; i < ml.count; i++)
     {
-        if (ml.values[i] > ml.values[best_index])
+        if (ml.mlmoves[i].value > ml.mlmoves[best_index].value)
             best_index = i;
     }
 
@@ -396,13 +396,19 @@ int MovePicker::get_best(const MoveList& ml)
 //! puis déplace le dernier élément à la position
 //! du coup indiqué
 //--------------------------------------------------------
-MOVE MovePicker::pop_move(MoveList& ml, int idx)
+mlmove MovePicker::pop_move(MoveList& ml, int idx)
 {
-    MOVE temp = ml.moves[idx];
+    /*
+    ---------------+-----------------+
+                   idx               count
+                                    count
+    */
+
+    mlmove temp = ml.mlmoves[idx];
 
     ml.count--;
-    ml.moves[idx]  = ml.moves[ml.count];
-    ml.values[idx] = ml.values[ml.count];
+    ml.mlmoves[idx].move  = ml.mlmoves[ml.count].move;
+    ml.mlmoves[idx].value = ml.mlmoves[ml.count].value;
 
     return temp;
 }
@@ -414,14 +420,14 @@ MOVE MovePicker::pop_move(MoveList& ml, int idx)
 void MovePicker::shift_bad(int idx)
 {
     // Put the bad capture in the "bad" list
-    mlb.moves[mlb.count]  = mln.moves[idx];
-    mlb.values[mlb.count] = mln.values[idx];
+    mlb.mlmoves[mlb.count].move  = mln.mlmoves[idx].move;
+    mlb.mlmoves[mlb.count].value = mln.mlmoves[idx].value;
     mlb.count++;
 
     // put the last good capture here instead
     mln.count--;
-    mln.moves[idx]  = mln.moves[mln.count];
-    mln.values[idx] = mln.values[mln.count];
+    mln.mlmoves[idx].move  = mln.mlmoves[mln.count].move;
+    mln.mlmoves[idx].value = mln.mlmoves[mln.count].value;
 }
 
 
@@ -445,7 +451,7 @@ bool MovePicker::is_legal(MOVE move)
     }
 
     for (int n=0; n<mll.count; n++)
-        if (mll.moves[n] == move)
+        if (mll.mlmoves[n].move == move)
             return true;
     return false;
 }

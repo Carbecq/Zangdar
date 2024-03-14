@@ -136,4 +136,20 @@ int Board::get_phase24()
 }
 
 
+//=============================================================
+//! \brief  Calcule la valeur du matériel restant
+//-------------------------------------------------------------
+template <Color US>
+int Board::get_material()
+{
+    return(
+          P_MG * BB::count_bit(occupancy_cp<US, PAWN>())
+        + N_MG * BB::count_bit(occupancy_cp<US, KNIGHT>())
+        + B_MG * BB::count_bit(occupancy_cp<US, BISHOP>())
+        + R_MG * BB::count_bit(occupancy_cp<US, ROOK>())
+        + Q_MG * BB::count_bit(occupancy_cp<US, QUEEN>())
+        );
+}
 
+template int Board::get_material<WHITE>();
+template int Board::get_material<BLACK>();

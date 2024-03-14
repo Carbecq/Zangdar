@@ -6,6 +6,11 @@ class MoveList;
 #include <array>
 #include "defines.h"
 
+struct mlmove {
+    MOVE move;
+    I32  value;
+};
+
 class MoveList
 {
 public:
@@ -14,10 +19,11 @@ public:
 public:
     void clear() { count = 0; }
     size_t size() const { return count; }
-    void swap(size_t i, size_t j);
+//    void swap(size_t i, size_t j);
 
-    std::array<MOVE, MAX_MOVES>  moves;
-    std::array<I32,  MAX_MOVES>  values;
+    std::array<mlmove, MAX_MOVES> mlmoves;
+    // std::array<MOVE, MAX_MOVES>  moves;
+    // std::array<I32,  MAX_MOVES>  values;
     size_t                       count;
 
 

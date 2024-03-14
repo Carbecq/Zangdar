@@ -395,7 +395,7 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
             MovePicker movePicker(&board, order, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, true, 0);
             MOVE pbMove;
 
-            while ( (pbMove = movePicker.next_move() ) != Move::MOVE_NONE )
+            while ( (pbMove = movePicker.next_move().move ) != Move::MOVE_NONE )
             {
                 board.make_move<C>(pbMove);
                 td->move[ply] = pbMove;
@@ -444,7 +444,7 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
     int moveCount = 0;
 
     // Boucle sur tous les coups
-    while ( (move = movePicker.next_move() ) != Move::MOVE_NONE )
+    while ( (move = movePicker.next_move().move ) != Move::MOVE_NONE )
     {
         if (move == excluded)
             continue;

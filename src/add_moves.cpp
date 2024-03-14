@@ -12,7 +12,7 @@
 //-----------------------------------------------------------------
 void Board::add_quiet_move(MoveList& ml, int from, int dest, PieceType piece, U32 flags)  const noexcept
 {
-    ml.moves[ml.count++] = Move::CODE(from, dest, piece, PieceType::NO_TYPE, PieceType::NO_TYPE, flags);
+    ml.mlmoves[ml.count++].move = Move::CODE(from, dest, piece, PieceType::NO_TYPE, PieceType::NO_TYPE, flags);
 }
 
 //=================================================================
@@ -27,7 +27,7 @@ void Board::add_quiet_move(MoveList& ml, int from, int dest, PieceType piece, U3
 //-----------------------------------------------------------------
 void Board::add_capture_move(MoveList& ml, int from, int dest, PieceType piece, PieceType captured, U32 flags) const noexcept
 {
-    ml.moves[ml.count++]  = Move::CODE(from, dest, piece, captured, PieceType::NO_TYPE, flags);
+    ml.mlmoves[ml.count++].move  = Move::CODE(from, dest, piece, captured, PieceType::NO_TYPE, flags);
 }
 
 //=================================================================
@@ -41,7 +41,7 @@ void Board::add_capture_move(MoveList& ml, int from, int dest, PieceType piece, 
 //-----------------------------------------------------------------
 void Board::add_quiet_promotion(MoveList& ml, int from, int dest, PieceType promo) const noexcept
 {
-    ml.moves[ml.count++] = Move::CODE(from, dest, PAWN, PieceType::NO_TYPE, promo, Move::FLAG_NONE);
+    ml.mlmoves[ml.count++].move = Move::CODE(from, dest, PAWN, PieceType::NO_TYPE, promo, Move::FLAG_NONE);
 }
 
 //=================================================================
@@ -57,7 +57,7 @@ void Board::add_quiet_promotion(MoveList& ml, int from, int dest, PieceType prom
 //-----------------------------------------------------------------
 void Board::add_capture_promotion(MoveList& ml, int from, int dest, PieceType captured, PieceType promo) const noexcept
 {
-    ml.moves[ml.count++]  = Move::CODE(from, dest, PAWN, captured, promo, Move::FLAG_NONE);
+    ml.mlmoves[ml.count++].move  = Move::CODE(from, dest, PAWN, captured, promo, Move::FLAG_NONE);
 }
 
 

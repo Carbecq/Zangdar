@@ -469,32 +469,32 @@ void sort_moves(MoveList& ml)
 {
     for (size_t i=0; i<ml.count; i++)
     {
-        MOVE m = ml.moves[i];
+        MOVE m = ml.mlmoves[i].move;
         if (Move::is_capturing(m))
         {
             PieceType piece = Move::piece(m);
             PieceType capt  = Move::captured(m);
-            ml.values[i] = MvvLvaScores[capt][piece];
+            ml.mlmoves[i].value = MvvLvaScores[capt][piece];
         }
         else
         {
-            ml.values[i] = 0;
+            ml.mlmoves[i].value = 0;
         }
     }
     for (size_t i=0; i<ml.count-1; i++)
     {
         for (size_t j=i; j<ml.count; j++)
         {
-            if (ml.values[j] > ml.values[i] )
+            if (ml.mlmoves[j].value > ml.mlmoves[i].value )
             {
-                int v = ml.values[i];
-                MOVE m = ml.moves[i];
+                int v = ml.mlmoves[i].value;
+                MOVE m = ml.mlmoves[i].move;
 
-                ml.values[i] = ml.values[j];
-                ml.values[j] = v;
+                ml.mlmoves[i].value = ml.mlmoves[j].value;
+                ml.mlmoves[j].value = v;
 
-                ml.moves[i] = ml.moves[j];
-                ml.moves[j] = m;
+                ml.mlmoves[i].move = ml.mlmoves[j].move;
+                ml.mlmoves[j].move = m;
             }
         }
     }
@@ -587,7 +587,7 @@ void test_see()
 
         for (int i=0; i<ml.count; i++)
         {
-            MOVE m = ml.moves[i];
+            MOVE m = ml.mlmoves[i].move;
 
             std::string str1 = Move::show(m, 1);
             std::string str2 = Move::show(m, 2);
@@ -650,7 +650,7 @@ void test_see()
             printf("%s \n", fen.c_str());
             for (int i=0; i<ml.count; i++)
             {
-                MOVE m = ml.moves[i];
+                MOVE m = ml.mlmoves[i].move;
 
                 std::string str1 = Move::show(m, 1);
                 std::string str2 = Move::show(m, 2);

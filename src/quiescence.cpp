@@ -2,6 +2,9 @@
 #include "MovePicker.h"
 #include "Move.h"
 
+#include "Bitboard.h"
+
+
 //=============================================================
 //! \brief  Recherche jusqu'à obtenir une position calme,
 //!         donc sans prise ou promotion.
@@ -87,6 +90,7 @@ int Search::quiescence(int ply, int alpha, int beta, ThreadData* td)
     {
         best_score = -MATE + ply; // idée de Koivisto
     }
+    int eval = best_score;
     
     MOVE move;
     MovePicker movePicker(&board, order, Move::MOVE_NONE,
@@ -94,11 +98,68 @@ int Search::quiescence(int ply, int alpha, int beta, ThreadData* td)
                           true, 0);
 
     // Boucle sur tous les coups
-    while ((move = movePicker.next_move()) != Move::MOVE_NONE)
+    while (true)
+  //      (move = movePicker.next_move().move) != Move::MOVE_NONE)
     {
+        mlmove mlm = movePicker.next_move();
+        if (mlm.move == Move::MOVE_NONE)
+                break;
+        move = mlm.move;
+
         // Prune des prises inintéressantes
         if (!in_check && movePicker.get_stage() > STAGE_GOOD_NOISY)
             break;
+
+
+        // Delta Pruning
+        /*****************************************************************
+    *  Delta cutoff - a move guarentees the score well below alpha,  *
+    *  so  there's no point in searching it. This heuristic is  not  *
+    *  used  in the endgame, because of the  insufficient  material  *
+    *  issues and special endgame evaluation heuristics.             *
+    *****************************************************************/
+//        int margin = 300;
+//        int capt = 0;
+
+        if (!in_check)
+        {
+            if (Move::is_capturing(move))
+            {
+                PieceType cap = Move::captured(move);
+            //    capt = MGPieceValue[cap];
+            //    margin += MGPieceValue[cap];
+
+                if (eval + 300 + EGPieceValue[cap] <= alpha)
+                {
+                    continue;
+                }
+            }
+            // else if (Move::is_enpassant(move))
+            // {
+            //     margin += P_MG;
+            // }
+
+            // if (Move::is_promoting(move))
+            // {
+            //     margin += MGPieceValue[Move::promotion(move)] - P_MG;
+            // }
+
+        //    int mat = board.get_material<~C>() - capt;
+
+            // if ((eval + margin <= alpha)
+            //     //&& mat > 1300
+            //     )
+            // {
+            //     continue;
+            // }
+        }
+
+
+        // https://www.chessprogramming.org/CPW-Engine_quiescence
+        // if ((stand_pat + e.PIECE_VALUE[movelist[i].piece_cap] + 200 < alpha) &&
+        //     (b.PieceMaterial[!b.stm] - e.PIECE_VALUE[movelist[i].piece_cap] > e.ENDGAME_MAT) &&
+        //     (!move_isprom(movelist[i])))
+        //     continue;
 
         board.make_move<C>(move);
         td->move[ply] = move;

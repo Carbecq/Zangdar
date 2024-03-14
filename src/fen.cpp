@@ -683,11 +683,11 @@ void Board::apply_token(const std::string& token) noexcept
     MoveList ml;
     legal_moves<C>(ml);
 
-    for (const auto &move : ml.moves)
+    for (const auto &mlmove : ml.mlmoves)
     {
-        if (Move::name(move) == token)
+        if (Move::name(mlmove.move) == token)
         {
-            make_move<C>(move);
+            make_move<C>(mlmove.move);
             break;
         }
     }
