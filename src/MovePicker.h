@@ -49,14 +49,16 @@ public:
                MOVE _counter,
                bool _skipQuiets, int _threshold) ;
 
-    mlmove next_move();
+    MLMove next_move();
     void score_noisy();
     void score_quiet();
     bool is_legal(MOVE move);
     void verify_MvvLva();
 
     void set_skipQuiets(bool f) { skipQuiets = f;}
-    mlmove pop_move(MoveList &ml, int idx);
+    MLMove pop_move(MoveList &ml, int idx);
+    void shift_move(MoveList& ml, int idx);
+
     void shift_bad(int idx);
     int  get_best(const MoveList &ml);
     int  get_stage() const { return stage;}

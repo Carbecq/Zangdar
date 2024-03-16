@@ -93,15 +93,15 @@ int Search::quiescence(int ply, int alpha, int beta, ThreadData* td)
     int eval = best_score;
     
     MOVE move;
+    MLMove mlm;
     MovePicker movePicker(&board, order, Move::MOVE_NONE,
                           Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE,
                           true, 0);
 
     // Boucle sur tous les coups
     while (true)
-  //      (move = movePicker.next_move().move) != Move::MOVE_NONE)
     {
-        mlmove mlm = movePicker.next_move();
+        mlm = movePicker.next_move();
         if (mlm.move == Move::MOVE_NONE)
                 break;
         move = mlm.move;
@@ -118,40 +118,16 @@ int Search::quiescence(int ply, int alpha, int beta, ThreadData* td)
     *  used  in the endgame, because of the  insufficient  material  *
     *  issues and special endgame evaluation heuristics.             *
     *****************************************************************/
-//        int margin = 300;
-//        int capt = 0;
 
         if (!in_check)
         {
             if (Move::is_capturing(move))
             {
-                PieceType cap = Move::captured(move);
-            //    capt = MGPieceValue[cap];
-            //    margin += MGPieceValue[cap];
-
-                if (eval + 300 + EGPieceValue[cap] <= alpha)
+                if (eval + 300 + EGPieceValue[Move::captured(move)] <= alpha)
                 {
                     continue;
                 }
             }
-            // else if (Move::is_enpassant(move))
-            // {
-            //     margin += P_MG;
-            // }
-
-            // if (Move::is_promoting(move))
-            // {
-            //     margin += MGPieceValue[Move::promotion(move)] - P_MG;
-            // }
-
-        //    int mat = board.get_material<~C>() - capt;
-
-            // if ((eval + margin <= alpha)
-            //     //&& mat > 1300
-            //     )
-            // {
-            //     continue;
-            // }
         }
 
 
