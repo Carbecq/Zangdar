@@ -43,8 +43,8 @@ QMAKE_CXXFLAGS_RELEASE -= -O2
 QMAKE_CXXFLAGS_RELEASE += -pipe -std=c++20 -O3 -flto -DNDEBUG -fwhole-program
 QMAKE_CXXFLAGS_RELEASE += -pedantic -Wshadow -Wall -Wextra -Wcast-qual -Wuninitialized
 
-VERSION = 2.28.01
-TARGET  = native
+VERSION = 2.28.02
+TARGET  = native-pext
 
 DEFINES += VERSION='\\"$${VERSION}\\"'
 
@@ -100,9 +100,9 @@ QMAKE_CXXFLAGS_RELEASE += -mavx
 QMAKE_CXXFLAGS_RELEASE += -mavx2 -mfma
 }
 
-##------------------------------------------ 5) bmi2
-equals(TARGET, "bmi2"){
-TARGET = Zangdar-$${VERSION}-bmi2
+##------------------------------------------ 5) bmi2-nopext
+equals(TARGET, "bmi2-nopext"){
+TARGET = Zangdar-$${VERSION}-bmi2-nopext
 
 ## x86-64
 QMAKE_CXXFLAGS_RELEASE += -msse -msse2
@@ -119,16 +119,44 @@ QMAKE_CXXFLAGS_RELEASE += -mavx
 ## avx2
 QMAKE_CXXFLAGS_RELEASE += -mavx2 -mfma
 ## bmi2
-QMAKE_CXXFLAGS_RELEASE += -DUSE_PEXT -mbmi -mbmi2
+QMAKE_CXXFLAGS_RELEASE += -mbmi -mbmi2
 }
 
-##------------------------------------------ 6) native
-equals(TARGET, "native"){
-TARGET = Zangdar-$${VERSION}-5950X
+##------------------------------------------ 6) bmi2-pext
+equals(TARGET, "bmi2-pext"){
+TARGET = Zangdar-$${VERSION}-bmi2-pext
+
+## x86-64
+QMAKE_CXXFLAGS_RELEASE += -msse -msse2
+## popcount
+QMAKE_CXXFLAGS_RELEASE += -msse3 -mpopcnt
+##sse 4.1
+QMAKE_CXXFLAGS_RELEASE += -msse4.1 -msse4.2 -msse4a
+## ssse3
+QMAKE_CXXFLAGS_RELEASE += -mssse3
+## mmx
+QMAKE_CXXFLAGS_RELEASE += -mmmx
+## avx
+QMAKE_CXXFLAGS_RELEASE += -mavx
+## avx2
+QMAKE_CXXFLAGS_RELEASE += -mavx2 -mfma
+## bmi2
+QMAKE_CXXFLAGS_RELEASE += -mbmi -mbmi2 -DUSE_PEXT
+}
+
+##------------------------------------------ 7) native-nopext
+equals(TARGET, "native-nopext"){
+TARGET = Zangdar-$${VERSION}-5950X-nopext
+
+QMAKE_CXXFLAGS_RELEASE += -march=native
+}
+
+##------------------------------------------ 8) native-pext
+equals(TARGET, "native-pext"){
+TARGET = Zangdar-$${VERSION}-5950X-pext
 
 QMAKE_CXXFLAGS_RELEASE += -march=native -DUSE_PEXT
 }
-
 
 
 
