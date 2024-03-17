@@ -105,8 +105,9 @@ void ThreadPool::reset()
         threadData[i].nodes      = 0;
         threadData[i].seldepth   = 0;
 
-        threadData[i].order.clear_all();
-        std::memset(threadData[i].info, 0, sizeof(threadData[i].info));
+        std::memset(threadData[i].info,     0, sizeof(threadData[i].info));
+        std::memset(threadData[i].history,  0, sizeof(threadData[i].history));
+        std::memset(threadData[i].counter,  0, sizeof(threadData[i].counter));
 
     }
 }

@@ -14,8 +14,6 @@ int Search::quiescence(int ply, int alpha, int beta, ThreadData* td, SearchInfo*
 {
     assert(beta > alpha);
     
-    OrderInfo* order = &td->order;
-
     //  Time-out
     if (td->stopped || check_limits(td))
     {
@@ -94,7 +92,7 @@ int Search::quiescence(int ply, int alpha, int beta, ThreadData* td, SearchInfo*
     
     MOVE move;
     MLMove mlm;
-    MovePicker movePicker(&board, order, Move::MOVE_NONE,
+    MovePicker movePicker(&board, td->history, Move::MOVE_NONE,
                           Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE,
                           true, 0);
 

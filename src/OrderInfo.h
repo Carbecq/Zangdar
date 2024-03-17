@@ -12,8 +12,6 @@ class OrderInfo
 public:
     OrderInfo();
 
-    int    history[N_COLORS][N_PIECES][N_SQUARES];  // bonus history
-    MOVE   counter[N_COLORS][N_PIECES][N_SQUARES];  // counter move
 
     void clear_all();
     void update_history(Color color, MOVE move, int delta);

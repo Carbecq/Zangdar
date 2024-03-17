@@ -7,11 +7,11 @@
 //=====================================================
 //! \brief  Constructeur
 //-----------------------------------------------------
-MovePicker::MovePicker(Board* _board, const OrderInfo* _order_info,
+MovePicker::MovePicker(Board* _board, const MainHistory& _history,
                        MOVE _ttMove, MOVE _killer1, MOVE _killer2, MOVE _counter,
                        bool _skipQuiets, int _threshold) :
     board(_board),
-    order_info(_order_info),
+    history(_history),
     skipQuiets(_skipQuiets),
     stage(STAGE_TABLE),
     gen_quiet(false),
@@ -344,9 +344,13 @@ void MovePicker::score_noisy()
 //------------------------------------------------------------------
 void MovePicker::score_quiet()
 {
+    MOVE move;
     // Use the History score from the Butterfly Bitboards for sorting
     for (size_t i = 0; i < mlq.count; i++)
-        mlq.mlmoves[i].value = order_info->get_history(board->turn(), mlq.mlmoves[i].move);
+    {
+        move = mlq.mlmoves[i].move;
+        mlq.mlmoves[i].value = history[board->turn()][Move::piece(move)][Move::dest(move)];
+    }
 }
 
 //====================================================

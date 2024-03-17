@@ -167,8 +167,6 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
     assert(board.valid());
     assert(beta > alpha);
     
-    OrderInfo* order      = &td->order;
-
     MOVE quietsTried[MAX_MOVES];
     int  quietsPlayed = 0;
 
@@ -392,7 +390,7 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
         {
             int threshold = beta + 200;
 
-            MovePicker movePicker(&board, order, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, true, 0);
+            MovePicker movePicker(&board, td->history, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, true, 0);
             MOVE pbMove;
 
             while ( (pbMove = movePicker.next_move().move ) != Move::MOVE_NONE )
@@ -437,7 +435,7 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
 
     MOVE mc = get_counter(td, C, (si-1)->move);
 
-    MovePicker movePicker(&board, order, tt_move,
+    MovePicker movePicker(&board, td->history, tt_move,
                           td->info[ply].killer1, td->info[ply].killer2, mc, false, 0);
     MOVE move;
     const int old_alpha = alpha;
@@ -592,9 +590,9 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
                     // Update Killers
                     if (isQuiet)
                     {
-                        order->update_history(C, move, depth);
+                        update_history(td, C, move, depth);
                         update_killers(td, ply, move);
-                        order->update_counter(C, ply, (si-1)->move , move);
+                        update_counter(td, C, (si-1)->move , move);
                     }
                     transpositionTable.store(board.hash, move, score, static_eval, BOUND_LOWER, depth, ply);
                     return score;

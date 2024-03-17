@@ -207,6 +207,35 @@ MOVE Search::get_counter(ThreadData* td, Color color, MOVE prev_move)
 {
     return( (prev_move==Move::MOVE_NONE || prev_move==Move::MOVE_NULL)
                         ? Move::MOVE_NONE
-                : td->order.counter[color][Move::piece(prev_move)][Move::dest(prev_move)] );
+                : td->counter[color][Move::piece(prev_move)][Move::dest(prev_move)] );
+}
+
+//=========================================================
+//! \brief  Incrémente l'heuristique "History"
+//---------------------------------------------------------
+void Search::update_history(ThreadData* td, Color color, MOVE move, int bonus)
+{
+    td->history[color][Move::piece(move)][Move::dest(move)] += bonus;
+}
+
+//=========================================================
+//! \brief  Récupère l'heuristique "History"
+//---------------------------------------------------------
+int Search::get_history(ThreadData* td, const Color color, const MOVE move) const
+{
+    return(td->history[color][Move::piece(move)][Move::dest(move)]);
+}
+
+//=================================================================
+//! \brief  Update countermove.
+//! \param[in] color        couleur du camp qui joue
+//! \param[in] ply          profondeur courante de la recherche
+//! \param[in] prev_move    coup recherché au ply précédant
+//! \param[in] move         coup de réfutation
+//-----------------------------------------------------------------
+void Search::update_counter(ThreadData* td, Color color, MOVE prev_move, MOVE move)
+{
+    if (prev_move != Move::MOVE_NONE && prev_move != Move::MOVE_NULL)
+        td->counter[color][Move::piece(prev_move)][Move::dest(prev_move)] = move;
 }
 

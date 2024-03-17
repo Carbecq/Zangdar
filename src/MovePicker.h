@@ -31,38 +31,32 @@ constexpr int MvvLvaScores[N_PIECES][N_PIECES] = {
     {0,  0,  0,  0,  0,  0,  0}  // victim King
 };
 
+// https://www.nextptr.com/question/a6212599/passing-cplusplus-arrays-to-function-by-reference
 
-/**
- * @brief Class for an object that picks moves from a move list in an optimal order.
- *
- * Implementations must define hasNext(), which returns true if there are remaining moves
- * to be processed and getNext(), which gets the next move from the provided MoveList.
- *
- * Note that instances of a MovePicker modify their provided MoveList instances in place.
- */
+using MainHistory  = int[N_COLORS][N_PIECES][N_SQUARES];
+
 class MovePicker
 {
 public:
 
-    MovePicker(Board *_board, const OrderInfo *_order_info, MOVE _ttMove,
+    MovePicker(Board *_board, const MainHistory& _history, MOVE _ttMove,
                MOVE _killer1, MOVE _killer2,
                MOVE _counter,
                bool _skipQuiets, int _threshold) ;
 
     MLMove next_move();
-    void score_noisy();
-    void score_quiet();
-    bool is_legal(MOVE move);
-    void verify_MvvLva();
+    void   score_noisy();
+    void   score_quiet();
+    bool   is_legal(MOVE move);
+    void   verify_MvvLva();
 
-    void set_skipQuiets(bool f) { skipQuiets = f;}
+    void   set_skipQuiets(bool f) { skipQuiets = f;}
     MLMove pop_move(MoveList &ml, int idx);
-    void shift_move(MoveList& ml, int idx);
+    void   shift_move(MoveList& ml, int idx);
 
     void shift_bad(int idx);
     int  get_best(const MoveList &ml);
     int  get_stage() const { return stage;}
-
 
     bool hasNext() const;
     MOVE getNext();
@@ -70,12 +64,13 @@ public:
 
 private:
     Board*              board;
-    const OrderInfo*    order_info;
-    bool                skipQuiets;    // sauter les coups tranquilles ?
-    int                 stage;         // étape courante du sélecteur
-    bool                gen_quiet;     // a-t-on déjà générer les coups tranquilles ?
-    bool                gen_legal;
-    int                 threshold;
+    const MainHistory&  history;  // bonus history
+
+    bool            skipQuiets;    // sauter les coups tranquilles ?
+    int             stage;         // étape courante du sélecteur
+    bool            gen_quiet;     // a-t-on déjà générer les coups tranquilles ?
+    bool            gen_legal;
+    int             threshold;
 
     MOVE tt_move;
     MOVE killer1;
@@ -87,12 +82,6 @@ private:
     MoveList mlb;
     MoveList mll;   // MoveList de tous les coups légaux pour déterminer si un coup est légal
 
-
-
-    MoveList*           move_list;
-    size_t              currHead;
-
-    void scoreMoves(int m_ply, const MOVE m_tt_move);
 };
 
 #endif // MOVEPICKER_H

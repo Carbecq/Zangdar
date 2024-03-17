@@ -38,8 +38,10 @@ struct ThreadData {
     int         seldepth;
     bool        stopped;
     
-    OrderInfo   order;
+//    OrderInfo   order;
     SearchInfo  info[STACK_SIZE];
+    int    history[N_COLORS][N_PIECES][N_SQUARES];  // bonus history
+    MOVE   counter[N_COLORS][N_PIECES][N_SQUARES];  // counter move
 
 
 }__attribute__((aligned(64)));
@@ -84,6 +86,9 @@ private:
 
     void update_killers(ThreadData* td, int ply, MOVE move);
     MOVE get_counter(ThreadData* td, Color color, MOVE prev_move);
+    void update_history(ThreadData* td, Color color, MOVE move, int bonus);
+    int  get_history(ThreadData* td, const Color color, const MOVE move) const;
+    void update_counter(ThreadData* td, Color color, MOVE prev_move, MOVE move);
 
     static constexpr int CONTEMPT    = 0;
 
