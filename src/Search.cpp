@@ -185,3 +185,28 @@ bool Search::check_limits(const ThreadData* td) const
     //        return false;
 }
 
+//=========================================================
+//! \brief  Met à jour les heuristiques "Killer"
+//---------------------------------------------------------
+void Search::update_killers(ThreadData* td, int ply, MOVE move)
+{
+    if (td->info[ply].killer1 != move)
+    {
+        td->info[ply].killer2 = td->info[ply].killer1;
+        td->info[ply].killer1 = move;
+    }
+}
+
+//==================================================================
+//! \brief  Récupère les coups de réfutation
+//! \param[in] color        couleur du camp qui joue
+//! \param[in] ply          profondeur courante de la recherche
+//! \param[in] prev_move    coup recherché au ply précédant
+//------------------------------------------------------------------
+MOVE Search::get_counter(ThreadData* td, Color color, MOVE prev_move)
+{
+    return( (prev_move==Move::MOVE_NONE || prev_move==Move::MOVE_NULL)
+                        ? Move::MOVE_NONE
+                : td->order.counter[color][Move::piece(prev_move)][Move::dest(prev_move)] );
+}
+

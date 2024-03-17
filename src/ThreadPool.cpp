@@ -83,9 +83,9 @@ void ThreadPool::init()
         threadData[i].seldepth   = 0;
 
         // empty unneeded data
-        std::memset(threadData[i].move_stack,     0, sizeof(threadData[i].move_stack));
-        std::memset(threadData[i].eval_stack,     0, sizeof(threadData[i].eval_stack));
-        std::memset(threadData[i].order.excluded, 0, sizeof(threadData[i].order.excluded));
+        std::memset(threadData[i].move_stack,   0, sizeof(threadData[i].move_stack));
+        std::memset(threadData[i].eval_stack,   0, sizeof(threadData[i].eval_stack));
+        std::memset(threadData[i].info,         0, sizeof(threadData[i].info));
 
         // memset(threadData[i].results.scores, 0,               sizeof(threadData[i].results.scores));
         // memset(threadData[i].results.moves,  Move::MOVE_NONE, sizeof(threadData[i].results.moves));
@@ -110,6 +110,8 @@ void ThreadPool::reset()
         threadData[i].seldepth   = 0;
 
         threadData[i].order.clear_all();
+        std::memset(threadData[i].info, 0, sizeof(threadData[i].info));
+
     }
 }
 

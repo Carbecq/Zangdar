@@ -28,9 +28,10 @@ void Search::think(const Board &m_board, const Timer &m_timer, int m_index)
     timer = m_timer;
 
     ThreadData* td = &threadPool.threadData[m_index];
+    SearchInfo* si = &threadPool.threadData[m_index].info[STACK_OFFSET];
 
     // iterative deepening
-    iterative_deepening<C>(td);
+    iterative_deepening<C>(td, si);
 
     if (m_index == 0)
     {
@@ -53,16 +54,15 @@ void Search::think(const Board &m_board, const Timer &m_timer, int m_index)
 //!
 //------------------------------------------------------
 template<Color C>
-void Search::iterative_deepening(ThreadData* td)
+void Search::iterative_deepening(ThreadData* td, SearchInfo* si)
 {
     PVariation pv;
     pv.length = 0;
-    int  ply = 0;
 
     for (td->depth = 1; td->depth <= timer.getSearchDepth(); td->depth++)
     {
         // Search position, using aspiration windows for higher depths
-        td->score = aspiration_window<C>(ply, pv, td);
+        td->score = aspiration_window<C>(pv, td, si);
 
         if (td->stopped)
             break;
@@ -97,7 +97,7 @@ void Search::iterative_deepening(ThreadData* td)
 //!
 //------------------------------------------------------
 template<Color C>
-int Search::aspiration_window(int ply, PVariation& pv, ThreadData* td)
+int Search::aspiration_window(PVariation& pv, ThreadData* td, SearchInfo* si)
 {
     int alpha  = -INFINITE;
     int beta   = INFINITE;
@@ -116,7 +116,7 @@ int Search::aspiration_window(int ply, PVariation& pv, ThreadData* td)
 
     while (true)
     {
-        score = alpha_beta<C>(ply, alpha, beta, std::max(1, depth), pv, td);
+        score = alpha_beta<C>(0, alpha, beta, std::max(1, depth), pv, td, si);
 
         if (td->stopped)
             break;
@@ -162,7 +162,7 @@ int Search::aspiration_window(int ply, PVariation& pv, ThreadData* td)
 //! \return Valeur du score
 //-----------------------------------------------------
 template<Color C>
-int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, ThreadData* td)
+int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, ThreadData* td, SearchInfo* si)
 {
     assert(board.valid());
     assert(beta > alpha);
@@ -203,7 +203,7 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
     int  best_score = -INFINITE;        // initially assume the worst case
     MOVE best_move  = Move::MOVE_NONE;  // meilleur coup local
     int  max_score  = INFINITE;         // best possible
-    MOVE excluded   = td->order.excluded[ply];
+    MOVE excluded   = si->excluded;
 
     //  Check Extension
     if (inCheck == true && depth + 1 < MAX_PLY)
@@ -314,7 +314,7 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
     //  Controle si on va pouvoir utiliser des techniques de coupe pre-move
     int  score;
 
-    if (!inCheck && !isRoot && !isPVNode && !td->order.excluded[ply])
+    if (!inCheck && !isRoot && !isPVNode && !si->excluded)
     {
 #if defined USE_RAZORING
         //---------------------------------------------------------------------
@@ -364,7 +364,7 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
 
             board.make_nullmove<C>();
             td->move[ply] = Move::MOVE_NULL;
-            score = -alpha_beta<~C>(ply + 1, -beta, -beta + 1, depth - 1 - R, new_pv, td);
+            score = -alpha_beta<~C>(ply + 1, -beta, -beta + 1, depth - 1 - R, new_pv, td, si+1);
             board.undo_nullmove<C>();
 
             if (td->stopped)
@@ -405,7 +405,7 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
 
                 // If it did, do a proper search with reduced depth
                 if (pbScore >= threshold)
-                    pbScore = -alpha_beta<~C>(ply+1, -threshold, -threshold + 1, depth-4, new_pv, td);
+                    pbScore = -alpha_beta<~C>(ply+1, -threshold, -threshold + 1, depth-4, new_pv, td, si+1);
 
                 board.undo_move<C>();
 
@@ -435,10 +435,10 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
     //  Génération des coups
     //------------------------------------------------------------------------------------
 
-    MOVE k1, k2, mc;
-    order->get_refutation_moves(C, ply, td->move[ply-1], k1, k2, mc);
+    MOVE mc = get_counter(td, C, td->move[ply-1]);
 
-    MovePicker movePicker(&board, order, tt_move, k1, k2, mc, false, 0);
+    MovePicker movePicker(&board, order, tt_move,
+                          td->info[ply].killer1, td->info[ply].killer2, mc, false, 0);
     MOVE move;
     const int old_alpha = alpha;
     int moveCount = 0;
@@ -480,9 +480,9 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
             PVariation sing_pv;
             sing_pv.length = 0;
 
-            td->order.excluded[ply] = move;
-            score = alpha_beta<C>(ply, sing_beta-1, sing_beta, sing_depth, sing_pv, td);
-            td->order.excluded[ply] = Move::MOVE_NONE;
+            si->excluded = move;
+            score = alpha_beta<C>(ply, sing_beta-1, sing_beta, sing_depth, sing_pv, td, si);
+            si->excluded = Move::MOVE_NONE;
 
             // Extend as this move seems forced
             if (score < sing_beta)
@@ -541,7 +541,7 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
             int lmrDepth = CLAMP(newDepth - R, 1, newDepth - 1);
 
             // Search this move with reduced depth:
-            score = -alpha_beta<~C>(ply+1, -alpha-1, -alpha, lmrDepth, new_pv, td);
+            score = -alpha_beta<~C>(ply+1, -alpha-1, -alpha, lmrDepth, new_pv, td, si+1);
 
             doFullDepthSearch = score > alpha && lmrDepth < newDepth;
         } else
@@ -549,12 +549,12 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
 
         // Full depth zero-window search
         if (doFullDepthSearch)
-            score = -alpha_beta<~C>(ply+1, -alpha-1, -alpha, newDepth, new_pv, td);
+            score = -alpha_beta<~C>(ply+1, -alpha-1, -alpha, newDepth, new_pv, td, si+1);
         //    -AlphaBeta(thread, ss+1, -alpha-1, -alpha, newDepth);
 
         // Full depth alpha-beta window search
         if (isPVNode && ((score > alpha && score < beta) || moveCount == 1))
-            score = -alpha_beta<~C>(ply+1, -beta, -alpha, newDepth, new_pv, td);
+            score = -alpha_beta<~C>(ply+1, -beta, -alpha, newDepth, new_pv, td, si+1);
                 // -AlphaBeta(thread, ss+1, -beta, -alpha, newDepth);
 #endif
 
@@ -593,7 +593,7 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
                     if (isQuiet)
                     {
                         order->update_history(C, move, depth);
-                        order->update_killers(ply, move);
+                        update_killers(td, ply, move);
                         order->update_counter(C, ply, td->move[ply-1] , move);
                     }
                     transpositionTable.store(board.hash, move, score, static_eval, BOUND_LOWER, depth, ply);
