@@ -15,9 +15,11 @@ constexpr int STACK_OFFSET = 4;
 constexpr int STACK_SIZE   = MAX_PLY + STACK_OFFSET;
 
 struct SearchInfo {
-    MOVE   killer1;                      // killer moves
+    MOVE   killer1;     // killer moves
     MOVE   killer2;
-    MOVE   excluded;
+    MOVE   excluded;    // coup à éviter
+    int    eval;        // évaluation statique
+    MOVE   move;        // coup cherché
 
 
 }__attribute__((aligned(64)));
@@ -39,10 +41,6 @@ struct ThreadData {
     OrderInfo   order;
     SearchInfo  info[STACK_SIZE];
 
-    Score       eval_stack[STACK_SIZE];     // évaluation statique
-    MOVE        move_stack[STACK_SIZE];     // coups cherchés
-    Score*      eval;
-    MOVE*       move;
 
 }__attribute__((aligned(64)));
 
@@ -76,7 +74,7 @@ private:
     template <Color C> void iterative_deepening(ThreadData* td, SearchInfo* si);
     template <Color C> int  aspiration_window(PVariation& pv, ThreadData* td, SearchInfo* si);
     template <Color C> int  alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, ThreadData* td, SearchInfo* si);
-    template <Color C> int  quiescence(int ply, int alpha, int beta, ThreadData* td);
+    template <Color C> int  quiescence(int ply, int alpha, int beta, ThreadData* td, SearchInfo* si);
 
     void show_uci_result(const ThreadData *td, U64 elapsed, PVariation &pv) const;
     void show_uci_best(const ThreadData *td) const;

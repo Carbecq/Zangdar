@@ -10,7 +10,7 @@
 //!         donc sans prise ou promotion.
 //-------------------------------------------------------------
 template <Color C>
-int Search::quiescence(int ply, int alpha, int beta, ThreadData* td)
+int Search::quiescence(int ply, int alpha, int beta, ThreadData* td, SearchInfo* si)
 {
     assert(beta > alpha);
     
@@ -138,8 +138,8 @@ int Search::quiescence(int ply, int alpha, int beta, ThreadData* td)
         //     continue;
 
         board.make_move<C>(move);
-        td->move[ply] = move;
-        score = -quiescence<~C>(ply+1, -beta, -alpha, td);
+        si->move = move;
+        score = -quiescence<~C>(ply+1, -beta, -alpha, td, si+1);
         board.undo_move<C>();
 
         if (td->stopped)
@@ -171,5 +171,5 @@ int Search::quiescence(int ply, int alpha, int beta, ThreadData* td)
     return best_score;
 }
 
-template int Search::quiescence<WHITE>(int ply, int alpha, int beta, ThreadData* td);
-template int Search::quiescence<BLACK>(int ply, int alpha, int beta, ThreadData* td);
+template int Search::quiescence<WHITE>(int ply, int alpha, int beta, ThreadData* td, SearchInfo* si);
+template int Search::quiescence<BLACK>(int ply, int alpha, int beta, ThreadData* td, SearchInfo* si);

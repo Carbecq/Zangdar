@@ -57,8 +57,6 @@ void ThreadPool::create()
         threadData[i].nodes      = 0;
         threadData[i].stopped    = false;
 
-        threadData[i].move = &(threadData[i].move_stack[STACK_OFFSET]);
-        threadData[i].eval = &(threadData[i].eval_stack[STACK_OFFSET]);
 
         // threadData[i].results.depth     = 0;
         // threadData[i].results.prevScore = -INFINITE;
@@ -83,8 +81,6 @@ void ThreadPool::init()
         threadData[i].seldepth   = 0;
 
         // empty unneeded data
-        std::memset(threadData[i].move_stack,   0, sizeof(threadData[i].move_stack));
-        std::memset(threadData[i].eval_stack,   0, sizeof(threadData[i].eval_stack));
         std::memset(threadData[i].info,         0, sizeof(threadData[i].info));
 
         // memset(threadData[i].results.scores, 0,               sizeof(threadData[i].results.scores));

@@ -215,7 +215,7 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
     if (depth <= 0)
     {
         td->nodes--;
-        return (quiescence<C>(ply, alpha, beta, td));
+        return (quiescence<C>(ply, alpha, beta, td, si));
     }
 
     if (!isRoot)
@@ -290,18 +290,18 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
 
     if (inCheck)
     {
-        td->eval[ply] = static_eval = -MATE + ply;
+        si->eval = static_eval = -MATE + ply;
     }
     else if (excluded)
     {
-        static_eval = td->eval[ply];
+        static_eval = si->eval;
     }
     else
     {
         if (tt_eval != NOSCORE)
-            td->eval[ply] = static_eval = tt_eval;
+            si->eval = static_eval = tt_eval;
         else
-            td->eval[ply] = static_eval = board.evaluate();
+            si->eval = static_eval = board.evaluate();
     }
 
 
@@ -309,7 +309,7 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
         Si on ne s'est pas amélioré dans cette ligne, on va pouvoir couper un peu plus */
     bool improving = false;
     if (ply > 2)
-        improving = !inCheck && (static_eval > td->eval[ply-2]);
+        improving = !inCheck && (static_eval > (si-2)->eval);
 
     //  Controle si on va pouvoir utiliser des techniques de coupe pre-move
     int  score;
@@ -323,7 +323,7 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
         if (   depth <= 3
             && (static_eval + 200 * depth) <= alpha)
         {
-            score = quiescence<C>(ply, alpha, beta, td);
+            score = quiescence<C>(ply, alpha, beta, td, si);
             if (score <= alpha)
             {
                 td->nodes--;
@@ -355,15 +355,15 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
         if (
             depth >= 3
             && static_eval >= beta
-            && td->move[ply-1] != Move::MOVE_NULL
-            && td->move[ply-2] != Move::MOVE_NULL
+            && (si-1)->move != Move::MOVE_NULL
+            && (si-2)->move != Move::MOVE_NULL
             && !excluded
             && board.non_pawn_count<C>() > 0)
         {
             int R = 3 + depth / 5 + std::min(3, (static_eval - beta)/256); //ZZZEVAL
 
             board.make_nullmove<C>();
-            td->move[ply] = Move::MOVE_NULL;
+            si->move = Move::MOVE_NULL;
             score = -alpha_beta<~C>(ply + 1, -beta, -beta + 1, depth - 1 - R, new_pv, td, si+1);
             board.undo_nullmove<C>();
 
@@ -398,10 +398,10 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
             while ( (pbMove = movePicker.next_move().move ) != Move::MOVE_NONE )
             {
                 board.make_move<C>(pbMove);
-                td->move[ply] = pbMove;
+                si->move = pbMove;
 
                 // See if a quiescence search beats pbBeta
-                int pbScore = -quiescence<~C>(ply+1, -threshold, -threshold+1, td);
+                int pbScore = -quiescence<~C>(ply+1, -threshold, -threshold+1, td, si+1);
 
                 // If it did, do a proper search with reduced depth
                 if (pbScore >= threshold)
@@ -435,7 +435,7 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
     //  Génération des coups
     //------------------------------------------------------------------------------------
 
-    MOVE mc = get_counter(td, C, td->move[ply-1]);
+    MOVE mc = get_counter(td, C, (si-1)->move);
 
     MovePicker movePicker(&board, order, tt_move,
                           td->info[ply].killer1, td->info[ply].killer2, mc, false, 0);
@@ -505,7 +505,7 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
 
         // execute current move
         board.make_move<C>(move);
-        td->move[ply] = move;
+        si->move = move;
 
         // Update counter of moves actually played
         moveCount++;
@@ -594,7 +594,7 @@ int Search::alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, 
                     {
                         order->update_history(C, move, depth);
                         update_killers(td, ply, move);
-                        order->update_counter(C, ply, td->move[ply-1] , move);
+                        order->update_counter(C, ply, (si-1)->move , move);
                     }
                     transpositionTable.store(board.hash, move, score, static_eval, BOUND_LOWER, depth, ply);
                     return score;
