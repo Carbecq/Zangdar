@@ -147,11 +147,11 @@ void Search::show_uci_current(MOVE move, int currmove, int depth) const
 //!
 //! \param[in]  name   coup en notation UCI
 //---------------------------------------------------------
-void Search::update_pv(PVariation& pv, const PVariation& new_pv, const MOVE move) const
+void Search::update_pv(SearchInfo* si, const MOVE move) const
 {
-    pv.length  = 1 + new_pv.length;
-    pv.line[0] = move;
-    memcpy(pv.line + 1, new_pv.line, sizeof(MOVE) * new_pv.length);
+    si->pv.length = 1 + (si+1)->pv.length;
+    si->pv.line[0] = move;
+    memcpy(si->pv.line+1, (si+1)->pv.line, sizeof(MOVE) * (si+1)->pv.length);
 }
 
 //=========================================================

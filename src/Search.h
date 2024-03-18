@@ -14,12 +14,13 @@ constexpr int STACK_OFFSET = 4;
 constexpr int STACK_SIZE   = MAX_PLY + 2*STACK_OFFSET;  // taille un peu trop grande, mais multiple de 8
 
 struct SearchInfo {
-    MOVE   killer1;     // killer moves
-    MOVE   killer2;
-    MOVE   excluded;    // coup à éviter
-    int    eval;        // évaluation statique
-    MOVE   move;        // coup cherché
-    int    ply;
+    MOVE        killer1;    // killer moves
+    MOVE        killer2;
+    MOVE        excluded;   // coup à éviter
+    int         eval;       // évaluation statique
+    MOVE        move;       // coup cherché
+    int         ply;        // profondeur de recherche
+    PVariation  pv;         // Principale Variation
 
 
 }__attribute__((aligned(64)));
@@ -73,15 +74,15 @@ private:
     Board   board;
 
     template <Color C> void iterative_deepening(ThreadData* td, SearchInfo* si);
-    template <Color C> int  aspiration_window(PVariation& pv, ThreadData* td, SearchInfo* si);
-    template <Color C> int  alpha_beta(int alpha, int beta, int depth, PVariation& pv, ThreadData* td, SearchInfo* si);
+    template <Color C> int  aspiration_window(ThreadData* td, SearchInfo* si);
+    template <Color C> int  alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInfo* si);
     template <Color C> int  quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si);
 
     void show_uci_result(const ThreadData *td, U64 elapsed, PVariation &pv) const;
     void show_uci_best(const ThreadData *td) const;
     void show_uci_current(MOVE move, int currmove, int depth) const;
     bool check_limits(const ThreadData *td) const;
-    void update_pv(PVariation &pv, const PVariation &new_pv, const MOVE move) const;
+    void update_pv(SearchInfo *si, const MOVE move) const;
 
     void update_killers(SearchInfo *si, MOVE move);
     MOVE get_counter(ThreadData* td, Color color, MOVE prev_move);

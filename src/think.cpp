@@ -69,13 +69,12 @@ void Search::think(const Board &m_board, const Timer &m_timer, int m_index)
 template<Color C>
 void Search::iterative_deepening(ThreadData* td, SearchInfo* si)
 {
-    PVariation pv;
-    pv.length = 0;
+    si->pv.length = 0;
 
     for (td->depth = 1; td->depth <= timer.getSearchDepth(); td->depth++)
     {
         // Search position, using aspiration windows for higher depths
-        td->score = aspiration_window<C>(pv, td, si);
+        td->score = aspiration_window<C>(td, si);
 
         if (td->stopped)
             break;
@@ -84,16 +83,16 @@ void Search::iterative_deepening(ThreadData* td, SearchInfo* si)
         // On peut mettre à jour les infos UCI
         if (td->index == 0)
         {
-            bool uncertain = pv.line[0] != td->best_move;
+            bool uncertain = si->pv.line[0] != td->best_move;
 
             td->best_depth = td->depth;
-            td->best_move  = pv.line[0];
+            td->best_move  = si->pv.line[0];
             td->best_score = td->score;
 
             auto elapsed = timer.elapsedTime();
 
             if (threadPool.get_logUci())
-                show_uci_result(td, elapsed, pv);
+                show_uci_result(td, elapsed, si->pv);
 
             // If an iteration finishes after optimal time usage, stop the search
             if (timer.finishOnThisDepth(elapsed, uncertain))
@@ -110,7 +109,7 @@ void Search::iterative_deepening(ThreadData* td, SearchInfo* si)
 //!
 //------------------------------------------------------
 template<Color C>
-int Search::aspiration_window(PVariation& pv, ThreadData* td, SearchInfo* si)
+int Search::aspiration_window(ThreadData* td, SearchInfo* si)
 {
     int alpha  = -INFINITE;
     int beta   = INFINITE;
@@ -129,7 +128,7 @@ int Search::aspiration_window(PVariation& pv, ThreadData* td, SearchInfo* si)
 
     while (true)
     {
-        score = alpha_beta<C>(alpha, beta, std::max(1, depth), pv, td, si);
+        score = alpha_beta<C>(alpha, beta, std::max(1, depth), td, si);
 
         if (td->stopped)
             break;
@@ -175,7 +174,7 @@ int Search::aspiration_window(PVariation& pv, ThreadData* td, SearchInfo* si)
 //! \return Valeur du score
 //-----------------------------------------------------
 template<Color C>
-int Search::alpha_beta(int alpha, int beta, int depth, PVariation& pv, ThreadData* td, SearchInfo* si)
+int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInfo* si)
 {
     assert(board.valid());
     assert(beta > alpha);
@@ -188,9 +187,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, PVariation& pv, ThreadDat
     if (si->ply > td->seldepth)
         td->seldepth = si->ply;
 
-    PVariation new_pv;
-    new_pv.length = 0;
-    pv.length     = 0;
+    si->pv.length     = 0;
 
     // On a atteint la limite en profondeur de recherche ?
     if (si->ply >= MAX_PLY - 1)
@@ -375,7 +372,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, PVariation& pv, ThreadDat
 
             board.make_nullmove<C>();
             si->move = Move::MOVE_NULL;
-            score = -alpha_beta<~C>(-beta, -beta + 1, depth - 1 - R, new_pv, td, si+1);
+            score = -alpha_beta<~C>(-beta, -beta + 1, depth - 1 - R, td, si+1);
             board.undo_nullmove<C>();
 
             if (td->stopped)
@@ -416,7 +413,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, PVariation& pv, ThreadDat
 
                 // If it did, do a proper search with reduced depth
                 if (pbScore >= threshold)
-                    pbScore = -alpha_beta<~C>(-threshold, -threshold + 1, depth-4, new_pv, td, si+1);
+                    pbScore = -alpha_beta<~C>(-threshold, -threshold + 1, depth-4, td, si+1);
 
                 board.undo_move<C>();
 
@@ -489,11 +486,11 @@ int Search::alpha_beta(int alpha, int beta, int depth, PVariation& pv, ThreadDat
             // Search to reduced depth with a zero window a bit lower than ttScore
             int sing_beta  = tt_score - depth*2;
             int sing_depth = (depth-1)/2;
-            PVariation sing_pv;
-            sing_pv.length = 0;
+            // PVariation sing_pv;
+            // sing_pv.length = 0;
 
             si->excluded = move;
-            score = alpha_beta<C>(sing_beta-1, sing_beta, sing_depth, sing_pv, td, si);
+            score = alpha_beta<C>(sing_beta-1, sing_beta, sing_depth, td, si);
             si->excluded = Move::MOVE_NONE;
 
             // Extend as this move seems forced
@@ -553,7 +550,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, PVariation& pv, ThreadDat
             int lmrDepth = CLAMP(newDepth - R, 1, newDepth - 1);
 
             // Search this move with reduced depth:
-            score = -alpha_beta<~C>(-alpha-1, -alpha, lmrDepth, new_pv, td, si+1);
+            score = -alpha_beta<~C>(-alpha-1, -alpha, lmrDepth, td, si+1);
 
             doFullDepthSearch = score > alpha && lmrDepth < newDepth;
         } else
@@ -561,12 +558,12 @@ int Search::alpha_beta(int alpha, int beta, int depth, PVariation& pv, ThreadDat
 
         // Full depth zero-window search
         if (doFullDepthSearch)
-            score = -alpha_beta<~C>(-alpha-1, -alpha, newDepth, new_pv, td, si+1);
+            score = -alpha_beta<~C>(-alpha-1, -alpha, newDepth, td, si+1);
         //    -AlphaBeta(thread, ss+1, -alpha-1, -alpha, newDepth);
 
         // Full depth alpha-beta window search
         if (isPVNode && ((score > alpha && score < beta) || moveCount == 1))
-            score = -alpha_beta<~C>(-beta, -alpha, newDepth, new_pv, td, si+1);
+            score = -alpha_beta<~C>(-beta, -alpha, newDepth, td, si+1);
                 // -AlphaBeta(thread, ss+1, -beta, -alpha, newDepth);
 #endif
 
@@ -591,7 +588,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, PVariation& pv, ThreadDat
 
                 // update the PV
                 if (td->index == 0)
-                    update_pv(pv, new_pv, move);
+                    update_pv(si, move);
 
                 // Update search history
                 // if (isQuiet)
