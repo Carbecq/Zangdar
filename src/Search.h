@@ -7,12 +7,11 @@ class Search;
 #include <thread>
 #include "defines.h"
 #include "Timer.h"
-#include "OrderInfo.h"
 #include "Board.h"
 #include "types.h"
 
 constexpr int STACK_OFFSET = 4;
-constexpr int STACK_SIZE   = MAX_PLY + STACK_OFFSET;
+constexpr int STACK_SIZE   = MAX_PLY + 2*STACK_OFFSET;  // taille un peu trop grande, mais multiple de 8
 
 struct SearchInfo {
     MOVE   killer1;     // killer moves
@@ -20,6 +19,7 @@ struct SearchInfo {
     MOVE   excluded;    // coup à éviter
     int    eval;        // évaluation statique
     MOVE   move;        // coup cherché
+    int    ply;
 
 
 }__attribute__((aligned(64)));
@@ -38,7 +38,6 @@ struct ThreadData {
     int         seldepth;
     bool        stopped;
     
-//    OrderInfo   order;
     SearchInfo  info[STACK_SIZE];
     int    history[N_COLORS][N_PIECES][N_SQUARES];  // bonus history
     MOVE   counter[N_COLORS][N_PIECES][N_SQUARES];  // counter move
@@ -75,8 +74,8 @@ private:
 
     template <Color C> void iterative_deepening(ThreadData* td, SearchInfo* si);
     template <Color C> int  aspiration_window(PVariation& pv, ThreadData* td, SearchInfo* si);
-    template <Color C> int  alpha_beta(int ply, int alpha, int beta, int depth, PVariation& pv, ThreadData* td, SearchInfo* si);
-    template <Color C> int  quiescence(int ply, int alpha, int beta, ThreadData* td, SearchInfo* si);
+    template <Color C> int  alpha_beta(int alpha, int beta, int depth, PVariation& pv, ThreadData* td, SearchInfo* si);
+    template <Color C> int  quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si);
 
     void show_uci_result(const ThreadData *td, U64 elapsed, PVariation &pv) const;
     void show_uci_best(const ThreadData *td) const;
@@ -84,7 +83,7 @@ private:
     bool check_limits(const ThreadData *td) const;
     void update_pv(PVariation &pv, const PVariation &new_pv, const MOVE move) const;
 
-    void update_killers(ThreadData* td, int ply, MOVE move);
+    void update_killers(SearchInfo *si, MOVE move);
     MOVE get_counter(ThreadData* td, Color color, MOVE prev_move);
     void update_history(ThreadData* td, Color color, MOVE move, int bonus);
     int  get_history(ThreadData* td, const Color color, const MOVE move) const;

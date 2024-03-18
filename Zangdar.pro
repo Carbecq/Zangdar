@@ -7,6 +7,8 @@ CONFIG += static
 QMAKE_LFLAGS += -static -static-libgcc -static-libstdc++ -lstdc++
 DEFINES += STATIC
 
+QMAKE_LFLAGS += -flto
+
 #------------------------------------------------------
 
 # ATTENTION : ne pas mettre "\" car ils sont reconnus comme caractères spéciaux

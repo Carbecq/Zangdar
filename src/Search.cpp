@@ -188,26 +188,15 @@ bool Search::check_limits(const ThreadData* td) const
 //=========================================================
 //! \brief  Met à jour les heuristiques "Killer"
 //---------------------------------------------------------
-void Search::update_killers(ThreadData* td, int ply, MOVE move)
+void Search::update_killers(SearchInfo* si, MOVE move)
 {
-    if (td->info[ply].killer1 != move)
-    {
-        td->info[ply].killer2 = td->info[ply].killer1;
-        td->info[ply].killer1 = move;
-    }
-}
+    // NOTE : "si" est décalé de STACK_OFFSET !!
 
-//==================================================================
-//! \brief  Récupère les coups de réfutation
-//! \param[in] color        couleur du camp qui joue
-//! \param[in] ply          profondeur courante de la recherche
-//! \param[in] prev_move    coup recherché au ply précédant
-//------------------------------------------------------------------
-MOVE Search::get_counter(ThreadData* td, Color color, MOVE prev_move)
-{
-    return( (prev_move==Move::MOVE_NONE || prev_move==Move::MOVE_NULL)
-                        ? Move::MOVE_NONE
-                : td->counter[color][Move::piece(prev_move)][Move::dest(prev_move)] );
+    if (si->killer1 != move)
+    {
+        si->killer2 = si->killer1;
+        si->killer1 = move;
+    }
 }
 
 //=========================================================
@@ -229,7 +218,6 @@ int Search::get_history(ThreadData* td, const Color color, const MOVE move) cons
 //=================================================================
 //! \brief  Update countermove.
 //! \param[in] color        couleur du camp qui joue
-//! \param[in] ply          profondeur courante de la recherche
 //! \param[in] prev_move    coup recherché au ply précédant
 //! \param[in] move         coup de réfutation
 //-----------------------------------------------------------------
@@ -239,3 +227,14 @@ void Search::update_counter(ThreadData* td, Color color, MOVE prev_move, MOVE mo
         td->counter[color][Move::piece(prev_move)][Move::dest(prev_move)] = move;
 }
 
+//==================================================================
+//! \brief  Récupère le countermove
+//! \param[in] color        couleur du camp qui joue
+//! \param[in] prev_move    coup recherché au ply précédant
+//------------------------------------------------------------------
+MOVE Search::get_counter(ThreadData* td, Color color, MOVE prev_move)
+{
+    return( (prev_move==Move::MOVE_NONE || prev_move==Move::MOVE_NULL)
+                ? Move::MOVE_NONE
+                : td->counter[color][Move::piece(prev_move)][Move::dest(prev_move)] );
+}

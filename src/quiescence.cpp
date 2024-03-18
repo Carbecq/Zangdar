@@ -10,10 +10,10 @@
 //!         donc sans prise ou promotion.
 //-------------------------------------------------------------
 template <Color C>
-int Search::quiescence(int ply, int alpha, int beta, ThreadData* td, SearchInfo* si)
+int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
 {
     assert(beta > alpha);
-    
+
     //  Time-out
     if (td->stopped || check_limits(td))
     {
@@ -24,19 +24,19 @@ int Search::quiescence(int ply, int alpha, int beta, ThreadData* td, SearchInfo*
 
     // Update node count and selective depth
     td->nodes++;
-    if (ply > td->seldepth)
-        td->seldepth = ply;
+    if (si->ply > td->seldepth)
+        td->seldepth = si->ply;
 
 
     // partie nulle ?
-    if(board.is_draw(ply))
+    if(board.is_draw(si->ply))
         return CONTEMPT;
 
 
     // profondeur de recherche max atteinte
     // prevent overflows
     bool in_check = board.is_in_check<C>();
-    if (ply >= MAX_PLY - 1)
+    if (si->ply >= MAX_PLY - 1)
         return in_check ? 0 : board.evaluate();
 
 
@@ -86,7 +86,7 @@ int Search::quiescence(int ply, int alpha, int beta, ThreadData* td, SearchInfo*
     }
     else
     {
-        best_score = -MATE + ply; // idée de Koivisto
+        best_score = -MATE + si->ply; // idée de Koivisto
     }
     int eval = best_score;
     
@@ -137,7 +137,7 @@ int Search::quiescence(int ply, int alpha, int beta, ThreadData* td, SearchInfo*
 
         board.make_move<C>(move);
         si->move = move;
-        score = -quiescence<~C>(ply+1, -beta, -alpha, td, si+1);
+        score = -quiescence<~C>(-beta, -alpha, td, si+1);
         board.undo_move<C>();
 
         if (td->stopped)
@@ -169,5 +169,5 @@ int Search::quiescence(int ply, int alpha, int beta, ThreadData* td, SearchInfo*
     return best_score;
 }
 
-template int Search::quiescence<WHITE>(int ply, int alpha, int beta, ThreadData* td, SearchInfo* si);
-template int Search::quiescence<BLACK>(int ply, int alpha, int beta, ThreadData* td, SearchInfo* si);
+template int Search::quiescence<WHITE>(int alpha, int beta, ThreadData* td, SearchInfo* si);
+template int Search::quiescence<BLACK>(int alpha, int beta, ThreadData* td, SearchInfo* si);

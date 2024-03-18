@@ -5,7 +5,6 @@ class MovePicker;
 
 #include "MoveList.h"
 #include "Board.h"
-#include "OrderInfo.h"
 
 
 enum {
