@@ -158,14 +158,14 @@ void TranspositionTable::store(U64 hash, MOVE move, Score score, Score eval, int
      */
 
     // extract the 32-bit key from the 64-bit zobrist hash
-    U32 key32 = hash >> 32;
+    U32 hash32 = hash >> 32;
 
 #if defined TT_SUNGORUS
 
     HashEntry *entry=nullptr, *replace=nullptr;
     int oldest, age;
 
-    score = ScoreToTT(score, ply);
+    // score = ScoreToTT(score, ply);
 
     replace = nullptr;
     oldest  = -1;
@@ -173,12 +173,19 @@ void TranspositionTable::store(U64 hash, MOVE move, Score score, Score eval, int
 
     for (int i = 0; i < tt_buckets; i++)
     {
-        if (entry->hash == key32)
+        if (entry->hash == hash32 || entry->date == 0)
         {
-            if (!move)
-                move = entry->move;
+            // if (!move)
+            //     move = entry->move;
             replace = entry;
             break;
+        }
+
+        // Take the first entry as a starting point
+        if (i == 0)
+        {
+            replace = entry;
+            continue;
         }
 
         age = ((tt_date - entry->date) & 255) * 256 + 255 - entry->depth;
@@ -190,9 +197,16 @@ void TranspositionTable::store(U64 hash, MOVE move, Score score, Score eval, int
         entry++;
     }
 
-    replace->hash  = key32;
+    // Don't overwrite an entry from the same position, unless we have
+    // an exact bound or depth that is nearly as good as the old one
+    if (    bound != BOUND_EXACT
+        &&  hash32 == replace->hash
+        &&  depth < replace->depth - 3)
+        return;
+
+    replace->hash  = hash32;
     replace->move  = move;
-    replace->score = score;
+    replace->score = ScoreToTT(score, ply);
     replace->eval  = eval;
     replace->depth = depth;
     replace->date  = tt_date;
@@ -219,7 +233,7 @@ bool TranspositionTable::probe(U64 hash, int ply, MOVE& move, Score& score, Scor
     bound = BOUND_NONE;
 
     // extract the 32-bit key from the 64-bit zobrist hash
-    U32 key32 = hash >> 32;
+    U32 hash32 = hash >> 32;
 
 #if defined TT_SUNGORUS
 
@@ -227,7 +241,7 @@ bool TranspositionTable::probe(U64 hash, int ply, MOVE& move, Score& score, Scor
 
     for (int i = 0; i < tt_buckets; i++)
     {
-        if (entry->hash == key32)
+        if (entry->hash == hash32)
         {
             entry->date = tt_date;
 
