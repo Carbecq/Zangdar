@@ -1,9 +1,8 @@
 #include "Search.h"
 #include "MovePicker.h"
 #include "Move.h"
-
 #include "Bitboard.h"
-
+//#include "TranspositionTable.h"
 
 //=============================================================
 //! \brief  Recherche jusqu'à obtenir une position calme,
@@ -45,53 +44,50 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
         return board.evaluate();
 
 
-
     // Est-ce que la table de transposition est utilisable ?
    // Score tt_score;
    // Score tt_eval;
    // MOVE  tt_move  = Move::MOVE_NONE;
-   // int   tt_flag;
+   // int   tt_bound;
    // int   tt_depth;
-   // bool  tt_hit   = transpositionTable.probe(board.hash, ply, tt_move, tt_score, tt_eval, tt_flag, tt_depth);
+   // bool  tt_hit   = transpositionTable.probe(board.hash, si->ply, tt_move, tt_score, tt_eval, tt_bound, tt_depth);
 
    // // note : on ne teste pas la profondeur, car dasn la Quiescence, elle est à 0
    // if (tt_hit)
    // {
-   //     if (   (tt_flag == BOUND_EXACT)
-   //         || (tt_flag == BOUND_LOWER && tt_score >= beta)
-   //         || (tt_flag == BOUND_UPPER && tt_score <= alpha))
+   //     if (   (tt_bound == BOUND_EXACT)
+   //         || (tt_bound == BOUND_LOWER && tt_score >= beta)
+   //         || (tt_bound == BOUND_UPPER && tt_score <= alpha))
    //         return tt_score;
    // }
 
-
-    int  best_score;
-    int  score;
+    int static_eval;
 
     // stand pat
-
     if (!in_check)
     {
         // you do not allow the side to move to stand pat if the side to move is in check.
-        best_score = board.evaluate();
+        static_eval = board.evaluate();
 
         // le score est trop mauvais pour moi, on n'a pas besoin
         // de chercher plus loin
-        if (best_score >= beta)
-            return best_score;
+        if (static_eval >= beta)
+            return static_eval;
 
         // l'évaluation est meilleure que alpha. Donc on peut améliorer
         // notre position. On continue à chercher.
-        if (best_score > alpha)
-            alpha = best_score;
+        if (static_eval > alpha)
+            alpha = static_eval;
     }
     else
     {
-        best_score = -MATE + si->ply; // idée de Koivisto
+        static_eval = -MATE + si->ply; // idée de Koivisto
     }
-    int eval = best_score;
-    
-    MOVE move;
-    MLMove mlm;
+
+    int     best_score = static_eval;
+    int     score;
+    MOVE    move;
+    MLMove  mlm;
     MovePicker movePicker(&board, td->history, Move::MOVE_NONE,
                           Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE,
                           true, 0);
@@ -121,7 +117,7 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
         {
             if (Move::is_capturing(move))
             {
-                if (eval + 300 + EGPieceValue[Move::captured(move)] <= alpha)
+                if (static_eval + 300 + EGPieceValue[Move::captured(move)] <= alpha)
                 {
                     continue;
                 }
