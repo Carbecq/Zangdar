@@ -17,7 +17,7 @@ class TranspositionTable;
 #include "defines.h"
 
 struct HashEntry {
-    U32   hash;     // 32 bits
+    U32   hash32;   // 32 bits
     MOVE  move;     // 32 bits  (seuls 24 bits sont utilisés)
     I16   score;    // 16 bits
     I16   eval;     // 16 bits
@@ -58,7 +58,7 @@ class TranspositionTable
 private:
     int         tt_size;
     int         tt_mask;
-    int         tt_date;
+    U08         tt_date;
     int         tt_buckets;
     HashEntry*  tt_entries = nullptr;
 
@@ -66,6 +66,8 @@ private:
     PawnHashEntry   pawn_entries[PAWN_HASH_SIZE*1024];
     int             pawn_size;
     int             pawn_mask;
+
+    static constexpr int   KMULT = 256;
 
 public:
     TranspositionTable(int MB);

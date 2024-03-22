@@ -30,16 +30,14 @@
 //      + test STS
 #define USE_PRETTY
 
-#define TT_SUNGORUS
-
 /*******************************************************
  **	Généralités
  **---------------------------------------------------*/
 
-using I08   = int8_t;
-using U08   = uint8_t;
+using I08   = int8_t;           //   -128 to 127
+using U08   = uint8_t;          //      0 to 255
 using I16   = int16_t;          // −32768 to 32767
-using U16   = uint16_t;         // 0 to 65535
+using U16   = uint16_t;         //      0 to 65535
 using I32   = int32_t;
 using U32   = uint32_t;
 using I64   = int64_t;

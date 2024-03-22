@@ -73,14 +73,7 @@ void TranspositionTable::init_size(int mbsize)
 
     assert(tt_size!=0 && (tt_size&(tt_size-1))==0); // power of 2
 
-    // Blunder 8 : 2 buckets , age = 0 ou 1
-    // Leorik    : 2 buckets
-    // berserk   : 2 buckets
-
-#if defined TT_SUNGORUS
     tt_buckets = 4;
-#endif
-
     tt_mask    = tt_size - tt_buckets;
     tt_entries = new HashEntry[tt_size];
 
@@ -134,7 +127,7 @@ void TranspositionTable::clear(void)
 //--------------------------------------------------------
 void TranspositionTable::update_age(void)
 {
-    tt_date = (tt_date + 1) & 255;
+    tt_date++;
 }
 
 //========================================================
@@ -142,38 +135,26 @@ void TranspositionTable::update_age(void)
 //--------------------------------------------------------
 void TranspositionTable::store(U64 hash, MOVE move, Score score, Score eval, int bound, int depth, int ply)
 {
-    /*
-     *   https://www.talkchess.com/forum3/viewtopic.php?f=7&t=59047&sid=a772c728def68198d66e038c6905f820&start=10
-     *   https://www.talkchess.com/forum3/viewtopic.php?f=7&t=76499
-     *  https://github.com/vshcherbyna/igel/blob/master/src/tt.cpp
-     *  https://www.talkchess.com/forum3/viewtopic.php?f=7&t=71994
-     *  https://www.talkchess.com/forum3/viewtopic.php?f=7&t=71994&sid=a788b3887052ee53e04868f27afbaaa2&start=10
-     *  https://www.talkchess.com/forum3/viewtopic.php?t=64604
-     *  https://www.open-chess.org/viewtopic.php?f=5&t=3106
-     *  https://www.talkchess.com/forum3/viewtopic.php?t=60589
-     *  https://www.talkchess.com/forum3/viewtopic.php?t=60056
-     *  https://home.hccnet.nl/h.g.muller/max-src2.html
-     *  https://www.talkchess.com/forum3/viewtopic.php?f=7&t=57603&sid=4bdb5eafa3b7b3f4f6f321edcff1f89d&start=10
-     *
-     */
+    assert(abs(score) <= MATE);
+    assert(abs(eval) <= MATE || eval == NOSCORE);
+    assert(0 <= depth && depth < MAX_PLY);
+    assert(bound == BOUND_LOWER || bound == BOUND_UPPER || bound == BOUND_EXACT);
+
 
     // extract the 32-bit key from the 64-bit zobrist hash
     U32 hash32 = hash >> 32;
 
-#if defined TT_SUNGORUS
-
-    HashEntry *entry=nullptr, *replace=nullptr;
-    int oldest, age;
-
-    // score = ScoreToTT(score, ply);
-
-    replace = nullptr;
-    oldest  = -1;
-    entry   = tt_entries + (hash & tt_mask);
+    HashEntry *entry   = tt_entries + (hash & tt_mask);
+    HashEntry *replace = nullptr;
+    int oldest = -1;
+    int age;
 
     for (int i = 0; i < tt_buckets; i++)
     {
-        if (entry->hash == hash32 || entry->date == 0)
+        assert (tt_date >= entry->date);
+
+        // Found a matching hash or an unused entry
+        if (entry->hash32 == hash32 || entry->date == 0)
         {
             // if (!move)
             //     move = entry->move;
@@ -188,7 +169,19 @@ void TranspositionTable::store(U64 hash, MOVE move, Score score, Score eval, int
             continue;
         }
 
-        age = ((tt_date - entry->date) & 255) * 256 + 255 - entry->depth;
+        /* 1) tt_date >= entry->date
+         * 2) le "+255" sert à compenser "-entry->depth",
+         *    lorsque tt_date=entry->date, "(tt_date - entry->date) * 256" vaut 0
+         * 3) KMULT définit l'équivalence entre date et depth.
+         *    Pour une différence de 1 pour la date, il faut KMULT différence
+         *    pour la profondeur.
+         *    Dans Sungorus, KMULT=256, donc la profondeur ne peut pas entrer
+         *    en concurence avec la date.
+         * 4) age va de 255 --> 255*(KMULT+1)
+         */
+
+        // age = ((tt_date - entry->date) & 255) * 256 + 255 - entry->depth;
+        age = (tt_date - entry->date) * KMULT + 255 - entry->depth;
         if (age > oldest)
         {
             oldest  = age;
@@ -200,19 +193,18 @@ void TranspositionTable::store(U64 hash, MOVE move, Score score, Score eval, int
     // Don't overwrite an entry from the same position, unless we have
     // an exact bound or depth that is nearly as good as the old one
     if (    bound != BOUND_EXACT
-        &&  hash32 == replace->hash
+        &&  hash32 == replace->hash32
         &&  depth < replace->depth - 3)
         return;
 
-    replace->hash  = hash32;
-    replace->move  = move;
-    replace->score = ScoreToTT(score, ply);
-    replace->eval  = eval;
-    replace->depth = depth;
-    replace->date  = tt_date;
-    replace->bound = bound;
+    replace->hash32 = hash32;
+    replace->move   = (MOVE)move;
+    replace->score  = (I16)ScoreToTT(score, ply);
+    replace->eval   = (I16)eval;
+    replace->depth  = (U08)depth;
+    replace->date   = (U08)tt_date;
+    replace->bound  = (U08)bound;
 
-#endif
 }
 
 //========================================================
@@ -235,13 +227,12 @@ bool TranspositionTable::probe(U64 hash, int ply, MOVE& move, Score& score, Scor
     // extract the 32-bit key from the 64-bit zobrist hash
     U32 hash32 = hash >> 32;
 
-#if defined TT_SUNGORUS
-
     HashEntry* entry = tt_entries + (hash & tt_mask);
 
     for (int i = 0; i < tt_buckets; i++)
     {
-        if (entry->hash == hash32)
+        assert (tt_date >= entry->date);
+        if (entry->hash32 == hash32)
         {
             entry->date = tt_date;
 
@@ -255,8 +246,6 @@ bool TranspositionTable::probe(U64 hash, int ply, MOVE& move, Score& score, Scor
         }
         entry++;
     }
-
-#endif
 
     return false;
 }
