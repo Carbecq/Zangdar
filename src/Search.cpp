@@ -202,9 +202,20 @@ void Search::update_killers(SearchInfo* si, MOVE move)
 //=========================================================
 //! \brief  Incrémente l'heuristique "History"
 //---------------------------------------------------------
-void Search::update_history(ThreadData* td, Color color, MOVE move, int bonus)
+void Search::update_history(ThreadData* td, Color color, MOVE quiets[], int count, MOVE move, int bonus)
 {
+    // Bonus pour le coup ayant provoqué un cutoff
     td->history[color][Move::piece(move)][Move::dest(move)] += bonus;
+
+    // Malus pour les autres coups calmes
+    for (int i = 0; i < count; ++i)
+    {
+        MOVE m = quiets[i];
+        if (m == move)
+            continue;
+        td->history[color][Move::piece(m)][Move::dest(m)] -= bonus;
+    }
+
 }
 
 //=========================================================

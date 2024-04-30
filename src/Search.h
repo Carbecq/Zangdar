@@ -86,7 +86,7 @@ private:
 
     void update_killers(SearchInfo *si, MOVE move);
     MOVE get_counter(ThreadData* td, Color color, MOVE prev_move);
-    void update_history(ThreadData* td, Color color, MOVE move, int bonus);
+    void update_history(ThreadData* td, Color color, MOVE quiets[], int count, MOVE move, int bonus);
     int  get_history(ThreadData* td, const Color color, const MOVE move) const;
     void update_counter(ThreadData* td, Color color, MOVE prev_move, MOVE move);
 

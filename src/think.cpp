@@ -179,8 +179,8 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     assert(board.valid());
     assert(beta > alpha);
     
-    MOVE quietsTried[MAX_MOVES];
-    int  quietsPlayed = 0;
+    MOVE quiets_moves[MAX_MOVES];
+    int  quiets_count = 0;
 
     // Update node count and selective depth
     td->nodes++;
@@ -519,7 +519,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         // Update counter of moves actually played
         moveCount++;
         if (isQuiet)
-            quietsTried[quietsPlayed++] = move;
+            quiets_moves[quiets_count++] = move;
 
 #if defined USE_LATE_MOVE_REDUCTION
         //------------------------------------------------------------------------------------
@@ -601,7 +601,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
                     // Update Killers
                     if (isQuiet)
                     {
-                        update_history(td, C, move, depth);
+                        update_history(td, C, quiets_moves, quiets_count, move, depth);
                         update_killers(si, move);
                         update_counter(td, C, (si-1)->move , move);
                     }

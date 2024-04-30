@@ -146,18 +146,16 @@ void TranspositionTable::store(U64 hash, MOVE move, Score score, Score eval, int
 
     HashEntry *entry   = tt_entries + (hash & tt_mask);
     HashEntry *replace = nullptr;
-    // int oldest = -1;
-    // int age;
+    int oldest = -1;
+    int age;
 
     for (int i = 0; i < tt_buckets; i++)
     {
         assert (tt_date >= entry->date);
 
         // Found a matching hash or an unused entry
-        if (entry->hash32 == hash32 || entry->date == 0)
+        if (entry->hash32 == hash32 || entry->bound == 0)
         {
-            // if (!move)
-            //     move = entry->move;
             replace = entry;
             break;
         }
@@ -181,13 +179,13 @@ void TranspositionTable::store(U64 hash, MOVE move, Score score, Score eval, int
          */
 
         // age = ((tt_date - entry->date) & 255) * 256 + 255 - entry->depth;    // version Sungorus
-        // age = (tt_date - entry->date) * KMULT + 255 - entry->depth;          // version simplifiée
+        age = (tt_date - entry->date) * KMULT + 255 - entry->depth;             // version simplifiée
 
-        if (   replace->depth - (tt_date - replace->date) * KMULT               // version comme Ethereal, Berserk
-            >= entry->depth   - (tt_date - entry->date) * KMULT )
-  //      if (age > oldest)
+        // if (   replace->depth - (tt_date - replace->date) * KMULT            // version comme Ethereal, Berserk
+        //     >= entry->depth   - (tt_date - entry->date) * KMULT )
+        if (age > oldest)
         {
-            // oldest  = age;
+            oldest  = age;
             replace = entry;
         }
         entry++;

@@ -28,7 +28,7 @@
 // NE PAS UTILISER PRETTY avec
 //      + Arena (score mal affiché)
 //      + test STS
-#define USE_PRETTY
+// #define USE_PRETTY
 
 /*******************************************************
  **	Généralités
