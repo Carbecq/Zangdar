@@ -601,7 +601,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
                     // Update Killers
                     if (isQuiet)
                     {
-                        update_history(td, C, quiets_moves, quiets_count, move, depth);
+                        update_history(td, C, quiets_moves, quiets_count, move, depth*depth);
                         update_killers(si, move);
                         update_counter(td, C, (si-1)->move , move);
                     }
