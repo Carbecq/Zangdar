@@ -32,7 +32,7 @@ constexpr int MvvLvaScores[N_PIECES][N_PIECES] = {
 
 // https://www.nextptr.com/question/a6212599/passing-cplusplus-arrays-to-function-by-reference
 
-using MainHistory  = int[N_COLORS][N_PIECES][N_SQUARES];
+using MainHistory  = int[N_COLORS][N_SQUARES][N_SQUARES];
 
 class MovePicker
 {

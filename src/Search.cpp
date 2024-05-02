@@ -205,7 +205,7 @@ void Search::update_killers(SearchInfo* si, MOVE move)
 void Search::update_history(ThreadData* td, Color color, MOVE quiets[], int count, MOVE move, int bonus)
 {
     // Bonus pour le coup ayant provoqué un cutoff
-    td->history[color][Move::piece(move)][Move::dest(move)] += bonus;
+    td->history[color][Move::from(move)][Move::dest(move)] += bonus;
 
     // Malus pour les autres coups calmes
     for (int i = 0; i < count; ++i)
@@ -213,7 +213,7 @@ void Search::update_history(ThreadData* td, Color color, MOVE quiets[], int coun
         MOVE m = quiets[i];
         if (m == move)
             continue;
-        td->history[color][Move::piece(m)][Move::dest(m)] -= bonus;
+        td->history[color][Move::from(m)][Move::dest(m)] -= bonus;
     }
 
 }
@@ -223,7 +223,7 @@ void Search::update_history(ThreadData* td, Color color, MOVE quiets[], int coun
 //---------------------------------------------------------
 int Search::get_history(ThreadData* td, const Color color, const MOVE move) const
 {
-    return(td->history[color][Move::piece(move)][Move::dest(move)]);
+    return(td->history[color][Move::from(move)][Move::dest(move)]);
 }
 
 //=================================================================

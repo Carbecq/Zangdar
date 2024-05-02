@@ -349,7 +349,7 @@ void MovePicker::score_quiet()
     for (size_t i = 0; i < mlq.count; i++)
     {
         move = mlq.mlmoves[i].move;
-        mlq.mlmoves[i].value = history[board->turn()][Move::piece(move)][Move::dest(move)];
+        mlq.mlmoves[i].value = history[board->turn()][Move::from(move)][Move::dest(move)];
     }
 }
 

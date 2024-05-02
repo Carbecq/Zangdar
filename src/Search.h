@@ -40,7 +40,7 @@ struct ThreadData {
     bool        stopped;
     
     SearchInfo  info[STACK_SIZE];
-    int    history[N_COLORS][N_PIECES][N_SQUARES];  // bonus history
+    int    history[N_COLORS][N_SQUARES][N_SQUARES];     // bonus history [Color][From][Dest]
     MOVE   counter[N_COLORS][N_PIECES][N_SQUARES];  // counter move
 
 
