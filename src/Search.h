@@ -40,8 +40,8 @@ struct ThreadData {
     bool        stopped;
     
     SearchInfo  info[STACK_SIZE];
-    int    history[N_COLORS][N_SQUARES][N_SQUARES];     // bonus history [Color][From][Dest]
-    MOVE   counter[N_COLORS][N_PIECES][N_SQUARES];  // counter move
+    I16    history[N_COLORS][N_SQUARES][N_SQUARES];     // bonus history [Color][From][Dest]
+    MOVE   counter[N_COLORS][N_PIECES][N_SQUARES];      // counter move
 
 
 }__attribute__((aligned(64)));
@@ -86,7 +86,7 @@ private:
 
     void update_killers(SearchInfo *si, MOVE move);
     MOVE get_counter(ThreadData* td, Color color, MOVE prev_move);
-    void update_history(ThreadData* td, Color color, MOVE quiets[], int count, MOVE move, int bonus);
+    void update_history(ThreadData* td, Color color, MOVE move, int bonus);
     int  get_history(ThreadData* td, const Color color, const MOVE move) const;
     void update_counter(ThreadData* td, Color color, MOVE prev_move, MOVE move);
 

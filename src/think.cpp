@@ -590,10 +590,6 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
                 if (td->index == 0)
                     update_pv(si, move);
 
-                // Update search history
-                // if (isQuiet)
-                //     si->increment_history(C, move, depth);
-
                 // If score beats beta we have a cutoff
                 if (score >= beta)
                 {
@@ -601,8 +597,17 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
                     // Update Killers
                     if (isQuiet)
                     {
-                        update_history(td, C, quiets_moves, quiets_count, move, depth*depth);
+                        // Bonus pour le coup quiet ayant provoqué un cutoff (fail-high)
+                        update_history(td, C, move, depth*depth);
+
+                        // Malus pour les autres coups quiets
+                        for (int i = 0; i < quiets_count - 1; i++)
+                            update_history(td, C, quiets_moves[i], -depth*depth);
+
+                        // Met à jour les Killers
                         update_killers(si, move);
+
+                        // Met à jour le Counter-Move
                         update_counter(td, C, (si-1)->move , move);
                     }
                     transpositionTable.store(board.hash, move, score, static_eval, BOUND_LOWER, depth, si->ply);
