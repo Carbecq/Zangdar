@@ -28,7 +28,9 @@ void Search::think(const Board &m_board, const Timer &m_timer, int m_index)
     timer = m_timer;
 
     ThreadData* td = &threadPool.threadData[m_index];
-    SearchInfo* si = &td->info[STACK_OFFSET];
+    SearchInfo* si = td->info;
+
+
 /*
     0   4                                     131 135
     +---|--------------------------------------+---+        136 éléments total (128 + 2*4)
@@ -178,6 +180,8 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
 {
     assert(board.valid());
     assert(beta > alpha);
+
+    constexpr Color THEM = ~C;
     
     MOVE quiets_moves[MAX_MOVES];
     int  quiets_count = 0;
@@ -400,7 +404,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         {
             int threshold = beta + 200;
 
-            MovePicker movePicker(&board, td->history, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, true, 0);
+            MovePicker movePicker(&board, td, si->ply, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, true, 0);
             MOVE pbMove;
 
             while ( (pbMove = movePicker.next_move().move ) != Move::MOVE_NONE )
@@ -443,9 +447,9 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     //  Génération des coups
     //------------------------------------------------------------------------------------
 
-    MOVE mc = get_counter(td, C, (si-1)->move);
+    MOVE mc = td->get_counter_move(THEM, si->ply);
 
-    MovePicker movePicker(&board, td->history, tt_move,
+    MovePicker movePicker(&board, td, si->ply, tt_move,
                           si->killer1, si->killer2, mc, false, 0);
 
     MOVE move;
@@ -598,17 +602,21 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
                     if (isQuiet)
                     {
                         // Bonus pour le coup quiet ayant provoqué un cutoff (fail-high)
-                        update_history(td, C, move, depth*depth);
+                        td->update_history(C, move, depth*depth);
+                        td->update_counter_history(si->ply, move, depth*depth);
 
                         // Malus pour les autres coups quiets
                         for (int i = 0; i < quiets_count - 1; i++)
-                            update_history(td, C, quiets_moves[i], -depth*depth);
+                        {
+                            td->update_history(C, quiets_moves[i], -depth*depth);
+                            td->update_counter_history(si->ply, quiets_moves[i], -depth*depth);
+                        }
 
                         // Met à jour les Killers
-                        update_killers(si, move);
+                        td->update_killers(si, move);
 
                         // Met à jour le Counter-Move
-                        update_counter(td, C, (si-1)->move , move);
+                        td->update_counter_move(THEM, si->ply, move);
                     }
                     transpositionTable.store(board.hash, move, score, static_eval, BOUND_LOWER, depth, si->ply);
                     return score;

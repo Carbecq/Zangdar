@@ -88,7 +88,7 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
     int     score;
     MOVE    move;
     MLMove  mlm;
-    MovePicker movePicker(&board, td->history, Move::MOVE_NONE,
+    MovePicker movePicker(&board, td, si->ply, Move::MOVE_NONE,
                           Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE,
                           true, 0);
 

@@ -4,7 +4,6 @@
 #include "PolyBook.h"
 #include "TranspositionTable.h"
 #include "Move.h"
-#include <cstring>
 
 
 //=================================================
@@ -50,16 +49,7 @@ void ThreadPool::create()
 {
     for (int i = 0; i < nbrThreads; i++)
     {
-        threadData[i].index      = i;
-        threadData[i].depth      = 0;
-        threadData[i].score      = -INFINITE;
-        threadData[i].seldepth   = 0;
-        threadData[i].nodes      = 0;
-        threadData[i].stopped    = false;
-
-
-        // threadData[i].results.depth     = 0;
-        // threadData[i].results.prevScore = -INFINITE;
+        threadData[i].create(i);
     }
 }
 
@@ -71,24 +61,7 @@ void ThreadPool::init()
 {
     for (int i = 0; i < nbrThreads; i++)
     {
-        // threadData[i].results.prevScore =
-        //     threadData[i].results.depth > 0 ?
-        //         threadData[i].results.scores[threadData[i].results.depth] :
-        //         UNKNOWN;
-        // threadData[i].results.depth     = 0;
-
-        threadData[i].nodes      = 0;
-        threadData[i].seldepth   = 0;
-
-        // empty unneeded data
-        std::memset(threadData[i].info,         0, sizeof(threadData[i].info));
-
-        // memset(threadData[i].results.scores, 0,               sizeof(threadData[i].results.scores));
-        // memset(threadData[i].results.moves,  Move::MOVE_NONE, sizeof(threadData[i].results.moves));
-
-        // Il faut avoir une copie du Board
-        // de façon à éviter les problèmes en multi-threads
-//        threadData[i].board = *board;
+        threadData[i].init();
     }
 }
 
@@ -100,15 +73,7 @@ void ThreadPool::reset()
 {
     for (int i = 0; i < nbrThreads; i++)
     {
-        //        threadData[i].results.depth = 0;
-
-        threadData[i].nodes      = 0;
-        threadData[i].seldepth   = 0;
-
-        std::memset(threadData[i].info,     0, sizeof(threadData[i].info));
-        std::memset(threadData[i].history,  0, sizeof(threadData[i].history));
-        std::memset(threadData[i].counter,  0, sizeof(threadData[i].counter));
-
+        threadData[i].reset();
     }
 }
 
@@ -265,5 +230,6 @@ U64 ThreadPool::get_all_tbhits() const
     }
     return(total);
 }
+
 
 

@@ -45,7 +45,7 @@ QMAKE_CXXFLAGS_RELEASE -= -O2
 QMAKE_CXXFLAGS_RELEASE += -pipe -std=c++20 -O3 -flto -DNDEBUG -fwhole-program
 QMAKE_CXXFLAGS_RELEASE += -pedantic -Wshadow -Wall -Wextra -Wcast-qual -Wuninitialized
 
-VERSION = 2.28.09
+VERSION = 2.28.10
 TARGET  = native-pext
 
 DEFINES += VERSION='\\"$${VERSION}\\"'
@@ -192,6 +192,7 @@ HEADERS += \
     src/PolyBook.h \
     src/Search.h \
     src/Square.h \
+    src/ThreadData.h \
     src/ThreadPool.h \
     src/Timer.h \
     src/TranspositionTable.h \
@@ -215,6 +216,7 @@ SOURCES += \
     src/OrderInfo.cpp \
     src/PolyBook.cpp \
     src/Search.cpp \
+    src/ThreadData.cpp \
     src/ThreadPool.cpp \
     src/Timer.cpp \
     src/TranspositionTable.cpp \

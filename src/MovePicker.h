@@ -5,7 +5,7 @@ class MovePicker;
 
 #include "MoveList.h"
 #include "Board.h"
-
+#include "ThreadData.h"
 
 enum {
     STAGE_TABLE,
@@ -32,15 +32,12 @@ constexpr int MvvLvaScores[N_PIECES][N_PIECES] = {
 
 // https://www.nextptr.com/question/a6212599/passing-cplusplus-arrays-to-function-by-reference
 
-using MainHistory  = I16[N_COLORS][N_SQUARES][N_SQUARES];
-
 class MovePicker
 {
 public:
 
-    MovePicker(Board *_board, const MainHistory& _history, MOVE _ttMove,
-               MOVE _killer1, MOVE _killer2,
-               MOVE _counter,
+    MovePicker(Board *_board, const ThreadData* _thread_data, int ply,
+               MOVE _ttMove, MOVE _killer1, MOVE _killer2, MOVE _counter,
                bool _skipQuiets, int _threshold) ;
 
     MLMove next_move();
@@ -63,13 +60,14 @@ public:
 
 private:
     Board*              board;
-    const MainHistory&  history;  // bonus history
+    const ThreadData*   thread_data;  // pour les différents history
 
-    bool            skipQuiets;    // sauter les coups tranquilles ?
-    int             stage;         // étape courante du sélecteur
-    bool            gen_quiet;     // a-t-on déjà générer les coups tranquilles ?
-    bool            gen_legal;
-    int             threshold;
+    bool    skipQuiets;    // sauter les coups tranquilles ?
+    int     stage;         // étape courante du sélecteur
+    bool    gen_quiet;     // a-t-on déjà générer les coups tranquilles ?
+    bool    gen_legal;
+    int     threshold;
+    int     ply;
 
     MOVE tt_move;
     MOVE killer1;

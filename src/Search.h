@@ -9,42 +9,9 @@ class Search;
 #include "Timer.h"
 #include "Board.h"
 #include "types.h"
-
-constexpr int STACK_OFFSET = 4;
-constexpr int STACK_SIZE   = MAX_PLY + 2*STACK_OFFSET;  // taille un peu trop grande, mais multiple de 8
-
-struct SearchInfo {
-    MOVE        killer1;    // killer moves
-    MOVE        killer2;
-    MOVE        excluded;   // coup à éviter
-    int         eval;       // évaluation statique
-    MOVE        move;       // coup cherché
-    int         ply;        // profondeur de recherche
-    PVariation  pv;         // Principale Variation
+#include "ThreadData.h"
 
 
-}__attribute__((aligned(64)));
-
-//! \brief  Données d'une thread
-struct ThreadData {
-    std::thread thread;
-    U64         nodes;
-    U64         tbhits;
-    int         index;
-    MOVE        best_move;
-    int         best_score;
-    int         best_depth;
-    int         score;
-    int         depth;
-    int         seldepth;
-    bool        stopped;
-    
-    SearchInfo  info[STACK_SIZE];
-    I16    history[N_COLORS][N_SQUARES][N_SQUARES];     // bonus history [Color][From][Dest]
-    MOVE   counter[N_COLORS][N_PIECES][N_SQUARES];      // counter move
-
-
-}__attribute__((aligned(64)));
 
 
 // classe permettant de redéfinir mon 'locale'
@@ -83,12 +50,6 @@ private:
     void show_uci_current(MOVE move, int currmove, int depth) const;
     bool check_limits(const ThreadData *td) const;
     void update_pv(SearchInfo *si, const MOVE move) const;
-
-    void update_killers(SearchInfo *si, MOVE move);
-    MOVE get_counter(ThreadData* td, Color color, MOVE prev_move);
-    void update_history(ThreadData* td, Color color, MOVE move, int bonus);
-    int  get_history(ThreadData* td, const Color color, const MOVE move) const;
-    void update_counter(ThreadData* td, Color color, MOVE prev_move, MOVE move);
 
     static constexpr int CONTEMPT    = 0;
 

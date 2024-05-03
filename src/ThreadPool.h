@@ -7,6 +7,7 @@ class ThreadPool;
 #include "Board.h"
 #include "Timer.h"
 #include "Search.h"
+#include "ThreadData.h"
 
 class ThreadPool
 {
