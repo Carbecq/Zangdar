@@ -50,7 +50,7 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
    // MOVE  tt_move  = Move::MOVE_NONE;
    // int   tt_bound;
    // int   tt_depth;
-   // bool  tt_hit   = transpositionTable.probe(board.hash, si->ply, tt_move, tt_score, tt_eval, tt_bound, tt_depth);
+   // bool  tt_hit   = transpositionTable.probe(board.hash, ply, tt_move, tt_score, tt_eval, tt_bound, tt_depth);
 
    // // note : on ne teste pas la profondeur, car dasn la Quiescence, elle est à 0
    // if (tt_hit)
@@ -87,19 +87,12 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
     int     best_score = static_eval;
     int     score;
     MOVE    move;
-    MLMove  mlm;
     MovePicker movePicker(&board, td, si->ply, Move::MOVE_NONE,
-                          Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE,
-                          true, 0);
+                          Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, 0);
 
     // Boucle sur tous les coups
-    while (true)
+    while ((move = movePicker.next_move(true).move ) != Move::MOVE_NONE)
     {
-        mlm = movePicker.next_move();
-        if (mlm.move == Move::MOVE_NONE)
-                break;
-        move = mlm.move;
-
         // Prune des prises inintéressantes
         if (!in_check && movePicker.get_stage() > STAGE_GOOD_NOISY)
             break;
@@ -124,13 +117,6 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
             }
         }
 
-
-        // https://www.chessprogramming.org/CPW-Engine_quiescence
-        // if ((stand_pat + e.PIECE_VALUE[movelist[i].piece_cap] + 200 < alpha) &&
-        //     (b.PieceMaterial[!b.stm] - e.PIECE_VALUE[movelist[i].piece_cap] > e.ENDGAME_MAT) &&
-        //     (!move_isprom(movelist[i])))
-        //     continue;
-
         board.make_move<C>(move);
         si->move = move;
         score = -quiescence<~C>(-beta, -alpha, td, si+1);
@@ -142,12 +128,6 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
         // try for an early cutoff:
         if(score >= beta)
         {
-            /* we have a cutoff, so update our killers: */
-            // if (Move::is_capturing(move) == false)
-            // {
-            //     si->update_killers(ply, move);
-            //     si->update_counter(C, ply, move);
-            // }
             return score;
         }
 

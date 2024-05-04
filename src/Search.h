@@ -49,11 +49,15 @@ private:
     void show_uci_best(const ThreadData *td) const;
     void show_uci_current(MOVE move, int currmove, int depth) const;
     bool check_limits(const ThreadData *td) const;
-    void update_pv(SearchInfo *si, const MOVE move) const;
 
     static constexpr int CONTEMPT    = 0;
 
     int Reductions[2][32][32];
+
+    static constexpr int LateMovePruning[2][8] = {
+        {0, 2, 3, 4, 6, 8, 13, 18},
+        {0, 3, 4, 6, 8, 12, 20, 30}
+    };
 
 };
 

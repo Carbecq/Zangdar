@@ -8,12 +8,10 @@
 //! \brief  Constructeur
 //-----------------------------------------------------
 MovePicker::MovePicker(Board* _board, const ThreadData *_thread_data, int _ply,
-                       MOVE _ttMove, MOVE _killer1, MOVE _killer2, MOVE _counter,
-                       bool _skipQuiets, int _threshold) :
+                       MOVE _ttMove, MOVE _killer1, MOVE _killer2, MOVE _counter, int _threshold) :
     board(_board),
     thread_data(_thread_data),
     ply(_ply),
-    skipQuiets(_skipQuiets),
     stage(STAGE_TABLE),
     gen_quiet(false),
     gen_legal(false),
@@ -119,7 +117,7 @@ MovePicker::MovePicker(Board* _board, const ThreadData *_thread_data, int _ply,
 //=====================================================
 //! \brief  Sélection du prochain coup
 //-----------------------------------------------------
-MLMove MovePicker::next_move()
+MLMove MovePicker::next_move(bool skipQuiets)
 {
     switch (stage)
     {
@@ -163,13 +161,13 @@ MLMove MovePicker::next_move()
             if (mln.mlmoves[best].move == tt_move)
             {
                 shift_move(mln, best);
-                return next_move();
+                return next_move(skipQuiets);
             }
 
             if (!board->fast_see(mln.mlmoves[best].move, threshold))
             {
                 shift_bad(best);
-                return next_move();
+                return next_move(skipQuiets);
             }
 
             return pop_move(mln, best);
@@ -178,7 +176,7 @@ MLMove MovePicker::next_move()
         if (skipQuiets)
         {
             stage = STAGE_BAD_NOISY;
-            return next_move();
+            return next_move(skipQuiets);
         }
 
         stage = STAGE_KILLER_1;
@@ -264,7 +262,7 @@ MLMove MovePicker::next_move()
                 || bestMove.move == killer1
                 || bestMove.move == killer2
                 || bestMove.move == counter )
-                return next_move();
+                return next_move(skipQuiets);
             else
                 return bestMove;
         }
@@ -286,7 +284,7 @@ MLMove MovePicker::next_move()
                 || bestMove.move == killer1
                 || bestMove.move == killer2
                 || bestMove.move == counter )
-                return next_move();
+                return next_move(skipQuiets);
             return bestMove;
         }
 

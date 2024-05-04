@@ -143,18 +143,6 @@ void Search::show_uci_current(MOVE move, int currmove, int depth) const
 }
 
 //=========================================================
-//! \brief  Mise à jour de la Principal variation
-//!
-//! \param[in]  name   coup en notation UCI
-//---------------------------------------------------------
-void Search::update_pv(SearchInfo* si, const MOVE move) const
-{
-    si->pv.length = 1 + (si+1)->pv.length;
-    si->pv.line[0] = move;
-    memcpy(si->pv.line+1, (si+1)->pv.line, sizeof(MOVE) * (si+1)->pv.length);
-}
-
-//=========================================================
 //! \brief  Controle du time-out
 //! \return Retourne "true" si la recherche a dépassé sa limite de temps
 //!

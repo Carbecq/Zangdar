@@ -52,12 +52,22 @@ void ThreadData::reset()
 }
 
 //=========================================================
+//! \brief  Mise à jour de la Principal variation
+//!
+//! \param[in]  name   coup en notation UCI
+//---------------------------------------------------------
+void ThreadData::update_pv(SearchInfo* si, const MOVE move) const
+{
+    si->pv.length = 1 + (si+1)->pv.length;
+    si->pv.line[0] = move;
+    memcpy(si->pv.line+1, (si+1)->pv.line, sizeof(MOVE) * (si+1)->pv.length);
+}
+
+//=========================================================
 //! \brief  Met à jour les heuristiques "Killer"
 //---------------------------------------------------------
 void ThreadData::update_killers(SearchInfo* si, MOVE move)
 {
-    // NOTE : "si" est décalé de STACK_OFFSET !!
-
     if (si->killer1 != move)
     {
         si->killer2 = si->killer1;
@@ -109,7 +119,7 @@ void ThreadData::update_counter_move(Color oppcolor, int ply, MOVE move)
 //==================================================================
 //! \brief  Récupère le countermove
 //! \param[in] oppcolor     couleur du camp opposé
-//! \param[in] prev_move    coup recherché au ply précédant
+//! \param[in] ply          ply de recherche
 //------------------------------------------------------------------
 MOVE ThreadData::get_counter_move(Color oppcolor, int ply) const
 {
@@ -150,7 +160,7 @@ void ThreadData::update_counter_history(int ply, MOVE move, int bonus)
 
 //==================================================================
 //! \brief  Récupère le counter_move history
-//! \param[in] prev_move    coup recherché au ply précédant
+//! \param[in] ply    ply cherché
 //------------------------------------------------------------------
 MOVE ThreadData::get_counter_history(int ply, MOVE move) const
 {

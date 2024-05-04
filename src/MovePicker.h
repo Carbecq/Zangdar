@@ -38,15 +38,14 @@ public:
 
     MovePicker(Board *_board, const ThreadData* _thread_data, int ply,
                MOVE _ttMove, MOVE _killer1, MOVE _killer2, MOVE _counter,
-               bool _skipQuiets, int _threshold) ;
+               int _threshold) ;
 
-    MLMove next_move();
+    MLMove next_move(bool skipQuiets);
     void   score_noisy();
     void   score_quiet();
     bool   is_legal(MOVE move);
     void   verify_MvvLva();
 
-    void   set_skipQuiets(bool f) { skipQuiets = f;}
     MLMove pop_move(MoveList &ml, int idx);
     void   shift_move(MoveList& ml, int idx);
 
@@ -62,7 +61,7 @@ private:
     Board*              board;
     const ThreadData*   thread_data;  // pour les différents history
 
-    bool    skipQuiets;    // sauter les coups tranquilles ?
+ //   bool    skipQuiets;    // sauter les coups tranquilles ?
     int     stage;         // étape courante du sélecteur
     bool    gen_quiet;     // a-t-on déjà générer les coups tranquilles ?
     bool    gen_legal;

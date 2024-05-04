@@ -18,8 +18,6 @@ struct SearchInfo {
     MOVE        move;       // coup cherché
     int         ply;        // profondeur de recherche
     PVariation  pv;         // Principale Variation
-
-
 }__attribute__((aligned(64)));
 
 //! \brief  Données d'une thread
@@ -32,6 +30,7 @@ public:
     void reset();
     void init();
 
+    void update_pv(SearchInfo* si, const MOVE move) const;
     void update_history(Color color, MOVE move, int bonus);
     int  get_history(const Color color, const MOVE move) const;
     MOVE get_counter_move(Color oppcolor, int ply) const;
@@ -41,6 +40,7 @@ public:
     MOVE get_counter_history(int ply, MOVE move) const;
 
 
+    SearchInfo* info;
     std::thread thread;
     U64         nodes;
     U64         tbhits;
@@ -54,7 +54,6 @@ public:
     bool        stopped;
 
     SearchInfo  _info[STACK_SIZE];
-    SearchInfo* info;               // pointeur nécessaire à cause du décalage
 
     // tableau donnant le bonus/malus d'un coup quiet ayant provoqué un cutoff
     // bonus history [Color][From][Dest]

@@ -28,8 +28,10 @@ void Search::think(const Board &m_board, const Timer &m_timer, int m_index)
     timer = m_timer;
 
     ThreadData* td = &threadPool.threadData[m_index];
-    SearchInfo* si = td->info;
+    SearchInfo* si = &td->info[0];
 
+    for (int i = 0; i < MAX_PLY+STACK_OFFSET; i++)
+        (si + i)->ply = i;
 
 /*
     0   4                                     131 135
@@ -38,12 +40,6 @@ void Search::think(const Board &m_board, const Timer &m_timer, int m_index)
     +---+--------------------------------------+---+
         0                                     127 131       ply
  */
-
-    for (int i = 0; i < MAX_PLY+STACK_OFFSET; i++)
-        (si + i)->ply = i;
-
-    // for (int i=0; i<STACK_SIZE; i++)
-    //     td->info[i].eval = NOSCORE;  // nécessaire pour "improving" ???
 
     // iterative deepening
     iterative_deepening<C>(td, si);
@@ -183,9 +179,6 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
 
     constexpr Color THEM = ~C;
     
-    MOVE quiets_moves[MAX_MOVES];
-    int  quiets_count = 0;
-
     // Update node count and selective depth
     td->nodes++;
     if (si->ply > td->seldepth)
@@ -209,9 +202,9 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     }
 
     //  Caractéristiques de la position
-    bool isRoot   = (si->ply == 0);
-    bool isPVNode = ((beta - alpha) != 1); // We are in a PV-node if we aren't in a null window.
-    bool inCheck  = board.is_in_check<C>();
+    bool isRoot     = (si->ply == 0);
+    bool isPVNode   = ((beta - alpha) != 1); // We are in a PV-node if we aren't in a null window.
+    bool inCheck    = board.is_in_check<C>();
     int  best_score = -INFINITE;        // initially assume the worst case
     MOVE best_move  = Move::MOVE_NONE;  // meilleur coup local
     int  max_score  = INFINITE;         // best possible
@@ -319,9 +312,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
 
     /*  Avons-nous amélioré la position ?
         Si on ne s'est pas amélioré dans cette ligne, on va pouvoir couper un peu plus */
-    bool improving = false;
-    if (si->ply > 2)
-        improving = !inCheck && (static_eval > (si-2)->eval);
+    bool improving = (si->ply >= 2) && !inCheck && (static_eval > (si-2)->eval);
 
     //  Controle si on va pouvoir utiliser des techniques de coupe pre-move
     int  score;
@@ -367,12 +358,12 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         if (
             depth >= 3
             && static_eval >= beta
-            && (si-1)->move != Move::MOVE_NULL  //TODO vérifier move
+            && (si-1)->move != Move::MOVE_NULL
             && (si-2)->move != Move::MOVE_NULL
             && !excluded
             && board.non_pawn_count<C>() > 0)
         {
-            int R = 3 + depth / 5 + std::min(3, (static_eval - beta)/256); //ZZZEVAL
+            int R = 3 + depth / 5 + std::min(3, (static_eval - beta)/256);
 
             board.make_nullmove<C>();
             si->move = Move::MOVE_NULL;
@@ -404,10 +395,10 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         {
             int threshold = beta + 200;
 
-            MovePicker movePicker(&board, td, si->ply, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, true, 0);
+            MovePicker movePicker(&board, td, si->ply, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, 0);
             MOVE pbMove;
 
-            while ( (pbMove = movePicker.next_move().move ) != Move::MOVE_NONE )
+            while ( (pbMove = movePicker.next_move(true).move ) != Move::MOVE_NONE )
             {
                 board.make_move<C>(pbMove);
                 si->move = pbMove;
@@ -446,23 +437,28 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     //====================================================================================
     //  Génération des coups
     //------------------------------------------------------------------------------------
-
+    bool skipQuiets = false;
     MOVE mc = td->get_counter_move(THEM, si->ply);
 
     MovePicker movePicker(&board, td, si->ply, tt_move,
-                          si->killer1, si->killer2, mc, false, 0);
+                          si->killer1, si->killer2, mc, 0);
 
-    MOVE move;
     const int old_alpha = alpha;
-    int moveCount = 0;
+    int  move_count = 0;
+    MOVE quiets_moves[MAX_MOVES];
+    int  quiets_count = 0;
+    MOVE move;
+    bool isQuiet;
 
     // Boucle sur tous les coups
-    while ( (move = movePicker.next_move().move ) != Move::MOVE_NONE )
+    while ( (move = movePicker.next_move(skipQuiets).move ) != Move::MOVE_NONE )
     {
         if (move == excluded)
             continue;
 
-        bool isQuiet = !Move::is_tactical(move);    // capture, promotion (avec capture ou non), prise en-passant
+        isQuiet = !Move::is_tactical(move);    // capture, promotion (avec capture ou non), prise en-passant
+        if (isQuiet)
+            quiets_moves[quiets_count++] = move;
 
 #ifdef ACC
         // Affichage du coup courant
@@ -494,26 +490,28 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
             // sing_pv.length = 0;
 
             si->excluded = move;
-            score = alpha_beta<C>(sing_beta-1, sing_beta, sing_depth, td, si);
+            score = alpha_beta<C>(sing_beta-1, sing_beta, sing_depth, td, si); //TODO si ou si+1 ?
             si->excluded = Move::MOVE_NONE;
 
             // Extend as this move seems forced
             if (score < sing_beta)
                 extension = 1;
         }
-
-
 #endif
 
 #if defined USE_LATE_MOVE_PRUNING
         //-------------------------------------------------
-        //  Late Move Pruning / Move Count Based Pruning
+        //  Late Move Pruning / Move Count Pruning
         //-------------------------------------------------
-        if (   !isPVNode
-            && !inCheck
-            && best_score > -TBWIN_IN_X
-            && moveCount > (3 + 2 * depth * depth) / (2 - improving) )
-            continue;
+        if (   !isRoot
+            &&  isQuiet
+            &&  best_score > -TBWIN_IN_X
+            &&  depth <= 7 //TODO 8 ?? --> modifier LateMovePruning
+            &&  quiets_count > LateMovePruning[improving][depth])
+        {
+            skipQuiets = true;
+            continue;   // TODO mettre continue ??
+        }
 #endif
 
         // execute current move
@@ -521,9 +519,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         si->move = move;
 
         // Update counter of moves actually played
-        moveCount++;
-        if (isQuiet)
-            quiets_moves[quiets_count++] = move;
+        move_count++;
 
 #if defined USE_LATE_MOVE_REDUCTION
         //------------------------------------------------------------------------------------
@@ -533,12 +529,12 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         bool doFullDepthSearch;
 
         if (   depth > 2
-            && moveCount > (2 + isPVNode)
+            && move_count > (2 + isPVNode)
             && !inCheck
             && isQuiet)
         {
             // Base reduction
-            int R = Reductions[isQuiet][std::min(31, depth)][std::min(31, moveCount)];
+            int R = Reductions[isQuiet][std::min(31, depth)][std::min(31, move_count)];
             // Reduce less in pv nodes
             R -= isPVNode;
             // Reduce less when improving
@@ -558,17 +554,15 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
 
             doFullDepthSearch = score > alpha && lmrDepth < newDepth;
         } else
-            doFullDepthSearch = !isPVNode || moveCount > 1;
+            doFullDepthSearch = !isPVNode || move_count > 1;
 
         // Full depth zero-window search
         if (doFullDepthSearch)
             score = -alpha_beta<~C>(-alpha-1, -alpha, newDepth, td, si+1);
-        //    -AlphaBeta(thread, ss+1, -alpha-1, -alpha, newDepth);
 
         // Full depth alpha-beta window search
-        if (isPVNode && ((score > alpha && score < beta) || moveCount == 1))
+        if (isPVNode && ((score > alpha && score < beta) || move_count == 1))
             score = -alpha_beta<~C>(-beta, -alpha, newDepth, td, si+1);
-                // -AlphaBeta(thread, ss+1, -beta, -alpha, newDepth);
 #endif
 
 
@@ -592,7 +586,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
 
                 // update the PV
                 if (td->index == 0)
-                    update_pv(si, move);
+                    td->update_pv(si, move);
 
                 // If score beats beta we have a cutoff
                 if (score >= beta)
@@ -628,7 +622,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     }         // boucle sur les coups
 
     // est-on mat ou pat ?
-    if (moveCount == 0)
+    if (move_count == 0)
     {
         // On est en échec, et on n'a aucun coup : on est MAT
         // On n'est pas en échec, et on n'a aucun coup : on est PAT
