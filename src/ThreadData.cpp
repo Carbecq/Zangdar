@@ -162,11 +162,11 @@ void ThreadData::update_counter_history(int ply, MOVE move, int bonus)
 //! \brief  Récupère le counter_move history
 //! \param[in] ply    ply cherché
 //------------------------------------------------------------------
-MOVE ThreadData::get_counter_history(int ply, MOVE move) const
+int ThreadData::get_counter_history(int ply, MOVE move) const
 {
     MOVE previous_move = info[ply-1].move;
 
     return( (previous_move==Move::MOVE_NONE || previous_move==Move::MOVE_NULL)
-                ? Move::MOVE_NONE
+                ? 0
                 : cm_history[Move::piece(previous_move)][Move::dest(previous_move)][Move::piece(move)][Move::dest(move)] );
 }

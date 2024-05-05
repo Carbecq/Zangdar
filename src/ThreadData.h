@@ -31,13 +31,13 @@ public:
     void init();
 
     void update_pv(SearchInfo* si, const MOVE move) const;
+    void update_killers(SearchInfo *si, MOVE move);
     void update_history(Color color, MOVE move, int bonus);
     int  get_history(const Color color, const MOVE move) const;
-    MOVE get_counter_move(Color oppcolor, int ply) const;
     void update_counter_move(Color oppcolor, int ply, MOVE move);
-    void update_killers(SearchInfo *si, MOVE move);
+    MOVE get_counter_move(Color oppcolor, int ply) const;
     void update_counter_history(int ply, MOVE move, int bonus);
-    MOVE get_counter_history(int ply, MOVE move) const;
+    int  get_counter_history(int ply, MOVE move) const;
 
 
     SearchInfo* info;

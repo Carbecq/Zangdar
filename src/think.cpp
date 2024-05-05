@@ -506,7 +506,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         if (   !isRoot
             &&  isQuiet
             &&  best_score > -TBWIN_IN_X
-            &&  depth <= 7 //TODO 8 ?? --> modifier LateMovePruning
+            &&  depth <= 7
             &&  quiets_count > LateMovePruning[improving][depth])
         {
             skipQuiets = true;
