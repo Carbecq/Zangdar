@@ -500,7 +500,6 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         }
 #endif
 
-#if defined USE_LATE_MOVE_PRUNING
         //-------------------------------------------------
         //  Late Move Pruning / Move Count Pruning
         //-------------------------------------------------
@@ -513,7 +512,6 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
             skipQuiets = true;
             continue;   // TODO mettre continue ??
         }
-#endif
 
         //-------------------------------------------------
         //  Static Exchange Evaluation Pruning
