@@ -59,6 +59,10 @@ private:
         {0, 3, 4, 6, 8, 12, 20, 30}
     };
 
+    static constexpr int SEEPruningDepth = 9;
+    static constexpr int SEEQuietMargin = -64;
+    static constexpr int SEENoisyMargin = -19;
+
 };
 
 #endif // SEARCH_H

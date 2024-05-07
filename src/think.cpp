@@ -449,6 +449,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     int  quiets_count = 0;
     MOVE move;
     bool isQuiet;
+    int  seeMargin[2]; // Static Exchange Evaluation Pruning Margins
 
     // Boucle sur tous les coups
     while ( (move = movePicker.next_move(skipQuiets).move ) != Move::MOVE_NONE )
@@ -513,6 +514,18 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
             continue;   // TODO mettre continue ??
         }
 #endif
+
+        //-------------------------------------------------
+        //  Static Exchange Evaluation Pruning
+        //-------------------------------------------------
+        seeMargin[0] = SEENoisyMargin * depth * depth;
+        seeMargin[1] = SEEQuietMargin * depth;
+
+        if (    best_score > -TBWIN_IN_X
+            &&  depth <= SEEPruningDepth
+            &&  movePicker.get_stage() > STAGE_GOOD_NOISY
+            && !board.fast_see(move, seeMargin[isQuiet]))
+            continue;
 
         // execute current move
         board.make_move<C>(move);
