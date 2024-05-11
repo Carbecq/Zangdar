@@ -9,9 +9,67 @@ class Search;
 #include "Timer.h"
 #include "Board.h"
 #include "types.h"
-#include "ThreadData.h"
+
+constexpr int STACK_OFFSET = 4;
+constexpr int STACK_SIZE   = MAX_PLY + 2*STACK_OFFSET;  // taille un peu trop grande, mais multiple de 8
+
+struct SearchInfo {
+    MOVE        killer1;    // killer moves
+    MOVE        killer2;
+    MOVE        excluded;   // coup à éviter
+    int         eval;       // évaluation statique
+    MOVE        move;       // coup cherché
+    int         ply;        // profondeur de recherche
+    PVariation  pv;         // Principale Variation
+}__attribute__((aligned(64)));
+
+//! \brief  Données d'une thread
+struct ThreadData
+{
+public:
+
+    std::thread thread;
+    Search*     search;
+    SearchInfo* info;
+    U64         nodes;
+    U64         tbhits;
+    int         index;
+    MOVE        best_move;
+    int         best_score;
+    int         best_depth;
+    int         score;
+    int         depth;
+    int         seldepth;
+    bool        stopped;
+
+    SearchInfo  _info[STACK_SIZE];
+
+    // tableau donnant le bonus/malus d'un coup quiet ayant provoqué un cutoff
+    // bonus history [Color][From][Dest]
+    I16    history[N_COLORS][N_SQUARES][N_SQUARES];
+
+    // tableau des coups qui ont causé un cutoff au ply précédent
+    // cm_table[opposite_color][piece][dest]
+    MOVE   cm_table[N_COLORS][N_PIECES][N_SQUARES];
+
+    // counter_move history
+    I16 cm_history[N_PIECES][N_SQUARES][N_PIECES][N_SQUARES];
+
+    int get_history(Color color, const MOVE move) const
+    {
+        return(history[color][Move::from(move)][Move::dest(move)]);
+    }
+    int get_counter_history(int ply, MOVE move) const
+    {
+        MOVE previous_move = info[ply-1].move;
+
+        return( (previous_move==Move::MOVE_NONE || previous_move==Move::MOVE_NULL)
+                    ? 0
+                    : cm_history[Move::piece(previous_move)][Move::dest(previous_move)][Move::piece(move)][Move::dest(move)] );
+    }
 
 
+}__attribute__((aligned(64)));
 
 
 // classe permettant de redéfinir mon 'locale'
@@ -29,16 +87,16 @@ protected:
 class Search
 {
 public:
-    Search();
+    Search(const Board &m_board, const Timer &m_timer);
     ~Search();
 
     // Point de départ de la recherche
     template<Color C>
-    void think(const Board &m_board, const Timer &m_timer, int _index);
+    void think(int _index);
 
 private:
-    Timer   timer;
     Board   board;
+    Timer   timer;
 
     template <Color C> void iterative_deepening(ThreadData* td, SearchInfo* si);
     template <Color C> int  aspiration_window(ThreadData* td, SearchInfo* si);
@@ -49,6 +107,15 @@ private:
     void show_uci_best(const ThreadData *td) const;
     void show_uci_current(MOVE move, int currmove, int depth) const;
     bool check_limits(const ThreadData *td) const;
+
+    void update_pv(SearchInfo* si, const MOVE move) const;
+    void update_killers(SearchInfo *si, MOVE move);
+    void update_history(ThreadData *td, Color color, MOVE move, int bonus);
+    int  get_history(ThreadData *td, const Color color, const MOVE move) const;
+    void update_counter_move(ThreadData *td, Color oppcolor, int ply, MOVE move);
+    MOVE get_counter_move(ThreadData *td, Color oppcolor, int ply) const;
+    void update_counter_history(ThreadData *td, int ply, MOVE move, int bonus);
+    int  get_counter_history(ThreadData *td, int ply, MOVE move) const;
 
     static constexpr int CONTEMPT    = 0;
 

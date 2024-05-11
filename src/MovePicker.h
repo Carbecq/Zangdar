@@ -5,7 +5,7 @@ class MovePicker;
 
 #include "MoveList.h"
 #include "Board.h"
-#include "ThreadData.h"
+#include "Search.h"
 
 enum {
     STAGE_TABLE,
@@ -36,7 +36,7 @@ class MovePicker
 {
 public:
 
-    MovePicker(Board *_board, const ThreadData* _thread_data, int ply,
+    MovePicker(Board *_board, const ThreadData* _thread_data, int _ply,
                MOVE _ttMove, MOVE _killer1, MOVE _killer2, MOVE _counter,
                int _threshold) ;
 
@@ -61,9 +61,8 @@ private:
     Board*              board;
     const ThreadData*   thread_data;  // pour les différents history
 
- //   bool    skipQuiets;    // sauter les coups tranquilles ?
     int     stage;         // étape courante du sélecteur
-    bool    gen_quiet;     // a-t-on déjà générer les coups tranquilles ?
+    bool    gen_quiet;     // a-t-on déjà généré les coups tranquilles ?
     bool    gen_legal;
     int     threshold;
     int     ply;

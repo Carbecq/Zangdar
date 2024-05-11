@@ -16,16 +16,13 @@
 //!
 //------------------------------------------------------
 template<Color C>
-void Search::think(const Board &m_board, const Timer &m_timer, int m_index)
+void Search::think(int m_index)
 {
 #if defined DEBUG_LOG
     char message[100];
     sprintf(message, "Search::think (thread=%d)", _index);
     printlog(message);
 #endif
-
-    board = m_board;
-    timer = m_timer;
 
     ThreadData* td = &threadPool.threadData[m_index];
     SearchInfo* si = &td->info[0];
@@ -438,7 +435,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     //  Génération des coups
     //------------------------------------------------------------------------------------
     bool skipQuiets = false;
-    MOVE mc = td->get_counter_move(THEM, si->ply);
+    MOVE mc = get_counter_move(td, THEM, si->ply);
 
     MovePicker movePicker(&board, td, si->ply, tt_move,
                           si->killer1, si->killer2, mc, 0);
@@ -597,7 +594,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
 
                 // update the PV
                 if (td->index == 0)
-                    td->update_pv(si, move);
+                    update_pv(si, move);
 
                 // If score beats beta we have a cutoff
                 if (score >= beta)
@@ -607,21 +604,21 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
                     if (isQuiet)
                     {
                         // Bonus pour le coup quiet ayant provoqué un cutoff (fail-high)
-                        td->update_history(C, move, depth*depth);
-                        td->update_counter_history(si->ply, move, depth*depth);
+                        update_history(td, C, move, depth*depth);
+                        update_counter_history(td, si->ply, move, depth*depth);
 
                         // Malus pour les autres coups quiets
                         for (int i = 0; i < quiets_count - 1; i++)
                         {
-                            td->update_history(C, quiets_moves[i], -depth*depth);
-                            td->update_counter_history(si->ply, quiets_moves[i], -depth*depth);
+                            update_history(td, C, quiets_moves[i], -depth*depth);
+                            update_counter_history(td, si->ply, quiets_moves[i], -depth*depth);
                         }
 
                         // Met à jour les Killers
-                        td->update_killers(si, move);
+                        update_killers(si, move);
 
                         // Met à jour le Counter-Move
-                        td->update_counter_move(THEM, si->ply, move);
+                        update_counter_move(td, THEM, si->ply, move);
                     }
                     transpositionTable.store(board.hash, move, score, static_eval, BOUND_LOWER, depth, si->ply);
                     return score;
@@ -656,6 +653,6 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     return best_score;
 }
 
-template void Search::think<WHITE>(const Board &m_board, const Timer &m_timer, int _index);
-template void Search::think<BLACK>(const Board &m_board, const Timer &m_timer, int _index);
+template void Search::think<WHITE>(int _index);
+template void Search::think<BLACK>(int _index);
 

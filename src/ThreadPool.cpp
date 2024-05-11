@@ -1,3 +1,4 @@
+#include <cstring>
 #include "ThreadPool.h"
 #include "Board.h"
 #include "Search.h"
@@ -49,7 +50,15 @@ void ThreadPool::create()
 {
     for (int i = 0; i < nbrThreads; i++)
     {
-        threadData[i].create(i);
+        threadData[i].index    = i;
+        threadData[i].depth    = 0;
+        threadData[i].score    = -INFINITE;
+        threadData[i].seldepth = 0;
+        threadData[i].nodes    = 0;
+        threadData[i].stopped  = false;
+
+        // Grace au décalage, la position root peut regarder en arrière
+        threadData[i].info     = &(threadData[i]._info[STACK_OFFSET]);
     }
 }
 
@@ -61,7 +70,11 @@ void ThreadPool::init()
 {
     for (int i = 0; i < nbrThreads; i++)
     {
-        threadData[i].init();
+        threadData[i].nodes      = 0;
+        threadData[i].seldepth   = 0;
+
+        // on prend TOUT le tableau
+        std::memset(threadData[i]._info, 0, sizeof(SearchInfo)*STACK_SIZE);
     }
 }
 
@@ -73,7 +86,13 @@ void ThreadPool::reset()
 {
     for (int i = 0; i < nbrThreads; i++)
     {
-        threadData[i].reset();
+        threadData[i].nodes      = 0;
+        threadData[i].seldepth   = 0;
+
+        std::memset(threadData[i]._info,      0, sizeof(SearchInfo)*STACK_SIZE);
+        std::memset(threadData[i].history,    0, sizeof(threadData[i].history));
+        std::memset(threadData[i].cm_table,   0, sizeof(threadData[i].cm_table));
+        std::memset(threadData[i].cm_history, 0, sizeof(threadData[i].cm_history));
     }
 }
 
@@ -109,34 +128,42 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
         printlog(message);
 #endif
 
+        for (int i = 0; i < MAX_THREADS; i++)
+        {
+            if (threadData[i].search)
+            {
+                delete threadData[i].search;
+                threadData[i].search = nullptr;
+            }
+        }
+
+
         create();
         init();
 
         for (int i=0; i<nbrThreads; i++)
             threadData[i].stopped = false;
 
-        // Préparation des tables de transposition
-        transpositionTable.update_age();
-
-        // On utilise la même instance de Search pour toutes les threads,
-        // à condition que les threads n'utilisent pas les mêmes valeurs.
-        Search uci_search;
-
-        // Il faut mettre le lancement des threads dans une boucle séparée
-        // car il faut être sur que la Search soit bien créée
-
-        int side = board.side_to_move;
-
         for (int i = 0; i < nbrThreads; i++)
         {
-            // copie des arguments
+            // Copie des arguments
             Board b = board;
             Timer t = timer;
 
-            if (side == WHITE)
-                threadData[i].thread = std::thread(&Search::think<WHITE>, &uci_search, b, t, i);
+            threadData[i].search = new Search(b, t);
+        }
+
+        // Préparation des tables de transposition
+        transpositionTable.update_age();
+
+        // Il faut mettre le lancement des threads dans une boucle séparée
+        // car il faut être sur que la Search soit bien créée
+        for (int i = 0; i < nbrThreads; i++)
+        {
+            if (board.side_to_move == WHITE)
+                threadData[i].thread = std::thread(&Search::think<WHITE>, threadData[i].search, i);
             else
-                threadData[i].thread = std::thread(&Search::think<BLACK>, &uci_search, b, t, i);
+                threadData[i].thread = std::thread(&Search::think<BLACK>, threadData[i].search, i);
         }
     }
 }
@@ -190,6 +217,11 @@ void ThreadPool::quit()
 {
     stop();
 
+    for (int i = 0; i < nbrThreads; i++)
+    {
+        delete threadData[i].search;
+        threadData[i].search = nullptr;
+    }
 }
 
 //=================================================
@@ -230,6 +262,4 @@ U64 ThreadPool::get_all_tbhits() const
     }
     return(total);
 }
-
-
 
