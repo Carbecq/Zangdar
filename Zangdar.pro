@@ -45,7 +45,7 @@ QMAKE_CXXFLAGS_RELEASE -= -O2
 QMAKE_CXXFLAGS_RELEASE += -pipe -std=c++20 -O3 -flto -DNDEBUG -fwhole-program
 QMAKE_CXXFLAGS_RELEASE += -pedantic -Wshadow -Wall -Wextra -Wcast-qual -Wuninitialized
 
-VERSION = 2.29.02
+VERSION = 2.29.03
 TARGET  = native-pext
 
 DEFINES += VERSION='\\"$${VERSION}\\"'

@@ -68,14 +68,16 @@ void Search::show_uci_result(const ThreadData* td, U64 elapsed, PVariation& pv) 
     U64 all_tbhits = threadPool.get_all_tbhits();
     int hash_full  = transpositionTable.hash_full();
 
-    std::cout << "info ";
+    std::stringstream stream;
+
+    stream << "info "
 
 #if defined USE_PRETTY
-    std::cout << " depth "    << std::setw(2) << td->best_depth                     // depth <x> search depth in plies
-              << " seldepth " << std::setw(2) << td->seldepth                       // seldepth <x> selective search depth in plies
+           << " depth "    << std::setw(2) << td->best_depth                     // depth <x> search depth in plies
+           << " seldepth " << std::setw(2) << td->seldepth                       // seldepth <x> selective search depth in plies
 #else
-    std::cout << " depth "    << td->best_depth
-              << " seldepth " << td->seldepth
+           << " depth "    << td->best_depth
+           << " seldepth " << td->seldepth
 #endif
 
 // time     : the time searched in ms
@@ -87,38 +89,38 @@ void Search::show_uci_result(const ThreadData* td, U64 elapsed, PVariation& pv) 
               << " nodes "      << std::setw(l) << all_nodes
               << " nps "        << std::setw(7) << all_nodes * 1000 / elapsed       // nps <x> x nodes per second searched,
               << " tbhits "     << all_tbhits                                       // tbhits <x> x positions where found in the endgame table bases
-              << " hashfull "   << std::setw(5) << hash_full;                       // hashfull <x> the hash is x permill full,
+           << " hashfull "   << std::setw(5) << hash_full;                          // hashfull <x> the hash is x permill full,
 #else
               << " time "       << elapsed
               << " nodes "      << all_nodes
               << " nps "        << all_nodes * 1000 / elapsed
               << " tbhits "     << all_tbhits
-              << " hashfull "   << hash_full;
+           << " hashfull "   << hash_full;
 #endif
 
     if (td->best_score >= MATE_IN_X)
     {
-        std::cout << " score mate " << (MATE - td->best_score) / 2 + 1;             // score mate <y> mate in y moves, not plies.
+        stream << " score mate " << (MATE - td->best_score) / 2 + 1;             // score mate <y> mate in y moves, not plies.
     }
     else if (td->best_score <= -MATE_IN_X)
     {
-        std::cout << " score mate " << (-MATE - td->best_score) / 2;
+        stream << " score mate " << (-MATE - td->best_score) / 2;
     }
     else
     {
 
 #if defined USE_PRETTY
-        std::cout << " score cp " << std::right << std::setw(5) << td->best_score;  // score cp <x> the score from the engine's point of view in centipawns.
+        stream << " score cp " << std::right << std::setw(5) << td->best_score;  // score cp <x> the score from the engine's point of view in centipawns.
 #else
-        std::cout << " score cp " << td->best_score;
+        stream << " score cp " << td->best_score;
 #endif
     }
 
-    std::cout << " pv";
+    stream << " pv";
     for (int i=0; i<pv.length; i++)
-        std::cout << " " << Move::name(pv.line[i]);
+        stream << " " << Move::name(pv.line[i]);
 
-    std::cout << std::endl;
+    std::cout << stream.str() << std::endl;
 }
 
 //=========================================================
