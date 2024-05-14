@@ -21,6 +21,14 @@ ThreadPool::ThreadPool(int _nbr, bool _tb, bool _log) :
     printlog(message);
 #endif
 
+    for (int i = 0; i < MAX_THREADS; i++)
+    {
+        threadData[i].search = nullptr;
+        // Grace au décalage, la position root peut regarder en arrière
+        threadData[i].info   = &(threadData[i]._info[STACK_OFFSET]);
+        threadData[i].index  = i;
+    }
+
     set_threads(_nbr);
 }
 
@@ -29,6 +37,12 @@ ThreadPool::ThreadPool(int _nbr, bool _tb, bool _log) :
 //-------------------------------------------------
 void ThreadPool::set_threads(int nbr)
 {
+#if defined DEBUG_LOG
+    char message[200];
+    sprintf(message, "ThreadPool::set_threads : nbrThreads=%d ", nbr);
+    printlog(message);
+#endif
+
     int processorCount = static_cast<int>(std::thread::hardware_concurrency());
     // Check if the number of processors can be determined
     if (processorCount == 0)
@@ -39,43 +53,10 @@ void ThreadPool::set_threads(int nbr)
     nbrThreads     = std::max(nbrThreads, 1);
     nbrThreads     = std::min(nbrThreads, MAX_THREADS);
 
-    create();
-}
-
-//=================================================
-//! \brief  Initialisation des valeurs des threads
-//! lors de la création
-//-------------------------------------------------
-void ThreadPool::create()
-{
-    for (int i = 0; i < nbrThreads; i++)
-    {
-        threadData[i].index    = i;
-        threadData[i].depth    = 0;
-        threadData[i].score    = -INFINITE;
-        threadData[i].seldepth = 0;
-        threadData[i].nodes    = 0;
-        threadData[i].stopped  = false;
-
-        // Grace au décalage, la position root peut regarder en arrière
-        threadData[i].info     = &(threadData[i]._info[STACK_OFFSET]);
-    }
-}
-
-//=================================================
-//! \brief  Initialisation des valeurs des threads
-//! Utilisé lors de "start_thinking"
-//-------------------------------------------------
-void ThreadPool::init()
-{
-    for (int i = 0; i < nbrThreads; i++)
-    {
-        threadData[i].nodes      = 0;
-        threadData[i].seldepth   = 0;
-
-        // on prend TOUT le tableau
-        std::memset(threadData[i]._info, 0, sizeof(SearchInfo)*STACK_SIZE);
-    }
+#if defined DEBUG_LOG
+    sprintf(message, "ThreadPool::set_threads : nbrThreads=%d ", nbrThreads);
+    printlog(message);
+#endif
 }
 
 //=================================================
@@ -84,11 +65,9 @@ void ThreadPool::init()
 //-------------------------------------------------
 void ThreadPool::reset()
 {
+    // Libère toute la mémoire
     for (int i = 0; i < nbrThreads; i++)
     {
-        threadData[i].nodes      = 0;
-        threadData[i].seldepth   = 0;
-
         std::memset(threadData[i]._info,      0, sizeof(SearchInfo)*STACK_SIZE);
         std::memset(threadData[i].history,    0, sizeof(threadData[i].history));
         std::memset(threadData[i].cm_table,   0, sizeof(threadData[i].cm_table));
@@ -128,24 +107,21 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
         printlog(message);
 #endif
 
-        for (int i = 0; i < MAX_THREADS; i++)
-        {
-            if (threadData[i].search)
-            {
-                delete threadData[i].search;
-                threadData[i].search = nullptr;
-            }
-        }
-
-
-        create();
-        init();
-
-        for (int i=0; i<nbrThreads; i++)
-            threadData[i].stopped = false;
-
         for (int i = 0; i < nbrThreads; i++)
         {
+            threadData[i].depth    = 0;
+            threadData[i].seldepth = 0;
+            threadData[i].score    = -INFINITE;
+            threadData[i].nodes    = 0;
+            threadData[i].stopped  = false;
+            threadData[i].tbhits   = 0;
+
+            // on prend TOUT le tableau
+            // killers , excluded, eval, move, ply, pv
+            std::memset(threadData[i]._info, 0, sizeof(SearchInfo)*STACK_SIZE); //B
+
+            delete threadData[i].search;
+
             // Copie des arguments
             Board b = board;
             Timer t = timer;
@@ -177,12 +153,8 @@ void ThreadPool::main_thread_stopped()
 {
     // envoie à toutes les autres threads
     // le signal d'arrêter
-
     for (int i = 1; i < nbrThreads; i++)
         threadData[i].stopped = true;
-
-    // NE PAS détruire les search, on en a besoin
-    // pour calculer le nombre de nodes
 }
 
 //=================================================

@@ -13,8 +13,6 @@ class ThreadPool
 public:
     explicit ThreadPool(int _nbr, bool _tb, bool _log);
     void set_threads(int nbr);
-    void create();
-    void init();
     void reset();
 
     void start_thinking(const Board &board, const Timer &timer);

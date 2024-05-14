@@ -13,9 +13,9 @@ QMAKE_LFLAGS += -flto
 
 # ATTENTION : ne pas mettre "\" car ils sont reconnus comme caractères spéciaux
 # pour Github
-#HOME_STR = "./"
+HOME_STR = "./"
 # pour moi
-HOME_STR = "D:/Echecs/Programmation/Zangdar/"
+# HOME_STR = "D:/Echecs/Programmation/Zangdar/"
 DEFINES += HOME='\\"$${HOME_STR}\\"'
 
 #------------------------------------------------------
@@ -45,7 +45,7 @@ QMAKE_CXXFLAGS_RELEASE -= -O2
 QMAKE_CXXFLAGS_RELEASE += -pipe -std=c++20 -O3 -flto -DNDEBUG -fwhole-program
 QMAKE_CXXFLAGS_RELEASE += -pedantic -Wshadow -Wall -Wextra -Wcast-qual -Wuninitialized
 
-VERSION = 2.29.01
+VERSION = 2.29.02
 TARGET  = native-pext
 
 DEFINES += VERSION='\\"$${VERSION}\\"'

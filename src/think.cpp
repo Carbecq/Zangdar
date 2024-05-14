@@ -20,7 +20,7 @@ void Search::think(int m_index)
 {
 #if defined DEBUG_LOG
     char message[100];
-    sprintf(message, "Search::think (thread=%d)", _index);
+    sprintf(message, "Search::think (thread=%d)", m_index);
     printlog(message);
 #endif
 

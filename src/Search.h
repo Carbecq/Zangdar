@@ -29,18 +29,20 @@ struct ThreadData
 public:
 
     std::thread thread;
-    Search*     search;
-    SearchInfo* info;
-    U64         nodes;
-    U64         tbhits;
+    Search*     search;     // pointeur sur la classe de recherche
+    SearchInfo* info;       // pointeur décalé de STACK_OFFSET sur la tableau total _info[STACK_SIZE]
+
     int         index;
+    int         depth;
+    int         seldepth;
+    int         score;
+    U64         nodes;
+    bool        stopped;
+    U64         tbhits;
+
     MOVE        best_move;
     int         best_score;
     int         best_depth;
-    int         score;
-    int         depth;
-    int         seldepth;
-    bool        stopped;
 
     SearchInfo  _info[STACK_SIZE];
 
