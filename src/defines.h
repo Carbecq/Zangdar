@@ -9,19 +9,10 @@
 
 // ne pas oublier la version dans Zangdar.pro
 
+// Désactiver USE_HASH pour la mesure de performances brutes
 #define USE_HASH
 
-#define USE_RAZORING
-#define USE_REVERSE_FUTILITY_PRUNING
-#define USE_NULL_MOVE_PRUNING
-#define USE_PROBCUT
-#define USE_INTERNAL_ITERATIVE_DEEPENING
-//#define USE_FUTILITY_PRUNING
-#define USE_SINGULAR_EXTENSION
-#define USE_LATE_MOVE_REDUCTION
-
-#define USE_TC_WEISS
-
+// Affichage du coup de recherche courant
 //#define USE_ACC
 
 // NE PAS UTILISER PRETTY avec

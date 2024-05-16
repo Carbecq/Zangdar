@@ -316,7 +316,6 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
 
     if (!inCheck && !isRoot && !isPVNode && !si->excluded)
     {
-#if defined USE_RAZORING
         //---------------------------------------------------------------------
         //  RAZORING
         //---------------------------------------------------------------------
@@ -330,9 +329,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
                 return score;
             }
         }
-#endif
 
-#if defined USE_REVERSE_FUTILITY_PRUNING
         //---------------------------------------------------------------------
         //  STATIC NULL MOVE PRUNING ou aussi REVERSE FUTILITY PRUNING
         //---------------------------------------------------------------------
@@ -346,9 +343,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
             if (static_eval - eval_margin >= beta)
                 return static_eval - eval_margin; // Fail Soft
         }
-#endif
 
-#if defined USE_NULL_MOVE_PRUNING
         //---------------------------------------------------------------------
         //  NULL MOVE PRUNING
         //---------------------------------------------------------------------
@@ -378,9 +373,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
                 return(score >= TBWIN_IN_X ? beta : score);
             }
         }
-#endif
 
-#if defined USE_PROBCUT
         //---------------------------------------------------------------------
         //  ProbCut
         //---------------------------------------------------------------------
@@ -417,10 +410,8 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
                 }
             }
         }
-#endif
     } // end Pruning
 
-#if defined USE_INTERNAL_ITERATIVE_DEEPENING
     //---------------------------------------------------------------------
     // Internal Iterative Deepening.
     //---------------------------------------------------------------------
@@ -429,7 +420,6 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     {
         depth--;
     }
-#endif
 
     //====================================================================================
     //  Génération des coups
@@ -468,7 +458,6 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
 
         int extension = 0;
 
-#if defined USE_SINGULAR_EXTENSION
         //-------------------------------------------------
         //  SINGULAR EXTENSION
         //-------------------------------------------------
@@ -495,7 +484,6 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
             if (score < sing_beta)
                 extension = 1;
         }
-#endif
 
         //-------------------------------------------------
         //  Late Move Pruning / Move Count Pruning
@@ -507,7 +495,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
             &&  quiets_count > LateMovePruning[improving][depth])
         {
             skipQuiets = true;
-            continue;   // TODO mettre continue ??
+            continue;
         }
 
         //-------------------------------------------------
@@ -529,7 +517,6 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         // Update counter of moves actually played
         move_count++;
 
-#if defined USE_LATE_MOVE_REDUCTION
         //------------------------------------------------------------------------------------
         //  LATE MOVE REDUCTION
         //------------------------------------------------------------------------------------
@@ -561,8 +548,11 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
             score = -alpha_beta<~C>(-alpha-1, -alpha, lmrDepth, td, si+1);
 
             doFullDepthSearch = score > alpha && lmrDepth < newDepth;
-        } else
+        }
+        else
+        {
             doFullDepthSearch = !isPVNode || move_count > 1;
+        }
 
         // Full depth zero-window search
         if (doFullDepthSearch)
@@ -571,7 +561,6 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         // Full depth alpha-beta window search
         if (isPVNode && ((score > alpha && score < beta) || move_count == 1))
             score = -alpha_beta<~C>(-beta, -alpha, newDepth, td, si+1);
-#endif
 
 
         // retract current move
