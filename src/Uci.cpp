@@ -252,6 +252,9 @@ void Uci::run()
 //        Il faut faire attention à l'ordre des tests
 //        pour définir quelle version sera prise (Bitboard.h)
 
+#if defined(__INTEL_COMPILER)
+            printf("INTEL_COMPILER \n");
+#endif
 #if defined(_MSC_VER)
             printf("compilateur Microsoft \n");
 #endif

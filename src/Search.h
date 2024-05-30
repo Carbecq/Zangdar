@@ -48,28 +48,47 @@ public:
 
     // tableau donnant le bonus/malus d'un coup quiet ayant provoqué un cutoff
     // bonus history [Color][From][Dest]
-    I16    history[N_COLORS][N_SQUARES][N_SQUARES];
+    I16  history[N_COLORS][N_SQUARES][N_SQUARES];
 
     // tableau des coups qui ont causé un cutoff au ply précédent
-    // cm_table[opposite_color][piece][dest]
-    MOVE   cm_table[N_COLORS][N_PIECES][N_SQUARES];
+    // counter_move[opposite_color][piece][dest]
+    MOVE counter_move[N_COLORS][N_PIECES][N_SQUARES];
 
-    // counter_move history
-    I16 cm_history[N_PIECES][N_SQUARES][N_PIECES][N_SQUARES];
+    // counter_move history [piece][dest]
+    I16  counter_move_history[N_PIECES][N_SQUARES][N_PIECES][N_SQUARES];
 
+    //
+    I16  followup_move_history[N_PIECES][N_SQUARES];
+
+    // capture history
+    int capture_history[N_PIECES][N_SQUARES][N_PIECES] = {{{0}}};
+
+    //------------------------------------------------------------------
     int get_history(Color color, const MOVE move) const
     {
         return(history[color][Move::from(move)][Move::dest(move)]);
     }
-    int get_counter_history(int ply, MOVE move) const
+    //==================================================================
+    //! \brief  Récupère le counter_move history
+    //! \param[in] ply    ply cherché
+    //------------------------------------------------------------------
+    int get_counter_move_history(int ply, MOVE move) const
     {
         MOVE previous_move = info[ply-1].move;
 
         return( (previous_move==Move::MOVE_NONE || previous_move==Move::MOVE_NULL)
                     ? 0
-                    : cm_history[Move::piece(previous_move)][Move::dest(previous_move)][Move::piece(move)][Move::dest(move)] );
+                    : counter_move_history[Move::piece(previous_move)][Move::dest(previous_move)][Move::piece(move)][Move::dest(move)] );
     }
+    int get_followup_move_history(int ply, MOVE move) const
+    {
+        // MOVE previous_move = info[ply-1].move;
 
+        // return( (previous_move==Move::MOVE_NONE || previous_move==Move::MOVE_NULL)
+        //             ? 0
+        //             : followup_move_history[Move::piece(previous_move)][Move::dest(previous_move)][Move::piece(move)][Move::dest(move)] );
+        return 0;
+    }
 
 }__attribute__((aligned(64)));
 
@@ -113,11 +132,9 @@ private:
     void update_pv(SearchInfo* si, const MOVE move) const;
     void update_killers(SearchInfo *si, MOVE move);
     void update_history(ThreadData *td, Color color, MOVE move, int bonus);
-    int  get_history(ThreadData *td, const Color color, const MOVE move) const;
     void update_counter_move(ThreadData *td, Color oppcolor, int ply, MOVE move);
     MOVE get_counter_move(ThreadData *td, Color oppcolor, int ply) const;
-    void update_counter_history(ThreadData *td, int ply, MOVE move, int bonus);
-    int  get_counter_history(ThreadData *td, int ply, MOVE move) const;
+    void update_counter_move_history(ThreadData *td, int ply, MOVE move, int bonus);
 
     static constexpr int CONTEMPT    = 0;
 

@@ -220,16 +220,8 @@ void Search::update_history(ThreadData* td, Color color, MOVE move, int bonus)
     td->history[color][Move::from(move)][Move::dest(move)] = histo;
 }
 
-//=========================================================
-//! \brief  Récupère l'heuristique "History"
-//---------------------------------------------------------
-int Search::get_history(ThreadData* td, Color color, const MOVE move) const
-{
-    return(td->history[color][Move::from(move)][Move::dest(move)]);
-}
-
 //=================================================================
-//! \brief  Update countermove.
+//! \brief  Update counter_move.
 //! \param[in] oppcolor     couleur du camp opposé
 //! \param[in] prev_move    coup recherché au ply précédant
 //! \param[in] move         coup de réfutation
@@ -239,11 +231,11 @@ void Search::update_counter_move(ThreadData* td, Color oppcolor, int ply, MOVE m
     MOVE previous_move = td->info[ply-1].move;
 
     if (previous_move != Move::MOVE_NONE && previous_move != Move::MOVE_NULL)
-        td->cm_table[oppcolor][Move::piece(previous_move)][Move::dest(previous_move)] = move;
+        td->counter_move[oppcolor][Move::piece(previous_move)][Move::dest(previous_move)] = move;
 }
 
 //==================================================================
-//! \brief  Récupère le countermove
+//! \brief  Récupère le counter_move
 //! \param[in] oppcolor     couleur du camp opposé
 //! \param[in] ply          ply de recherche
 //------------------------------------------------------------------
@@ -253,7 +245,7 @@ MOVE Search::get_counter_move(ThreadData* td, Color oppcolor, int ply) const
 
     return( (previous_move==Move::MOVE_NONE || previous_move==Move::MOVE_NULL)
                 ? Move::MOVE_NONE
-                : td->cm_table[oppcolor][Move::piece(previous_move)][Move::dest(previous_move)] );
+                : td->counter_move[oppcolor][Move::piece(previous_move)][Move::dest(previous_move)] );
 }
 
 //=================================================================
@@ -261,7 +253,7 @@ MOVE Search::get_counter_move(ThreadData* td, Color oppcolor, int ply) const
 //! \param[in] prev_move    coup recherché au ply précédant
 //! \param[in] move         coup de réfutation
 //-----------------------------------------------------------------
-void Search::update_counter_history(ThreadData* td, int ply, MOVE move, int bonus)
+void Search::update_counter_move_history(ThreadData* td, int ply, MOVE move, int bonus)
 {
     MOVE previous_move = td->info[ply-1].move;
 
@@ -279,22 +271,10 @@ void Search::update_counter_history(ThreadData* td, int ply, MOVE move, int bonu
     PieceType piece = Move::piece(move);
     int       dest  = Move::dest(move);
 
-    cm_histo = td->cm_history[prev_piece][prev_dest][piece][dest];
+    cm_histo = td->counter_move_history[prev_piece][prev_dest][piece][dest];
     cm_histo += 32 * bonus - cm_histo * abs(bonus) / 512;
-    td->cm_history[prev_piece][prev_dest][piece][dest] = cm_histo;
+    td->counter_move_history[prev_piece][prev_dest][piece][dest] = cm_histo;
 }
 
-//==================================================================
-//! \brief  Récupère le counter_move history
-//! \param[in] ply    ply cherché
-//------------------------------------------------------------------
-int Search::get_counter_history(ThreadData* td, int ply, MOVE move) const
-{
-    MOVE previous_move = td->info[ply-1].move;
-
-    return( (previous_move==Move::MOVE_NONE || previous_move==Move::MOVE_NULL)
-                ? 0
-                : td->cm_history[Move::piece(previous_move)][Move::dest(previous_move)][Move::piece(move)][Move::dest(move)] );
-}
 
 

@@ -803,8 +803,8 @@ bool Board::material_draw(void)
         if (!typePiecesBB[BISHOP])
         {
             // Draw with 0-2 knights each (both 0 => KvK) (all nonpawns if any are knights)
-            return(    non_pawn_count<WHITE>() <= 2
-                   &&  non_pawn_count<BLACK>() <= 2);
+            return(    getNonPawnMaterialCount<WHITE>() <= 2
+                   &&  getNonPawnMaterialCount<BLACK>() <= 2);
 
         }
 
@@ -812,8 +812,8 @@ bool Board::material_draw(void)
         else if (!typePiecesBB[KNIGHT])
         {
             // Draw unless one side has 2 extra bishops (all nonpawns are bishops)
-            return( abs(  non_pawn_count<WHITE>()
-                        - non_pawn_count<BLACK>()) < 2);
+            return( abs(  getNonPawnMaterialCount<WHITE>()
+                        - getNonPawnMaterialCount<BLACK>()) < 2);
 
         }
 
@@ -821,9 +821,9 @@ bool Board::material_draw(void)
         else if (BB::count_bit(typePiecesBB[BISHOP]) == 1)
         {
             if (BB::count_bit(occupancy_cp<WHITE, BISHOP>()) == 1)
-                return non_pawn_count<WHITE>() == 1 && non_pawn_count<BLACK>() <= 2;
+                return getNonPawnMaterialCount<WHITE>() == 1 && getNonPawnMaterialCount<BLACK>() <= 2;
             else
-                return non_pawn_count<BLACK>() == 1 && non_pawn_count<WHITE>() <= 2;
+                return getNonPawnMaterialCount<BLACK>() == 1 && getNonPawnMaterialCount<WHITE>() <= 2;
         }
     }
 
@@ -831,21 +831,21 @@ bool Board::material_draw(void)
     else if (   BB::count_bit(occupancy_cp<WHITE, ROOK>()) == 1
              && BB::count_bit(occupancy_cp<BLACK, ROOK>()) == 1)
     {
-        return    non_pawn_count<WHITE>() <= 2
-               && non_pawn_count<BLACK>() <= 2;
+        return    getNonPawnMaterialCount<WHITE>() <= 2
+               && getNonPawnMaterialCount<BLACK>() <= 2;
     }
 
     // Draw with 1 rook vs 1-2 minors
     else if ( BB::count_bit(typePiecesBB[ROOK]) == 1)
     {
         if (BB::count_bit(occupancy_cp<WHITE, ROOK>()) == 1)
-            return( non_pawn_count<WHITE>() == 1
-                    && non_pawn_count<BLACK>() >= 1
-                    && non_pawn_count<BLACK>() <= 2);
+            return( getNonPawnMaterialCount<WHITE>() == 1
+                    && getNonPawnMaterialCount<BLACK>() >= 1
+                    && getNonPawnMaterialCount<BLACK>() <= 2);
         else
-            return( non_pawn_count<BLACK>() == 1
-                && non_pawn_count<WHITE>() >= 1
-                && non_pawn_count<WHITE>() <= 2);
+            return( getNonPawnMaterialCount<BLACK>() == 1
+                && getNonPawnMaterialCount<WHITE>() >= 1
+                && getNonPawnMaterialCount<WHITE>() <= 2);
 
     }
 
@@ -859,8 +859,8 @@ int Board::scale_factor(const Score eval)
     if (   !typePiecesBB[QUEEN]
         && !typePiecesBB[ROOK]
         && !typePiecesBB[KNIGHT]
-        && non_pawn_count<WHITE>() == 1
-        && non_pawn_count<BLACK>() == 1
+        && getNonPawnMaterialCount<WHITE>() == 1
+        && getNonPawnMaterialCount<BLACK>() == 1
         && (BB::single(typePiecesBB[BISHOP] & DarkSquares)))
         return 64;
 

@@ -353,7 +353,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
             && (si-1)->move != Move::MOVE_NULL
             && (si-2)->move != Move::MOVE_NULL
             && !excluded
-            && board.non_pawn_count<C>() > 0)
+            && board.getNonPawnMaterial<C>())
         {
             int R = 3 + depth / 5 + std::min(3, (static_eval - beta)/256);
 
@@ -594,13 +594,13 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
                     {
                         // Bonus pour le coup quiet ayant provoqué un cutoff (fail-high)
                         update_history(td, C, move, depth*depth);
-                        update_counter_history(td, si->ply, move, depth*depth);
+                        update_counter_move_history(td, si->ply, move, depth*depth);
 
                         // Malus pour les autres coups quiets
                         for (int i = 0; i < quiets_count - 1; i++)
                         {
                             update_history(td, C, quiets_moves[i], -depth*depth);
-                            update_counter_history(td, si->ply, quiets_moves[i], -depth*depth);
+                            update_counter_move_history(td, si->ply, quiets_moves[i], -depth*depth);
                         }
 
                         // Met à jour les Killers

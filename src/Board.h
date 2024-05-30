@@ -383,20 +383,18 @@ public:
     bool valid() const noexcept;
     [[nodiscard]] std::string display() const noexcept;
 
-    template<Color C> Bitboard getNonPawnMaterial() const noexcept{
-
-        return (occupancy_cp<C, KNIGHT>() |
-                occupancy_cp<C, BISHOP>() |
-                occupancy_cp<C, ROOK>()   |
-                occupancy_cp<C, QUEEN>() );
+    template<Color C> Bitboard getNonPawnMaterial() const noexcept
+    {
+        return (  colorPiecesBB[C]
+                ^ occupancy_cp<C, PAWN>()
+                ^ occupancy_cp<C, KING>() ) ;
     }
 
-
-    template<Color C> constexpr int non_pawn_count() const
+    template<Color C> int getNonPawnMaterialCount() const noexcept
     {
         return (BB::count_bit(colorPiecesBB[C]
-                       ^ occupancy_cp<C, PAWN>()
-                       ^ occupancy_cp<C, KING>() ) );
+                              ^ occupancy_cp<C, PAWN>()
+                              ^ occupancy_cp<C, KING>() ) );
     }
 
     Score evaluate();

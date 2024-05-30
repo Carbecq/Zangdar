@@ -11,11 +11,11 @@ MovePicker::MovePicker(Board* _board, const ThreadData *_thread_data, int _ply,
                        MOVE _ttMove, MOVE _killer1, MOVE _killer2, MOVE _counter, int _threshold) :
     board(_board),
     thread_data(_thread_data),
-    ply(_ply),
     stage(STAGE_TABLE),
     gen_quiet(false),
     gen_legal(false),
     threshold(_threshold),
+    ply(_ply),
     tt_move(_ttMove),
     killer1(_killer1),
     killer2(_killer2),
@@ -350,7 +350,8 @@ void MovePicker::score_quiet()
     {
         move = mlq.mlmoves[i].move;
         mlq.mlmoves[i].value = thread_data->get_history(board->turn(), move)
-                             + thread_data->get_counter_history(ply, move);
+                               + thread_data->get_counter_move_history(ply, move) ;
+                             // + thread_data->get_followup_move_history(ply, move);
     }
 }
 

@@ -70,8 +70,8 @@ void ThreadPool::reset()
     {
         std::memset(threadData[i]._info,      0, sizeof(SearchInfo)*STACK_SIZE);
         std::memset(threadData[i].history,    0, sizeof(threadData[i].history));
-        std::memset(threadData[i].cm_table,   0, sizeof(threadData[i].cm_table));
-        std::memset(threadData[i].cm_history, 0, sizeof(threadData[i].cm_history));
+        std::memset(threadData[i].counter_move,   0, sizeof(threadData[i].counter_move));
+        std::memset(threadData[i].counter_move_history, 0, sizeof(threadData[i].counter_move_history));
     }
 }
 
