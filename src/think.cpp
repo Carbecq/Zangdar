@@ -30,7 +30,7 @@ void Search::think(int m_index)
     for (int i = 0; i < MAX_PLY+STACK_OFFSET; i++)
         (si + i)->ply = i;
 
-/*
+    /*
     0   4                                     131 135
     +---|--------------------------------------+---+        136 éléments total (128 + 2*4)
 
@@ -436,7 +436,16 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     int  quiets_count = 0;
     MOVE move;
     bool isQuiet;
-    int  seeMargin[2]; // Static Exchange Evaluation Pruning Margins
+    int  hist = 0, cmhist = 0, fuhist = 0;
+
+    // Static Exchange Evaluation Pruning Margins
+    int  seeMargin[2] = {
+        SEENoisyMargin * depth * depth,
+        SEEQuietMargin * depth
+    };
+
+    // Futility Pruning Margin
+    int futilityMargin = static_eval + FutilityMargin * depth;
 
     // Boucle sur tous les coups
     while ( (move = movePicker.next_move(skipQuiets).move ) != Move::MOVE_NONE )
@@ -446,7 +455,13 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
 
         isQuiet = !Move::is_tactical(move);    // capture, promotion (avec capture ou non), prise en-passant
         if (isQuiet)
+        {
             quiets_moves[quiets_count++] = move;
+
+            cmhist = td->get_counter_move_history(si->ply, move);
+            fuhist = td->get_followup_move_history(si->ply, move);
+            hist   = td->get_history(C, move) + cmhist + fuhist;
+        }
 
 #ifdef ACC
         // Affichage du coup courant
@@ -486,29 +501,66 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         }
 
         //-------------------------------------------------
+        // Futility Pruning.
+        //-------------------------------------------------
+        if (   !isRoot
+            &&  isQuiet
+            &&  best_score > -TBWIN_IN_X
+            &&  futilityMargin <= alpha
+            &&  depth <= FutilityPruningDepth
+            &&  hist < FutilityPruningHistoryLimit[improving])
+        {
+            skipQuiets = true;
+        }
+
+        //-------------------------------------------------
         //  Late Move Pruning / Move Count Pruning
         //-------------------------------------------------
         if (   !isRoot
             &&  isQuiet
             &&  best_score > -TBWIN_IN_X
-            &&  depth <= 7
-            &&  quiets_count > LateMovePruning[improving][depth])
+            &&  depth <= LateMovePruningDepth
+            &&  quiets_count > LateMovePruningCount[improving][depth])
         {
             skipQuiets = true;
             continue;
         }
 
         //-------------------------------------------------
+        // Counter Move Pruning.
+        //-------------------------------------------------
+        if (   !isRoot
+            &&  isQuiet
+            &&  best_score > -TBWIN_IN_X
+            &&  depth <= CounterMovePruningDepth[improving]
+            &&  cmhist < CounterMoveHistoryLimit[improving])
+        {
+            continue;
+        }
+
+        //-------------------------------------------------
+        // Follow Up Move Pruning.
+        //-------------------------------------------------
+        if (   !isRoot
+            &&  isQuiet
+            &&  best_score > -TBWIN_IN_X
+            &&  depth <= FollowUpMovePruningDepth[improving]
+            &&  fuhist < FollowUpMoveHistoryLimit[improving])
+        {
+            continue;
+        }
+
+        //-------------------------------------------------
         //  Static Exchange Evaluation Pruning
         //-------------------------------------------------
-        seeMargin[0] = SEENoisyMargin * depth * depth;
-        seeMargin[1] = SEEQuietMargin * depth;
-
-        if (    best_score > -TBWIN_IN_X
+        if (   !isRoot
+            &&  best_score > -TBWIN_IN_X
             &&  depth <= SEEPruningDepth
             &&  movePicker.get_stage() > STAGE_GOOD_NOISY
             && !board.fast_see(move, seeMargin[isQuiet]))
+        {
             continue;
+        }
 
         // execute current move
         board.make_move<C>(move);
@@ -534,6 +586,10 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
             R -= isPVNode;
             // Reduce less when improving
             R -= improving;
+
+            // Adjust based on history
+            R -= std::max(-2, std::min(2, hist / 5000));
+
             // Reduce less for killers
             //            r -= move == mp.kill1 || move == mp.kill2;
             // Reduce more for the side that last null moved
@@ -595,12 +651,14 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
                         // Bonus pour le coup quiet ayant provoqué un cutoff (fail-high)
                         update_history(td, C, move, depth*depth);
                         update_counter_move_history(td, si->ply, move, depth*depth);
+                        update_followup_move_history(td, si->ply, move, depth*depth);
 
                         // Malus pour les autres coups quiets
                         for (int i = 0; i < quiets_count - 1; i++)
                         {
                             update_history(td, C, quiets_moves[i], -depth*depth);
                             update_counter_move_history(td, si->ply, quiets_moves[i], -depth*depth);
+                            update_followup_move_history(td, si->ply, quiets_moves[i], -depth*depth);
                         }
 
                         // Met à jour les Killers

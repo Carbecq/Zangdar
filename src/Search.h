@@ -57,8 +57,8 @@ public:
     // counter_move history [piece][dest]
     I16  counter_move_history[N_PIECES][N_SQUARES][N_PIECES][N_SQUARES];
 
-    //
-    I16  followup_move_history[N_PIECES][N_SQUARES];
+    // [piece][dest][piece][dest]
+    I16  followup_move_history[N_PIECES][N_SQUARES][N_PIECES][N_SQUARES];
 
     // capture history
     int capture_history[N_PIECES][N_SQUARES][N_PIECES] = {{{0}}};
@@ -82,12 +82,11 @@ public:
     }
     int get_followup_move_history(int ply, MOVE move) const
     {
-        // MOVE previous_move = info[ply-1].move;
+        MOVE folowup_move = info[ply-2].move;
 
-        // return( (previous_move==Move::MOVE_NONE || previous_move==Move::MOVE_NULL)
-        //             ? 0
-        //             : followup_move_history[Move::piece(previous_move)][Move::dest(previous_move)][Move::piece(move)][Move::dest(move)] );
-        return 0;
+        return( (folowup_move==Move::MOVE_NONE || folowup_move==Move::MOVE_NULL)
+                    ? 0
+                    : followup_move_history[Move::piece(folowup_move)][Move::dest(folowup_move)][Move::piece(move)][Move::dest(move)] );
     }
 
 }__attribute__((aligned(64)));
@@ -135,15 +134,33 @@ private:
     void update_counter_move(ThreadData *td, Color oppcolor, int ply, MOVE move);
     MOVE get_counter_move(ThreadData *td, Color oppcolor, int ply) const;
     void update_counter_move_history(ThreadData *td, int ply, MOVE move, int bonus);
+    void update_followup_move_history(ThreadData* td, int ply, MOVE move, int bonus);
 
     static constexpr int CONTEMPT    = 0;
 
     int Reductions[2][32][32];
 
-    static constexpr int LateMovePruning[2][8] = {
+    // static constexpr int LateMovePruningDepth = 8;
+    // static constexpr int LateMovePruningCounts[2][9] = {
+    //     {  0,  3,  4,  7, 12, 16, 21, 28, 34},
+    //     {  0,  5,  7, 12, 18, 27, 38, 50, 65},
+    //     };
+    static constexpr int LateMovePruningDepth = 7;
+    static constexpr int LateMovePruningCount[2][8] = {
         {0, 2, 3, 4, 6, 8, 13, 18},
         {0, 3, 4, 6, 8, 12, 20, 30}
     };
+
+    static constexpr int FutilityMargin = 95;
+    static constexpr int FutilityPruningDepth = 8;
+    static constexpr int FutilityPruningHistoryLimit[] = { 12000, 6000 };
+
+    static constexpr int CounterMovePruningDepth[] = { 3, 2 };
+    static constexpr int CounterMoveHistoryLimit[] = { 0, -1000 };
+
+    static constexpr int FollowUpMovePruningDepth[] = { 3, 2 };
+    static constexpr int FollowUpMoveHistoryLimit[] = { -2000, -4000 };
+
 
     static constexpr int SEEPruningDepth = 9;
     static constexpr int SEEQuietMargin = -64;

@@ -350,8 +350,8 @@ void MovePicker::score_quiet()
     {
         move = mlq.mlmoves[i].move;
         mlq.mlmoves[i].value = thread_data->get_history(board->turn(), move)
-                               + thread_data->get_counter_move_history(ply, move) ;
-                             // + thread_data->get_followup_move_history(ply, move);
+                             + thread_data->get_counter_move_history(ply, move)
+                             + thread_data->get_followup_move_history(ply, move);
     }
 }
 

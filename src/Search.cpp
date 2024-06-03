@@ -249,7 +249,7 @@ MOVE Search::get_counter_move(ThreadData* td, Color oppcolor, int ply) const
 }
 
 //=================================================================
-//! \brief  Update counter_move history.
+//! \brief  Update Counter Move History.
 //! \param[in] prev_move    coup recherché au ply précédant
 //! \param[in] move         coup de réfutation
 //-----------------------------------------------------------------
@@ -274,6 +274,34 @@ void Search::update_counter_move_history(ThreadData* td, int ply, MOVE move, int
     cm_histo = td->counter_move_history[prev_piece][prev_dest][piece][dest];
     cm_histo += 32 * bonus - cm_histo * abs(bonus) / 512;
     td->counter_move_history[prev_piece][prev_dest][piece][dest] = cm_histo;
+}
+
+//=================================================================
+//! \brief  Update Counter Move History.
+//! \param[in] prev_move    coup recherché au ply précédant
+//! \param[in] move         coup de réfutation
+//-----------------------------------------------------------------
+void Search::update_followup_move_history(ThreadData* td, int ply, MOVE move, int bonus)
+{
+    MOVE followup_move = td->info[ply-2].move;
+
+    // Check for root position or null moves
+    if (followup_move == Move::MOVE_NONE || followup_move == Move::MOVE_NULL)
+        return;
+
+    int fm_histo;
+
+    bonus = std::max(-400, std::min(400, bonus));
+
+    PieceType followup_piece = Move::piece(followup_move);
+    int       followup_dest  = Move::dest(followup_move);
+
+    PieceType piece = Move::piece(move);
+    int       dest  = Move::dest(move);
+
+    fm_histo = td->followup_move_history[followup_piece][followup_dest][piece][dest];
+    fm_histo += 32 * bonus - fm_histo * abs(bonus) / 512;
+    td->followup_move_history[followup_piece][followup_dest][piece][dest] = fm_histo;
 }
 
 

@@ -72,6 +72,7 @@ void ThreadPool::reset()
         std::memset(threadData[i].history,    0, sizeof(threadData[i].history));
         std::memset(threadData[i].counter_move,   0, sizeof(threadData[i].counter_move));
         std::memset(threadData[i].counter_move_history, 0, sizeof(threadData[i].counter_move_history));
+        std::memset(threadData[i].followup_move_history, 0, sizeof(threadData[i].followup_move_history));
     }
 }
 
