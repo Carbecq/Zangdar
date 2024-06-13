@@ -355,7 +355,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
             && !excluded
             && board.getNonPawnMaterial<C>())
         {
-            int R = 3 + depth / 5 + std::min(3, (static_eval - beta)/256);
+            int R = 2 + (32 * depth + std::min(static_eval - beta, 384)) / 128;
 
             board.make_nullmove<C>();
             si->move = Move::MOVE_NULL;

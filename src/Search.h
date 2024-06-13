@@ -140,11 +140,6 @@ private:
 
     int Reductions[2][32][32];
 
-    // static constexpr int LateMovePruningDepth = 8;
-    // static constexpr int LateMovePruningCounts[2][9] = {
-    //     {  0,  3,  4,  7, 12, 16, 21, 28, 34},
-    //     {  0,  5,  7, 12, 18, 27, 38, 50, 65},
-    //     };
     static constexpr int LateMovePruningDepth = 7;
     static constexpr int LateMovePruningCount[2][8] = {
         {0, 2, 3, 4, 6, 8, 13, 18},
@@ -160,7 +155,6 @@ private:
 
     static constexpr int FollowUpMovePruningDepth[] = { 3, 2 };
     static constexpr int FollowUpMoveHistoryLimit[] = { -2000, -4000 };
-
 
     static constexpr int SEEPruningDepth = 9;
     static constexpr int SEEQuietMargin = -64;
