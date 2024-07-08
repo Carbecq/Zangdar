@@ -160,6 +160,8 @@ private:
     static constexpr int SEEQuietMargin = -64;
     static constexpr int SEENoisyMargin = -19;
 
+    static constexpr int ProbcutMargin = 95;
+
 };
 
 #endif // SEARCH_H

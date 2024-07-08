@@ -383,7 +383,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
                  && tt_bound == BOUND_UPPER
                  && tt_score < beta))
         {
-            int threshold = beta + 200;
+            int threshold = beta + ProbcutMargin;
 
             MovePicker movePicker(&board, td, si->ply, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, 0);
             MOVE pbMove;
@@ -405,7 +405,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
                 // Cut if the reduced depth search beats pbBeta
                 if (pbScore >= threshold)
                 {
-                    // Store pbScore in TT ??
+                    //TODO Store pbScore in TT ??
                     return pbScore;
                 }
             }
