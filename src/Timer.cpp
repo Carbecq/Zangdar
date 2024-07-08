@@ -1,14 +1,7 @@
-#include "Timer.h"
 #include <algorithm>
-#include <cassert>
 #include <chrono>
-#include <cmath>
-#include <cstdint>
-#include <cstring>
-#include <ctime>
 #include <iostream>
-#include <sstream>
-#include <string>
+#include "Timer.h"
 
 Timer::Timer()
 {
@@ -148,7 +141,7 @@ void Timer::setup(Color color)
 bool Timer::finishOnThisMove() const
 {
     auto fin = std::chrono::high_resolution_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(fin - startTime).count();
+    U64  elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(fin - startTime).count();
 
     return (elapsed >= timeForThisMove);
 }

@@ -3,7 +3,6 @@
 
 class Timer;
 
-#include <cstdint>
 #include <chrono>
 #include "defines.h"
 #include "types.h"
@@ -47,8 +46,8 @@ private:
 
     // gives the exact moment this search was started.
     std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
-    int  timeForThisDepth;      // temps pour "iterative deepening"
-    int  timeForThisMove;       // temps pour une recherche "alpha-beta" ou "quiescence"
+    U64  timeForThisDepth;      // temps pour "iterative deepening"
+    U64  timeForThisMove;       // temps pour une recherche "alpha-beta" ou "quiescence"
     int  searchDepth;
 
 

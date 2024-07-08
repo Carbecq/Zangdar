@@ -417,7 +417,9 @@ setoption name <id> [value <x>]
     std::string name;
     std::string value;
     std::string auxi;
+#if defined DEBUG_LOG
     char message[100];
+#endif
 
     iss >> name;   // "name"
     if (name == "name")
