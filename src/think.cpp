@@ -377,14 +377,13 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         //---------------------------------------------------------------------
         //  ProbCut
         //---------------------------------------------------------------------
-        if (depth >= 5
-            && abs(beta) < TBWIN_IN_X
-            && !(   tt_hit
-                 && tt_bound == BOUND_UPPER
-                 && tt_score < beta))
+        int betaCut = beta + ProbCutMargin;
+        if (   !inCheck
+            && !isPVNode
+            && depth >= ProbCutDepth
+            && !excluded
+            && !(tt_hit && tt_depth >= depth - 3 && tt_score < betaCut))
         {
-            int threshold = beta + ProbcutMargin;
-
             MovePicker movePicker(&board, td, si->ply, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, 0);
             MOVE pbMove;
 
@@ -393,23 +392,24 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
                 board.make_move<C>(pbMove);
                 si->move = pbMove;
 
-                // See if a quiescence search beats pbBeta
-                int pbScore = -quiescence<~C>(-threshold, -threshold+1, td, si+1);
+                // Teste si une recherche de quiescence donne un score supérieur à betaCut
+                int pbScore = -quiescence<~C>(-betaCut, -betaCut+1, td, si+1);
 
-                // If it did, do a proper search with reduced depth
-                if (pbScore >= threshold)
-                    pbScore = -alpha_beta<~C>(-threshold, -threshold + 1, depth-4, td, si+1);
+                // Si oui, alors on effectue une recherche normale, avec une profondeur réduite
+                if (pbScore >= betaCut)
+                    pbScore = -alpha_beta<~C>(-betaCut, -betaCut+1, depth-4, td, si+1);
 
                 board.undo_move<C>();
 
-                // Cut if the reduced depth search beats pbBeta
-                if (pbScore >= threshold)
+                // Coupure si cette dernière recherche bat betaCut
+                if (pbScore >= betaCut)
                 {
-                    //TODO Store pbScore in TT ??
+                    transpositionTable.store(board.hash, pbMove, pbScore, static_eval, BOUND_LOWER, depth-3, si->ply);
                     return pbScore;
                 }
             }
         }
+
     } // end Pruning
 
     //---------------------------------------------------------------------

@@ -156,11 +156,12 @@ private:
     static constexpr int FollowUpMovePruningDepth[] = { 3, 2 };
     static constexpr int FollowUpMoveHistoryLimit[] = { -2000, -4000 };
 
-    static constexpr int SEEPruningDepth = 9;
+    static constexpr int SEEPruningDepth =  9;
     static constexpr int SEEQuietMargin = -64;
     static constexpr int SEENoisyMargin = -19;
 
-    static constexpr int ProbcutMargin = 95;
+    static constexpr int ProbCutDepth  =   5;
+    static constexpr int ProbCutMargin = 100;
 
 };
 
