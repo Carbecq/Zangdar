@@ -192,12 +192,12 @@ void Search::update_pv(SearchInfo* si, const MOVE move) const
 //=========================================================
 //! \brief  Met à jour les heuristiques "Killer"
 //---------------------------------------------------------
-void Search::update_killers(SearchInfo* si, MOVE move)
+void Search::update_killers(ThreadData* td, int ply, MOVE move)
 {
-    if (si->killer1 != move)
+    if (td->killer1[ply] != move)
     {
-        si->killer2 = si->killer1;
-        si->killer1 = move;
+        td->killer2[ply] = td->killer1[ply];
+        td->killer1[ply] = move;
     }
 }
 

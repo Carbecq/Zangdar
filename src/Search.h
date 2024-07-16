@@ -13,9 +13,8 @@ class Search;
 constexpr int STACK_OFFSET = 4;
 constexpr int STACK_SIZE   = MAX_PLY + 2*STACK_OFFSET;  // taille un peu trop grande, mais multiple de 8
 
+//! \brief  Données initialisées à chaque début de recherche
 struct SearchInfo {
-    MOVE        killer1;    // killer moves
-    MOVE        killer2;
     MOVE        excluded;   // coup à éviter
     int         eval;       // évaluation statique
     MOVE        move;       // coup cherché
@@ -28,6 +27,7 @@ struct ThreadData
 {
 public:
 
+    SearchInfo  _info[STACK_SIZE];
     std::thread thread;
     Search*     search;     // pointeur sur la classe de recherche
     SearchInfo* info;       // pointeur décalé de STACK_OFFSET sur la tableau total _info[STACK_SIZE]
@@ -44,26 +44,31 @@ public:
     int         best_score;
     int         best_depth;
 
-    SearchInfo  _info[STACK_SIZE];
+    //*********************************************************************
+    //  Données initialisées une seule fois au début d'une nouvelle partie
+
+    KillerTable killer1;    // Killer Moves
+    KillerTable killer2;
 
     // tableau donnant le bonus/malus d'un coup quiet ayant provoqué un cutoff
     // bonus history [Color][From][Dest]
-    I16  history[N_COLORS][N_SQUARES][N_SQUARES];
+    Historytable  history;
 
     // tableau des coups qui ont causé un cutoff au ply précédent
     // counter_move[opposite_color][piece][dest]
-    MOVE counter_move[N_COLORS][N_PIECES][N_SQUARES];
+    CounterMoveTable counter_move;
 
     // counter_move history [piece][dest]
-    I16  counter_move_history[N_PIECES][N_SQUARES][N_PIECES][N_SQUARES];
+    CounterMoveHistoryTable  counter_move_history;
 
     // [piece][dest][piece][dest]
-    I16  followup_move_history[N_PIECES][N_SQUARES][N_PIECES][N_SQUARES];
+    FollowupMoveHistoryTable  followup_move_history;
 
     // capture history
-    int capture_history[N_PIECES][N_SQUARES][N_PIECES] = {{{0}}};
+ //   int capture_history[N_PIECES][N_SQUARES][N_PIECES] = {{{0}}};
 
-    //------------------------------------------------------------------
+    //*********************************************************************
+
     int get_history(Color color, const MOVE move) const
     {
         return(history[color][Move::from(move)][Move::dest(move)]);
@@ -129,7 +134,7 @@ private:
     bool check_limits(const ThreadData *td) const;
 
     void update_pv(SearchInfo* si, const MOVE move) const;
-    void update_killers(SearchInfo *si, MOVE move);
+    void update_killers(ThreadData *td, int ply, MOVE move);
     void update_history(ThreadData *td, Color color, MOVE move, int bonus);
     void update_counter_move(ThreadData *td, Color oppcolor, int ply, MOVE move);
     MOVE get_counter_move(ThreadData *td, Color oppcolor, int ply) const;

@@ -306,6 +306,12 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
             si->eval = static_eval = board.evaluate();
     }
 
+    // reset killer of granchildren
+    // (si+2)->killer1 = Move::MOVE_NULL;
+    // (si+2)->killer2 = Move::MOVE_NULL;
+
+    td->killer1[si->ply+1] = Move::MOVE_NULL;
+    td->killer2[si->ply+1] = Move::MOVE_NULL;
 
     /*  Avons-nous amélioré la position ?
         Si on ne s'est pas amélioré dans cette ligne, on va pouvoir couper un peu plus */
@@ -428,7 +434,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     MOVE mc = get_counter_move(td, THEM, si->ply);
 
     MovePicker movePicker(&board, td, si->ply, tt_move,
-                          si->killer1, si->killer2, mc, 0);
+                          td->killer1[si->ply], td->killer2[si->ply], mc, 0);
 
     const int old_alpha = alpha;
     int  move_count = 0;
@@ -662,7 +668,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
                         }
 
                         // Met à jour les Killers
-                        update_killers(si, move);
+                        update_killers(td, si->ply, move);
 
                         // Met à jour le Counter-Move
                         update_counter_move(td, THEM, si->ply, move);

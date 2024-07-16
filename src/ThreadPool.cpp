@@ -68,11 +68,14 @@ void ThreadPool::reset()
     // Libère toute la mémoire
     for (int i = 0; i < nbrThreads; i++)
     {
-        std::memset(threadData[i]._info,      0, sizeof(SearchInfo)*STACK_SIZE);
-        std::memset(threadData[i].history,    0, sizeof(threadData[i].history));
-        std::memset(threadData[i].counter_move,   0, sizeof(threadData[i].counter_move));
-        std::memset(threadData[i].counter_move_history, 0, sizeof(threadData[i].counter_move_history));
-        std::memset(threadData[i].followup_move_history, 0, sizeof(threadData[i].followup_move_history));
+        std::memset(threadData[i]._info,                 0, sizeof(SearchInfo)*STACK_SIZE);
+
+        std::memset(threadData[i].killer1,               0, sizeof(KillerTable));
+        std::memset(threadData[i].killer2,               0, sizeof(KillerTable));
+        std::memset(threadData[i].history,               0, sizeof(Historytable));
+        std::memset(threadData[i].counter_move,          0, sizeof(CounterMoveTable));
+        std::memset(threadData[i].counter_move_history,  0, sizeof(CounterMoveHistoryTable));
+        std::memset(threadData[i].followup_move_history, 0, sizeof(FollowupMoveHistoryTable));
     }
 }
 
@@ -120,6 +123,15 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
             // on prend TOUT le tableau
             // killers , excluded, eval, move, ply, pv
             std::memset(threadData[i]._info, 0, sizeof(SearchInfo)*STACK_SIZE); //B
+
+            // for (int p = 0; p < STACK_SIZE; p++)
+            // {
+            //     threadData[i]._info[p].eval     = 0;
+            //     threadData[i]._info[p].excluded = 0;
+            //     threadData[i]._info[p].move     = 0;
+            //     threadData[i]._info[p].ply      = 0;
+            //     std::memset(&threadData[i]._info[p].pv, 0, sizeof(PVariation));
+            // }
 
             delete threadData[i].search;
 
