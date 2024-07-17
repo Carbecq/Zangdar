@@ -306,10 +306,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
             si->eval = static_eval = board.evaluate();
     }
 
-    // reset killer of granchildren
-    // (si+2)->killer1 = Move::MOVE_NULL;
-    // (si+2)->killer2 = Move::MOVE_NULL;
-
+    // Re-initialise les killer des enfants
     td->killer1[si->ply+1] = Move::MOVE_NULL;
     td->killer2[si->ply+1] = Move::MOVE_NULL;
 

@@ -121,17 +121,8 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
             threadData[i].tbhits   = 0;
 
             // on prend TOUT le tableau
-            // killers , excluded, eval, move, ply, pv
-            std::memset(threadData[i]._info, 0, sizeof(SearchInfo)*STACK_SIZE); //B
-
-            // for (int p = 0; p < STACK_SIZE; p++)
-            // {
-            //     threadData[i]._info[p].eval     = 0;
-            //     threadData[i]._info[p].excluded = 0;
-            //     threadData[i]._info[p].move     = 0;
-            //     threadData[i]._info[p].ply      = 0;
-            //     std::memset(&threadData[i]._info[p].pv, 0, sizeof(PVariation));
-            // }
+            // excluded, eval, move, ply, pv
+            std::memset(threadData[i]._info, 0, sizeof(SearchInfo)*STACK_SIZE);
 
             delete threadData[i].search;
 
