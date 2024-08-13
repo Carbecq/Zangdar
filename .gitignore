@@ -2,7 +2,6 @@
 src/*.o
 src/*/*.o
 Zangdar.pro.user.*
-Makefile
 src/Z/
 doc/
 test/
