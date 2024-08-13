@@ -45,10 +45,12 @@ QMAKE_CXXFLAGS_RELEASE -= -O2
 QMAKE_CXXFLAGS_RELEASE += -pipe -std=c++20 -O3 -flto -DNDEBUG -fwhole-program
 QMAKE_CXXFLAGS_RELEASE += -pedantic -Wshadow -Wall -Wextra -Wcast-qual -Wuninitialized
 
-VERSION = 2.29.10
-TARGET  = native-pext
-
+VERSION = "$$cat(VERSION.txt)"
+# message($$VERSION)
 DEFINES += VERSION='\\"$${VERSION}\\"'
+
+# message($$DEFINES)
+TARGET  = native-pext
 
 ##------------------------------------------ 1) old
 equals(TARGET, "old"){
