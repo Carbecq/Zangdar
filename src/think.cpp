@@ -90,7 +90,7 @@ void Search::iterative_deepening(ThreadData* td, SearchInfo* si)
                 show_uci_result(td, elapsed, si->pv);
 
             // If an iteration finishes after optimal time usage, stop the search
-            if (timer.finishOnThisDepth(elapsed, uncertain))
+            if (timer.finishOnThisDepth(elapsed, td->best_move, td->nodes))
                 break;
 
             td->seldepth = 0;
@@ -175,13 +175,25 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     assert(beta > alpha);
 
     constexpr Color THEM = ~C;
-    
+
+    bool isRoot     = (si->ply == 0);
+    bool isPVNode   = ((beta - alpha) != 1); // We are in a PV-node if we aren't in a null window.
+
+    // Ensure a fresh PV
+    si->pv.length     = 0;
+
+    /* On a atteint la fin de la recherche
+        Certains codes n'appellent la quiescence que si on n'est pas en échec
+        ceci amène à une explosion des coups recherchés */
+    if (depth <= 0)
+    {
+        return (quiescence<C>(alpha, beta, td, si));
+    }
+
     // Update node count and selective depth
     td->nodes++;
-    if (si->ply > td->seldepth)
-        td->seldepth = si->ply;
+    td->seldepth = isRoot ? 0 : std::max(td->seldepth, si->ply);
 
-    si->pv.length     = 0;
 
     // On a atteint la limite en profondeur de recherche ?
     if (si->ply >= MAX_PLY - 1)
@@ -199,8 +211,6 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     }
 
     //  Caractéristiques de la position
-    bool isRoot     = (si->ply == 0);
-    bool isPVNode   = ((beta - alpha) != 1); // We are in a PV-node if we aren't in a null window.
     bool inCheck    = board.is_in_check<C>();
     int  best_score = -INFINITE;        // initially assume the worst case
     MOVE best_move  = Move::MOVE_NONE;  // meilleur coup local
@@ -211,14 +221,6 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     if (inCheck == true && depth + 1 < MAX_PLY)
         depth++;
 
-    /* On a atteint la fin de la recherche
-        Certains codes n'appellent la quiescence que si on n'est pas en échec
-        ceci amène à une explosion des coups recherchés */
-    if (depth <= 0)
-    {
-        td->nodes--;
-        return (quiescence<C>(alpha, beta, td, si));
-    }
 
     if (!isRoot)
     {
@@ -456,6 +458,8 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         if (move == excluded)
             continue;
 
+        const U64 starting_nodes = td->nodes;
+
         isQuiet = !Move::is_tactical(move);    // capture, promotion (avec capture ou non), prise en-passant
         if (isQuiet)
         {
@@ -624,6 +628,10 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
 
         // retract current move
         board.undo_move<C>();
+
+        // Track where nodes were spent in the Main thread at the Root
+        if (isRoot && td->index==0)
+            timer.updateMoveNodes(move, td->nodes - starting_nodes);
 
         //  Time-out
         if (td->stopped)

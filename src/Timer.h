@@ -36,13 +36,26 @@ public:
     void start();
     void setup(Color color);
     bool finishOnThisMove() const;
-    bool finishOnThisDepth(U64 elapsed, bool uncertain);
+    bool finishOnThisDepth(U64 elapsed, MOVE best_move, U64 total_nodes);
+
     int  getSearchDepth() const { return(searchDepth); }
     int  elapsedTime();
 
+    void updateMoveNodes(MOVE move, U64 nodes);
 
 private:
     static constexpr int BUFFER = 5;    // temps de réserve pour l'interface
+
+    static constexpr int softTimeScale = 57;
+    static constexpr int hardTimeScale = 62;
+    static constexpr int baseTimeScale = 20;
+    static constexpr int incrementScale = 83;
+    static constexpr int nodeTMBase = 145;
+    static constexpr int nodeTMScale = 167;
+
+    static constexpr std::array<double, 7> stabilityValues = {
+        2.2, 1.6, 1.4, 1.1, 1, 0.95, 0.9
+    };
 
     // gives the exact moment this search was started.
     std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
@@ -50,6 +63,9 @@ private:
     U64  timeForThisMove;       // temps pour une recherche "alpha-beta" ou "quiescence"
     int  searchDepth;
 
+    std::array<U64, 4096> MoveNodeCounts;
+    MOVE PrevBestMove;
+    uint32_t pv_stability;
 
 };
 

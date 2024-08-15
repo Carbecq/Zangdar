@@ -2,6 +2,7 @@
 #include <chrono>
 #include <iostream>
 #include "Timer.h"
+#include "Move.h"
 
 Timer::Timer()
 {
@@ -55,7 +56,10 @@ void Timer::reset()
 //-----------------------------------------------------------
 void Timer::start()
 {
+    std::fill(MoveNodeCounts.begin(), MoveNodeCounts.end(), 0);
     startTime = std::chrono::high_resolution_clock::now();
+    pv_stability = 0;
+    PrevBestMove = Move::MOVE_NONE;
 }
 
 //===========================================================
@@ -70,7 +74,6 @@ void Timer::setup(Color color)
     //        std::cout << "nodes       " << limits.nodes << std::endl;
     //        std::cout << "move_time   " << limits.movetime << std::endl;
     //        std::cout << "infinite    " << limits.infinite << std::endl;
-
 
     searchDepth         = MAX_PLY;
     timeForThisMove     = MAX_TIME;
@@ -98,35 +101,14 @@ void Timer::setup(Color color)
     {
         int time      = limits.time[color];
         int increment = limits.incr[color];
-        int movestogo = limits.movestogo;
+     //   int movestogo = limits.movestogo;
 
-        // partie : 40 coups en 15 minutes              : moves_to_go = 40 ; wtime=btime = 15*60000 ; winc=binc = 0
-        // partie en 5 minutes, incrément de 6 secondes : moves_to_go = 0  ; wtime=btime =  5*60000 ; winc=binc = 6 >> sudden death
+        // formules provenant de Sirius (provenant elle-mêmes de Stormphrax)
+        // m_SoftBound
+        timeForThisDepth = softTimeScale / 100.0 * (time / baseTimeScale + increment * incrementScale / 100.0);
 
-        // CCRL blitz :  2min base time + 1sec increment
-
-        // idée de Weiss
-
-        // Plan as if there are at most 50 moves left to play with current time
-        int mtg = movestogo ? std::min(movestogo, 50) : 50;
-
-        int timeLeft = std::max(0, time
-                                       + increment * mtg
-                                       - BUFFER * mtg);
-
-        if (!movestogo)
-        {
-            // Temps pour la partie entière
-            double scale = 0.02;
-            timeForThisDepth = std::min(timeLeft * scale, 0.2 * time);
-
-        } else {
-            // X coups en Y temps
-            double scale = 0.7 / mtg;
-            timeForThisDepth = std::min(timeLeft * scale, 0.8 * time);
-        }
-
-        timeForThisMove = std::min(5.0 * timeForThisDepth, 0.8 * time);
+        // m_HardBound
+        timeForThisMove = time * (hardTimeScale / 100.0);
     }
 
 
@@ -135,11 +117,37 @@ void Timer::setup(Color color)
 #endif
 }
 
+//===========================================================
+//! \brief  Détermine si on a assez de temps pour effectuer
+//!         une nouvelle itération
+//! \param  elapsedTime     temps en millisecondes
+//!
+//-----------------------------------------------------------
+bool Timer::finishOnThisDepth(U64 elapsed, MOVE best_move, U64 total_nodes)
+{
+    // stopSoft
+
+    if (best_move == PrevBestMove)
+        pv_stability++;
+    else
+        pv_stability = 0;
+    PrevBestMove = best_move;
+
+    double bmNodes = static_cast<double>(MoveNodeCounts[Move::fromdest(best_move)]) / static_cast<double>(total_nodes);
+    double scale = ((nodeTMBase / 100.0) - bmNodes) * (nodeTMScale / 100.0);
+    //                  (1.45 - bnm ) * 1.67
+ //   std::cout << "elapsed=" <<elapsed <<  " total=" << total_nodes << " scale=" << scale << " time=" << timeForThisDepth << "  " << timeForThisDepth*scale << std::endl;
+    scale *= stabilityValues[std::min(pv_stability, 6u)];
+    return (elapsed > timeForThisDepth * scale);
+}
+
 //==============================================================================
-//! \brief Check if the time we alloted for picking this move has expired.
+//! \brief Détermine si le temps alloué pour la recherche est dépassé.
 //------------------------------------------------------------------------------
 bool Timer::finishOnThisMove() const
 {
+    // stopHard
+
     auto fin = std::chrono::high_resolution_clock::now();
     U64  elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(fin - startTime).count();
 
@@ -152,17 +160,6 @@ bool Timer::finishOnThisMove() const
 int Timer::elapsedTime()
 {
     return (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count());
-}
-
-//===========================================================
-//! \brief  Détermine si on a assez de temps pour effectuer
-//!         une nouvelle itération
-//! \param  elapsedTime     temps en millisecondes
-//!
-//-----------------------------------------------------------
-bool Timer::finishOnThisDepth(U64 elapsed, bool uncertain)
-{
-    return (elapsed > timeForThisDepth * (1 + uncertain));
 }
 
 //==================================================================
@@ -185,4 +182,14 @@ void Timer::debug()
               << " timeForThisMove: " << timeForThisMove
               << " searchDepth: " << searchDepth
               << std::endl;
+}
+
+//==================================================================
+//! \brief Met à jour m_NodeCounts
+//! \param[in] move     coup cherché
+//! \param[in] nodes    nombre de noeuds cherchés pour trouver ce coup
+//------------------------------------------------------------------
+void Timer::updateMoveNodes(MOVE move, U64 nodes)
+{
+    MoveNodeCounts[Move::fromdest(move)] += nodes;
 }

@@ -50,6 +50,9 @@ constexpr U32 MOVE_FROM_MASK      = 0b000000000000000000111111;
 constexpr U32 MOVE_DEST_MASK      = 0b000000000000111111000000;
 
 //                                    FFFPPPCCCMMMDDDDDDFFFFFF
+constexpr U32 MOVE_FROMDEST_MASK  = 0b000000000000111111111111;
+
+//                                    FFFPPPCCCMMMDDDDDDFFFFFF
 constexpr U32 MOVE_PIECE_MASK     = 0b000000000111000000000000;
 
 //                                    FFFPPPCCCMMMDDDDDDFFFFFF
@@ -107,6 +110,12 @@ constexpr U32 MOVE_NULL           = 0b00000001000000000000000000000000;
 //! \brief  Retourne la case d'arrivée
 [[nodiscard]] constexpr int dest(const U32 move) noexcept {
     return ((move & MOVE_DEST_MASK) >> SHIFT_DEST);
+}
+
+//! \brief  Retourne la case d'arrivée et de départ combinées
+//! Est utilisé comme indice
+[[nodiscard]] constexpr int fromdest(const MOVE move) noexcept {
+    return (move & MOVE_FROMDEST_MASK);
 }
 
 //! \brief  Retourne la pièce se déplaçant

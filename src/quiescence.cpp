@@ -13,18 +13,17 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
 {
     assert(beta > alpha);
 
+    // Update node count and selective depth
+    td->nodes++;
+    td->seldepth = std::max(td->seldepth, si->ply);
+
+
     //  Time-out
     if (td->stopped || check_limits(td))
     {
         td->stopped = true;
         return 0;
     }
-
-
-    // Update node count and selective depth
-    td->nodes++;
-    if (si->ply > td->seldepth)
-        td->seldepth = si->ply;
 
 
     // partie nulle ?
