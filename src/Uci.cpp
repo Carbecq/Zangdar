@@ -55,6 +55,7 @@ void Uci::run()
     std::cout << "option name OwnBook type check default false" << std::endl;
     std::cout << "option name BookPath type string default " << "./" << std::endl;
     std::cout << "option name SyzygyPath type string default " << "<empty>" << std::endl;
+    std::cout << "option name MoveOverhead type spin default 5 min 0 max 10000" << std::endl;
 
     std::cout << "uciok" << std::endl;
 
@@ -362,9 +363,8 @@ void Uci::parse_go(std::istringstream& iss)
     }
 
     // Reset the time manager
-    uci_timer.reset();
-
-    uci_timer = Timer(infinite, wtime, btime, winc, binc, movestogo, depth, nodes, movetime);
+    uci_timer.init(infinite, wtime, btime, winc, binc, movestogo, depth, nodes, movetime);
+    uci_timer.setMoveOverhead(MoveOverhead);
     uci_timer.start();
     uci_timer.setup(uci_board.side_to_move);
 
@@ -528,6 +528,14 @@ setoption name <id> [value <x>]
                 // only use TB if loading was successful
                 threadPool.set_useSyzygy(TB_LARGEST > 0);
             }
+        }
+
+        else if (option_name == "MoveOverhead")
+        {
+            //  MoveOverhead        : Overhead on time allocation to avoid time losses
+
+            iss >> value;      // "value"
+            iss >> MoveOverhead;
         }
     }
     else

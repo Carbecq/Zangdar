@@ -34,6 +34,31 @@ Timer::Timer(bool infinite,
     searchDepth         = 0;
 }
 
+void Timer::init(bool infinite,
+             int wtime,
+             int btime,
+             int winc,
+             int binc,
+             int movestogo,
+             int depth,
+             int nodes,
+             int movetime)
+{
+    limits.time[WHITE] = wtime;
+    limits.time[BLACK] = btime;
+    limits.incr[WHITE] = winc;
+    limits.incr[BLACK] = binc;
+    limits.movestogo   = movestogo;
+    limits.depth       = depth;
+    limits.nodes       = nodes;
+    limits.movetime    = movetime;
+    limits.infinite    = infinite;
+
+    timeForThisDepth    = 0;
+    timeForThisMove     = 0;
+    searchDepth         = 0;
+}
+
 void Timer::reset()
 {
     limits.time[WHITE] = 0;
@@ -94,14 +119,14 @@ void Timer::setup(Color color)
     else if (limits.movetime != 0) // temps de recherche imposé = move_time
     {
         searchDepth         = MAX_PLY;
-        timeForThisMove     = limits.movetime - BUFFER;
-        timeForThisDepth    = limits.movetime - BUFFER;
+        timeForThisMove     = limits.movetime - MoveOverhead;
+        timeForThisDepth    = limits.movetime - MoveOverhead;
     }
     else if (limits.time[color] != 0)
     {
         int time      = limits.time[color];
         int increment = limits.incr[color];
-     //   int movestogo = limits.movestogo;
+    //    int movestogo = limits.movestogo;
 
         // formules provenant de Sirius (provenant elle-mêmes de Stormphrax)
         // m_SoftBound
@@ -181,6 +206,7 @@ void Timer::debug()
     std::cout << "timeForThisDepth: " << timeForThisDepth
               << " timeForThisMove: " << timeForThisMove
               << " searchDepth: " << searchDepth
+              << " moveOverhead: " << MoveOverhead
               << std::endl;
 }
 

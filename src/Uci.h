@@ -22,6 +22,7 @@ private:
     void go_bench(int dmax, int tmax);
     bool go_tactics(const std::string& line, int dmax, int tmax, U64& total_nodes, U64& total_time, int &total_depths, bool &found_am);
 
+    int MoveOverhead;
 };
 
 #endif // UCI_H

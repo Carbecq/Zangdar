@@ -14,6 +14,15 @@ public:
     Timer();
     Timer(bool infinite, int wtime, int btime, int winc, int binc, int movestogo,
           int depth, int nodes, int movetime);
+    void init(bool infinite,
+                      int wtime,
+                      int btime,
+                      int winc,
+                      int binc,
+                      int movestogo,
+                      int depth,
+                      int nodes,
+                      int movetime);
 
     struct Limits {
 
@@ -40,12 +49,12 @@ public:
 
     int  getSearchDepth() const { return(searchDepth); }
     int  elapsedTime();
+    void setMoveOverhead(int n) { MoveOverhead = n;     }
+    int  getMoveOverhead() const { return MoveOverhead; }
 
     void updateMoveNodes(MOVE move, U64 nodes);
 
 private:
-    static constexpr int BUFFER = 5;    // temps de réserve pour l'interface
-
     static constexpr int softTimeScale = 57;
     static constexpr int hardTimeScale = 62;
     static constexpr int baseTimeScale = 20;
@@ -59,13 +68,14 @@ private:
 
     // gives the exact moment this search was started.
     std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
+    int  MoveOverhead = 5;      // temps de réserve pour l'interface
     U64  timeForThisDepth;      // temps pour "iterative deepening"
     U64  timeForThisMove;       // temps pour une recherche "alpha-beta" ou "quiescence"
     int  searchDepth;
 
-    std::array<U64, 4096> MoveNodeCounts;
-    MOVE PrevBestMove;
-    uint32_t pv_stability;
+    std::array<U64, 4096>   MoveNodeCounts;
+    MOVE                    PrevBestMove;
+    uint32_t                pv_stability;
 
 };
 
