@@ -1,6 +1,6 @@
 DEBUG=no
 PROF=no
-CXX=g++-12
+CXX=g++-14
 SRC1=src
 SRC2=src/pyrrhic
 

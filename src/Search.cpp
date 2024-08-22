@@ -40,7 +40,7 @@ Search::~Search() {}
 //! \param[in] best_score   meilleur score
 //! \param[in] elapsed      temps passé pour la recherche, en millisecondes
 //---------------------------------------------------------
-void Search::show_uci_result(const ThreadData* td, U64 elapsed, PVariation& pv) const
+void Search::show_uci_result(const ThreadData* td, U64 elapsed) const
 {
     elapsed++; // évite une division par 0
     // commande envoyée à UCI
@@ -98,27 +98,29 @@ void Search::show_uci_result(const ThreadData* td, U64 elapsed, PVariation& pv) 
            << " hashfull "   << hash_full;
 #endif
 
-    if (td->best_score >= MATE_IN_X)
+    int best_score = td->get_best_score();
+
+    if (best_score >= MATE_IN_X)
     {
-        stream << " score mate " << (MATE - td->best_score) / 2 + 1;             // score mate <y> mate in y moves, not plies.
+        stream << " score mate " << (MATE - best_score) / 2 + 1;             // score mate <y> mate in y moves, not plies.
     }
-    else if (td->best_score <= -MATE_IN_X)
+    else if (best_score <= -MATE_IN_X)
     {
-        stream << " score mate " << (-MATE - td->best_score) / 2;
+        stream << " score mate " << (-MATE - best_score) / 2;
     }
     else
     {
 
 #if defined USE_PRETTY
-        stream << " score cp " << std::right << std::setw(5) << td->best_score;  // score cp <x> the score from the engine's point of view in centipawns.
+        stream << " score cp " << std::right << std::setw(5) << best_score;  // score cp <x> the score from the engine's point of view in centipawns.
 #else
-        stream << " score cp " << td->best_score;
+        stream << " score cp " << best_score;
 #endif
     }
 
     stream << " pv";
-    for (int i=0; i<pv.length; i++)
-        stream << " " << Move::name(pv.line[i]);
+    for (int i=0; i<td->get_pv_length(); i++)
+        stream << " " << Move::name(td->get_pv_move(i));
 
     std::cout << stream.str() << std::endl;
 }
@@ -131,7 +133,7 @@ void Search::show_uci_result(const ThreadData* td, U64 elapsed, PVariation& pv) 
 void Search::show_uci_best(const ThreadData* td) const
 {
     // ATTENTION AU FORMAT D'AFFICHAGE
-    std::cout << "bestmove " << Move::name(td->best_move) << std::endl;
+    std::cout << "bestmove " << Move::name(td->get_best_move()) << std::endl;
 }
 
 //=========================================================
@@ -158,7 +160,9 @@ bool Search::check_limits(const ThreadData* td) const
     // Every 4096 nodes, check if our time has expired.
     // On ne teste pas si nodes=0
 
-    return((td->nodes & 4095) == 4095
+    return( td->depth > 1
+//            && (td->nodes & 4095) == 4095
+            && (td->nodes & 1023) == 1023
             && td->index == 0
             && timer.finishOnThisMove());
 }

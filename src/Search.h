@@ -31,18 +31,25 @@ public:
     std::thread thread;
     Search*     search;     // pointeur sur la classe de recherche
     SearchInfo* info;       // pointeur décalé de STACK_OFFSET sur la tableau total _info[STACK_SIZE]
+    PVariation  pvs[MAX_PLY];
 
     int         index;
     int         depth;
     int         seldepth;
-    int         score;
+ //   int         score;
     U64         nodes;
     bool        stopped;
     U64         tbhits;
 
-    MOVE        best_move;
-    int         best_score;
+//    MOVE        best_move;
+//    int         best_score;
     int         best_depth;
+
+    int  get_best_depth()   const { return best_depth;              }
+    MOVE get_best_move()    const { return pvs[best_depth].line[0]; }
+    int  get_best_score()   const { return pvs[best_depth].score;   }
+    int  get_pv_length()    const { return pvs[best_depth].length;  }
+    MOVE get_pv_move(int i) const { return pvs[best_depth].line[i]; }
 
     //*********************************************************************
     //  Données initialisées une seule fois au début d'une nouvelle partie
@@ -124,11 +131,11 @@ private:
     Timer   timer;
 
     template <Color C> void iterative_deepening(ThreadData* td, SearchInfo* si);
-    template <Color C> int  aspiration_window(ThreadData* td, SearchInfo* si);
+    template <Color C> void aspiration_window(ThreadData* td, SearchInfo* si);
     template <Color C> int  alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInfo* si);
     template <Color C> int  quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si);
 
-    void show_uci_result(const ThreadData *td, U64 elapsed, PVariation &pv) const;
+    void show_uci_result(const ThreadData *td, U64 elapsed) const;
     void show_uci_best(const ThreadData *td) const;
     void show_uci_current(MOVE move, int currmove, int depth) const;
     bool check_limits(const ThreadData *td) const;

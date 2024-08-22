@@ -34,7 +34,7 @@ public:
         int  movetime;    // limit search by time
         bool infinite;    // ignore limits (infinite search)
 
-        Limits() : time{}, incr{}, movestogo(0), depth(0), nodes(0), movetime(0), infinite(false) {};
+        Limits() : time{}, incr{}, movestogo(0), depth(0), nodes(0), movetime(0), infinite(false) {}
     };
     Limits limits;
 
@@ -45,7 +45,7 @@ public:
     void start();
     void setup(Color color);
     bool finishOnThisMove() const;
-    bool finishOnThisDepth(U64 elapsed, MOVE best_move, U64 total_nodes);
+    bool finishOnThisDepth(U64 elapsed, int depth, PVariation pvs[MAX_PLY], U64 total_nodes);
 
     int  getSearchDepth() const { return(searchDepth); }
     int  elapsedTime();
@@ -53,29 +53,34 @@ public:
     int  getMoveOverhead() const { return MoveOverhead; }
 
     void updateMoveNodes(MOVE move, U64 nodes);
+    void update(int depth, PVariation pvs[MAX_PLY]);
 
 private:
-    static constexpr int softTimeScale = 57;
-    static constexpr int hardTimeScale = 62;
-    static constexpr int baseTimeScale = 20;
-    static constexpr int incrementScale = 83;
-    static constexpr int nodeTMBase = 145;
-    static constexpr int nodeTMScale = 167;
+    // static constexpr int softTimeScale = 57;
+    // static constexpr int hardTimeScale = 62;
+    // static constexpr int baseTimeScale = 20;
+    // static constexpr int incrementScale = 83;
+    // static constexpr int nodeTMBase = 145;
+    // static constexpr int nodeTMScale = 167;
 
-    static constexpr std::array<double, 7> stabilityValues = {
-        2.2, 1.6, 1.4, 1.1, 1, 0.95, 0.9
-    };
+    // static constexpr std::array<double, 7> stabilityValues = {
+    //     2.2, 1.6, 1.4, 1.1, 1, 0.95, 0.9
+    // };
 
     // gives the exact moment this search was started.
     std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
     int  MoveOverhead = 5;      // temps de réserve pour l'interface
-    U64  timeForThisDepth;      // temps pour "iterative deepening"
-    U64  timeForThisMove;       // temps pour une recherche "alpha-beta" ou "quiescence"
+    // U64  timeForThisDepth;      // temps pour "iterative deepening"
+    // U64  timeForThisMove;       // temps pour une recherche "alpha-beta" ou "quiescence"
     int  searchDepth;
 
     std::array<U64, 4096>   MoveNodeCounts;
-    MOVE                    PrevBestMove;
-    uint32_t                pv_stability;
+    // MOVE                    PrevBestMove;
+    int                     pv_stability;
+
+    // double start_time, ideal_usage, max_usage;
+    int ideal_usage, max_usage;
+    // uint64_t nodes[0x10000];
 
 };
 

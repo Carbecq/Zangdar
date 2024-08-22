@@ -361,10 +361,9 @@ void Uci::parse_go(std::istringstream& iss)
             movetime = searchTime;
         }
     }
-
+//    printf("************************************************************** \n\n\n");
     // Reset the time manager
     uci_timer.init(infinite, wtime, btime, winc, binc, movestogo, depth, nodes, movetime);
-    uci_timer.setMoveOverhead(MoveOverhead);
     uci_timer.start();
     uci_timer.setup(uci_board.side_to_move);
 
@@ -536,6 +535,7 @@ setoption name <id> [value <x>]
 
             iss >> value;      // "value"
             iss >> MoveOverhead;
+            uci_timer.setMoveOverhead(MoveOverhead);
         }
     }
     else

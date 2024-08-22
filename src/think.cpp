@@ -65,33 +65,42 @@ template<Color C>
 void Search::iterative_deepening(ThreadData* td, SearchInfo* si)
 {
     si->pv.length = 0;
+    si->pv.score = -INFINITE;
 
-    for (td->depth = 1; td->depth <= timer.getSearchDepth(); td->depth++)
+    for (td->depth = 1; td->depth < timer.getSearchDepth(); td->depth++)
     {
+    //    std::cout << "calcul d=" << td->depth << std::endl;
         // Search position, using aspiration windows for higher depths
-        td->score = aspiration_window<C>(td, si);
+        aspiration_window<C>(td, si);
+    //    std::cout << "calcul s=" << si->pv.score << std::endl;
 
         if (td->stopped)
             break;
+    //    std::cout << "calcul OK" << std::endl;
 
         // L'itération s'est terminée sans problème
         // On peut mettre à jour les infos UCI
         if (td->index == 0)
         {
-            bool uncertain = si->pv.line[0] != td->best_move;
-
             td->best_depth = td->depth;
-            td->best_move  = si->pv.line[0];
-            td->best_score = td->score;
+            // td->best_move  = si->pv.line[0];
+            // td->best_score = td->score;
+
+            td->pvs[td->depth] = si->pv;
+           // td->pvs[td->depth].score = td->score;
 
             auto elapsed = timer.elapsedTime();
 
             if (threadPool.get_logUci())
-                show_uci_result(td, elapsed, si->pv);
+                show_uci_result(td, elapsed);
+
+            timer.update(td->depth, td->pvs);
+
 
             // If an iteration finishes after optimal time usage, stop the search
-            if (timer.finishOnThisDepth(elapsed, td->best_move, td->nodes))
+            if (timer.finishOnThisDepth(elapsed, td->depth, td->pvs, td->nodes))
                 break;
+
 
             td->seldepth = 0;
         }
@@ -104,55 +113,52 @@ void Search::iterative_deepening(ThreadData* td, SearchInfo* si)
 //!
 //------------------------------------------------------
 template<Color C>
-int Search::aspiration_window(ThreadData* td, SearchInfo* si)
+void Search::aspiration_window(ThreadData* td, SearchInfo* si)
 {
     int alpha  = -INFINITE;
     int beta   = INFINITE;
     int depth  = td->depth;
-    int score  = td->score;
 
-    const int initialWindow = 12;
+    const int initialWindow = 12;   // 10 ?
     int delta = 16;
 
     // After a few depths use a previous result to form the window
-    if (depth >= 6)
+    if (depth >= 6) // 5?
     {
-        alpha = std::max(score - initialWindow, -INFINITE);
-        beta  = std::min(score + initialWindow, INFINITE);
+        alpha = std::max(td->pvs[td->best_depth].score - initialWindow, -INFINITE);
+        beta  = std::min(td->pvs[td->best_depth].score + initialWindow, INFINITE);
     }
 
     while (true)
     {
-        score = alpha_beta<C>(alpha, beta, std::max(1, depth), td, si);
+        si->pv.score = alpha_beta<C>(alpha, beta, std::max(1, depth), td, si);
 
         if (td->stopped)
             break;
 
         // Search failed low, adjust window and reset depth
-        if (score <= alpha)
+        if (si->pv.score <= alpha)
         {
-            alpha = std::max(score - delta, -INFINITE); // alpha/score-delta
+            alpha = std::max(si->pv.score - delta, -INFINITE); // alpha/score-delta
             beta  = (alpha + beta) / 2;
             depth = td->depth;
         }
 
         // Search failed high, adjust window and reduce depth
-        else if(score >= beta)  // Fail High
+        else if(si->pv.score >= beta)  // Fail High
         {
-            beta  = std::min(score + delta, INFINITE);   // beta/score+delta
+            beta  = std::min(si->pv.score + delta, INFINITE);   // beta/score+delta
             // idée de Berserk
-            if (abs(score) < TBWIN_IN_X)
+            if (abs(si->pv.score) < TBWIN_IN_X)
                 depth--;
         }
 
         // Score within the bounds is accepted as correct
         else
-            return score;
+            return ;
 
         delta += delta*2 / 3;
     }
-
-    return score;
 }
 
 //=====================================================
@@ -195,6 +201,13 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     td->seldepth = isRoot ? 0 : std::max(td->seldepth, si->ply);
 
 
+    //  Time-out
+    if (td->stopped || check_limits(td))
+    {
+        td->stopped = true;
+        return 0;
+    }
+
     // On a atteint la limite en profondeur de recherche ?
     if (si->ply >= MAX_PLY - 1)
         return board.evaluate();
@@ -203,12 +216,6 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     if (board.gamemove_counter >= MAX_HIST - 1)
         return board.evaluate();
 
-    //  Time-out
-    if (td->stopped || check_limits(td))
-    {
-        td->stopped = true;
-        return 0;
-    }
 
     //  Caractéristiques de la position
     bool inCheck    = board.is_in_check<C>();
