@@ -161,8 +161,7 @@ bool Search::check_limits(const ThreadData* td) const
     // On ne teste pas si nodes=0
 
     return( td->depth > 1
-//            && (td->nodes & 4095) == 4095
-            && (td->nodes & 1023) == 1023
+            && (td->nodes & 4095) == 4095
             && td->index == 0
             && timer.finishOnThisMove());
 }

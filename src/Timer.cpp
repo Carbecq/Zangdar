@@ -6,32 +6,8 @@
 
 Timer::Timer()
 {
+    MoveOverhead       = MOVE_OVERHEAD;
     reset();
-}
-
-Timer::Timer(bool infinite,
-             int wtime,
-             int btime,
-             int winc,
-             int binc,
-             int movestogo,
-             int depth,
-             int nodes,
-             int movetime)
-{
-    limits.time[WHITE] = wtime;
-    limits.time[BLACK] = btime;
-    limits.incr[WHITE] = winc;
-    limits.incr[BLACK] = binc;
-    limits.movestogo   = movestogo;
-    limits.depth       = depth;
-    limits.nodes       = nodes;
-    limits.movetime    = movetime;
-    limits.infinite    = infinite;
-
-    // timeForThisDepth    = 0;
-    // timeForThisMove     = 0;
-    searchDepth         = 0;
 }
 
 void Timer::init(bool infinite,
@@ -54,9 +30,9 @@ void Timer::init(bool infinite,
     limits.movetime    = movetime;
     limits.infinite    = infinite;
 
-    // timeForThisDepth    = 0;
-    // timeForThisMove     = 0;
-    searchDepth         = 0;
+    timeForThisDepth   = 0;
+    timeForThisMove    = 0;
+    searchDepth        = 0;
 }
 
 void Timer::reset()
@@ -71,9 +47,9 @@ void Timer::reset()
     limits.movetime    = 0;
     limits.infinite    = false;
 
-    // timeForThisDepth    = 0;
-    // timeForThisMove     = 0;
-    searchDepth         = 0;
+    timeForThisDepth   = 0;
+    timeForThisMove    = 0;
+    searchDepth        = 0;
 }
 
 //===========================================================
@@ -81,10 +57,10 @@ void Timer::reset()
 //-----------------------------------------------------------
 void Timer::start()
 {
-    std::fill(MoveNodeCounts.begin(), MoveNodeCounts.end(), 0);
     startTime = std::chrono::high_resolution_clock::now();
+
+    std::fill(MoveNodeCounts.begin(), MoveNodeCounts.end(), 0);
     pv_stability = 0;
-    // PrevBestMove = Move::MOVE_NONE;
 }
 
 //===========================================================
@@ -101,26 +77,26 @@ void Timer::setup(Color color)
     //        std::cout << "infinite    " << limits.infinite << std::endl;
 
     searchDepth         = MAX_PLY;
-    // timeForThisMove     = MAX_TIME;
-    // timeForThisDepth    = MAX_TIME;
+    timeForThisMove     = MAX_TIME;
+    timeForThisDepth    = MAX_TIME;
 
     if (limits.infinite) // recherche infinie (temps et profondeur)
     {
         searchDepth         = MAX_PLY;
-        // timeForThisMove     = MAX_TIME;
-        // timeForThisDepth    = MAX_TIME;
+        timeForThisMove     = MAX_TIME;
+        timeForThisDepth    = MAX_TIME;
     }
     else if (limits.depth != 0) // profondeur de recherche imposée = depth
     {
         searchDepth         = limits.depth;
-        // timeForThisMove     = MAX_TIME;
-        // timeForThisDepth    = MAX_TIME;
+        timeForThisMove     = MAX_TIME;
+        timeForThisDepth    = MAX_TIME;
     }
     else if (limits.movetime != 0) // temps de recherche imposé = move_time
     {
         searchDepth         = MAX_PLY;
-        // timeForThisMove     = limits.movetime - MoveOverhead;
-        // timeForThisDepth    = limits.movetime - MoveOverhead;
+        timeForThisMove     = limits.movetime - MoveOverhead;
+        timeForThisDepth    = limits.movetime - MoveOverhead;
     }
     else if (limits.time[color] != 0)
     {
@@ -128,53 +104,41 @@ void Timer::setup(Color color)
         int increment = limits.incr[color];
         int movestogo = limits.movestogo;
 
-        pv_stability = 0; // Clear our stability time usage heuristic
-        // start_time = limits->start; // Save off the start time of the search
-        // memset( nodes, 0, sizeof(uint16_t) * 0x10000); // Clear Node counters
+        // CCRL blitz : game in 2 minutes plus 1 second increment
+        // CCRL 40/15 : 40 moves in 15 minutes
+        // Amateur    : 12 minutes with 8 second increments.
 
-        // Allocate time if Ethereal is handling the clock
+        // Formules provenant d'Ethereal
 
-        // Playing using X / Y + Z time control
+        // partie : 40 coups en 15 minutes              : moves_to_go = 40 ; wtime=btime = 15*60000 ; winc=binc = 0
         if (movestogo > 0)
         {
-            ideal_usage =  1.80 * (time - MoveOverhead) / (movestogo +  5) + increment;     // ou movestogo + 4
-            max_usage   = 10.00 * (time - MoveOverhead) / (movestogo + 10) + increment;
+            timeForThisDepth =  1.80 * (time - MoveOverhead) / (movestogo +  5) + increment;     // ou movestogo + 4
+            timeForThisMove  = 10.00 * (time - MoveOverhead) / (movestogo + 10) + increment;
         }
 
-        // Playing using X + Y time controls
+        // partie en 5 minutes, incrément de 6 secondes : moves_to_go = 0  ; wtime=btime =  5*60000 ; winc=binc = 6 >> sudden death
         else
         {
-            ideal_usage =  2.50 * ((time - MoveOverhead) + 25 * increment) / 50;
-            max_usage   = 10.00 * ((time - MoveOverhead) + 25 * increment) / 50;
+            timeForThisDepth =  2.50 * ((time - MoveOverhead) + 25 * increment) / 50;
+            timeForThisMove  = 10.00 * ((time - MoveOverhead) + 25 * increment) / 50;
         }
 
         // Cap time allocations using the move overhead
-        ideal_usage = std::min(ideal_usage, time - MoveOverhead);
-        max_usage   = std::min(max_usage,   time - MoveOverhead);
-
-
-
-
-
-
-
-
-
-        // formules provenant de Sirius (provenant elle-mêmes de Stormphrax)
-        // m_SoftBound
-        // timeForThisDepth = softTimeScale / 100.0 * (time / baseTimeScale + increment * incrementScale / 100.0);
-
-        // m_HardBound
-        // timeForThisMove = time * (hardTimeScale / 100.0);
+        timeForThisDepth = std::min(timeForThisDepth, time - MoveOverhead);
+        timeForThisMove  = std::min(timeForThisMove,  time - MoveOverhead);
     }
 
-    debug();
-
 #if defined DEBUG_TIME
-    debug();
+    debug(color);
 #endif
 }
 
+//============================================================
+//! \brief  Mise à jour de la stabilité du meilleur coup
+//! \param[in]  depth   profondeur terminée proprement (pas de time-out)
+//! \param[in]  pvs     Variation Principale de chaque profondeur
+//------------------------------------------------------------
 void Timer::update(int depth, PVariation pvs[MAX_PLY])
 {
     // Don't update our Time Managment plans at very low depths
@@ -190,50 +154,35 @@ void Timer::update(int depth, PVariation pvs[MAX_PLY])
 //===========================================================
 //! \brief  Détermine si on a assez de temps pour effectuer
 //!         une nouvelle itération
-//! \param  elapsedTime     temps en millisecondes
+//! \param[in]  elapsed     temps en millisecondes
+//! \param[in]  depth       profondeur terminée proprement (pas de time-out)
+//! \param[in]  pvs         Variation Principale de chaque profondeur
+//! \param[in]  total_nodes nombre total de noeuds calculés pour cette profondeur
 //!
 //-----------------------------------------------------------
-bool Timer::finishOnThisDepth(U64 elapsed, int depth, PVariation pvs[MAX_PLY], U64 total_nodes)
+bool Timer::finishOnThisDepth(int elapsed, int depth, PVariation pvs[MAX_PLY], U64 total_nodes)
 {
-    // stopSoft
-
     // Don't terminate early at very low depths
     if (depth < 4)
         return false;
 
     // Scale time between 80% and 120%, based on stable best moves
+    // Plus le meilleur coup est stable, plus pv_factor diminue
     const double pv_factor = 1.20 - 0.04 * pv_stability;
 
     // Scale time between 75% and 125%, based on score fluctuations
-    const double score_change =   pvs[depth-3].score
-                                - pvs[depth-0].score;
+    const double score_change = pvs[depth-3].score - pvs[depth-0].score;
     const double score_factor = std::max(0.75, std::min(1.25, 0.05 * score_change));
 
     // Scale time between 50% and 240%, based on where nodes have been spent
-    const U64 best_nodes = MoveNodeCounts[Move::fromdest(pvs[depth-0].line[0])];
-
+    //   best_nodes                           = nombre de neuds calculés pour trouver le meilleur coup
+    //   pvs[depth-0].line[0]                 = meilleur coup trouvé
+    //   Move::fromdest(pvs[depth-0].line[0]) = fabrique un indice à partir des cases de départ et d'arrivée du coup
+    const U64    best_nodes   = MoveNodeCounts[Move::fromdest(pvs[depth-0].line[0])];
     const double non_best_pct = 1.0 - (static_cast<double>(best_nodes) / static_cast<double>(total_nodes));
-
     const double nodes_factor = std::max(0.50, 2.0 * non_best_pct + 0.4);
 
-    std::cout << "finish : el= " << elapsed << "  ? " << ideal_usage * pv_factor * score_factor * nodes_factor << std::endl;
-
-    return (elapsed > ideal_usage * pv_factor * score_factor * nodes_factor);
-
-
-    // if (best_move == PrevBestMove)
-    //     pv_stability++;
-    // else
-    //     pv_stability = 0;
-    // PrevBestMove = best_move;
-
-    // double bmNodes = static_cast<double>(MoveNodeCounts[Move::fromdest(best_move)]) / static_cast<double>(total_nodes);
-    // double scale = ((nodeTMBase / 100.0) - bmNodes) * (nodeTMScale / 100.0);
-    // //                  (1.45 - bnm ) * 1.67
-    // //   std::cout << "elapsed=" <<elapsed <<  " total=" << total_nodes << " scale=" << scale << " time=" << timeForThisDepth << "  " << timeForThisDepth*scale << std::endl;
-    // scale *= stabilityValues[std::min(pv_stability, 6u)];
-    // return (elapsed > timeForThisDepth * scale);
-
+    return (elapsed > timeForThisDepth * pv_factor * score_factor * nodes_factor);
 }
 
 //==============================================================================
@@ -241,22 +190,15 @@ bool Timer::finishOnThisDepth(U64 elapsed, int depth, PVariation pvs[MAX_PLY], U
 //------------------------------------------------------------------------------
 bool Timer::finishOnThisMove() const
 {
-    // stopHard
-
-    auto fin = std::chrono::high_resolution_clock::now();
-    U64  elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(fin - startTime).count();
-
-   if (elapsed >= max_usage)
-       std::cout << "finish move : el=" << elapsed << " ; " << max_usage << std::endl;
-    return (elapsed >= max_usage);
+    return (elapsedTime() >= timeForThisMove);
 }
 
 //==============================================================================
 //! \brief  Retourne le temps écoulé depuis le début de la recherche.
 //------------------------------------------------------------------------------
-int Timer::elapsedTime()
+int Timer::elapsedTime() const
 {
-    return (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count());
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count();
 }
 
 //==================================================================
@@ -264,26 +206,25 @@ int Timer::elapsedTime()
 //------------------------------------------------------------------
 void Timer::show_time()
 {
-    // Elapsed time in milliseconds
-    auto end = std::chrono::high_resolution_clock::now();
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - startTime).count();
-    std::cout << "Time           " << ms / 1000.0 << " s" << std::endl;
+    // Elapsed time in seconds
+    std::cout << "Time           " << elapsedTime() / 1000.0 << " s" << std::endl;
 }
 
 //==================================================================
 //! \brief Affiche des informations de debug
 //------------------------------------------------------------------
-void Timer::debug()
+void Timer::debug(Color color)
 {
-    std::cout << "ideal_usage: " << ideal_usage
-              << " max_usage: " << max_usage
-              << " searchDepth: " << searchDepth
-              << " moveOverhead: " << MoveOverhead
+    std::cout << "color: " << side_name[color]
+              << " timeForThisDepth: " << timeForThisDepth
+              << " timeForThisMove: "  << timeForThisMove
+              << " searchDepth: "      << searchDepth
+              << " moveOverhead: "     << MoveOverhead
               << std::endl;
 }
 
 //==================================================================
-//! \brief Met à jour m_NodeCounts
+//! \brief Met à jour MoveNodeCounts
 //! \param[in] move     coup cherché
 //! \param[in] nodes    nombre de noeuds cherchés pour trouver ce coup
 //------------------------------------------------------------------

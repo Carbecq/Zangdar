@@ -69,25 +69,18 @@ void Search::iterative_deepening(ThreadData* td, SearchInfo* si)
 
     for (td->depth = 1; td->depth < timer.getSearchDepth(); td->depth++)
     {
-    //    std::cout << "calcul d=" << td->depth << std::endl;
         // Search position, using aspiration windows for higher depths
         aspiration_window<C>(td, si);
-    //    std::cout << "calcul s=" << si->pv.score << std::endl;
 
         if (td->stopped)
             break;
-    //    std::cout << "calcul OK" << std::endl;
 
         // L'itération s'est terminée sans problème
         // On peut mettre à jour les infos UCI
         if (td->index == 0)
         {
-            td->best_depth = td->depth;
-            // td->best_move  = si->pv.line[0];
-            // td->best_score = td->score;
-
+            td->best_depth     = td->depth;
             td->pvs[td->depth] = si->pv;
-           // td->pvs[td->depth].score = td->score;
 
             auto elapsed = timer.elapsedTime();
 
@@ -96,11 +89,9 @@ void Search::iterative_deepening(ThreadData* td, SearchInfo* si)
 
             timer.update(td->depth, td->pvs);
 
-
             // If an iteration finishes after optimal time usage, stop the search
             if (timer.finishOnThisDepth(elapsed, td->depth, td->pvs, td->nodes))
                 break;
-
 
             td->seldepth = 0;
         }

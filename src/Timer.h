@@ -12,8 +12,6 @@ class Timer
 {
 public:
     Timer();
-    Timer(bool infinite, int wtime, int btime, int winc, int binc, int movestogo,
-          int depth, int nodes, int movetime);
     void init(bool infinite,
                       int wtime,
                       int btime,
@@ -40,15 +38,15 @@ public:
 
     void reset();
     void show_time();
-    void debug();
+    void debug(Color color);
 
     void start();
     void setup(Color color);
     bool finishOnThisMove() const;
-    bool finishOnThisDepth(U64 elapsed, int depth, PVariation pvs[MAX_PLY], U64 total_nodes);
+    bool finishOnThisDepth(int elapsed, int depth, PVariation pvs[MAX_PLY], U64 total_nodes);
 
     int  getSearchDepth() const { return(searchDepth); }
-    int  elapsedTime();
+    int  elapsedTime() const;
     void setMoveOverhead(int n) { MoveOverhead = n;     }
     int  getMoveOverhead() const { return MoveOverhead; }
 
@@ -56,31 +54,17 @@ public:
     void update(int depth, PVariation pvs[MAX_PLY]);
 
 private:
-    // static constexpr int softTimeScale = 57;
-    // static constexpr int hardTimeScale = 62;
-    // static constexpr int baseTimeScale = 20;
-    // static constexpr int incrementScale = 83;
-    // static constexpr int nodeTMBase = 145;
-    // static constexpr int nodeTMScale = 167;
-
-    // static constexpr std::array<double, 7> stabilityValues = {
-    //     2.2, 1.6, 1.4, 1.1, 1, 0.95, 0.9
-    // };
 
     // gives the exact moment this search was started.
     std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
-    int  MoveOverhead = 5;      // temps de réserve pour l'interface
-    // U64  timeForThisDepth;      // temps pour "iterative deepening"
-    // U64  timeForThisMove;       // temps pour une recherche "alpha-beta" ou "quiescence"
+
+    int  MoveOverhead;           // temps de réserve pour l'interface
+    int  timeForThisDepth;       // temps pour "iterative deepening"
+    int  timeForThisMove;        // temps pour une recherche "alpha-beta" ou "quiescence"
     int  searchDepth;
 
     std::array<U64, 4096>   MoveNodeCounts;
-    // MOVE                    PrevBestMove;
     int                     pv_stability;
-
-    // double start_time, ideal_usage, max_usage;
-    int ideal_usage, max_usage;
-    // uint64_t nodes[0x10000];
 
 };
 

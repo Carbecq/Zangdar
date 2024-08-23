@@ -55,7 +55,7 @@ void Uci::run()
     std::cout << "option name OwnBook type check default false" << std::endl;
     std::cout << "option name BookPath type string default " << "./" << std::endl;
     std::cout << "option name SyzygyPath type string default " << "<empty>" << std::endl;
-    std::cout << "option name MoveOverhead type spin default 5 min 0 max 10000" << std::endl;
+    std::cout << "option name MoveOverhead type spin default " << MOVE_OVERHEAD << " min 0 max 10000" << std::endl;
 
     std::cout << "uciok" << std::endl;
 
@@ -361,7 +361,7 @@ void Uci::parse_go(std::istringstream& iss)
             movetime = searchTime;
         }
     }
-//    printf("************************************************************** \n\n\n");
+
     // Reset the time manager
     uci_timer.init(infinite, wtime, btime, winc, binc, movestogo, depth, nodes, movetime);
     uci_timer.start();
@@ -531,7 +531,7 @@ setoption name <id> [value <x>]
 
         else if (option_name == "MoveOverhead")
         {
-            //  MoveOverhead        : Overhead on time allocation to avoid time losses
+            int MoveOverhead;       // Overhead on time allocation to avoid time losses
 
             iss >> value;      // "value"
             iss >> MoveOverhead;
@@ -779,7 +779,7 @@ bool Uci::go_tactics(const std::string& line, int dmax, int tmax, U64& total_nod
 
     uci_board.set_fen(line, true);
 
-    auto start = std::chrono::high_resolution_clock::now();
+    const auto start = std::chrono::high_resolution_clock::now();
 
     //============================================== Lance le calcul
     std::string strgo;
@@ -793,8 +793,9 @@ bool Uci::go_tactics(const std::string& line, int dmax, int tmax, U64& total_nod
     //================================================= Attente des threads
     threadPool.wait(0);
 
-    auto end = std::chrono::high_resolution_clock::now();
-    auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    const auto end = std::chrono::high_resolution_clock::now();
+    const auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
     total_time   += ms;
     total_nodes  += threadPool.get_all_nodes();
     total_depths += threadPool.get_all_depths();
