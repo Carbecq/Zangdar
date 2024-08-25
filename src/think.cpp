@@ -110,11 +110,11 @@ void Search::aspiration_window(ThreadData* td, SearchInfo* si)
     int beta   = INFINITE;
     int depth  = td->depth;
 
-    const int initialWindow = 12;   // 10 ?
+    const int initialWindow = 12;
     int delta = 16;
 
     // After a few depths use a previous result to form the window
-    if (depth >= 6) // 5?
+    if (depth >= 6)
     {
         alpha = std::max(td->pvs[td->best_depth].score - initialWindow, -INFINITE);
         beta  = std::min(td->pvs[td->best_depth].score + initialWindow, INFINITE);
