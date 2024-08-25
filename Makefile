@@ -85,20 +85,20 @@ else
 endif
 
 $(TARGET): $(OBJ)
-    @$(CXX) -o $@ $^ $(LDFLAGS)
+	@$(CXX) -o $@ $^ $(LDFLAGS)
 
 
 %.o: %.cpp
-    @$(CXX) -o $@ -c $< $(CFLAGS)
+	@$(CXX) -o $@ -c $< $(CFLAGS)
 
 .PHONY: clean mrproper
 
 clean:
-    @rm -rf $(SRC1)/*.o $(SRC2)/*.o $(TARGET)
+	@rm -rf $(SRC1)/*.o $(SRC2)/*.o $(TARGET)
 
 mrproper: clean
-    @rm -rf $(TARGET)
+	@rm -rf $(TARGET)
 
 install:
-    mv $(TARGET) ../../BIN/Zangdar
+	mv $(TARGET) ../../BIN/Zangdar
 

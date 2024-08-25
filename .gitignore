@@ -1,4 +1,4 @@
-/build-Zangdar*/*
+build-Zangdar*/*
 src/*.o
 src/*/*.o
 Zangdar.pro.user.*
