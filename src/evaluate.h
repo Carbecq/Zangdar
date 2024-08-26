@@ -32,7 +32,7 @@ struct EvalInfo {
 
     Bitboard pawnAttacks[N_COLORS];
     Bitboard mobilityArea[N_COLORS];
-    Bitboard enemyKingZone[N_COLORS];
+    Bitboard KingZone[N_COLORS];
 
     int attackPower[N_COLORS] = {0, 0};
     int attackCount[N_COLORS] = {0, 0};
@@ -166,11 +166,13 @@ constexpr Score PassedDefended[N_RANKS] = {
 };
 
 //----------------------------------------------------------
-// Pions pass├®s
+// Pions passés
 constexpr Score PassedDistUs[4] = {
     S( 16,-29), S( 10,-37), S( -8,-35), S(-13,-27)
 };
-constexpr Score PassedDistThem =S( -3, 19);
+constexpr Score PassedDistThem = S( -3, 19);
+constexpr Score PassedRookBack = S( 11, 23);
+
 constexpr Score PassedBlocked[4] = {
     S( -1,-23), S(  4,-34), S(  9,-93), S(-28,-121)
 };

@@ -156,6 +156,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
     // Pions doublés
     // 1- des pions doublés désignent deux pions de la même couleur sur une même colonne.
     // 2- n'est pris en compte que si l'un empèche l'autre de bouger
+    // 3- on ne compte qu'une seule fois les pions doublés
     count = BB::count_bit(pawns & BB::north(pawns));
     eval += PawnDoubled * count;
 #if defined DEBUG_EVAL
@@ -282,6 +283,7 @@ Score Board::evaluate_passed(EvalInfo& ei)
 {
     constexpr Color THEM     = ~US;
     constexpr Direction UP   = (US == WHITE) ? NORTH : SOUTH;
+    constexpr Direction DOWN = (US == WHITE) ? SOUTH : NORTH;
 
     Score eval = 0;
     int count;
@@ -337,6 +339,21 @@ Score Board::evaluate_passed(EvalInfo& ei)
             ownTuner.Trace.PassedBlocked[r][US]++;
 #endif
         }
+
+        // Tour soutenant le pion
+        if (ei.rooks[US] & BB::fill<DOWN>(ei.pawns[US]))
+        {
+            eval += PassedRookBack;
+
+#if defined DEBUG_EVAL
+            printf("le pion passé %s en %s est protégé par une tour \n", camp[1][US].c_str(), square_name[sq].c_str());
+#endif
+#if defined USE_TUNER
+            ownTuner.Trace.PassedRookBack[US]++;
+#endif
+        }
+
+
     }
 
     return eval;
@@ -426,8 +443,8 @@ Score Board::evaluate_knights(EvalInfo& ei)
         ownTuner.Trace.KnightMobility[count][US]++;
 #endif
 
-        //  attaques et échecs pour calculer la sécurité du roi
-        int nbr_attacks = BB::count_bit(mobilityBB & ei.enemyKingZone[US]);
+        //  attaques et échecs pour calculer la sécurité du roi ennemi
+        int nbr_attacks = BB::count_bit(mobilityBB & ei.KingZone[THEM]);
         int nbr_checks  = BB::count_bit(mobilityBB & Attacks::knight_moves(x_king[THEM]));
 
         if (nbr_attacks > 0 || nbr_checks > 0)
@@ -526,7 +543,7 @@ Score Board::evaluate_bishops(EvalInfo& ei)
 #endif
 
         //  attaques et échecs pour calculer la sécurité du roi
-        int nbr_attacks = BB::count_bit(mobilityBB & ei.enemyKingZone[US]);
+        int nbr_attacks = BB::count_bit(mobilityBB & ei.KingZone[THEM]);
         int nbr_checks  = BB::count_bit(mobilityBB & Attacks::bishop_moves(x_king[THEM], ei.occupied));
 
         if (nbr_attacks > 0 || nbr_checks > 0)
@@ -613,7 +630,7 @@ Score Board::evaluate_rooks(EvalInfo& ei)
 #endif
 
         //  attaques et échecs pour calculer la sécurité du roi
-        int nbr_attacks = BB::count_bit(mobilityBB & ei.enemyKingZone[US]);
+        int nbr_attacks = BB::count_bit(mobilityBB & ei.KingZone[THEM]);
         int nbr_checks  = BB::count_bit(mobilityBB & Attacks::rook_moves(x_king[THEM], ei.occupied));
 
         if (nbr_attacks > 0 || nbr_checks > 0)
@@ -665,7 +682,7 @@ Score Board::evaluate_queens(EvalInfo& ei)
 
         // nbr_attacks : nombre d'attaques sur la zone du roi ennemi
         //          à noter que seules les cases de la mobilité comptent
-        int nbr_attacks = BB::count_bit(mobilityBB & ei.enemyKingZone[US]);
+        int nbr_attacks = BB::count_bit(mobilityBB & ei.KingZone[THEM]);
 
         // nbr_checks = nombre de cases d'où la dame peut faire échec
         //          à noter que seules les cases de la mobilité comptent
@@ -759,14 +776,15 @@ Score Board::evaluate_threats(const EvalInfo& ei)
     Bitboard ourPawns      = ei.pawns[US];
     Bitboard theirNonPawns = colorPiecesBB[THEM] ^ occupancy_cp<THEM, PAWN>();
     
+    // pions attaquant les non-pions ennemis
     count = BB::count_bit(all_pawn_attacks<US>(ourPawns) & theirNonPawns);
     eval += PawnThreat * count;
 #if defined USE_TUNER
     ownTuner.Trace.PawnThreat[US] = count;
 #endif
 
+    // pions pouvant attaquer les non-pions ennemis en avançant
     Bitboard pawnPushes = BB::shift<UP>(ourPawns) & ~ei.occupied;
-        //   ShiftBB(ourPawns, up) & ~pieceBB(ALL);
     
     count = BB::count_bit(all_pawn_attacks<US>(pawnPushes) & theirNonPawns);
     eval += PushThreat * count;
@@ -922,15 +940,9 @@ void Board::init_eval_info(EvalInfo& ei)
     ei.mobilityArea[BLACK] = ~(b[BLACK] | all_pawn_attacks<WHITE>(ei.pawns[WHITE]));
 
     // Sécurité du roi
-    const Bitboard auxi[2] = {
-        Attacks::king_moves(x_king[BLACK]),
-        Attacks::king_moves(x_king[WHITE])
-    };
-
-    // Bitboard des cases entourant le roi ennemi
-    // et d'une rangée de cases vers le Nord (pour les blancs)
-    ei.enemyKingZone[WHITE] = auxi[WHITE] | BB::shift<Up[WHITE]>(auxi[WHITE]);
-    ei.enemyKingZone[BLACK] = auxi[BLACK] | BB::shift<Up[BLACK]>(auxi[BLACK]);
+    // Bitboard des cases entourant le roi ami
+    ei.KingZone[WHITE] = Attacks::king_moves(x_king[WHITE]);
+    ei.KingZone[BLACK] = Attacks::king_moves(x_king[BLACK]);
 
     // Attaques des pions
     ei.pawnAttacks[WHITE] = all_pawn_attacks<WHITE>(ei.pawns[WHITE]);
