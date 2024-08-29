@@ -325,7 +325,7 @@ void Tuner::InitCoefficients(double coeffs[NTERMS])
     InitCoeffSingle(coeffs, Trace.OpenForward,              index);
     InitCoeffSingle(coeffs, Trace.SemiForward,              index);
     InitCoeffArray( coeffs, Trace.KingLineDanger,   28,     index);
-    InitCoeffSingle(coeffs, Trace.KingAtkPawn,              index);
+    InitCoeffSingle(coeffs, Trace.KingAttackPawn,           index);
 
     // Menaces
     InitCoeffSingle(coeffs, Trace.PawnThreat,              index);
@@ -387,7 +387,7 @@ void Tuner::InitBaseParams(double tparams[NTERMS][N_PHASES])
     InitBaseSingle(tparams, OpenForward,            index);
     InitBaseSingle(tparams, SemiForward,            index);
     InitBaseArray( tparams, KingLineDanger, 28,     index);
-    InitBaseSingle(tparams, KingAtkPawn,            index);
+    InitBaseSingle(tparams, KingAttackPawn,         index);
 
     // Menaces
     InitBaseSingle(tparams, PawnThreat,              index);

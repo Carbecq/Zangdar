@@ -58,7 +58,7 @@ struct EvalTrace {
     Score OpenForward[N_COLORS];
     Score SemiForward[N_COLORS];
     Score KingLineDanger[28][N_COLORS];
-    Score KingAtkPawn[N_COLORS];
+    Score KingAttackPawn[N_COLORS];
 
     Score PawnThreat[N_COLORS];
     Score PushThreat[N_COLORS];

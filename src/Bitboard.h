@@ -168,6 +168,12 @@ template <Direction D>
     case NORTH_WEST:
         return (b << 7) & NOT_FILE_H_BB;
         break;
+    case NORTH_NORTH:
+        return b << 16;
+        break;
+    case SOUTH_SOUTH:
+        return b >> 16;
+        break;
     default:
         return b;
     }

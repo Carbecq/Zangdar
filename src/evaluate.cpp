@@ -28,8 +28,8 @@ https://hxim.github.io/Stockfish-Evaluation-Guide/
     // On utilise les tables Syzygy, ce test de nullité est inutile
 
     // voir le code de Sjeng (aussi Fruit-Mora), qui comporte un test s'il reste des pions
-//    if (material_draw() == true)
-//        return 0;
+    //    if (material_draw() == true)
+    //        return 0;
 
     // Initialisations
     init_eval_info(ei);
@@ -70,7 +70,7 @@ https://hxim.github.io/Stockfish-Evaluation-Guide/
 
     // Compute and store an interpolated evaluation from white's POV
     eval = ( MgScore(eval) * phase256
-         +   EgScore(eval) * (256 - phase256) * scale / 128 ) / 256;
+            +   EgScore(eval) * (256 - phase256) * scale / 128 ) / 256;
 
     // Return the evaluation, negated if we are black
     return (side_to_move == WHITE ? eval : -eval) + Tempo;
@@ -153,6 +153,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
     // Weak unopposed pawn.
     // blocked
 
+
     // Pions doublés
     // 1- des pions doublés désignent deux pions de la même couleur sur une même colonne.
     // 2- n'est pris en compte que si l'un empèche l'autre de bouger
@@ -164,8 +165,21 @@ Score Board::evaluate_pawns(EvalInfo& ei)
         printf("Le camp %s possède %d pions doublés \n", camp[1][US].c_str(), count);
 #endif
 #if defined USE_TUNER
-    ownTuner.Trace.PawnDoubled[US] = count;
+        ownTuner.Trace.PawnDoubled[US] += count;
 #endif
+
+
+    // Pions doublés mais séparés d'une case
+    count = BB::count_bit(pawns & BB::shift<NORTH_NORTH>(pawns));
+    eval += PawnDoubled2 * count;
+#if defined DEBUG_EVAL
+    if (count)
+        printf("Le camp %s possède %d pions doublés séparés \n", camp[1][US].c_str(), count);
+#endif
+#if defined USE_TUNER
+        ownTuner.Trace.PawnDoubled2[US] += count;
+#endif
+
 
     // Pions liés
     // Des pions sont liés lorsqu'ils sont placés sur une diagonale et que l'un défend l'autre.
@@ -176,8 +190,9 @@ Score Board::evaluate_pawns(EvalInfo& ei)
         printf("Le camp %s possède %d pions liés \n", camp[1][US].c_str(), count);
 #endif
 #if defined USE_TUNER
-    ownTuner.Trace.PawnSupport[US] = count;
+        ownTuner.Trace.PawnSupport[US] += count;
 #endif
+
 
     // Open pawns
     // undefended, unopposed pawns (#436)
@@ -190,8 +205,9 @@ Score Board::evaluate_pawns(EvalInfo& ei)
         printf("Le camp %s possède %d pions non défendus sans opposition \n", camp[1][US].c_str(), count);
 #endif
 #if defined USE_TUNER
-    ownTuner.Trace.PawnOpen[US] = count;
+    ownTuner.Trace.PawnOpen[US] += count;
 #endif
+
 
     // Pions en phalange (Pawn Phalanx)
     Bitboard phalanx = pawns & BB::west(pawns);
@@ -206,6 +222,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
         ownTuner.Trace.PawnPhalanx[rank][US]++;
 #endif
     }
+
 
     // Evaluation des pions un par un
     Bitboard bb = ei.pawns[US];
@@ -224,6 +241,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
         ownTuner.Trace.PawnPSQT[sqpos][US]++;
 #endif
 
+
         // Pion isolé
         //  Un pion isolé est un pion qui n'a plus de pion de son camp sur les colonnes adjacentes.
         //  Un pion isolé peut être redoutable en milieu de partie1.
@@ -238,6 +256,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
             ownTuner.Trace.PawnIsolated[US]++;
 #endif
         }
+
 
         // Pion passé
         //  un pion passé est un pion qui n'est pas gêné dans son avance vers la 8e rangée par un pion adverse,
@@ -296,12 +315,35 @@ Score Board::evaluate_passed(EvalInfo& ei)
     {
         sq     = BB::pop_lsb(passers);                   // case où est la pièce
 
-        forward = sq + UP;
+        forward  = sq + UP;
         int rank = SQ::relative_rank8<US>(SQ::rank(sq));
-        int r = rank - RANK_4;
 
         if (rank < RANK_4)
             continue;
+
+        int r = rank - RANK_4;
+        int file = SQ::file(sq);
+        int promo = SQ::relative_square<US>(SQ::square(file, RANK_8));
+
+        // printf("sq= %d %s ; rank=%d file=%d promo=%d %s \n", sq, square_name[sq].c_str(), rank, file, promo, square_name[promo].c_str());
+        // printf("distance promo      = %d \n", distance_between(sq, promo));
+        // printf("distance roi ennemi = %d \n", distance_between(king_square<THEM>(), promo));
+        // printf("THEm=%d side=%d \n", THEM, side_to_move);
+
+        // Règle du carré
+        if (   getNonPawnMaterialCount<THEM>() == 0
+            && distance_between(sq, promo) < distance_between(king_square<THEM>(), promo) - (THEM == side_to_move))
+        {
+            eval += PassedSquare;
+
+#if defined DEBUG_EVAL
+            printf("le pion passé %s en %s respecte la règle du carré \n", camp[1][US].c_str(), square_name[sq].c_str());
+#endif
+#if defined USE_TUNER
+            ownTuner.Trace.PassedSquare[US]++;
+#endif
+        }
+
 
         // Distance au roi ami
         count = distance_between(forward, king_square<US>());
@@ -309,11 +351,12 @@ Score Board::evaluate_passed(EvalInfo& ei)
 
 #if defined DEBUG_EVAL
         if (count)
-            printf("le pion passé %s en %s éloigné du roi ami de %d rangées \n", camp[1][US].c_str(), square_name[sq].c_str(), count);
+            printf("le pion passé %s en %s est à une distance de %d du roi ami \n", camp[1][US].c_str(), square_name[sq].c_str(), count);
 #endif
 #if defined USE_TUNER
-        ownTuner.Trace.PassedDistUs[r][US] += count;
+            ownTuner.Trace.PassedDistUs[r][US] += count;
 #endif
+
 
         // Distance au roi ennemi
         count = (rank - RANK_3) * distance_between(forward, king_square<THEM>());
@@ -321,11 +364,12 @@ Score Board::evaluate_passed(EvalInfo& ei)
 
 #if defined DEBUG_EVAL
         if (count)
-            printf("le pion passé %s en %s éloigné du roi ennemi de %d rangées \n", camp[1][US].c_str(), square_name[sq].c_str(), count);
+            printf("le pion passé %s en %s est à une distance de %d du roi ennemi \n", camp[1][US].c_str(), square_name[sq].c_str(), count);
 #endif
 #if defined USE_TUNER
-        ownTuner.Trace.PassedDistThem[US] += count;
+            ownTuner.Trace.PassedDistThem[US] += count;
 #endif
+
 
         // Pion passé bloqué
         if (pieceOn[forward])
@@ -340,8 +384,25 @@ Score Board::evaluate_passed(EvalInfo& ei)
 #endif
         }
 
+
+        // Pion passé libre d'avancer
+        else if (!(BB::sq2BB(forward) & ei.attacked[THEM]))
+        {
+            eval += PassedFreeAdv[r];
+
+#if defined DEBUG_EVAL
+            printf("le pion passé %s en %s est libre d'avancer \n", camp[1][US].c_str(), square_name[sq].c_str());
+#endif
+#if defined USE_TUNER
+            ownTuner.Trace.PassedFreeAdv[r][US]++;
+#endif
+        }
+
         // Tour soutenant le pion
-        if (ei.rooks[US] & BB::fill<DOWN>(ei.pawns[US]))
+        //  todo : REVOIR LE TEST; il ne devrait y avoir rien entre le pion et la tour ?
+        //         BB::PrintBB(BB::fill<DOWN>(ei.pawns[US]), "fill");
+        //         BB::PrintBB(ei.rooks[US], "rook");
+        if (ei.rooks[US] & BB::fill<DOWN>(BB::sq2BB(sq)))
         {
             eval += PassedRookBack;
 
@@ -352,8 +413,6 @@ Score Board::evaluate_passed(EvalInfo& ei)
             ownTuner.Trace.PassedRookBack[US]++;
 #endif
         }
-
-
     }
 
     return eval;
@@ -375,7 +434,8 @@ Score Board::evaluate_knights(EvalInfo& ei)
 
     Bitboard bb = ei.knights[US];
     ei.phase24 += BB::count_bit(bb);
-    Bitboard     enemyPawns = ei.pawns[THEM];
+    // Bitboard     enemyPawns = ei.pawns[THEM];
+
 
     // Le cavalier est protégé par un pion
     // Il ne peut pas être attaqué par une tour
@@ -387,8 +447,9 @@ Score Board::evaluate_knights(EvalInfo& ei)
         printf("%d cavaliers %s sont situés derrière un pion \n", count, camp[1][US].c_str());
 #endif
 #if defined USE_TUNER
-    ownTuner.Trace.MinorBehindPawn[US] = count;
+        ownTuner.Trace.MinorBehindPawn[US] += count;
 #endif
+
 
     while (bb)
     {
@@ -416,11 +477,12 @@ Score Board::evaluate_knights(EvalInfo& ei)
 
         // TODO : a) être sur une colonne semi-ouverte
         //        b) être sur une des colonnes C,D,E,F
-
+#if 0
         if (    BB::test_bit(OutpostRanksMasks[US], sq)
             && !(OutpostSquareMasks[US][sq] & enemyPawns))
         {
-            defended = BB::test_bit(ei.pawnAttacks[US], sq);
+            defended = BB::test_bit(ei.attackedBy[US][PieceType::PAWN], sq);
+            //TODO à tester
             eval += KnightOutpost[defended];
 
 #if defined DEBUG_EVAL
@@ -433,12 +495,14 @@ Score Board::evaluate_knights(EvalInfo& ei)
             ownTuner.Trace.KnightOutpost[defended][US]++;
 #endif
         }
-
+#endif
 
         // mobilité
-        Bitboard mobilityBB = Attacks::knight_moves(sq) & ei.mobilityArea[US];
+        Bitboard attackBB   = Attacks::knight_moves(sq);
+        Bitboard mobilityBB = attackBB & ei.mobilityArea[US];
         count = BB::count_bit(mobilityBB);
         eval += KnightMobility[count];
+
 #if defined USE_TUNER
         ownTuner.Trace.KnightMobility[count][US]++;
 #endif
@@ -452,6 +516,9 @@ Score Board::evaluate_knights(EvalInfo& ei)
             ei.attackCount[US]++;
             ei.attackPower[US] += nbr_attacks * AttackPower[KNIGHT] + nbr_checks * CheckPower[KNIGHT];
         }
+
+        ei.attackedBy[US][PieceType::KNIGHT] |= attackBB;
+        ei.attacked[US]                      |= attackBB;
     }
 
     return eval;
@@ -482,6 +549,7 @@ Score Board::evaluate_bishops(EvalInfo& ei)
     if (BB::count_bit(bb) >= 2)
     {
         eval += BishopPair;
+
 #if defined DEBUG_EVAL
         printf("Le camp %s possède la paire de fous \n", side_name[US].c_str());
 #endif
@@ -500,8 +568,9 @@ Score Board::evaluate_bishops(EvalInfo& ei)
         printf("%d fous %s sont situés derrière un pion \n", count, camp[1][US].c_str());
 #endif
 #if defined USE_TUNER
-    ownTuner.Trace.MinorBehindPawn[US] = count;
+        ownTuner.Trace.MinorBehindPawn[US] += count;
 #endif
+
 
     while (bb)
     {
@@ -520,24 +589,28 @@ Score Board::evaluate_bishops(EvalInfo& ei)
         // Bishop pawns. Number of pawns on the same color square as the bishop multiplied by one plus the number of our blocked pawns in the center files C, D, E or F.
         bishopSquares = (BB::sq2BB(sq) & DarkSquares) ? DarkSquares : LightSquares;       // Bitboard de la couleur du fou
         badPawns      = ei.pawns[US] & bishopSquares;                                     // Bitboard de nos pions de la couleur du fou
+        // Note : il y a bug dans Weiss 2 ??
         blockedPawns  = BB::shift<DOWN>(occupancy_all()) & ei.pawns[US] & CenterFiles;    // Bitboard de nos pions centraux bloqués
 
-        count = BB::count_bit(badPawns) * (1 + BB::count_bit(blockedPawns));
+        count = BB::count_bit(badPawns) * BB::count_bit(blockedPawns);
         eval += count * BishopBadPawn;
 
 #if defined DEBUG_EVAL
-    if (count)
-        printf("le fou %s en %s a %d mauvais pions et %d pions bloquants \n", camp[1][US].c_str(), square_name[sq].c_str(),
-                BB::count_bit(badPawns), BB::count_bit(blockedPawns));
+        if (count)
+            printf("le fou %s en %s a %d mauvais pions et %d pions bloquants \n", camp[1][US].c_str(), square_name[sq].c_str(),
+                   BB::count_bit(badPawns), BB::count_bit(blockedPawns));
 #endif
 #if defined USE_TUNER
-    ownTuner.Trace.BishopBadPawn[US] += count;
+            ownTuner.Trace.BishopBadPawn[US] += count;
 #endif
 
+
         // mobilité
-        Bitboard mobilityBB = XRayBishopAttack<US>(sq) & ei.mobilityArea[US];
+        Bitboard attackBB   = XRayBishopAttack<US>(sq);
+        Bitboard mobilityBB = attackBB & ei.mobilityArea[US];
         count = BB::count_bit(mobilityBB);
         eval += BishopMobility[count];
+
 #if defined USE_TUNER
         ownTuner.Trace.BishopMobility[count][US]++;
 #endif
@@ -551,6 +624,9 @@ Score Board::evaluate_bishops(EvalInfo& ei)
             ei.attackCount[US] ++;
             ei.attackPower[US] += nbr_attacks * AttackPower[BISHOP] + nbr_checks * CheckPower[BISHOP];
         }
+
+        ei.attackedBy[US][PieceType::BISHOP] |= attackBB;
+        ei.attacked[US]                      |= attackBB;
     }
 
     return eval;
@@ -563,6 +639,7 @@ template<Color US>
 Score Board::evaluate_rooks(EvalInfo& ei)
 {
     constexpr Color THEM = ~US;
+    constexpr Direction UP = (US == WHITE) ? NORTH : SOUTH;
 
     int sq, sqpos;
     int count;
@@ -583,8 +660,11 @@ Score Board::evaluate_rooks(EvalInfo& ei)
         ownTuner.Trace.RookPSQT[sqpos][US]++;
 #endif
 
+
         // Colonnes ouvertes
-        if (((ei.pawns[WHITE] | ei.pawns[BLACK]) & FileMask64[sq]) == 0) // pas de pion ami ou ennemi
+        // TODO revoir ce test
+        Bitboard forward = BB::fill<UP>(BB::sq2BB(sq));
+        if (((ei.pawns[WHITE] | ei.pawns[BLACK]) & forward) == 0) // pas de pion ami ou ennemi
         {
             eval += OpenForward;
 
@@ -596,15 +676,16 @@ Score Board::evaluate_rooks(EvalInfo& ei)
             ownTuner.Trace.OpenForward[US]++;
 #endif
         }
+
         // Colonnes semi-ouvertes
         // ne pas ajouter les 2 bonus
-        else if ((ei.pawns[US] & FileMask64[sq]) == 0) // pas de pion ami
+        else if ((ei.pawns[US] & forward) == 0) // pas de pion ami
         {
             eval += SemiForward;
 
 #if defined DEBUG_EVAL
             printf("la tour %s en %s est sur une colonne semi-ouverte \n",
-                       camp[0][US].c_str(), square_name[sq].c_str());
+                   camp[0][US].c_str(), square_name[sq].c_str());
 #endif
 #if defined USE_TUNER
             ownTuner.Trace.SemiForward[US]++;
@@ -620,10 +701,12 @@ Score Board::evaluate_rooks(EvalInfo& ei)
         //     if (TRACE) T.RookOnSeventh[US]++;
         // }
 
+
         // mobilité
-        Bitboard mobilityBB = XRayRookAttack<US>(sq) & ei.mobilityArea[US];
+        Bitboard attackBB   = XRayRookAttack<US>(sq);
+        Bitboard mobilityBB = attackBB & ei.mobilityArea[US];
         count = BB::count_bit(mobilityBB);
-        eval += RookMobility[count];
+        eval +=  RookMobility[count];;
 
 #if defined USE_TUNER
         ownTuner.Trace.RookMobility[count][US]++;
@@ -638,6 +721,9 @@ Score Board::evaluate_rooks(EvalInfo& ei)
             ei.attackCount[US]++;
             ei.attackPower[US] += nbr_attacks * AttackPower[ROOK] + nbr_checks * CheckPower[ROOK];
         }
+
+        ei.attackedBy[US][PieceType::ROOK] |= attackBB;
+        ei.attacked[US]                    |= attackBB;
     }
 
     return eval;
@@ -670,13 +756,15 @@ Score Board::evaluate_queens(EvalInfo& ei)
 #endif
 
         // mobilité
-        Bitboard mobilityBB = XRayQueenAttack<US>(sq) & ei.mobilityArea[US];
+        Bitboard attackBB   = XRayQueenAttack<US>(sq);
+        Bitboard mobilityBB = attackBB & ei.mobilityArea[US];
         count = BB::count_bit(mobilityBB);
         eval += QueenMobility[count];
 
 #if defined USE_TUNER
         ownTuner.Trace.QueenMobility[count][US]++;
 #endif
+
 
         //  attaques et échecs pour calculer la sécurité du roi
 
@@ -686,14 +774,17 @@ Score Board::evaluate_queens(EvalInfo& ei)
 
         // nbr_checks = nombre de cases d'où la dame peut faire échec
         //          à noter que seules les cases de la mobilité comptent
-        int nbr_checks     = BB::count_bit(mobilityBB & Attacks::queen_moves(x_king[THEM], ei.occupied));
+        int nbr_checks = BB::count_bit(mobilityBB & Attacks::queen_moves(x_king[THEM], ei.occupied));
 
         if (nbr_attacks > 0 || nbr_checks > 0)
         {
             ei.attackCount[US]++;
             ei.attackPower[US] += nbr_attacks * AttackPower[QUEEN]
-                                 + nbr_checks  * CheckPower[QUEEN];
+                                + nbr_checks  * CheckPower[QUEEN];
         }
+
+        ei.attackedBy[US][PieceType::QUEEN] |= attackBB;
+        ei.attacked[US]                     |= attackBB;
     }
 
     return eval;
@@ -718,6 +809,7 @@ Score Board::evaluate_king(EvalInfo& ei)
     ownTuner.Trace.KingPSQT[sqpos][US]++;
 #endif
 
+
     // sécurité du roi
     // On compte le nombre de case d'où on peut attaquer le roi (sauf cavalier)
     Bitboard SafeLine = RankMask8[SQ::relative_rank8<US>(RANK_1)];
@@ -735,28 +827,57 @@ Score Board::evaluate_king(EvalInfo& ei)
     //     max_count = std::max(max_count, count);
 
     eval += KingLineDanger[count];
+
+#if defined DEBUG_EVAL
+    printf("KingLineDanger : count = %d \n", count);
+#endif
 #if defined USE_TUNER
     ownTuner.Trace.KingLineDanger[count][US]++;
 #endif
 
-    // King threatening a pawn
+
+    // Le roi attaque un pion
     if (Attacks::king_moves(sq) & occupancy_cp<THEM, PAWN>())
     {
-        eval += KingAtkPawn;
+        eval += KingAttackPawn;
 
+#if defined DEBUG_EVAL
+        printf("le roi %s en %s attaque un pion \n", camp[0][US].c_str(), square_name[sq].c_str());
+#endif
 #if defined USE_TUNER
-        ownTuner.Trace.KingAtkPawn[US]++;
+        ownTuner.Trace.KingAttackPawn[US]++;
 #endif
     }
 
-    // Add to enemy's attack power based on open lines
-    ei.attackPower[THEM] += (count - 3) * 8;
 
     // Evaluation de la sécurité du roi
-    int danger =  ei.attackPower[THEM]
-                 * CountModifier[std::min(7, ei.attackCount[THEM])];
 
+    int danger = ei.attackPower[THEM] * CountModifier[std::min(7, ei.attackCount[THEM])];
     eval -= S(danger / 128, 0);
+
+#if defined DEBUG_EVAL
+    printf("danger = %d \n", danger);
+#endif
+#if defined USE_TUNER
+    ownTuner.Trace.danger[US] = S(danger / 128, 0);
+    TraceDanger(S(danger / 128, 0)); // voir tuner de Weiss
+#endif
+
+
+    // Pawn shelter
+    Bitboard pawnsInFront = typePiecesBB[PieceType::PAWN] & PassedPawnMask[US][king_square<US>()];
+    Bitboard ourPawns = pawnsInFront & colorPiecesBB[US] & ~all_pawn_attacks<THEM>(ei.pawns[THEM]);
+
+    count = BB::count_bit(ourPawns);
+    eval += count * PawnShelter;
+
+
+#if defined DEBUG_EVAL
+    printf("le roi %s en %s possède un bouclier de %d pions \n", camp[1][US].c_str(), square_name[sq].c_str(), count);
+#endif
+#if defined USE_TUNER
+    TraceCount(Shelter);
+#endif
 
     return eval;
 }
@@ -771,26 +892,60 @@ Score Board::evaluate_threats(const EvalInfo& ei)
     constexpr Direction UP = (US == WHITE) ? NORTH : SOUTH;
 
     int count;
+    int sq;
     Score eval = 0;
+    Bitboard threats;
 
     Bitboard ourPawns      = ei.pawns[US];
     Bitboard theirNonPawns = colorPiecesBB[THEM] ^ occupancy_cp<THEM, PAWN>();
     
+
     // pions attaquant les non-pions ennemis
     count = BB::count_bit(all_pawn_attacks<US>(ourPawns) & theirNonPawns);
     eval += PawnThreat * count;
-#if defined USE_TUNER
-    ownTuner.Trace.PawnThreat[US] = count;
+
+#if defined DEBUG_EVAL
+        if (count)
+            printf("%d pions %s attaquent les non-pions ennemis \n", count, camp[1][US].c_str());
 #endif
+#if defined USE_TUNER
+        ownTuner.Trace.PawnThreat[US] += count;
+#endif
+
 
     // pions pouvant attaquer les non-pions ennemis en avançant
     Bitboard pawnPushes = BB::shift<UP>(ourPawns) & ~ei.occupied;
-    
     count = BB::count_bit(all_pawn_attacks<US>(pawnPushes) & theirNonPawns);
     eval += PushThreat * count;
-#if defined USE_TUNER
-    ownTuner.Trace.PushThreat[US] = count;
+
+#if defined DEBUG_EVAL
+    if (count)
+        printf("%d pions %s peuvent attaquer les non-pions ennemis en avançant\n", count, camp[1][US].c_str());
 #endif
+#if defined USE_TUNER
+        ownTuner.Trace.PushThreat[US] += count;
+#endif
+
+
+    // Threats by minor pieces
+    Bitboard targets = theirNonPawns & ~occupancy_p<PieceType::KING>();
+    threats = targets & (ei.attackedBy[US][KNIGHT] | ei.attackedBy[US][BISHOP]);
+    while (threats)
+    {
+        sq = BB::pop_lsb(threats);
+        eval += ThreatByMinor[pieceOn[sq]];
+        // TraceIncr(ThreatByMinor[pieceTypeOn(sq)]);
+    }
+
+    // Threats by rooks
+    targets &= ~ei.attackedBy[THEM][PAWN];
+    threats = targets & ei.attackedBy[US][ROOK];
+    while (threats)
+    {
+        sq = BB::pop_lsb(threats);
+        eval += ThreatByRook[pieceOn[sq]];
+        // TraceIncr(ThreatByRook[pieceTypeOn(sq)]);
+    }
 
     return eval;
 }
@@ -822,7 +977,7 @@ bool Board::material_draw(void)
         {
             // Draw with 0-2 knights each (both 0 => KvK) (all nonpawns if any are knights)
             return(    getNonPawnMaterialCount<WHITE>() <= 2
-                   &&  getNonPawnMaterialCount<BLACK>() <= 2);
+                    &&  getNonPawnMaterialCount<BLACK>() <= 2);
 
         }
 
@@ -862,8 +1017,8 @@ bool Board::material_draw(void)
                     && getNonPawnMaterialCount<BLACK>() <= 2);
         else
             return( getNonPawnMaterialCount<BLACK>() == 1
-                && getNonPawnMaterialCount<WHITE>() >= 1
-                && getNonPawnMaterialCount<WHITE>() <= 2);
+                    && getNonPawnMaterialCount<WHITE>() >= 1
+                    && getNonPawnMaterialCount<WHITE>() <= 2);
 
     }
 
@@ -873,22 +1028,31 @@ bool Board::material_draw(void)
 // Calculate scale factor to lower overall eval based on various features
 int Board::scale_factor(const Score eval)
 {
-    // Scale down eval for opposite-colored bishops endgames
-    if (   !typePiecesBB[QUEEN]
-        && !typePiecesBB[ROOK]
-        && !typePiecesBB[KNIGHT]
-        && getNonPawnMaterialCount<WHITE>() == 1
-        && getNonPawnMaterialCount<BLACK>() == 1
-        && (BB::single(typePiecesBB[BISHOP] & DarkSquares)))
-        return 64;
+    Bitboard strongPawns = eval > 0 ? occupancy_cp<WHITE, PAWN>()
+                                    : occupancy_cp<BLACK, PAWN>();
 
     // Scale down eval the fewer pawns the stronger side has
-    //    Color strong = eval > 0 ? WHITE : BLACK;
-    int strongPawnCount = eval > 0 ? BB::count_bit(occupancy_cp<WHITE, PAWN>())
-                                   : BB::count_bit(occupancy_cp<BLACK, PAWN>());
+    int strongPawnCount = BB::count_bit(strongPawns);
     int x = 8 - strongPawnCount;
-    return 128 - x * x;
+    int pawnScale = 128 - x * x;
 
+    // Scale down when there aren't pawns on both sides of the board
+    if (!(strongPawns & QueenSide) || !(strongPawns & KingSide))
+        pawnScale -= 20;
+
+
+    // Scale down eval for opposite-colored bishops endgames
+    if (   getNonPawnMaterialCount<WHITE>() <= 2
+        && getNonPawnMaterialCount<BLACK>() <= 2
+        && getNonPawnMaterialCount<WHITE>() == getNonPawnMaterialCount<BLACK>()
+        && BB::single(occupancy_cp<WHITE, BISHOP>())
+        && BB::single(occupancy_cp<BLACK, BISHOP>())
+        && BB::single(occupancy_p<BISHOP>() & DarkSquares))
+    {
+        return std::min((getNonPawnMaterialCount<WHITE>() == 1 ? 64 : 96), pawnScale);
+    }
+
+    return pawnScale;
 }
 
 //=============================================================
@@ -897,18 +1061,12 @@ int Board::scale_factor(const Score eval)
 void Board::init_eval_info(EvalInfo& ei)
 {
     // Initialisation des bitboards
-    constexpr Direction Down[2] = {SOUTH, NORTH};                  // direction "bas", relativement à la couleur
-    constexpr Direction Up[2]   = {NORTH, SOUTH};                  // direction "haut", relativement à la couleur
     constexpr Bitboard  RelRanK2BB[2] = {                          // La rangée 2, relativement à la couleur
                                         RankMask8[SQ::relative_rank8<WHITE>(RANK_2)],
                                         RankMask8[SQ::relative_rank8<BLACK>(RANK_2)],
                                         };
 
     ei.phase24 = 0;
-    ei.attackCount[WHITE] = 0;
-    ei.attackCount[BLACK] = 0;
-    ei.attackPower[WHITE] = 0;
-    ei.attackPower[BLACK] = 0;
 
     ei.occupied     = occupancy_all();                                   // toutes les pièces (Blanches + Noires)
     ei.pawns[WHITE] = occupancy_cp<WHITE, PAWN>();
@@ -932,8 +1090,8 @@ void Board::init_eval_info(EvalInfo& ei)
     //  > ni occupée par un pion ami bloqué
 
     const Bitboard b[2] = {
-        (RelRanK2BB[WHITE] | BB::shift<Down[WHITE]>(ei.occupied)) & ei.pawns[WHITE],
-        (RelRanK2BB[BLACK] | BB::shift<Down[BLACK]>(ei.occupied)) & ei.pawns[BLACK]
+        (RelRanK2BB[WHITE] | BB::shift<SOUTH>(ei.occupied)) & ei.pawns[WHITE],
+        (RelRanK2BB[BLACK] | BB::shift<NORTH>(ei.occupied)) & ei.pawns[BLACK]
     };
 
     ei.mobilityArea[WHITE] = ~(b[WHITE] | all_pawn_attacks<BLACK>(ei.pawns[BLACK]));
@@ -944,17 +1102,31 @@ void Board::init_eval_info(EvalInfo& ei)
     ei.KingZone[WHITE] = Attacks::king_moves(x_king[WHITE]);
     ei.KingZone[BLACK] = Attacks::king_moves(x_king[BLACK]);
 
-    // Attaques des pions
-    ei.pawnAttacks[WHITE] = all_pawn_attacks<WHITE>(ei.pawns[WHITE]);
-    ei.pawnAttacks[BLACK] = all_pawn_attacks<BLACK>(ei.pawns[BLACK]);
-
     ei.attackPower[WHITE] = -30;
-    ei.attackCount[WHITE] = 0;
     ei.attackPower[BLACK] = -30;
+    ei.attackCount[WHITE] = 0;
     ei.attackCount[BLACK] = 0;
 
     // Clear passed pawns, filled in during pawn eval
     ei.passedPawns = 0;
 
+    for (int c=0; c<N_COLORS; c++)
+    {
+        for (int p=0; p<N_PIECES; p++)
+        {
+            ei.attackedBy[c][p] = 0;
+        }
+    }
+
+    // Attaques du roi
+    ei.attackedBy[WHITE][PieceType::KING] = Attacks::king_moves(king_square<WHITE>());
+    ei.attackedBy[BLACK][PieceType::KING] = Attacks::king_moves(king_square<BLACK>());
+
+    // Attaques des pions
+    ei.attackedBy[WHITE][PieceType::PAWN] = all_pawn_attacks<WHITE>(ei.pawns[WHITE]);
+    ei.attackedBy[BLACK][PieceType::PAWN] = all_pawn_attacks<BLACK>(ei.pawns[BLACK]);
+
+    ei.attacked[WHITE] = ei.attackedBy[WHITE][KING] | ei.attackedBy[WHITE][PAWN];
+    ei.attacked[BLACK] = ei.attackedBy[BLACK][KING] | ei.attackedBy[BLACK][PAWN];
 }
 

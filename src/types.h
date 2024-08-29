@@ -95,14 +95,16 @@ constexpr int N_FILES = 8;
 // https://www.chessprogramming.org/General_Setwise_Operations#Shifting_Bitboards
 
 enum Direction : int {
-    NORTH       = 8,
-    NORTH_EAST  = 9,
-    EAST        = 1,
-    SOUTH_EAST  = -7,
-    SOUTH       = -8,
-    SOUTH_WEST  = -9,
-    WEST        = -1,
-    NORTH_WEST  = 7
+    NORTH       =   8,
+    NORTH_EAST  =   9,
+    EAST        =   1,
+    SOUTH_EAST  =  -7,
+    SOUTH       =  -8,
+    SOUTH_WEST  =  -9,
+    WEST        =  -1,
+    NORTH_WEST  =   7,
+    NORTH_NORTH =  16,
+    SOUTH_SOUTH = -16,
 } ;
 
 struct PVariation {

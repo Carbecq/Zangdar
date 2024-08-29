@@ -25,6 +25,19 @@ std::array<Mask, N_SQUARES> allmask;
 
 
 //! \brief  Calcule la distance entre 2 cases
+//! exemples :
+/*
+A1, A1 = 0
+A1, A2 = 1
+A1, B1 = 1
+A1, B2 = 1
+A1, B3 = 2
+A1, H8 = 7
+A1, C2 = 2
+A1, H2 = 7
+A1, B8 = 7
+A1, H5 = 7
+*/
 void calculate_distance_between_squares()
 {
     for (int sq1 = A1; sq1 <= H8; ++sq1)

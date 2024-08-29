@@ -110,19 +110,19 @@ public:
     template<Color C>
     [[nodiscard]] Bitboard XRayBishopAttack(const int sq)
     {
-        Bitboard occ = occupancy_all() ^ occupancy_cp<C, QUEEN>() ^ occupancy_cp<C, BISHOP>();
+        Bitboard occ = occupancy_all() ^ occupancy_p<QUEEN>() ^ occupancy_cp<C, BISHOP>();
         return(Attacks::bishop_moves(sq, occ));
     }
     template<Color C>
     [[nodiscard]] Bitboard XRayRookAttack(const int sq)
     {
-        Bitboard occ = occupancy_all() ^ occupancy_cp<C, QUEEN>() ^ occupancy_cp<C, ROOK>();
+        Bitboard occ = occupancy_all() ^ occupancy_p<QUEEN>() ^ occupancy_cp<C, ROOK>();
         return(Attacks::rook_moves(sq, occ));
     }
     template<Color C>
     [[nodiscard]] Bitboard XRayQueenAttack(const int sq)
     {
-        Bitboard occ = occupancy_all() ^ occupancy_cp<C, QUEEN>() ^ occupancy_cp<C, ROOK>() ^ occupancy_cp<C, BISHOP>();
+        Bitboard occ = occupancy_all() ^ occupancy_p<QUEEN>() ^ occupancy_cp<C, ROOK>() ^ occupancy_cp<C, BISHOP>();
         return(Attacks::queen_moves(sq, occ));
     }
 
