@@ -10,14 +10,33 @@ VERSION := $(file < $(FILE))
 
 TARGET = Zangdar-$(VERSION)-5950X-pext
 
+# Defines divers
+
+# DEFINES +=  DEBUG_EVAL
+# DEFINES +=  DEBUG_LOG
+# DEFINES +=  DEBUG_HASH
+# DEFINES +=  DEBUG_TIME
+
+#  NE PAS UTILISER PRETTY avec
+#       + Arena (score mal affiché)
+#       + test STS
+#  #define USE_PRETTY
+
+#  Désactiver USE_HASH pour la mesure de performances brutes
+# #define USE_HASH
 
 # needed only for tests
 # just comment it if you want
-#HOMEDEF = -DHOME=\"/media/philippe/Travail/Echecs/Programmation/Zangdar/APP-2/\"
+HOMEDEF = \"/media/philippe/Datas/Echecs/Programmation/Zangdar/\"
+
+# Tuner : USE_TUNER
+
+
+DEFS = -DHOME=$(HOMEDEF)
 
 ifeq ($(findstring clang, $(CXX)), clang)
 
-CFLAGS_COM  = -pipe -std=c++20 -DVERSION=\"$(VERSION)\"
+CFLAGS_COM  = -pipe -std=c++20 -DVERSION=\"$(VERSION)\" $(DEFS)
 CFLAGS_ARCH = -march=native -DUSE_PEXT
 CFLAGS_DEB  =
 CFLAGS_OPT  = -O3 -Ofast -flto -DNDEBUG
@@ -32,7 +51,7 @@ CFLAGS_WARN5 = -Wuninitialized -Wattributes -Waddress
 
 else
 
-CFLAGS_COM = -pipe -std=c++20 -DVERSION=\"$(VERSION)\"
+CFLAGS_COM = -pipe -std=c++20 -DVERSION=\"$(VERSION)\" $(DEFS)
 CFLAGS_ARCH = -march=native -DUSE_PEXT
 CFLAGS_DEB = -g -O0
 CFLAGS_OPT = -O3 -flto -DNDEBUG -fwhole-program
@@ -63,10 +82,10 @@ else
 endif
 
 ifeq ($(DEBUG),yes)
-    CFLAGS= $(CFLAGS_COM) $(CFLAGS_DEB) $(CFLAGS_ARCH) $(CFPROF) $(CFLAGS_WARN) -I/$(SRC1) -I/$(SRC2) $(HOMEDEF)
+    CFLAGS= $(CFLAGS_COM) $(CFLAGS_DEB) $(CFLAGS_ARCH) $(CFPROF) $(CFLAGS_WARN) -I/$(SRC1) -I/$(SRC2)
     LDFLAGS=$(LDPROF) -lpthread
 else
-    CFLAGS= $(CFLAGS_COM) $(CFLAGS_OPT) $(CFLAGS_ARCH) $(CFPROF) $(CFLAGS_WARN) -I/$(SRC1) -I/$(SRC2) $(HOMEDEF)
+    CFLAGS= $(CFLAGS_COM) $(CFLAGS_OPT) $(CFLAGS_ARCH) $(CFPROF) $(CFLAGS_WARN) -I/$(SRC1) -I/$(SRC2)
     LDFLAGS= $(LDPROF) -flto -lpthread -static 
 endif
 

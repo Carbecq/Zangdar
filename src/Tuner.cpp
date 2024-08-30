@@ -89,7 +89,7 @@ void Tuner::InitTunerEntries(TexelEntry* entries)
 {
     Board board;
 
-    std::string     str_file = DATASET;
+    std::string     str_file = Home + DATASET;
     std::ifstream   file(str_file);
 
     // Ouverture du fichier
@@ -305,6 +305,7 @@ void Tuner::InitCoefficients(double coeffs[NTERMS])
 
     // Pions
     InitCoeffSingle(coeffs, Trace.PawnDoubled,                  index);
+    InitCoeffSingle(coeffs, Trace.PawnDoubled2,                 index);
     InitCoeffSingle(coeffs, Trace.PawnSupport,                  index);
     InitCoeffSingle(coeffs, Trace.PawnOpen,                     index);
     InitCoeffArray( coeffs, Trace.PawnPhalanx,      N_RANKS,    index);
@@ -313,23 +314,31 @@ void Tuner::InitCoefficients(double coeffs[NTERMS])
     InitCoeffArray( coeffs, Trace.PassedDefended,   N_RANKS,    index);
 
     // Pions passés
-    InitCoeffArray( coeffs, Trace.PassedDistUs,     4,       index);
-    InitCoeffSingle(coeffs, Trace.PassedDistThem,            index);
-    InitCoeffArray( coeffs, Trace.PassedBlocked,    4,       index);
+    InitCoeffSingle(coeffs, Trace.PassedSquare,                 index);
+    InitCoeffArray( coeffs, Trace.PassedDistUs,     N_RANKS,    index);
+    InitCoeffSingle(coeffs, Trace.PassedDistThem,               index);
+    InitCoeffArray( coeffs, Trace.PassedBlocked,    N_RANKS,    index);
+    InitCoeffArray( coeffs, Trace.PassedFreeAdv,    N_RANKS,    index);
+    InitCoeffSingle(coeffs, Trace.PassedRookBack,               index);
 
     // Divers
     InitCoeffSingle(coeffs, Trace.MinorBehindPawn,          index);
-    InitCoeffArray( coeffs, Trace.KnightOutpost,    2,      index);
+    // InitCoeffArray( coeffs, Trace.KnightOutpost,    2,      index);
     InitCoeffSingle(coeffs, Trace.BishopPair,               index);
     InitCoeffSingle(coeffs, Trace.BishopBadPawn,            index);
     InitCoeffSingle(coeffs, Trace.OpenForward,              index);
     InitCoeffSingle(coeffs, Trace.SemiForward,              index);
+
+    // Roi
     InitCoeffArray( coeffs, Trace.KingLineDanger,   28,     index);
     InitCoeffSingle(coeffs, Trace.KingAttackPawn,           index);
+    InitCoeffSingle(coeffs, Trace.PawnShelter,              index);
 
     // Menaces
-    InitCoeffSingle(coeffs, Trace.PawnThreat,              index);
-    InitCoeffSingle(coeffs, Trace.PushThreat,              index);
+    InitCoeffSingle(coeffs, Trace.PawnThreat,                   index);
+    InitCoeffSingle(coeffs, Trace.PushThreat,                   index);
+    InitCoeffArray( coeffs, Trace.ThreatByMinor,    N_PIECES,   index);
+    InitCoeffArray( coeffs, Trace.ThreatByRook,     N_PIECES,   index);
 
     // Mobilité
     InitCoeffArray(coeffs, Trace.KnightMobility,     9, index);
@@ -367,6 +376,7 @@ void Tuner::InitBaseParams(double tparams[NTERMS][N_PHASES])
 
     // Pions
     InitBaseSingle(tparams, PawnDoubled,             index);
+    InitBaseSingle(tparams, PawnDoubled2,            index);
     InitBaseSingle(tparams, PawnSupport,             index);
     InitBaseSingle(tparams, PawnOpen,                index);
     InitBaseArray( tparams, PawnPhalanx,    N_RANKS, index);
@@ -375,23 +385,31 @@ void Tuner::InitBaseParams(double tparams[NTERMS][N_PHASES])
     InitBaseArray( tparams, PassedDefended, N_RANKS, index);
 
     // Pions passés
-    InitBaseArray( tparams, PassedDistUs,   4,       index);
+    InitBaseSingle(tparams, PassedSquare,            index);
+    InitBaseArray( tparams, PassedDistUs,   N_RANKS,       index);
     InitBaseSingle(tparams, PassedDistThem,          index);
-    InitBaseArray( tparams, PassedBlocked,  4,       index);
+    InitBaseArray( tparams, PassedBlocked,  N_RANKS,       index);
+    InitBaseArray( tparams, PassedFreeAdv,  N_RANKS,       index);
+    InitBaseSingle(tparams, PassedRookBack,          index);
 
     // Divers
     InitBaseSingle(tparams, MinorBehindPawn,        index);
-    InitBaseArray( tparams, KnightOutpost,  2,      index);
+    // InitBaseArray( tparams, KnightOutpost,  2,      index);
     InitBaseSingle(tparams, BishopPair,             index);
     InitBaseSingle(tparams, BishopBadPawn,          index);
     InitBaseSingle(tparams, OpenForward,            index);
     InitBaseSingle(tparams, SemiForward,            index);
+
+    // Roi
     InitBaseArray( tparams, KingLineDanger, 28,     index);
     InitBaseSingle(tparams, KingAttackPawn,         index);
+    InitBaseSingle(tparams, PawnShelter,            index);
 
     // Menaces
     InitBaseSingle(tparams, PawnThreat,              index);
     InitBaseSingle(tparams, PushThreat,              index);
+    InitBaseArray( tparams, ThreatByMinor,  N_PIECES,      index);
+    InitBaseArray( tparams, ThreatByRook,   N_PIECES,      index);
 
     // Mobilité
     InitBaseArray( tparams, KnightMobility,  9,      index);
@@ -538,8 +556,9 @@ void Tuner::PrintParameters(double params[NTERMS][N_PHASES], double current[NTER
     PrintPSQT(tparams, index);
 
     puts("\n//----------------------------------------------------------");
-    puts("// Pawn bonuses and maluses");
+    puts("// Pions");
     PrintSingle("PawnDoubled",      tparams, index);
+    PrintSingle("PawnDoubled2",     tparams, index);
     PrintSingle("PawnSupport",      tparams, index);
     PrintSingle("PawnOpen",         tparams, index);
     PrintArray( "PawnPhalanx",      tparams, index,     N_RANKS,    "[N_RANKS]", len);
@@ -549,25 +568,34 @@ void Tuner::PrintParameters(double params[NTERMS][N_PHASES], double current[NTER
 
     puts("\n//----------------------------------------------------------");
     puts("// Pions passés");
-    PrintArray( "PassedDistUs",     tparams, index,     4,      "[4]",  len);
+    PrintSingle("PassedSquare",     tparams, index);
+    PrintArray( "PassedDistUs",     tparams, index,     N_RANKS,      "[N_RANKS]",  len);
     PrintSingle("PassedDistThem",   tparams, index);
-    PrintArray( "PassedBlocked",    tparams, index,     4,      "[4]",  len);
+    PrintArray( "PassedBlocked",    tparams, index,     N_RANKS,      "[N_RANKS]",  len);
+    PrintArray( "PassedFreeAdv",    tparams, index,     N_RANKS,      "[N_RANKS]",  len);
+    PrintSingle("PassedRookBack",   tparams, index);
 
     puts("\n//----------------------------------------------------------");
-    puts("// Misc Bonus");
+    puts("// Bonus Divers");
     PrintSingle("MinorBehindPawn",  tparams, index);
-    PrintArray( "KnightOutpost",    tparams, index,     2,      "[2]",  len);
+    // PrintArray( "KnightOutpost",    tparams, index,     2,      "[2]",  len);
     PrintSingle("BishopPair",       tparams, index);
     PrintSingle("BishopBadPawn",    tparams, index);
     PrintSingle("OpenForward",      tparams, index);
     PrintSingle("SemiForward",      tparams, index);
+
+    puts("\n//----------------------------------------------------------");
+    puts("// Roi");
     PrintArray( "KingLineDanger",   tparams, index,     28,     "[28]", len);
-    PrintSingle("KingAtkPawn",      tparams, index);
+    PrintSingle("KingAttackPawn",   tparams, index);
+    PrintSingle("PawnShelter",      tparams, index);
 
     puts("\n//----------------------------------------------------------");
     puts("// Menaces");
     PrintSingle("PawnThreat",       tparams, index);
     PrintSingle("PushThreat",       tparams, index);
+    PrintArray( "ThreatByMinor",    tparams, index,     N_PIECES,     "[N_PIECES]", len);
+    PrintArray( "ThreatByRook",     tparams, index,     N_PIECES,     "[N_PIECES]", len);
 
     PrintMobility(tparams, index);
     puts("");
@@ -647,7 +675,7 @@ void Tuner::PrintArray(const std::string& name, double params[NTERMS][N_PHASES],
 
     for (int i = 0; i < imax; i++, index++)
     {
-        if (i && i % length == 0)
+        if (i % length == 0)
             printf("\n    ");
         if (i == imax - 1)
             printf("S(%4d, %4d) ", static_cast<int>(params[index][MG]), static_cast<int>(params[index][EG]));

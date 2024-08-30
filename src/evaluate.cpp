@@ -60,6 +60,7 @@ https://hxim.github.io/Stockfish-Evaluation-Guide/
 
     // Adjust eval by scale factor
     int scale = scale_factor(eval);
+
 #if defined USE_TUNER
     ownTuner.Trace.scale = scale;
 #endif
@@ -110,22 +111,6 @@ Score Board::probe_pawn_cache(EvalInfo& ei)
 
 }
 
-//===================================================================
-//! \brief  Evaluation des pièces
-//-------------------------------------------------------------------
-Score Board::evaluate_pieces(EvalInfo& ei)
-{
-    Score eval = 0;
-
-    eval += evaluate_knights<WHITE>(ei) - evaluate_knights<BLACK>(ei);
-    eval += evaluate_bishops<WHITE>(ei) - evaluate_bishops<BLACK>(ei);
-    eval += evaluate_rooks<WHITE>(ei)   - evaluate_rooks<BLACK>(ei);
-    eval += evaluate_queens<WHITE>(ei)  - evaluate_queens<BLACK>(ei);
-    eval += evaluate_king<WHITE>(ei)    - evaluate_king<BLACK>(ei);
-
-    return eval;
-}
-
 //=================================================================
 //! \brief  Evaluation des pions d'une couleur
 //!
@@ -160,6 +145,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
     // 3- on ne compte qu'une seule fois les pions doublés
     count = BB::count_bit(pawns & BB::north(pawns));
     eval += PawnDoubled * count;
+
 #if defined DEBUG_EVAL
     if (count)
         printf("Le camp %s possède %d pions doublés \n", camp[1][US].c_str(), count);
@@ -172,6 +158,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
     // Pions doublés mais séparés d'une case
     count = BB::count_bit(pawns & BB::shift<NORTH_NORTH>(pawns));
     eval += PawnDoubled2 * count;
+
 #if defined DEBUG_EVAL
     if (count)
         printf("Le camp %s possède %d pions doublés séparés \n", camp[1][US].c_str(), count);
@@ -185,6 +172,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
     // Des pions sont liés lorsqu'ils sont placés sur une diagonale et que l'un défend l'autre.
     count = BB::count_bit(pawns & all_pawn_attacks<THEM>(pawns));
     eval += PawnSupport * count;
+
 #if defined DEBUG_EVAL
     if (count)
         printf("Le camp %s possède %d pions liés \n", camp[1][US].c_str(), count);
@@ -200,6 +188,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
     Bitboard open = ~BB::fill<DOWN>(ei.pawns[THEM]);
     count = BB::count_bit(pawns & open & ~all_pawn_attacks<US>(pawns));
     eval += PawnOpen * count;
+
 #if defined DEBUG_EVAL
     if (count)
         printf("Le camp %s possède %d pions non défendus sans opposition \n", camp[1][US].c_str(), count);
@@ -215,6 +204,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
     {
         rank  = SQ::relative_rank8<US>(SQ::rank(BB::pop_lsb(phalanx)));
         eval += PawnPhalanx[rank];
+
 #if defined DEBUG_EVAL
         printf("Le camp %s possède des pions en phalange sur la rangée %d \n", camp[1][US].c_str(), rank);
 #endif
@@ -249,6 +239,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
         if ((pawns & AdjacentFilesMask64[sq]) == 0)
         {
             eval += PawnIsolated;
+
 #if defined DEBUG_EVAL
             printf("le pion %s en %s est isolé \n", camp[1][US].c_str(), square_name[sq].c_str());
 #endif
@@ -321,8 +312,7 @@ Score Board::evaluate_passed(EvalInfo& ei)
         if (rank < RANK_4)
             continue;
 
-        int r = rank - RANK_4;
-        int file = SQ::file(sq);
+        int file  = SQ::file(sq);
         int promo = SQ::relative_square<US>(SQ::square(file, RANK_8));
 
         // printf("sq= %d %s ; rank=%d file=%d promo=%d %s \n", sq, square_name[sq].c_str(), rank, file, promo, square_name[promo].c_str());
@@ -347,14 +337,14 @@ Score Board::evaluate_passed(EvalInfo& ei)
 
         // Distance au roi ami
         count = distance_between(forward, king_square<US>());
-        eval += count * PassedDistUs[r];
+        eval += count * PassedDistUs[rank];
 
 #if defined DEBUG_EVAL
         if (count)
             printf("le pion passé %s en %s est à une distance de %d du roi ami \n", camp[1][US].c_str(), square_name[sq].c_str(), count);
 #endif
 #if defined USE_TUNER
-            ownTuner.Trace.PassedDistUs[r][US] += count;
+            ownTuner.Trace.PassedDistUs[rank][US] += count;
 #endif
 
 
@@ -374,13 +364,13 @@ Score Board::evaluate_passed(EvalInfo& ei)
         // Pion passé bloqué
         if (pieceOn[forward])
         {
-            eval += PassedBlocked[r];
+            eval += PassedBlocked[rank];
 
 #if defined DEBUG_EVAL
             printf("le pion passé %s en %s est bloqué \n", camp[1][US].c_str(), square_name[sq].c_str());
 #endif
 #if defined USE_TUNER
-            ownTuner.Trace.PassedBlocked[r][US]++;
+            ownTuner.Trace.PassedBlocked[rank][US]++;
 #endif
         }
 
@@ -388,13 +378,13 @@ Score Board::evaluate_passed(EvalInfo& ei)
         // Pion passé libre d'avancer
         else if (!(BB::sq2BB(forward) & ei.attacked[THEM]))
         {
-            eval += PassedFreeAdv[r];
+            eval += PassedFreeAdv[rank];
 
 #if defined DEBUG_EVAL
             printf("le pion passé %s en %s est libre d'avancer \n", camp[1][US].c_str(), square_name[sq].c_str());
 #endif
 #if defined USE_TUNER
-            ownTuner.Trace.PassedFreeAdv[r][US]++;
+            ownTuner.Trace.PassedFreeAdv[rank][US]++;
 #endif
         }
 
@@ -414,6 +404,22 @@ Score Board::evaluate_passed(EvalInfo& ei)
 #endif
         }
     }
+
+    return eval;
+}
+
+//===================================================================
+//! \brief  Evaluation des pièces
+//-------------------------------------------------------------------
+Score Board::evaluate_pieces(EvalInfo& ei)
+{
+    Score eval = 0;
+
+    eval += evaluate_knights<WHITE>(ei) - evaluate_knights<BLACK>(ei);
+    eval += evaluate_bishops<WHITE>(ei) - evaluate_bishops<BLACK>(ei);
+    eval += evaluate_rooks<WHITE>(ei)   - evaluate_rooks<BLACK>(ei);
+    eval += evaluate_queens<WHITE>(ei)  - evaluate_queens<BLACK>(ei);
+    eval += evaluate_king<WHITE>(ei)    - evaluate_king<BLACK>(ei);
 
     return eval;
 }
@@ -481,7 +487,7 @@ Score Board::evaluate_knights(EvalInfo& ei)
         if (    BB::test_bit(OutpostRanksMasks[US], sq)
             && !(OutpostSquareMasks[US][sq] & enemyPawns))
         {
-            defended = BB::test_bit(ei.attackedBy[US][PieceType::PAWN], sq);
+            defended = BB::test_bit(ei.attackedBy[US][PAWN], sq);
             //TODO à tester
             eval += KnightOutpost[defended];
 
@@ -517,8 +523,8 @@ Score Board::evaluate_knights(EvalInfo& ei)
             ei.attackPower[US] += nbr_attacks * AttackPower[KNIGHT] + nbr_checks * CheckPower[KNIGHT];
         }
 
-        ei.attackedBy[US][PieceType::KNIGHT] |= attackBB;
-        ei.attacked[US]                      |= attackBB;
+        ei.attackedBy[US][KNIGHT] |= attackBB;
+        ei.attacked[US]           |= attackBB;
     }
 
     return eval;
@@ -625,8 +631,8 @@ Score Board::evaluate_bishops(EvalInfo& ei)
             ei.attackPower[US] += nbr_attacks * AttackPower[BISHOP] + nbr_checks * CheckPower[BISHOP];
         }
 
-        ei.attackedBy[US][PieceType::BISHOP] |= attackBB;
-        ei.attacked[US]                      |= attackBB;
+        ei.attackedBy[US][BISHOP] |= attackBB;
+        ei.attacked[US]           |= attackBB;
     }
 
     return eval;
@@ -706,7 +712,7 @@ Score Board::evaluate_rooks(EvalInfo& ei)
         Bitboard attackBB   = XRayRookAttack<US>(sq);
         Bitboard mobilityBB = attackBB & ei.mobilityArea[US];
         count = BB::count_bit(mobilityBB);
-        eval +=  RookMobility[count];;
+        eval +=  RookMobility[count];
 
 #if defined USE_TUNER
         ownTuner.Trace.RookMobility[count][US]++;
@@ -722,8 +728,8 @@ Score Board::evaluate_rooks(EvalInfo& ei)
             ei.attackPower[US] += nbr_attacks * AttackPower[ROOK] + nbr_checks * CheckPower[ROOK];
         }
 
-        ei.attackedBy[US][PieceType::ROOK] |= attackBB;
-        ei.attacked[US]                    |= attackBB;
+        ei.attackedBy[US][ROOK] |= attackBB;
+        ei.attacked[US]         |= attackBB;
     }
 
     return eval;
@@ -783,8 +789,8 @@ Score Board::evaluate_queens(EvalInfo& ei)
                                 + nbr_checks  * CheckPower[QUEEN];
         }
 
-        ei.attackedBy[US][PieceType::QUEEN] |= attackBB;
-        ei.attacked[US]                     |= attackBB;
+        ei.attackedBy[US][QUEEN] |= attackBB;
+        ei.attacked[US]          |= attackBB;
     }
 
     return eval;
@@ -856,34 +862,32 @@ Score Board::evaluate_king(EvalInfo& ei)
     eval -= S(danger / 128, 0);
 
 #if defined DEBUG_EVAL
-    printf("danger = %d \n", danger);
+    printf("le roi %s en %s est en danger de %d \n", camp[1][US].c_str(), square_name[sq].c_str(), danger/128);
 #endif
 #if defined USE_TUNER
-    ownTuner.Trace.danger[US] = S(danger / 128, 0);
-    TraceDanger(S(danger / 128, 0)); // voir tuner de Weiss
+    // ownTuner.Trace.danger[US] = S(danger / 128, 0);
 #endif
 
 
-    // Pawn shelter
-    Bitboard pawnsInFront = typePiecesBB[PieceType::PAWN] & PassedPawnMask[US][king_square<US>()];
+    // Bouclier du roi
+    Bitboard pawnsInFront = typePiecesBB[PAWN] & PassedPawnMask[US][king_square<US>()];
     Bitboard ourPawns = pawnsInFront & colorPiecesBB[US] & ~all_pawn_attacks<THEM>(ei.pawns[THEM]);
 
     count = BB::count_bit(ourPawns);
     eval += count * PawnShelter;
 
-
 #if defined DEBUG_EVAL
     printf("le roi %s en %s possède un bouclier de %d pions \n", camp[1][US].c_str(), square_name[sq].c_str(), count);
 #endif
 #if defined USE_TUNER
-    TraceCount(Shelter);
+    ownTuner.Trace.PawnShelter[US] += count;
 #endif
 
     return eval;
 }
 
 //=================================================================
-//! \brief  Evaluation des menaces de pions
+//! \brief  Evaluation des menaces
 //-----------------------------------------------------------------
 template<Color US>
 Score Board::evaluate_threats(const EvalInfo& ei)
@@ -928,14 +932,21 @@ Score Board::evaluate_threats(const EvalInfo& ei)
 
 
     // Threats by minor pieces
-    Bitboard targets = theirNonPawns & ~occupancy_p<PieceType::KING>();
+    Bitboard targets = theirNonPawns & ~occupancy_p<KING>();
     threats = targets & (ei.attackedBy[US][KNIGHT] | ei.attackedBy[US][BISHOP]);
     while (threats)
     {
         sq = BB::pop_lsb(threats);
         eval += ThreatByMinor[pieceOn[sq]];
-        // TraceIncr(ThreatByMinor[pieceTypeOn(sq)]);
+
+#if defined DEBUG_EVAL
+        printf("menace par la pièce mineure %s \n", piece_name[pieceOn[sq]]);
+#endif
+#if defined USE_TUNER
+        ownTuner.Trace.ThreatByMinor[pieceOn[sq]][US]++;
+#endif
     }
+
 
     // Threats by rooks
     targets &= ~ei.attackedBy[THEM][PAWN];
@@ -944,7 +955,13 @@ Score Board::evaluate_threats(const EvalInfo& ei)
     {
         sq = BB::pop_lsb(threats);
         eval += ThreatByRook[pieceOn[sq]];
-        // TraceIncr(ThreatByRook[pieceTypeOn(sq)]);
+
+#if defined DEBUG_EVAL
+        printf("menace par la tour %s en %s \n", piece_name[pieceOn[sq]], square_name[sq].c_str());
+#endif
+#if defined USE_TUNER
+        ownTuner.Trace.ThreatByRook[pieceOn[sq]][US]++;
+#endif
     }
 
     return eval;
@@ -1119,12 +1136,12 @@ void Board::init_eval_info(EvalInfo& ei)
     }
 
     // Attaques du roi
-    ei.attackedBy[WHITE][PieceType::KING] = Attacks::king_moves(king_square<WHITE>());
-    ei.attackedBy[BLACK][PieceType::KING] = Attacks::king_moves(king_square<BLACK>());
+    ei.attackedBy[WHITE][KING] = Attacks::king_moves(king_square<WHITE>());
+    ei.attackedBy[BLACK][KING] = Attacks::king_moves(king_square<BLACK>());
 
     // Attaques des pions
-    ei.attackedBy[WHITE][PieceType::PAWN] = all_pawn_attacks<WHITE>(ei.pawns[WHITE]);
-    ei.attackedBy[BLACK][PieceType::PAWN] = all_pawn_attacks<BLACK>(ei.pawns[BLACK]);
+    ei.attackedBy[WHITE][PAWN] = all_pawn_attacks<WHITE>(ei.pawns[WHITE]);
+    ei.attackedBy[BLACK][PAWN] = all_pawn_attacks<BLACK>(ei.pawns[BLACK]);
 
     ei.attacked[WHITE] = ei.attackedBy[WHITE][KING] | ei.attackedBy[WHITE][PAWN];
     ei.attacked[BLACK] = ei.attackedBy[BLACK][KING] | ei.attackedBy[BLACK][PAWN];

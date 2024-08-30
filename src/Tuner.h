@@ -25,6 +25,7 @@
 struct EvalTrace {
     Score eval;
     int   scale;
+    // Score danger[N_COLORS];
 
     Score PawnValue[N_COLORS];
     Score KnightValue[N_COLORS];
@@ -40,6 +41,7 @@ struct EvalTrace {
     Score KingPSQT[N_SQUARES][N_COLORS];
 
     Score PawnDoubled[N_COLORS];
+    Score PawnDoubled2[N_COLORS];
     Score PawnSupport[N_COLORS];
     Score PawnOpen[N_COLORS];
     Score PawnPhalanx[N_RANKS][N_COLORS];
@@ -47,21 +49,28 @@ struct EvalTrace {
     Score PawnPassed[N_RANKS][N_COLORS];
     Score PassedDefended[N_RANKS][N_COLORS];
 
+    Score PassedSquare[N_COLORS];
     Score PassedDistUs[N_RANKS][N_COLORS];
     Score PassedDistThem[N_COLORS];
     Score PassedBlocked[N_RANKS][N_COLORS];
+    Score PassedFreeAdv[N_RANKS][N_COLORS];
+    Score PassedRookBack[N_COLORS];
 
     Score MinorBehindPawn[N_COLORS];
-    Score KnightOutpost[2][N_COLORS];
+    // Score KnightOutpost[2][N_COLORS];
     Score BishopPair[N_COLORS];
     Score BishopBadPawn[N_COLORS];
     Score OpenForward[N_COLORS];
     Score SemiForward[N_COLORS];
+
     Score KingLineDanger[28][N_COLORS];
     Score KingAttackPawn[N_COLORS];
+    Score PawnShelter[N_COLORS];
 
     Score PawnThreat[N_COLORS];
     Score PushThreat[N_COLORS];
+    Score ThreatByMinor[N_PIECES][N_COLORS];
+    Score ThreatByRook[N_PIECES][N_COLORS];
 
     Score KnightMobility[9][N_COLORS];
     Score BishopMobility[14][N_COLORS];
@@ -106,14 +115,14 @@ private:
     // constexpr static char DATASET[] = "D:/Echecs/Programmation/Zangdar/tuner/AndrewGrant/E12.33-1M-D12-Resolved.book";
     // constexpr static int    NPOSITIONS    = 9999740; // Total FENS in the book
 
-    constexpr static char DATASET[]     = "D:/Echecs/Programmation/Zangdar/tuner/Lichess/lichess-big3-resolved.book";
+    constexpr static char DATASET[]     = "/tuner/Lichess/lichess-big3-resolved.book";
     constexpr static int  NPOSITIONS    =  7153653; // Total FENS in the book
 
     constexpr static double NPOSITIONS_d  = NPOSITIONS; // Total FENS in the book
 
 constexpr static int    N_PHASES    = 2;
-constexpr static int    NTERMS      = 530;     // Number of terms being tuned
-constexpr static double NTERMS_d    = 530;     // Number of terms being tuned
+constexpr static int    NTERMS      = 562;     // Number of terms being tuned
+constexpr static double NTERMS_d    = 562;     // Number of terms being tuned
 
 constexpr static int    MAXEPOCHS   =   10000; // Max number of epochs allowed
 constexpr static int    REPORTING   =     100; // How often to print the new parameters

@@ -43,6 +43,11 @@ struct EvalInfo {
 
 };
 
+
+
+
+//----------------------------------------------------------
+//  Valeur des pièces
 enum PieceValueEMG {
     P_MG =  104, P_EG =  204,
     N_MG =  420, N_EG =  632,
@@ -78,10 +83,10 @@ constexpr Score KingValue   = S(K_MG, K_EG);
 
 //========================================================== DEBUT TUNER
 
+
 //----------------------------------------------------------
 //  Bonus positionnel des pièces
 //  Du point de vue des Blancs - Mes tables sont comme ça
-
 constexpr Score PawnPSQT[N_SQUARES] = {
     S(   0,    0), S(   0,    0), S(   0,    0), S(   0,    0), S(   0,    0), S(   0,    0), S(   0,    0), S(   0,    0),
     S( -19,   12), S(  -9,   13), S( -11,    8), S( -11,   16), S(  -4,   31), S(  15,    9), S(  31,   -2), S(  -6,  -13),
@@ -90,7 +95,7 @@ constexpr Score PawnPSQT[N_SQUARES] = {
     S( -15,   43), S( -13,   20), S(  -8,    2), S(  -1,  -22), S(  21,  -15), S(  29,  -14), S(   5,   13), S(   8,   18),
     S(  15,   77), S(  14,   84), S(  42,   43), S(  47,   17), S(  64,   21), S( 125,   22), S(  98,   68), S(  43,   76),
     S(  57,    1), S(  49,   22), S(  34,   65), S(  74,   31), S(  76,   36), S(  85,   27), S( -34,   91), S( -49,   63),
-    S(   0,    0), S(   0,    0), S(   0,    0), S(   0,    0), S(   0,    0), S(   0,    0), S(   0,    0), S(   0,    0),
+    S(   0,    0), S(   0,    0), S(   0,    0), S(   0,    0), S(   0,    0), S(   0,    0), S(   0,    0), S(   0,    0)
 };
 
 constexpr Score KnightPSQT[N_SQUARES] = {
@@ -101,7 +106,7 @@ constexpr Score KnightPSQT[N_SQUARES] = {
     S(  13,    6), S(  23,   23), S(  45,   50), S(  52,   62), S(  40,   57), S(  72,   39), S(  25,   17), S(  39,   -7),
     S( -15,   -7), S(  23,    7), S(  24,   46), S(  43,   45), S(  84,   20), S(  69,   23), S(  33,  -15), S(  -3,  -25),
     S(  -9,  -24), S(  -6,    3), S(  38,  -11), S(  46,   16), S(  52,   -2), S(  69,  -34), S( -12,    0), S(   8,  -47),
-    S(-201,  -70), S(-116,  -15), S(-145,   31), S( -58,    1), S(  -7,    9), S(-133,   34), S( -83,  -15), S(-153, -115),
+    S(-201,  -70), S(-116,  -15), S(-145,   31), S( -58,    1), S(  -7,    9), S(-133,   34), S( -83,  -15), S(-153, -115)
 };
 
 constexpr Score BishopPSQT[N_SQUARES] = {
@@ -112,7 +117,7 @@ constexpr Score BishopPSQT[N_SQUARES] = {
     S(  -7,   16), S(  29,   14), S(  27,   15), S(  49,   40), S(  39,   25), S(  31,   19), S(  33,    7), S(  -5,   17),
     S(   2,   26), S(  28,   17), S(  43,   12), S(  32,    9), S(  37,   12), S(  52,   24), S(  19,   24), S(  19,   12),
     S( -14,   15), S(  10,   18), S(   1,   19), S( -25,   30), S(  -2,   13), S( -15,   25), S( -28,   27), S( -56,   23),
-    S( -35,   47), S( -57,   38), S(-128,   54), S(-126,   56), S(-128,   52), S(-143,   43), S( -28,   21), S( -44,   18),
+    S( -35,   47), S( -57,   38), S(-128,   54), S(-126,   56), S(-128,   52), S(-143,   43), S( -28,   21), S( -44,   18)
 };
 
 constexpr Score RookPSQT[N_SQUARES] = {
@@ -123,7 +128,7 @@ constexpr Score RookPSQT[N_SQUARES] = {
     S( -13,   67), S(   8,   59), S(  14,   59), S(  32,   37), S(  27,   31), S(  33,   25), S(  35,   27), S(  16,   34),
     S( -13,   62), S(  39,   47), S(  15,   58), S(  39,   35), S(  57,   24), S(  52,   32), S(  81,   17), S(  23,   35),
     S( -13,   63), S( -26,   81), S(  -1,   83), S(   7,   76), S(  -4,   72), S(   8,   52), S(  -3,   56), S(  19,   42),
-    S(  24,   56), S(  24,   67), S( -12,   88), S(  -8,   76), S(   3,   75), S(   7,   77), S(  25,   73), S(  40,   64),
+    S(  24,   56), S(  24,   67), S( -12,   88), S(  -8,   76), S(   3,   75), S(   7,   77), S(  25,   73), S(  40,   64)
 };
 
 constexpr Score QueenPSQT[N_SQUARES] = {
@@ -134,7 +139,7 @@ constexpr Score QueenPSQT[N_SQUARES] = {
     S(   6,   25), S(  13,   65), S(  -1,   79), S( -11,  130), S( -14,  162), S(  -9,  171), S(  27,  155), S(   9,  123),
     S(  -3,   50), S(   5,   40), S(   1,   89), S( -10,  128), S(  -3,  159), S(  29,  157), S(  49,  114), S(  13,  140),
     S(  -9,   54), S( -48,  103), S( -28,  113), S( -84,  202), S( -88,  236), S( -28,  170), S( -43,  163), S(  11,  146),
-    S( -42,   81), S( -21,   93), S( -12,  125), S(   4,  130), S(  -3,  148), S(  35,  138), S(  33,  125), S(  18,  115),
+    S( -42,   81), S( -21,   93), S( -12,  125), S(   4,  130), S(  -3,  148), S(  35,  138), S(  33,  125), S(  18,  115)
 };
 
 constexpr Score KingPSQT[N_SQUARES] = {
@@ -145,112 +150,98 @@ constexpr Score KingPSQT[N_SQUARES] = {
     S(  33,   59), S( 102,   93), S(  95,  135), S(  58,  164), S(  71,  164), S( 123,  139), S( 114,  111), S(   0,   79),
     S(  31,   63), S( 129,  112), S( 114,  133), S(  91,  148), S( 133,  144), S( 165,  148), S( 150,  133), S(  49,   72),
     S(  -7,   34), S(  52,  112), S(  53,  118), S(  81,  107), S(  85,  108), S(  94,  125), S(  98,  139), S(  47,   54),
-    S( -24,  -68), S(  23,   15), S(  10,   45), S(   7,   82), S(   1,   62), S(  26,   76), S(  45,   91), S(  16,  -57),
+    S( -24,  -68), S(  23,   15), S(  10,   45), S(   7,   82), S(   1,   62), S(  26,   76), S(  45,   91), S(  16,  -57)
 };
 
 //----------------------------------------------------------
 // Pions
-constexpr Score PawnDoubled  = S(-11,-48);
-constexpr Score PawnDoubled2 = S(-10,-25);
-constexpr Score PawnSupport  = S( 22, 17);
-constexpr Score PawnOpen     = S(-14,-19);
+constexpr Score PawnDoubled = S( -11,  -48);
+constexpr Score PawnDoubled2 = S( -10,  -25);
+constexpr Score PawnSupport = S(  22,   17);
+constexpr Score PawnOpen = S( -14,  -19);
 constexpr Score PawnPhalanx[N_RANKS] = {
-    S(  0,  0), S( 10, -2), S( 20, 14), S( 35, 37),
-    S( 72,121), S(231,367), S(168,394), S(  0,  0)
-};
-constexpr Score PawnIsolated = S( -8,-16);
+    S(   0,    0), S(  10,   -2), S(  20,   14), S(  35,   37), S(  72,  121), S( 231,  367), S( 168,  394), S(   0,    0) };
+constexpr Score PawnIsolated = S(  -8,  -16);
+constexpr Score PawnPassed[N_RANKS] = {
+    S(   0,    0), S( -14,   25), S( -19,   40), S( -72,  115), S( -38,  146), S(  60,  175), S( 311,  218), S(   0,    0) };
+constexpr Score PassedDefended[N_RANKS] = {
+    S(   0,    0), S(   0,    0), S(   3,  -14), S(   3,  -10), S(   0,   33), S(  32,  103), S( 158,   96), S(   0,    0) };
 
 //----------------------------------------------------------
 // Pions passés
-constexpr Score PawnPassed[N_RANKS] = {
-    S(  0,  0), S(-14, 25), S(-19, 40), S(-72,115),
-    S(-38,146), S( 60,175), S(311,218), S(  0,  0)
-};
-constexpr Score PassedDefended[N_RANKS] = {
-    S(  0,  0), S(  0,  0), S(  3,-14), S(  3,-10),
-    S(  0, 33), S( 32,103), S(158, 96), S(  0,  0)
-};
-constexpr Score PassedBlocked[4] = {
-    S(  1, -4), S( -6,  6), S(-11,-11), S(-54,-52)
-};
-constexpr Score PassedFreeAdv[4] = {
-    S( -4, 25), S(-12, 58), S(-23,181), S(-70,277)
-};
-constexpr Score PassedDistUs[4] = {
-    S( 18,-32), S( 17,-44), S(  2,-49), S(-19,-37)
-};
-constexpr Score PassedDistThem = S( -4, 19);
-constexpr Score PassedRookBack = S( 21, 46);
-constexpr Score PassedSquare   = S(-26,422);
+constexpr Score PassedSquare = S( -26,  422);
+constexpr Score PassedDistUs[N_RANKS] = {
+    S(   0,    0), S(   0,    0), S(   0,    0), S(  18,  -32), S(  17,  -44), S(   2,  -49), S( -19,  -37), S(   0,    0) };
+constexpr Score PassedDistThem = S(  -4,   19);
+constexpr Score PassedBlocked[N_RANKS] = {
+    S(   0,    0), S(   0,    0), S(   0,    0), S(   1,   -4), S(  -6,    6), S( -11,  -11), S( -54,  -52), S(   0,    0) };
+constexpr Score PassedFreeAdv[N_RANKS] = {
+    S(   0,    0), S(   0,    0), S(   0,    0), S(  -4,   25), S( -12,   58), S( -23,  181), S( -70,  277), S(   0,    0) };
+constexpr Score PassedRookBack = S(  21,   46);
 
 //----------------------------------------------------------
-// Bonus divers
-constexpr Score BishopPair       = S( 33,110);
-constexpr Score BishopBadPawn    = S(  -1,   -5);
-constexpr Score MinorBehindPawn  = S(  9, 32);
-constexpr Score KnightOutpost[2] = { S(  19,  -28), S(  41,   17) };
-constexpr Score KingAttackPawn   = S(-16, 45);
-constexpr Score OpenForward      = S( 28, 31);
-constexpr Score SemiForward      = S( 17, 15);
-constexpr Score PawnShelter      = S( 31,-12);
-
-
+// Bonus Divers
+constexpr Score MinorBehindPawn = S(   9,   32);
+constexpr Score BishopPair = S(  33,  110);
+constexpr Score BishopBadPawn = S(  -1,   -5);
+constexpr Score OpenForward = S(  28,   31);
+constexpr Score SemiForward = S(  17,   15);
 
 //----------------------------------------------------------
-// Mobilité :
-constexpr Score KnightMobility[9] = {
-    S( -44, -139), S( -31,   -7), S( -10,   60), S(   0,   86), S(  13,   89), S(  22,  102), S(  32,  102), S(  43,  101),
-    S(  54,   81),
+// Roi
+constexpr Score KingLineDanger[28] = {
+    S(   0,    0), S(   0,    0), S(  15,    0), S(  11,   21), S( -16,   35), S( -25,   30), S( -29,   29), S( -37,   38),
+    S( -48,   41), S( -67,   43), S( -67,   40), S( -80,   43), S( -85,   43), S( -97,   44), S(-109,   46), S(-106,   41),
+    S(-116,   41), S(-123,   37), S(-126,   34), S(-131,   29), S(-138,   28), S(-155,   26), S(-149,   23), S(-172,    9),
+    S(-148,   -8), S(-134,  -26), S(-130,  -32), S(-135,  -34)
 };
-
-constexpr Score BishopMobility[14] = {
-    S( -51,  -81), S( -26,  -40), S( -11,   19), S(  -3,   53), S(   9,   65), S(  21,   83), S(  26,   98), S(  32,  104),
-    S(  32,  114), S(  35,  116), S(  41,  115), S(  57,  106), S(  50,  115), S( 100,   76),
-};
-
-constexpr Score RookMobility[15] = {
-    S(-105, -146), S( -15,   18), S(  -1,   82), S(   5,   88), S(   2,  121), S(   6,  133), S(   5,  144), S(  12,  146),
-    S(  14,  152), S(  19,  157), S(  24,  164), S(  23,  171), S(  25,  177), S(  36,  177), S(  72,  154),
-};
-
-constexpr Score QueenMobility[28] = {
-    S( -63,  -48), S( -97,  -54), S( -89, -107), S( -17, -127), S(   0,  -52), S(  -8,   72), S(  -2,  142), S(  -2,  184),
-    S(   1,  215), S(   5,  230), S(   7,  243), S(   9,  254), S(  15,  255), S(  15,  268), S(  16,  279), S(  18,  283),
-    S(  16,  294), S(  16,  302), S(  12,  313), S(  13,  321), S(  23,  314), S(  22,  318), S(  48,  298), S(  58,  279),
-    S( 122,  221), S( 135,  193), S( 146,  166), S( 125,  162),
-};
+constexpr Score KingAttackPawn = S( -16,   45);
+constexpr Score PawnShelter = S(  31,  -12);
 
 //----------------------------------------------------------
 // Menaces
-constexpr Score PawnThreat   = S( 80, 34);
-constexpr Score PushThreat   = S( 25,  6);
-constexpr Score ThreatByMinor[8] = {
-    S(  0,  0), S(  0,  0), S( 27, 42), S( 39, 42),
-    S( 67, 11), S( 59,-17), S(  0,  0), S(  0,  0)
-};
-constexpr Score ThreatByRook[8] = {
-    S(  0,  0), S(  0,  0), S( 24, 43), S( 31, 45),
-    S(-17, 47), S( 93,-73), S(  0,  0), S(  0,  0)
+constexpr Score PawnThreat = S(  80,   34);
+constexpr Score PushThreat = S(  25,    6);
+constexpr Score ThreatByMinor[N_PIECES] = {
+    S(   0,    0), S(   0,    0), S(  27,   42), S(  39,   42), S(  67,   11), S(  59,  -17), S(   0,    0) };
+constexpr Score ThreatByRook[N_PIECES] = {
+    S(   0,    0), S(   0,    0), S(  24,   43), S(  31,   45), S( -17,   47), S(  93,  -73), S(   0,    0) };
+
+//----------------------------------------------------------
+// Mobilité
+constexpr Score KnightMobility[9] = {
+    S( -44, -139), S( -31,   -7), S( -10,   60), S(   0,   86), S(  13,   89),
+    S(  22,  102), S(  32,  102), S(  43,  101), S(  54,   81)
 };
 
-// Sécurité du roi
-constexpr Score KingLineDanger[28] = {
-    S(  0,  0), S(  0,  0), S( 15,  0), S( 11, 21),
-    S(-16, 35), S(-25, 30), S(-29, 29), S(-37, 38),
-    S(-48, 41), S(-67, 43), S(-67, 40), S(-80, 43),
-    S(-85, 43), S(-97, 44), S(-109, 46), S(-106, 41),
-    S(-116, 41), S(-123, 37), S(-126, 34), S(-131, 29),
-    S(-138, 28), S(-155, 26), S(-149, 23), S(-172,  9),
-    S(-148, -8), S(-134,-26), S(-130,-32), S(-135,-34)
+constexpr Score BishopMobility[14] = {
+    S( -51,  -81), S( -26,  -40), S( -11,   19), S(  -3,   53), S(   9,   65),
+    S(  21,   83), S(  26,   98), S(  32,  104), S(  32,  114), S(  35,  116),
+    S(  41,  115), S(  57,  106), S(  50,  115), S( 100,   76)
 };
 
-constexpr Score AttackPower[7]   = { 0, 0, 36, 22, 23, 78, 0 };
-constexpr Score CheckPower[7]    = { 0, 0, 68, 44, 88, 92, 0 };
-constexpr Score CountModifier[8] = { 0, 0, 63, 126, 96, 124, 124, 128 };
+constexpr Score RookMobility[15] = {
+    S(-105, -146), S( -15,   18), S(  -1,   82), S(   5,   88), S(   2,  121),
+    S(   6,  133), S(   5,  144), S(  12,  146), S(  14,  152), S(  19,  157),
+    S(  24,  164), S(  23,  171), S(  25,  177), S(  36,  177), S(  72,  154)
+};
+
+constexpr Score QueenMobility[28] = {
+    S( -63,  -48), S( -97,  -54), S( -89, -107), S( -17, -127), S(   0,  -52),
+    S(  -8,   72), S(  -2,  142), S(  -2,  184), S(   1,  215), S(   5,  230),
+    S(   7,  243), S(   9,  254), S(  15,  255), S(  15,  268), S(  16,  279),
+    S(  18,  283), S(  16,  294), S(  16,  302), S(  12,  313), S(  13,  321),
+    S(  23,  314), S(  22,  318), S(  48,  298), S(  58,  279), S( 122,  221),
+    S( 135,  193), S( 146,  166), S( 125,  162)
+};
 
 //============================================================== FIN TUNER
 
+//------------------------------------------------------------
 //  Sécurité du Roi
+constexpr Score AttackPower[7]   = { 0, 0, 36, 22, 23, 78, 0 };
+constexpr Score CheckPower[7]    = { 0, 0, 68, 44, 88, 92, 0 };
+constexpr Score CountModifier[8] = { 0, 0, 63, 126, 96, 124, 124, 128 };
 
 //------------------------------------------------------------
 //  Bonus car on a le trait

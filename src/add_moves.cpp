@@ -12,7 +12,7 @@
 //-----------------------------------------------------------------
 void Board::add_quiet_move(MoveList& ml, int from, int dest, PieceType piece, U32 flags)  const noexcept
 {
-    ml.mlmoves[ml.count++].move = Move::CODE(from, dest, piece, PieceType::NO_TYPE, PieceType::NO_TYPE, flags);
+    ml.mlmoves[ml.count++].move = Move::CODE(from, dest, piece, NO_TYPE, NO_TYPE, flags);
 }
 
 //=================================================================
@@ -27,7 +27,7 @@ void Board::add_quiet_move(MoveList& ml, int from, int dest, PieceType piece, U3
 //-----------------------------------------------------------------
 void Board::add_capture_move(MoveList& ml, int from, int dest, PieceType piece, PieceType captured, U32 flags) const noexcept
 {
-    ml.mlmoves[ml.count++].move  = Move::CODE(from, dest, piece, captured, PieceType::NO_TYPE, flags);
+    ml.mlmoves[ml.count++].move  = Move::CODE(from, dest, piece, captured, NO_TYPE, flags);
 }
 
 //=================================================================
