@@ -39,7 +39,7 @@ ifeq ($(findstring clang, $(CXX)), clang)
 CFLAGS_COM  = -pipe -std=c++20 -DVERSION=\"$(VERSION)\" $(DEFS)
 CFLAGS_ARCH = -march=native -DUSE_PEXT
 CFLAGS_DEB  =
-CFLAGS_OPT  = -O3 -Ofast -flto -DNDEBUG
+CFLAGS_OPT  = -O3 -Ofast -flto=auto -DNDEBUG
 
 CFLAGS_WARN1 = -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization
 CFLAGS_WARN2 = -Wformat=2 -Winit-self -Wmissing-declarations
@@ -54,7 +54,7 @@ else
 CFLAGS_COM = -pipe -std=c++20 -DVERSION=\"$(VERSION)\" $(DEFS)
 CFLAGS_ARCH = -march=native -DUSE_PEXT
 CFLAGS_DEB = -g -O0
-CFLAGS_OPT = -O3 -flto -DNDEBUG -fwhole-program
+CFLAGS_OPT = -O3 -Ofast -flto=auto -DNDEBUG -fwhole-program
 
 CFLAGS_WARN1 = -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization
 CFLAGS_WARN2 = -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wnoexcept
@@ -86,7 +86,7 @@ ifeq ($(DEBUG),yes)
     LDFLAGS=$(LDPROF) -lpthread
 else
     CFLAGS= $(CFLAGS_COM) $(CFLAGS_OPT) $(CFLAGS_ARCH) $(CFPROF) $(CFLAGS_WARN) -I/$(SRC1) -I/$(SRC2)
-    LDFLAGS= $(LDPROF) -flto -lpthread -static 
+    LDFLAGS= $(LDPROF) -flto -lpthread -static
 endif
 
 
