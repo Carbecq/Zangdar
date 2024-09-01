@@ -1,3 +1,4 @@
+#include <cstring>
 #include "Uci.h"
 #include "TranspositionTable.h"
 #include "ThreadPool.h"
@@ -21,12 +22,21 @@ int main(int argCount, char* argValue[])
     init_bitmasks();
     Attacks::init_masks();
 
+    //  Benchmark
+    if (argCount > 1 && strcmp(argValue[1], "bench") == 0)
+    {
+        Uci* uci = new Uci();
+        uci->bench(argCount, argValue);
+    }
+    else
+    {
 #if defined USE_TUNER
-    ownTuner.runTexelTuning();
+        ownTuner.runTexelTuning();
 #else
-    Uci* uci = new Uci();
-    uci->run();
+        Uci* uci = new Uci();
+        uci->run();
 #endif
+    }
 
     return 0;
 }

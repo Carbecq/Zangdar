@@ -181,6 +181,7 @@ QMAKE_CXXFLAGS_DEBUG += -DUSE_PEXT
 DISTFILES += \
     Makefile \
     VERSION.txt \
+    bench.csv \
     src/pyrrhic/LICENSE
 
 

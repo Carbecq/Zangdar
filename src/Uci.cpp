@@ -142,12 +142,13 @@ void Uci::run()
 
         else if (token == "h")
         {
+            std::cout << "benchmark                     : Zangdar bench <depth> <nbr_threads> <hash_size>"     << std::endl;
             std::cout << "q(uit) "      << std::endl;
             std::cout << "v(ersion) "   << std::endl;
             std::cout << "s <ref/big>                   : test suite_perft "                    << std::endl;
             std::cout << "divide                        : test divide "                         << std::endl;
             std::cout << "p <r/k/s>                     : test perft <Ref/Kiwipete/Silver2> "   << std::endl;
-            std::cout << "bench                         : test de recherche sur un ensemble de positions"       << std::endl;
+            std::cout << "test                          : test de recherche sur un ensemble de positions"       << std::endl;
             std::cout << "eval                          : test evaluation"                                      << std::endl;
             std::cout << "see                           : test see"                                             << std::endl;
             std::cout << "run <s/k/q/f/w/b>             : test de recherche <Silver2/Kiwipete/Quies/Fine70/WAC2/BUG/REF>"           << std::endl;
@@ -207,9 +208,9 @@ void Uci::run()
             go_run(str, fen, dmax, tmax);
         }
 
-        else if (token == "bench")
+        else if (token == "test")
         {
-            go_bench(dmax, tmax);
+            go_test(dmax, tmax);
         }
 
         else if (token == "fen")
@@ -347,6 +348,7 @@ void Uci::parse_go(std::istringstream& iss)
         {
             // search x plies only.
             iss >> depth;
+            depth = std::min(depth, MAX_PLY);
         }
         else if (token == "nodes")
         {
@@ -627,7 +629,7 @@ void Uci::go_run(const std::string& abc, const std::string& fen, int dmax, int t
 //=================================================================
 //! \brief  Lancement d'une recherche sur un ensemble de positions
 //-----------------------------------------------------------------
-void Uci::go_bench(int dmax, int tmax)
+void Uci::go_test(int dmax, int tmax)
 {
     // le fichier tests/0000.txt contient la liste des fichiers de test
     // les noms non commentés seront utilisés.
@@ -654,7 +656,7 @@ void Uci::go_bench(int dmax, int tmax)
     std::ifstream   f(str_path);
     if (!f.is_open())
     {
-        std::cout << "[Uci::go_bench] impossible d'ouvrir le fichier (" << str_path << ")" << std::endl;
+        std::cout << "[Uci::go_test] impossible d'ouvrir le fichier (" << str_path << ")" << std::endl;
         return;
     }
 
@@ -684,7 +686,7 @@ void Uci::go_bench(int dmax, int tmax)
         ifs.open(str_file, std::ifstream::in);
         if (!ifs.is_open())
         {
-            std::cout << "[Uci::go_bench] impossible d'ouvrir le fichier [" << str_file << "]" << std::endl;
+            std::cout << "[Uci::go_test] impossible d'ouvrir le fichier [" << str_file << "]" << std::endl;
             continue;
         }
 
@@ -865,7 +867,114 @@ bool Uci::go_tactics(const std::string& line, int dmax, int tmax, U64& total_nod
         for (auto & e : uci_board.best_moves)
             std::cout << e << " ";
         std::cout << "; coup trouvé = " << str1 << std::endl;
-            return(false);
+        return(false);
     }
 }
 
+//=================================================================
+//! \brief  Benchmark
+//!         Les tests du fichier bench.csv proviennent d'Ethereal
+//-----------------------------------------------------------------
+void Uci::bench(int argCount, char* argValue[])
+{
+    int     scores[256];
+    double  times[256];
+    U64     nodes[256];
+    MOVE    moves[256];
+
+    std::string     line;
+    std::string     aux;
+    int             total       = 0;
+    U64             total_nodes = 0;
+    U64             total_time  = 0;
+
+    std::string     str_file = "bench.csv";
+    std::ifstream   ifs(str_file, std::ifstream::in);
+    if (!ifs.is_open())
+    {
+        std::cout << "[Uci::bench] impossible d'ouvrir le fichier (" << str_file << ")" << std::endl;
+        return;
+    }
+    ownBook.set_useBook(false);
+
+    int depth       = argCount > 2 ? atoi(argValue[2]) : 16;
+    depth           = std::min(depth, MAX_PLY);
+    int nbr_threads = argCount > 3 ? atoi(argValue[3]) : 1;
+    int hash_size   = argCount > 4 ? atoi(argValue[4]) : HASH_SIZE;
+
+    if (nbr_threads > 1)
+        threadPool.set_threads(nbr_threads);
+    if (hash_size != HASH_SIZE)
+        transpositionTable.set_hash_size(hash_size);
+
+    // Boucle sur l'ensemble des positions de test
+    while (std::getline(ifs, line))
+    {
+        // ligne vide
+        if (line.size() < 3)
+            continue;
+
+        // Commentaire ou espace au début de la ligne
+        aux = line.substr(0,1);
+        if (aux == "#" || aux == "/" || aux == " ")
+            continue;
+
+        // Exécution du test
+        transpositionTable.clear();
+        threadPool.reset();
+
+        uci_board.set_fen(line, true);
+        std::cout << "[# " << total+1 << "] " << line << std::endl;
+
+        const auto start = std::chrono::high_resolution_clock::now();
+
+        //============================================== Lance le calcul
+        // Initialize a "go depth <x>" search
+        Uci::stop();
+
+        uci_timer.init(false, 0, 0, 0, 0, 0, depth, 0, 0);
+        uci_timer.start();
+        uci_timer.setup(uci_board.side_to_move);
+
+        threadPool.start_thinking(uci_board, uci_timer);
+
+        //================================================= Fin du calcul
+        threadPool.wait(0);     // Attente des threads
+
+        const auto end = std::chrono::high_resolution_clock::now();
+        const auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+
+        scores[total] = threadPool.threadData[0].get_best_score();
+        moves[total]  = threadPool.threadData[0].get_best_move();
+        nodes[total]  = threadPool.get_all_nodes();
+        times[total]  = ms;
+
+        total++;
+    } // boucle position
+
+    ifs.close();
+
+    printf("\n===============================================================================\n");
+
+    for (int i=0; i<total; i++)
+    {
+        printf("position %2d : best_move %5s score %5d nodes %9ld nps %6d \n",
+               i+1, Move::name(moves[i]).c_str(), scores[i], nodes[i], static_cast<int>(1000.0*nodes[i]/(times[i]+1.0)) );
+
+        total_nodes  += nodes[i];
+        total_time   += times[i];
+    }
+
+    printf("===============================================================================\n");
+
+    std::cout << "===============================================" << std::endl;
+    std::cout << " Fichier " << str_file << std::endl;
+    std::cout << "===============================================" << std::endl;
+    std::cout << "total nodes = " << total_nodes << std::endl;
+    std::cout << "time        = " << std::fixed << std::setprecision(3) << static_cast<double>(total_time)/1000.0 << " s" << std::endl;
+    std::cout << "nps         = " << std::fixed << std::setprecision(3) << static_cast<double>(total_nodes)/1000.0/static_cast<double>(total_time) << " Mnode/s" << std::endl;
+    std::cout << "depth       = " << depth << std::endl;
+    std::cout << "nbr threads = " << threadPool.get_nbrThreads() << std::endl;
+    std::cout << "hash size   = " << transpositionTable.get_hash_size() << std::endl;
+    std::cout << "===============================================" << std::endl;
+}

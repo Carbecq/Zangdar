@@ -139,7 +139,7 @@ void Timer::setup(Color color)
 //! \param[in]  depth   profondeur terminée proprement (pas de time-out)
 //! \param[in]  pvs     Variation Principale de chaque profondeur
 //------------------------------------------------------------
-void Timer::update(int depth, PVariation pvs[MAX_PLY])
+void Timer::update(int depth, const PVariation pvs[])
 {
     // Don't update our Time Managment plans at very low depths
     if (depth < 4)
@@ -160,7 +160,7 @@ void Timer::update(int depth, PVariation pvs[MAX_PLY])
 //! \param[in]  total_nodes nombre total de noeuds calculés pour cette profondeur
 //!
 //-----------------------------------------------------------
-bool Timer::finishOnThisDepth(int elapsed, int depth, PVariation pvs[MAX_PLY], U64 total_nodes)
+bool Timer::finishOnThisDepth(int elapsed, int depth, const PVariation pvs[], U64 total_nodes)
 {
     // Don't terminate early at very low depths
     if (depth < 4)

@@ -31,18 +31,15 @@ public:
     std::thread thread;
     Search*     search;     // pointeur sur la classe de recherche
     SearchInfo* info;       // pointeur décalé de STACK_OFFSET sur la tableau total _info[STACK_SIZE]
-    PVariation  pvs[MAX_PLY];
+    PVariation  pvs[MAX_PLY+1];
 
     int         index;
     int         depth;
     int         seldepth;
- //   int         score;
     U64         nodes;
     bool        stopped;
     U64         tbhits;
 
-//    MOVE        best_move;
-//    int         best_score;
     int         best_depth;
 
     int  get_best_depth()   const { return best_depth;              }

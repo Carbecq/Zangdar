@@ -67,7 +67,7 @@ void Search::iterative_deepening(ThreadData* td, SearchInfo* si)
     si->pv.length = 0;
     si->pv.score = -INFINITE;
 
-    for (td->depth = 1; td->depth < timer.getSearchDepth(); td->depth++)
+    for (td->depth = 1; td->depth <= timer.getSearchDepth(); td->depth++)
     {
         // Search position, using aspiration windows for higher depths
         aspiration_window<C>(td, si);
@@ -200,7 +200,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     }
 
     // On a atteint la limite en profondeur de recherche ?
-    if (si->ply >= MAX_PLY - 1)
+    if (si->ply >= MAX_PLY)
         return board.evaluate();
 
     // On a atteint la limite de taille de la partie ?

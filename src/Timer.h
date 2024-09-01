@@ -43,7 +43,7 @@ public:
     void start();
     void setup(Color color);
     bool finishOnThisMove() const;
-    bool finishOnThisDepth(int elapsed, int depth, PVariation pvs[MAX_PLY], U64 total_nodes);
+    bool finishOnThisDepth(int elapsed, int depth, const PVariation pvs[], U64 total_nodes);
 
     int  getSearchDepth() const { return(searchDepth); }
     int  elapsedTime() const;
@@ -51,7 +51,7 @@ public:
     int  getMoveOverhead() const { return MoveOverhead; }
 
     void updateMoveNodes(MOVE move, U64 nodes);
-    void update(int depth, PVariation pvs[MAX_PLY]);
+    void update(int depth, const PVariation pvs[]);
 
 private:
 

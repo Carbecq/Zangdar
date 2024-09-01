@@ -75,6 +75,7 @@ public:
 
     void init_size(int mbsize);
     void set_hash_size(int mbsize);
+    int  get_hash_size(void) const { return tt_size; }
 
     void clear(void);
     void update_age(void);

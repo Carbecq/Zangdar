@@ -113,7 +113,7 @@ struct PVariation {
     int  score;
 };
 
-using KillerTable              = MOVE[MAX_PLY+1];
+using KillerTable              = MOVE[MAX_PLY+2];
 using Historytable             = I16[N_COLORS][N_SQUARES][N_SQUARES];
 using CounterMoveTable         = MOVE[N_COLORS][N_PIECES][N_SQUARES];
 using CounterMoveHistoryTable  = I16[N_PIECES][N_SQUARES][N_PIECES][N_SQUARES];
