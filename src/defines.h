@@ -7,19 +7,6 @@
 #include <iostream>
 #include <bitset>
 
-// ne pas oublier la version dans Zangdar.pro
-
-// Désactiver USE_HASH pour la mesure de performances brutes
-#define USE_HASH
-
-// Affichage du coup de recherche courant
-//#define USE_ACC
-
-// NE PAS UTILISER PRETTY avec
-//      + Arena (score mal affiché)
-//      + test STS
-// #define USE_PRETTY
-
 /*******************************************************
  **	Généralités
  **---------------------------------------------------*/

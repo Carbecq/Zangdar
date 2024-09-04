@@ -10,6 +10,7 @@ DEFINES += STATIC
 QMAKE_LFLAGS += -flto
 
 #------------------------------------------------------
+DEFINES += -DUSE_HASH
 
 # ATTENTION : ne pas mettre "\" car ils sont reconnus comme caractères spéciaux
 # pour Github
@@ -20,7 +21,7 @@ DEFINES += HOME='\\"$${HOME_STR}\\"'
 
 #------------------------------------------------------
 
-DEFINES += USE_TUNER
+#DEFINES += USE_TUNER
 # QMAKE_CXXFLAGS_RELEASE += -fopenmp
 # LIBS += -fopenmp
 

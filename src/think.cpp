@@ -315,7 +315,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     bool improving = (si->ply >= 2) && !inCheck && (static_eval > (si-2)->eval);
 
     //  Controle si on va pouvoir utiliser des techniques de coupe pre-move
-    int  score;
+    int  score = -INFINITE;
 
     if (!inCheck && !isRoot && !isPVNode && !si->excluded)
     {
