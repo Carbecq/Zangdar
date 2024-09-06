@@ -1,5 +1,5 @@
-CXX = clang++-18		# 18.1.3
-#CXX = g++-14		# 14.0.1
+#CXX = clang++-18		# 18.1.3
+CXX = g++-14		# 14.0.1
 
 SRC1 = src
 SRC2 = src/pyrrhic
@@ -24,16 +24,15 @@ DEFS = -DHOME=$(HOMEDEF)
 #  Désactiver USE_HASH pour la mesure de performances brutes
 DEFS += -DUSE_HASH
 
-
-# DEBUG_EVAL
-# DEBUG_LOG
-# DEBUG_HASH
-# DEBUG_TIME
+# DEFS += -DDEBUG_EVAL
+# DEFS += -DDEBUG_LOG
+# DEFS += -DDEBUG_HASH
+# DEFS += -DDEBUG_TIME
 
 #  NE PAS UTILISER PRETTY avec
 #       + Arena (score mal affiché)
 #       + test STS
-# USE_PRETTY
+# DEFS += -DUSE_PRETTY
 
 #---------------------------------------------------------------------
 #   Architecture
@@ -104,19 +103,21 @@ $(info ARCH="$(ARCH)")
 
 #---------------------------------------------------------------------
 #   Options de compilation
+#	https://gcc.gnu.org/onlinedocs/gcc/Option-Index.html
+#	https://clang.llvm.org/docs/DiagnosticsReference.html
 #---------------------------------------------------------------------
 
 ifeq ($(findstring clang, $(CXX)), clang)
 
 CFLAGS_COM  = -pipe -std=c++20 -DVERSION=\"$(VERSION)\" $(DEFS)
-CFLAGS_OPT  = -O3 -flto=auto -DNDEBUG
+CFLAGS_OPT  = -O3 -flto=auto -DNDEBUG -pthread
 CFLAGS_DBG  = -g -O0
 
 CFLAGS_WARN1 = -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization
 CFLAGS_WARN2 = -Wformat=2 -Winit-self -Wmissing-declarations
 CFLAGS_WARN3 = -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-promo
 CFLAGS_WARN4 = -Wstrict-overflow=5 -Wswitch-default -Wundef -Wno-unused
-CFLAGS_WARN5 = -Wuninitialized -Wattributes -Waddress
+CFLAGS_WARN5 = -Wuninitialized -Wattributes -Waddress -Wmissing-prototypes -Wconditional-uninitialized
 
 PGO_MERGE = llvm-profdata-18 merge -output=zangdar.profdata *.profraw
 PGO_GEN   = -fprofile-instr-generate
@@ -125,7 +126,7 @@ PGO_USE   = -fprofile-instr-use=zangdar.profdata
 else
 
 CFLAGS_COM  = -pipe -std=c++20 -DVERSION=\"$(VERSION)\" $(DEFS)
-CFLAGS_OPT  = -O3 -Ofast -flto=auto -DNDEBUG -fwhole-program
+CFLAGS_OPT  = -O3 -Ofast -flto=auto -DNDEBUG -pthread -fwhole-program
 CFLAGS_DBG  = -g -O0
 
 CFLAGS_WARN1 = -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization
@@ -157,8 +158,8 @@ CFLAGS_WARN = $(CFLAGS_WARN1) $(CFLAGS_WARN2) $(CFLAGS_WARN3) $(CFLAGS_WARN4) $(
 CFLAGS_PROF = -pg
 CFLAGS_TUNE = -fopenmp -DUSE_TUNER
 
-LDFLAGS_OPT  = -s -flto=auto -lpthread -static
-LDFLAGS_DBG  = -lpthread -static
+LDFLAGS_OPT  = -s -flto=auto
+LDFLAGS_DBG  = -lm
 LDFLAGS_PROF = -pg
 LDFLAGS_TUNE = -fopenmp
 

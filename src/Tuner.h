@@ -19,7 +19,7 @@
 
 
 
-
+#if defined USE_TUNER
 
 
 struct EvalTrace {
@@ -56,10 +56,13 @@ struct EvalTrace {
     Score PassedFreeAdv[N_RANKS][N_COLORS];
     Score PassedRookBack[N_COLORS];
 
-    Score MinorBehindPawn[N_COLORS];
-    // Score KnightOutpost[2][N_COLORS];
+    Score KnightBehindPawn[N_COLORS];
+    Score KnightOutpost[2][2][N_COLORS];
+
     Score BishopPair[N_COLORS];
+    Score BishopBehindPawn[N_COLORS];
     Score BishopBadPawn[N_COLORS];
+
     Score OpenForward[N_COLORS];
     Score SemiForward[N_COLORS];
 
@@ -121,11 +124,11 @@ private:
     constexpr static double NPOSITIONS_d  = NPOSITIONS; // Total FENS in the book
 
 constexpr static int    N_PHASES    = 2;
-constexpr static int    NTERMS      = 562;     // Number of terms being tuned
-constexpr static double NTERMS_d    = 562;     // Number of terms being tuned
+constexpr static int    NTERMS      = 567;     // Number of terms being tuned
+constexpr static double NTERMS_d    = 567;     // Number of terms being tuned
 
-constexpr static int    MAXEPOCHS   =   10000; // Max number of epochs allowed
-constexpr static int    REPORTING   =     100; // How often to print the new parameters
+constexpr static int    MAXEPOCHS   =   10000000; // Max number of epochs allowed
+constexpr static int    REPORTING   =     1000; // How often to print the new parameters
 constexpr static int    NPARTITIONS =      64; // Total thread partitions
 constexpr static double LRRATE      =    0.01; // Learning rate
 constexpr static double LRDROPRATE  =    1.00; // Cut LR by this each LR-step
@@ -163,17 +166,41 @@ constexpr static int    STACKSIZE   = static_cast<int>(NPOSITIONS_d * NTERMS_d /
     void   PrintPSQT(double params[NTERMS][N_PHASES], int& index);
     void   PrintMobility(double params[NTERMS][N_PHASES], int &index);
 
-
     void   InitBaseParams(double tparams[NTERMS][N_PHASES]);
     void   InitBaseSingle(double tparams[NTERMS][N_PHASES], const Score data, int& index);
-    void   InitBaseArray(double tparams[NTERMS][N_PHASES], const Score* data, int imax, int& index);
+    void   InitBaseArray(double tparams[NTERMS][N_PHASES], const Score *data, int imax, int& index);
 
-    void   PrintArray(const std::string &name, double params[NTERMS][N_PHASES], int &index, int imax, const std::string &dim, int length);
     void   PrintSingle(const std::string &name, double params[NTERMS][N_PHASES], int &index);
+    void   PrintArray(const std::string &name, double params[NTERMS][N_PHASES], int &index, int imax, const std::string &dim, int length);
+    void   PrintArray2D(const std::string &name, double params[NTERMS][N_PHASES], int &index, int imax, int jmax, const std::string &dim, int length);
 
+    // L'utilisation des tableaux 2D et plus est compliqué en C++.
+    template <size_t rows, size_t cols>
+    void InitCoeffArray2D(double coeffs[], Score (&score)[rows][cols][2], int& index)
+    {
+        for (size_t i = 0; i < rows; ++i)
+            for (size_t j = 0; j < cols; ++j)
+                coeffs[index++] = score[i][j][WHITE] - score[i][j][BLACK];
+    }
+
+    template <size_t rows, size_t cols>
+    void InitBaseArray2D(double tparams[NTERMS][N_PHASES], const Score (&score)[rows][cols], int& index)
+    {
+        for (size_t i=0; i<rows; i++)
+        {
+            for (size_t j=0; j<cols; j++)
+            {
+                tparams[index][MG] = static_cast<double>(MgScore(score[i][j]));
+                tparams[index][EG] = static_cast<double>(EgScore(score[i][j]));
+                index++;
+            }
+        }
+    }
 
 };
 
 extern Tuner ownTuner;
+
+#endif
 
 #endif // TUNER_H

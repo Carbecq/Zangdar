@@ -13,6 +13,11 @@ https://github.com/nmrugg/stockfish.js/blob/master/src/evaluate.cpp
 https://hxim.github.io/Stockfish-Evaluation-Guide/
 */
 
+/*  Bien que beaucoup de codes implémentent des idées identiques,
+ *  Ce code a principalement comme base Weiss et Ethereal.
+ *  Ce sont des codes faciles à lire et instructifs.
+ *
+ */
 
 //==========================================
 //! \brief  Evaluation de la position
@@ -437,24 +442,11 @@ Score Board::evaluate_knights(EvalInfo& ei)
     int count;
     Score eval = 0;
     int defended;
+    int outside;
 
     Bitboard bb = ei.knights[US];
     ei.phase24 += BB::count_bit(bb);
-    // Bitboard     enemyPawns = ei.pawns[THEM];
-
-
-    // Le cavalier est protégé par un pion
-    // Il ne peut pas être attaqué par une tour
-    count = BB::count_bit(bb & BB::shift<DOWN>(typePiecesBB[PAWN]));
-    eval += count * MinorBehindPawn;
-
-#if defined DEBUG_EVAL
-    if (count)
-        printf("%d cavaliers %s sont situés derrière un pion \n", count, camp[1][US].c_str());
-#endif
-#if defined USE_TUNER
-        ownTuner.Trace.MinorBehindPawn[US] += count;
-#endif
+    Bitboard enemyPawns = ei.pawns[THEM];
 
 
     while (bb)
@@ -477,19 +469,23 @@ Score Board::evaluate_knights(EvalInfo& ei)
         // de la position adverse.
         // Les cavaliers sont les pièces qui profitent le mieux des avant-postes.
 
-        // Ajoute un bonus si le cavalier est sur un avant-poste,
-        // et ne peut pas être attaqué par un pion ennemi.
+        // Ajoute un bonus si le cavalier est sur un avant-poste :
+        //      + rangs = 4,5,6 (pour Blancs)
+        //      + pas de pion ennemi sur les cases adjacentes et en avant
+        //        soit le cavalier est déjà attaqué,
+        //        soit un pion ennemi pourrait avancer et attaquer le cavalier
+
         // Augmente ce bonus si le cavalier est protégé par un de nos pions.
 
         // TODO : a) être sur une colonne semi-ouverte
         //        b) être sur une des colonnes C,D,E,F
-#if 0
+
         if (    BB::test_bit(OutpostRanksMasks[US], sq)
             && !(OutpostSquareMasks[US][sq] & enemyPawns))
         {
+            outside  = BB::test_bit(FILE_A_BB | FILE_H_BB, sq);
             defended = BB::test_bit(ei.attackedBy[US][PAWN], sq);
-            //TODO à tester
-            eval += KnightOutpost[defended];
+            eval += KnightOutpost[outside][defended];
 
 #if defined DEBUG_EVAL
             if (defended)
@@ -498,10 +494,25 @@ Score Board::evaluate_knights(EvalInfo& ei)
                 printf("le cavalier %s en %s est sur un avant-poste non défendu \n", camp[1][US].c_str(), square_name[sq].c_str());
 #endif
 #if defined USE_TUNER
-            ownTuner.Trace.KnightOutpost[defended][US]++;
+            ownTuner.Trace.KnightOutpost[outside][defended][US]++;
 #endif
         }
+
+
+        // Un pion (ami ou ennemi) fait un écran au cavalier.
+        // Il ne peut pas être attaqué par une tour
+        if (BB::test_bit(BB::shift<DOWN>(typePiecesBB[PAWN]), sq))
+        {
+            eval += KnightBehindPawn;
+
+#if defined DEBUG_EVAL
+            printf("le cavalier %s en %s est situé derrière un pion \n", camp[1][US].c_str(), square_name[sq].c_str());
 #endif
+#if defined USE_TUNER
+            ownTuner.Trace.KnightBehindPawn[US]++;
+#endif
+        }
+
 
         // mobilité
         Bitboard attackBB   = Attacks::knight_moves(sq);
@@ -564,19 +575,6 @@ Score Board::evaluate_bishops(EvalInfo& ei)
 #endif
     }
 
-    // Le fou est protégé par un pion
-    // Il ne peut pas être attaqué par une tour
-    count = BB::count_bit(bb & BB::shift<DOWN>(typePiecesBB[PAWN]));
-    eval += count * MinorBehindPawn;
-
-#if defined DEBUG_EVAL
-    if (count)
-        printf("%d fous %s sont situés derrière un pion \n", count, camp[1][US].c_str());
-#endif
-#if defined USE_TUNER
-        ownTuner.Trace.MinorBehindPawn[US] += count;
-#endif
-
 
     while (bb)
     {
@@ -609,6 +607,21 @@ Score Board::evaluate_bishops(EvalInfo& ei)
 #if defined USE_TUNER
             ownTuner.Trace.BishopBadPawn[US] += count;
 #endif
+
+
+        // Un pion (ami ou ennemi) fait un écran au fou.
+        // Il ne peut pas être attaqué par une tour
+        if (BB::test_bit(BB::shift<DOWN>(typePiecesBB[PAWN]), sq))
+        {
+            eval += BishopBehindPawn;
+
+#if defined DEBUG_EVAL
+            printf("le fou %s en %s est situé derrière un pion \n", camp[1][US].c_str(), square_name[sq].c_str());
+#endif
+#if defined USE_TUNER
+            ownTuner.Trace.BishopBehindPawn[US]++;
+#endif
+        }
 
 
         // mobilité
@@ -940,7 +953,7 @@ Score Board::evaluate_threats(const EvalInfo& ei)
         eval += ThreatByMinor[pieceOn[sq]];
 
 #if defined DEBUG_EVAL
-        printf("menace par la pièce mineure %s \n", piece_name[pieceOn[sq]]);
+        printf("menace par la pièce mineure %s \n", piece_name[pieceOn[sq]].c_str());
 #endif
 #if defined USE_TUNER
         ownTuner.Trace.ThreatByMinor[pieceOn[sq]][US]++;
@@ -957,7 +970,7 @@ Score Board::evaluate_threats(const EvalInfo& ei)
         eval += ThreatByRook[pieceOn[sq]];
 
 #if defined DEBUG_EVAL
-        printf("menace par la tour %s en %s \n", piece_name[pieceOn[sq]], square_name[sq].c_str());
+        printf("menace par la tour %s en %s \n", piece_name[pieceOn[sq]].c_str(), square_name[sq].c_str());
 #endif
 #if defined USE_TUNER
         ownTuner.Trace.ThreatByRook[pieceOn[sq]][US]++;

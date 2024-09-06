@@ -47,11 +47,11 @@ struct EvalInfo {
 //----------------------------------------------------------
 //  Valeur des pièces
 enum PieceValueEMG {
-    P_MG =  109, P_EG =  211,
-    N_MG =  443, N_EG =  634,
-    B_MG =  451, B_EG =  674,
-    R_MG =  597, R_EG = 1119,
-    Q_MG = 1465, Q_EG = 2030,
+    P_MG =  100, P_EG =  100,
+    N_MG =  300, N_EG =  300,
+    B_MG =  300, B_EG =  300,
+    R_MG =  500, R_EG = 500,
+    Q_MG = 900, Q_EG = 900,
     K_MG =    0, K_EG =    0
 };
 
@@ -180,10 +180,19 @@ constexpr Score PassedFreeAdv[N_RANKS] = {
 constexpr Score PassedRookBack = S(  23,   46);
 
 //----------------------------------------------------------
-// Bonus Divers
-constexpr Score MinorBehindPawn = S(   7,   24);
+// Cavaliers
+constexpr Score KnightBehindPawn = S(   7,   24);
+constexpr Score KnightOutpost[2][2] = {
+    {S(  12, -32), S(  40,   0)},
+    {S(   7, -24), S(  21,  -3)},
+    };
+
+// Fous
 constexpr Score BishopPair = S(  32,  112);
+constexpr Score BishopBehindPawn = S(   7,   24);
 constexpr Score BishopBadPawn = S(  -1,   -7);
+
+// Tours
 constexpr Score OpenForward = S(  29,   31);
 constexpr Score SemiForward = S(  17,   18);
 

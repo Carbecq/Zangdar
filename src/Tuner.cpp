@@ -15,6 +15,7 @@
 *
 */
 
+#if defined USE_TUNER
 
 //===================================================
 //! \brief  Constructeur
@@ -73,11 +74,16 @@ void Tuner::runTexelTuning()
         }
 
         error = TunedEvaluationErrors(entries, params, K);
-        printf("\rEpoch [%d] Error = [%.8f], Rate = [%g]", epoch, error, rate);
+        // printf("\rEpoch [%d] Error = [%.8f], Rate = [%g]", epoch, error, rate);
 
         // Pre-scheduled Learning Rate drops
-        if (epoch % LRSTEPRATE == 0) rate = rate / LRDROPRATE;
-        if (epoch % REPORTING == 0) PrintParameters(params, baseParams);
+        if (epoch % LRSTEPRATE == 0)
+            rate = rate / LRDROPRATE;
+        if (epoch % REPORTING == 0)
+        {
+            printf("\rEpoch [%d] Error = [%.8f], Rate = [%g]", epoch, error, rate);
+            PrintParameters(params, baseParams);
+        }
     }
 }
 
@@ -322,10 +328,13 @@ void Tuner::InitCoefficients(double coeffs[NTERMS])
     InitCoeffSingle(coeffs, Trace.PassedRookBack,               index);
 
     // Divers
-    InitCoeffSingle(coeffs, Trace.MinorBehindPawn,          index);
-    // InitCoeffArray( coeffs, Trace.KnightOutpost,    2,      index);
+    InitCoeffSingle(coeffs, Trace.KnightBehindPawn,         index);
+    InitCoeffArray2D( coeffs, Trace.KnightOutpost,     index);
+
     InitCoeffSingle(coeffs, Trace.BishopPair,               index);
+    InitCoeffSingle(coeffs, Trace.BishopBehindPawn,         index);
     InitCoeffSingle(coeffs, Trace.BishopBadPawn,            index);
+
     InitCoeffSingle(coeffs, Trace.OpenForward,              index);
     InitCoeffSingle(coeffs, Trace.SemiForward,              index);
 
@@ -393,10 +402,13 @@ void Tuner::InitBaseParams(double tparams[NTERMS][N_PHASES])
     InitBaseSingle(tparams, PassedRookBack,          index);
 
     // Divers
-    InitBaseSingle(tparams, MinorBehindPawn,        index);
-    // InitBaseArray( tparams, KnightOutpost,  2,      index);
+    InitBaseSingle(tparams, KnightBehindPawn,       index);
+    InitBaseArray2D( tparams, KnightOutpost,  index);
+
     InitBaseSingle(tparams, BishopPair,             index);
+    InitBaseSingle(tparams, BishopBehindPawn,       index);
     InitBaseSingle(tparams, BishopBadPawn,          index);
+
     InitBaseSingle(tparams, OpenForward,            index);
     InitBaseSingle(tparams, SemiForward,            index);
 
@@ -478,7 +490,7 @@ double Tuner::LinearEvaluation(const TexelEntry& entry, double params[NTERMS][N_
     }
 
     double eval = ( midgame * entry.phase256
-                +   endgame * (256.0 - entry.phase256) * entry.scale ) / 256.0;
+                   +   endgame * (256.0 - entry.phase256) * entry.scale ) / 256.0;
 
     return eval + (entry.turn == WHITE ? Tempo : -Tempo);
 
@@ -507,11 +519,11 @@ void Tuner::UpdateSingleGradient(const TexelEntry& entry, double gradient[NTERMS
 void Tuner::ComputeGradient(const TexelEntry *entries, double gradient[NTERMS][N_PHASES], double params[NTERMS][N_PHASES], double K)
 {
 
-    #pragma omp parallel shared(gradient)
+#pragma omp parallel shared(gradient)
     {
         double local[NTERMS][N_PHASES] = { {0} };
 
-        #pragma omp for schedule(static, NPOSITIONS / NPARTITIONS)
+#pragma omp for schedule(static, NPOSITIONS / NPARTITIONS)
         for (int i = 0; i < NPOSITIONS; i++)
             UpdateSingleGradient(entries[i], local, params, K);
 
@@ -527,9 +539,9 @@ double Tuner::TunedEvaluationErrors(const TexelEntry *entries, double params[NTE
 {
     double total = 0.0;
 
-    #pragma omp parallel shared(total)
+#pragma omp parallel shared(total)
     {
-        #pragma omp for schedule(static, NPOSITIONS / NPARTITIONS) reduction(+:total)
+#pragma omp for schedule(static, NPOSITIONS / NPARTITIONS) reduction(+:total)
         for (int i = 0; i < NPOSITIONS; i++)
             total += pow(entries[i].result - Sigmoid(K, LinearEvaluation(entries[i], params)), 2);
     }
@@ -576,11 +588,16 @@ void Tuner::PrintParameters(double params[NTERMS][N_PHASES], double current[NTER
     PrintSingle("PassedRookBack",   tparams, index);
 
     puts("\n//----------------------------------------------------------");
-    puts("// Bonus Divers");
-    PrintSingle("MinorBehindPawn",  tparams, index);
-    // PrintArray( "KnightOutpost",    tparams, index,     2,      "[2]",  len);
+    puts("// Cavaliers");
+    PrintSingle("KnightBehindPawn", tparams, index);
+    PrintArray2D( "KnightOutpost",  tparams, index,     2,2,      "[2][2]",  len);
+
+    puts("\n// Fous");
     PrintSingle("BishopPair",       tparams, index);
+    PrintSingle("BishopBehindPawn", tparams, index);
     PrintSingle("BishopBadPawn",    tparams, index);
+
+    puts("\n// Tours");
     PrintSingle("OpenForward",      tparams, index);
     PrintSingle("SemiForward",      tparams, index);
 
@@ -659,15 +676,11 @@ void Tuner::PrintMobility(double params[NTERMS][N_PHASES], int& index)
     PrintArray("QueenMobility",  params, index, 28, "[28]", len);
 }
 
-//     PrintSingle("PawnDoubled", tparams, i);
-
 void Tuner::PrintSingle(const std::string& name, double params[NTERMS][N_PHASES], int& index)
 {
     printf("constexpr Score %s = S(%4d, %4d);\n", name.c_str(), static_cast<int>(params[index][MG]), static_cast<int>(params[index][EG]));
     index++;
 }
-
-// PrintArray("PassedPawn", tparams, i, 8, "[N_RANKS]");   i+=8;
 
 void Tuner::PrintArray(const std::string& name, double params[NTERMS][N_PHASES], int& index, int imax, const std::string& dim, int length)
 {
@@ -675,20 +688,43 @@ void Tuner::PrintArray(const std::string& name, double params[NTERMS][N_PHASES],
 
     for (int i = 0; i < imax; i++, index++)
     {
-        if (i % length == 0)
+        if (i && i % length == 0)   // passage à la ligne, seulement à partir de la seconde ligne
             printf("\n    ");
-        if (i == imax - 1)
-            printf("S(%4d, %4d) ", static_cast<int>(params[index][MG]), static_cast<int>(params[index][EG]));
-        else
-            printf("S(%4d, %4d), ", static_cast<int>(params[index][MG]), static_cast<int>(params[index][EG]));
+
+        printf("S(%4d, %4d)", static_cast<int>(params[index][MG]), static_cast<int>(params[index][EG]));
+        printf("%s", i == imax - 1 ? "" : ", ");    // fin de la ligne
     }
 
-    if (imax > length)
-        printf("\n};\n");
-    else
-        printf("};\n");
+    printf("\n};\n");   // fin du tableau
 }
 
+void Tuner::PrintArray2D(const std::string& name, double params[NTERMS][N_PHASES], int& index, int imax, int jmax, const std::string& dim, int length)
+{
+    printf("constexpr Score %s%s = { ", name.c_str(), dim.c_str());
+
+    for (size_t i=0; i<imax; i++)
+    {
+        if (i == 0)
+            printf("  { ");
+        else
+            printf("\n  { ");
+
+        for (size_t j=0; j<jmax; j++)
+        {
+            if (j && j % length == 0)
+                printf("\n    ");
+
+            printf("S(%4d, %4d)", static_cast<int>(params[index][MG]), static_cast<int>(params[index][EG]));
+            printf("%s", j == jmax - 1 ? "" : ", ");
+
+            index++;
+        }
+        if (i == imax-1)
+            printf(" }\n};\n");
+        else
+            printf(" },");
+    }
+}
 
 //! \brief  Initialisation du tableau tparams à partir des données
 //! provenant de "evaluate.h"
@@ -702,7 +738,7 @@ void Tuner::InitBaseSingle(double tparams[NTERMS][N_PHASES], const Score data, i
 //! \brief  Initialisation d'un tableau[imax]
 void Tuner::InitBaseArray(double tparams[NTERMS][N_PHASES], const Score* data, int imax, int& index)
 {
-    for (int i=0; i<imax; i++)
+    for (size_t i=0; i<imax; i++)
     {
         tparams[index][MG] = static_cast<double>(MgScore(data[i]));
         tparams[index][EG] = static_cast<double>(EgScore(data[i]));
@@ -717,8 +753,12 @@ void Tuner::InitCoeffSingle(double coeffs[NTERMS], Score score[2], int& index)
     coeffs[index++] = score[WHITE] - score[BLACK];
 }
 
+// note : en 2D, seul la première dimension peut être absente
 void Tuner::InitCoeffArray(double coeffs[NTERMS], Score score[][2], int imax, int& index)
 {
-    for (int i=0; i<imax; i++)
+    for (size_t i=0; i<imax; i++)
         coeffs[index++] = score[i][WHITE] - score[i][BLACK];
 }
+
+#endif
+
