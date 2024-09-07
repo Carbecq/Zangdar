@@ -1,5 +1,6 @@
 #include "Tuner.h"
 #include <cmath>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include "defines.h"
@@ -22,9 +23,8 @@
 //---------------------------------------------------
 Tuner::Tuner() noexcept
 {
-    Trace       = {};
-    EmptyTrace  = {};
-
+    std::memset(&Trace,      0, sizeof(EvalTrace));
+    std::memset(&EmptyTrace, 0, sizeof(EvalTrace));
 }
 
 void Tuner::runTexelTuning()
