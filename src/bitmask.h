@@ -124,8 +124,9 @@ extern Bitboard DiagonalMask64[N_SQUARES];
 extern Bitboard AntiDiagonalMask64[N_SQUARES];
 extern Bitboard AdjacentFilesMask64[N_SQUARES];
 
-extern int      DISTANCE_BETWEEN[64][64];
-extern Bitboard SQUARES_BETWEEN_MASK[64][64];
+extern int      MANHATTAN_DISTANCE[N_SQUARES][N_SQUARES];
+extern int      CHEBYSHEV_DISTANCE[N_SQUARES][N_SQUARES];
+extern Bitboard SQUARES_BETWEEN_MASK[N_SQUARES][N_SQUARES];
 
 extern Bitboard RearSpanMask[N_COLORS][N_SQUARES];
 extern Bitboard BackwardMask[N_COLORS][N_SQUARES];
@@ -157,8 +158,12 @@ extern std::array<Mask, N_SQUARES> allmask;
     return SQUARES_BETWEEN_MASK[sq1][sq2];
 }
 
-[[nodiscard]] inline int distance_between(const int sq1, const int sq2) noexcept {
-    return DISTANCE_BETWEEN[sq1][sq2];
+[[nodiscard]] inline int manhattan_distance(const int sq1, const int sq2) noexcept {
+    return MANHATTAN_DISTANCE[sq1][sq2];
+}
+
+[[nodiscard]] inline int chebyshev_distance(const int sq1, const int sq2) noexcept {
+    return CHEBYSHEV_DISTANCE[sq1][sq2];
 }
 
 template <Color C>

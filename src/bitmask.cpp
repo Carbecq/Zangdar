@@ -8,7 +8,8 @@ Bitboard DiagonalMask64[N_SQUARES] = {0};
 Bitboard AntiDiagonalMask64[N_SQUARES] = {0};
 Bitboard AdjacentFilesMask64[N_SQUARES] = {0};
 
-int      DISTANCE_BETWEEN[N_SQUARES][N_SQUARES];
+int      MANHATTAN_DISTANCE[N_SQUARES][N_SQUARES];
+int      CHEBYSHEV_DISTANCE[N_SQUARES][N_SQUARES];
 Bitboard SQUARES_BETWEEN_MASK[64][64];
 
 Bitboard RearSpanMask[N_COLORS][N_SQUARES] = { {0} };
@@ -27,18 +28,22 @@ std::array<Mask, N_SQUARES> allmask;
 //! \brief  Calcule la distance entre 2 cases
 //! exemples :
 /*
-A1, A1 = 0
-A1, A2 = 1
-A1, B1 = 1
-A1, B2 = 1
-A1, B3 = 2
-A1, H8 = 7
-A1, C2 = 2
-A1, H2 = 7
-A1, B8 = 7
-A1, H5 = 7
+ *       Chebyshev Manhattan
+A1, A1 = 0  0
+A1, A2 = 1  1
+A1, B1 = 1  1
+A1, B2 = 1  2
+A1, B3 = 2  3
+A1, H8 = 7  14
+A1, C2 = 2  3
+A1, H2 = 7  8
+A1, B8 = 7  8
+A1, H5 = 7  11
 */
-void calculate_distance_between_squares()
+
+// The Manhattan-Distance between two squares is determined by the minimal number of orthogonal King moves between these square
+
+void calculate_manhattan_distance()
 {
     for (int sq1 = A1; sq1 <= H8; ++sq1)
     {
@@ -46,10 +51,27 @@ void calculate_distance_between_squares()
         {
             int vertical   = abs(SQ::rank(sq1) - SQ::rank(sq2));
             int horizontal = abs(SQ::file(sq1) - SQ::file(sq2));
-            DISTANCE_BETWEEN[sq1][sq2] = std::max(vertical, horizontal);
+            MANHATTAN_DISTANCE[sq1][sq2] = vertical + horizontal;
         }
     }
 }
+
+// The Chebyshev distance is the minimal number of king moves between those squares
+
+void calculate_chebyshev_distance()
+{
+    for (int sq1 = A1; sq1 <= H8; ++sq1)
+    {
+        for (int sq2 = A1; sq2 <= H8; ++sq2)
+        {
+            int vertical   = abs(SQ::rank(sq1) - SQ::rank(sq2));
+            int horizontal = abs(SQ::file(sq1) - SQ::file(sq2));
+            CHEBYSHEV_DISTANCE[sq1][sq2] = std::max(vertical, horizontal);
+        }
+    }
+}
+
+
 
 //! \brief initialise un bitboard constitué des cases entre 2 cases
 //! alignées en diagonale, ou droite
@@ -112,7 +134,8 @@ void init_bitmasks()
     }
 
     calculate_squares_between();
-    calculate_distance_between_squares();
+    calculate_manhattan_distance();
+    calculate_chebyshev_distance();
 
  //   Bitboard bitmask = 0;
 

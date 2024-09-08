@@ -321,13 +321,13 @@ Score Board::evaluate_passed(EvalInfo& ei)
         int promo = SQ::relative_square<US>(SQ::square(file, RANK_8));
 
         // printf("sq= %d %s ; rank=%d file=%d promo=%d %s \n", sq, square_name[sq].c_str(), rank, file, promo, square_name[promo].c_str());
-        // printf("distance promo      = %d \n", distance_between(sq, promo));
-        // printf("distance roi ennemi = %d \n", distance_between(king_square<THEM>(), promo));
+        // printf("distance promo      = %d \n", chebyshev_distance(sq, promo));
+        // printf("distance roi ennemi = %d \n", chebyshev_distance(king_square<THEM>(), promo));
         // printf("THEm=%d side=%d \n", THEM, side_to_move);
 
         // Règle du carré
         if (   getNonPawnMaterialCount<THEM>() == 0
-            && distance_between(sq, promo) < distance_between(king_square<THEM>(), promo) - (THEM == side_to_move))
+            && chebyshev_distance(sq, promo) < chebyshev_distance(king_square<THEM>(), promo) - (THEM == side_to_move))
         {
             eval += PassedSquare;
 
@@ -341,7 +341,7 @@ Score Board::evaluate_passed(EvalInfo& ei)
 
 
         // Distance au roi ami
-        count = distance_between(forward, king_square<US>());
+        count = chebyshev_distance(forward, king_square<US>());
         eval += count * PassedDistUs[rank];
 
 #if defined DEBUG_EVAL
@@ -354,7 +354,7 @@ Score Board::evaluate_passed(EvalInfo& ei)
 
 
         // Distance au roi ennemi
-        count = (rank - RANK_3) * distance_between(forward, king_square<THEM>());
+        count = (rank - RANK_3) * chebyshev_distance(forward, king_square<THEM>());
         eval += count * PassedDistThem;
 
 #if defined DEBUG_EVAL
