@@ -1,5 +1,5 @@
-#CXX = clang++-18		# 18.1.3
-CXX = g++-14		# 14.0.1
+#CXX = clang++
+CXX = g++
 
 SRC1 = src
 SRC2 = src/pyrrhic
@@ -11,6 +11,24 @@ OBJ = $(patsubst %.cpp, %.o, $(CPP_FILES))
 
 FILE    := VERSION.txt
 VERSION := $(file < $(FILE))
+
+### ==========================================================================
+### Section 1. General Configuration (Stockfish)
+### ==========================================================================
+
+### Establish the operating system name
+KERNEL := $(shell uname -s)
+ifeq ($(KERNEL),Linux)
+	OS := $(shell uname -o)
+endif
+
+### Target Windows OS
+ifeq ($(OS),Windows_NT)
+	target_windows = yes
+else ifeq ($(COMP),mingw)
+	target_windows = yes
+endif
+
 
 #---------------------------------------------------------------------
 #   Defines divers
@@ -43,63 +61,73 @@ ifeq ($(ARCH), )
 endif
 
 CFLAGS_ARCH =
+DEFAULT_EXE = Zangdar
 
 ifeq ($(ARCH), x86-64)
-	EXE = Zangdar-$(VERSION)-$(ARCH)
+	DEFAULT_EXE = Zangdar-$(VERSION)-$(ARCH)
 	CFLAGS_ARCH += -msse -msse2
 
 else ifeq ($(ARCH), popcnt)
-	EXE = Zangdar-$(VERSION)-$(ARCH)
-	CFLAGS_ARCH += -msse -msse2			## x86-64
-	CFLAGS_ARCH += -msse3 -mpopcnt			## popcount
-	CFLAGS_ARCH += -msse4.1 -msse4.2 -msse4a	## sse 4.1
-	CFLAGS_ARCH += -mssse3				## ssse3
-	CFLAGS_ARCH += -mmmx				## mmx
-	CFLAGS_ARCH += -mavx				## avx
+	DEFAULT_EXE = Zangdar-$(VERSION)-$(ARCH)
+    CFLAGS_ARCH += -msse -msse2
+    CFLAGS_ARCH += -msse3 -mpopcnt
+    CFLAGS_ARCH += -msse4.1 -msse4.2 -msse4a
+    CFLAGS_ARCH += -mssse3
+    CFLAGS_ARCH += -mmmx
+    CFLAGS_ARCH += -mavx
 
 else ifeq ($(ARCH), avx2)
-	EXE = Zangdar-$(VERSION)-$(ARCH)
-	CFLAGS_ARCH += -msse -msse2			## x86-64
-	CFLAGS_ARCH += -msse3 -mpopcnt			## popcount
-	CFLAGS_ARCH += -msse4.1 -msse4.2 -msse4a	## sse 4.1
-	CFLAGS_ARCH += -mssse3				## ssse3
-	CFLAGS_ARCH += -mmmx				## mmx
-	CFLAGS_ARCH += -mavx				## avx
-	CFLAGS_ARCH += -mavx2 -mfma			## avx2
+	DEFAULT_EXE = Zangdar-$(VERSION)-$(ARCH)
+    CFLAGS_ARCH += -msse -msse2
+    CFLAGS_ARCH += -msse3 -mpopcnt
+    CFLAGS_ARCH += -msse4.1 -msse4.2 -msse4a
+    CFLAGS_ARCH += -mssse3
+    CFLAGS_ARCH += -mmmx
+    CFLAGS_ARCH += -mavx
+    CFLAGS_ARCH += -mavx2 -mfma
 
 else ifeq ($(ARCH), bmi2-nopext)
-	EXE = Zangdar-$(VERSION)-$(ARCH)
-	CFLAGS_ARCH += -msse -msse2			## x86-64
-	CFLAGS_ARCH += -msse3 -mpopcnt			## popcount
-	CFLAGS_ARCH += -msse4.1 -msse4.2 -msse4a	## sse 4.1
-	CFLAGS_ARCH += -mssse3				## ssse3
-	CFLAGS_ARCH += -mmmx				## mmx
-	CFLAGS_ARCH += -mavx				## avx
-	CFLAGS_ARCH += -mavx2 -mfma			## avx2
-	CFLAGS_ARCH += -mbmi -mbmi2			## bmi2
+	DEFAULT_EXE = Zangdar-$(VERSION)-$(ARCH)
+    CFLAGS_ARCH += -msse -msse2
+    CFLAGS_ARCH += -msse3 -mpopcnt
+    CFLAGS_ARCH += -msse4.1 -msse4.2 -msse4a
+    CFLAGS_ARCH += -mssse3
+    CFLAGS_ARCH += -mmmx
+    CFLAGS_ARCH += -mavx
+    CFLAGS_ARCH += -mavx2 -mfma
+    CFLAGS_ARCH += -mbmi -mbmi2
 
 else ifeq ($(ARCH), bmi2-pext)
-	EXE = Zangdar-$(VERSION)-$(ARCH)
-	CFLAGS_ARCH += -msse -msse2			## x86-64
-	CFLAGS_ARCH += -msse3 -mpopcnt			## popcount
-	CFLAGS_ARCH += -msse4.1 -msse4.2 -msse4a	## sse 4.1
-	CFLAGS_ARCH += -mssse3				## ssse3
-	CFLAGS_ARCH += -mmmx				## mmx
-	CFLAGS_ARCH += -mavx				## avx
-	CFLAGS_ARCH += -mavx2 -mfma			## avx2
-	CFLAGS_ARCH += -mbmi -mbmi2 -DUSE_PEXT		## bmi2
+	DEFAULT_EXE = Zangdar-$(VERSION)-$(ARCH)
+    CFLAGS_ARCH += -msse -msse2
+    CFLAGS_ARCH += -msse3 -mpopcnt
+    CFLAGS_ARCH += -msse4.1 -msse4.2 -msse4a
+    CFLAGS_ARCH += -mssse3
+    CFLAGS_ARCH += -mmmx
+    CFLAGS_ARCH += -mavx
+    CFLAGS_ARCH += -mavx2 -mfma
+    CFLAGS_ARCH += -mbmi -mbmi2 -DUSE_PEXT
 
 else ifeq ($(ARCH), native-nopext)
-	EXE = Zangdar-$(VERSION)-5950X-nopext
-	CFLAGS_ARCH += -march=native			## native
+	DEFAULT_EXE = Zangdar-$(VERSION)-5950X-nopext
+    CFLAGS_ARCH += -march=native
 
 else ifeq ($(ARCH), native-pext)
-	EXE = Zangdar-$(VERSION)-5950X-pext
-	CFLAGS_ARCH += -march=native -DUSE_PEXT		## native
+	DEFAULT_EXE = Zangdar-$(VERSION)-5950X-pext
+    CFLAGS_ARCH += -march=native -DUSE_PEXT
 
 endif
 
+$(info CXX="$(CXX)")
 $(info ARCH="$(ARCH)")
+$(info Windows="$(target_windows)")
+
+### Executable name
+ifeq ($(target_windows),yes)
+	EXE = $(DEFAULT_EXE).exe
+else
+	EXE = $(DEFAULT_EXE)
+endif
 
 #---------------------------------------------------------------------
 #   Options de compilation
@@ -109,11 +137,9 @@ $(info ARCH="$(ARCH)")
 
 ifeq ($(findstring clang, $(CXX)), clang)
 
-CFLAGS_COM  = -pipe -std=c++20 -DVERSION=\"$(VERSION)\" $(DEFS)
-CFLAGS_OPT  = -O3 -flto=auto -DNDEBUG -pthread
-CFLAGS_DBG  = -g -O0
+CFLAGS_OPT  = -O3 -flto=auto -DNDEBUG -pthread -Wdisabled-optimization
 
-CFLAGS_WARN1 = -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization
+CFLAGS_WARN1 = -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy
 CFLAGS_WARN2 = -Wformat=2 -Winit-self -Wmissing-declarations
 CFLAGS_WARN3 = -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-promo
 CFLAGS_WARN4 = -Wstrict-overflow=5 -Wswitch-default -Wundef -Wno-unused
@@ -125,24 +151,21 @@ PGO_USE   = -fprofile-instr-use=zangdar.profdata
 
 else
 
-CFLAGS_COM  = -pipe -std=c++20 -DVERSION=\"$(VERSION)\" $(DEFS)
-CFLAGS_OPT  = -O3 -Ofast -flto=auto -DNDEBUG -pthread -fwhole-program
-CFLAGS_DBG  = -g -O0
+CFLAGS_OPT  = -O3 -flto=auto -DNDEBUG -pthread -fwhole-program -Wdisabled-optimization
 
-CFLAGS_WARN1 = -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization
-CFLAGS_WARN2 = -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wnoexcept
-CFLAGS_WARN3 = -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-promo
-CFLAGS_WARN4 = -Wstrict-null-sentinel -Wstrict-overflow=5 -Wswitch-default -Wundef -Wno-unused
-CFLAGS_WARN5 = -Wuninitialized -Wbidi-chars -Warray-compare -Wattributes -Waddress
+CFLAGS_WARN1 = -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy 
+CFLAGS_WARN2 = -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs 
+CFLAGS_WARN3 = -Wnoexcept -Woverloaded-virtual -Wredundant-decls -Wshadow 
+CFLAGS_WARN4 = -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5 
+CFLAGS_WARN5 = -Wswitch-default -Wundef -Wuninitialized -Wfloat-equal -Wbidi-chars -Warray-compare -Wattributes -Waddress
+CFLAGS_WARN6 = -Weffc++ -Winline
 
 PGO_GEN   = -fprofile-generate
 PGO_USE   = -fprofile-use
 
 endif
 
-# Try to detect windows environment by seeing
-# whether the shell filters out " or not.
-ifeq ($(shell echo "test"), "test")
+ifeq ($(target_windows),yes)
 	PGO_BENCH = $(EXE) bench 16 > nul 2>&1
 	PGO_CLEAN = rmdir /s /q $(PGO_DIR)
 else
@@ -151,10 +174,11 @@ else
 endif
 
 # https://stackoverflow.com/questions/5088460/flags-to-enable-thorough-and-verbose-g-warnings
-# -ansi -pedantic -Wall -Wextra -Weffc++
 
 
-CFLAGS_WARN = $(CFLAGS_WARN1) $(CFLAGS_WARN2) $(CFLAGS_WARN3) $(CFLAGS_WARN4) $(CFLAGS_WARN5)
+CFLAGS_COM  = -pipe -std=c++20 -DVERSION=\"$(VERSION)\" $(DEFS)
+CFLAGS_DBG  = -g -O0
+CFLAGS_WARN = $(CFLAGS_WARN1) $(CFLAGS_WARN2) $(CFLAGS_WARN3) $(CFLAGS_WARN4) $(CFLAGS_WARN5) $(CFLAGS_WARN6)
 CFLAGS_PROF = -pg
 CFLAGS_TUNE = -fopenmp -DUSE_TUNER
 
@@ -162,9 +186,6 @@ LDFLAGS_OPT  = -s -flto=auto
 LDFLAGS_DBG  = -lm
 LDFLAGS_PROF = -pg
 LDFLAGS_TUNE = -fopenmp
-
-CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_WARN) $(CFLAGS_OPT)
-LDFLAGS = $(LDFLAGS_OPT)
 
 PGO_FLAGS = -fno-asynchronous-unwind-tables
 
@@ -186,6 +207,11 @@ tune: LDFLAGS = $(LDFLAGS_OPT) $(LDFLAGS_TUNE)
 
 pgo: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_WARN) $(CFLAGS_OPT)
 pgo: LDFLAGS = $(LDFLAGS_OPT)
+
+### Executable statique avec Windows
+ifeq ($(target_windows),yes)
+	LDFLAGS += -static
+endif
 
 #---------------------------------------------------------------------
 #	PGO (code venant d'Ethereal)

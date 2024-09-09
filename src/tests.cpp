@@ -27,8 +27,7 @@ void test_suite(const std::string& abc, int dmax)
     //  perftsuite_ref  : petite suite permettant de voir s'il y a eu perte de perfo
     //  perftsuite_big  : énorme suite pour contrôler le générateur de coups
 
-    std::string     str_file = "1000.epd";
-        // Home + "tests/perftsuite_" + abc + ".epd";
+    std::string     str_file = Home + "tests/perftsuite_" + abc + ".epd";
     std::ifstream file(str_file);
     if (!file.is_open())
     {
@@ -98,9 +97,9 @@ void test_suite(const std::string& abc, int dmax)
         fen    = liste1.at(0);                  // position fen
 
         CB->set_fen(fen, false);
-        int sc = CB->evaluate();
-        printf("%d\n", sc);
-#if 0
+        // int sc = CB->evaluate();
+        // printf("%d\n", sc);
+
         // nombre de profondeurs possibles
         int nbr_prof = liste1.size() - 1;
 
@@ -156,7 +155,6 @@ void test_suite(const std::string& abc, int dmax)
                 }
             }
         } // boucle depth
-#endif
     } // boucle position
 
     // Elapsed time in milliseconds
