@@ -175,7 +175,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
 
     // Pions liés
     // Des pions sont liés lorsqu'ils sont placés sur une diagonale et que l'un défend l'autre.
-    count = BB::count_bit(pawns & all_pawn_attacks<THEM>(pawns));
+    count = BB::count_bit(pawns & BB::all_pawn_attacks<THEM>(pawns));
     eval += PawnSupport * count;
 
 #if defined DEBUG_EVAL
@@ -191,7 +191,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
     // undefended, unopposed pawns (#436)
     // Undefended, unopposed pawns are targets for constant pressure by rooks and queens.
     Bitboard open = ~BB::fill<DOWN>(ei.pawns[THEM]);
-    count = BB::count_bit(pawns & open & ~all_pawn_attacks<US>(pawns));
+    count = BB::count_bit(pawns & open & ~BB::all_pawn_attacks<US>(pawns));
     eval += PawnOpen * count;
 
 #if defined DEBUG_EVAL
@@ -270,7 +270,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
 #endif
 
             // Pion passé protégé
-            if (BB::sq2BB(sq) & all_pawn_attacks<US>(pawns))
+            if (BB::sq2BB(sq) & BB::all_pawn_attacks<US>(pawns))
             {
                 eval += PassedDefended[rank];
 
@@ -884,7 +884,7 @@ Score Board::evaluate_king(EvalInfo& ei)
 
     // Bouclier du roi
     Bitboard pawnsInFront = typePiecesBB[PAWN] & PassedPawnMask[US][king_square<US>()];
-    Bitboard ourPawns = pawnsInFront & colorPiecesBB[US] & ~all_pawn_attacks<THEM>(ei.pawns[THEM]);
+    Bitboard ourPawns = pawnsInFront & colorPiecesBB[US] & ~BB::all_pawn_attacks<THEM>(ei.pawns[THEM]);
 
     count = BB::count_bit(ourPawns);
     eval += count * PawnShelter;
@@ -918,7 +918,7 @@ Score Board::evaluate_threats(const EvalInfo& ei)
     
 
     // pions attaquant les non-pions ennemis
-    count = BB::count_bit(all_pawn_attacks<US>(ourPawns) & theirNonPawns);
+    count = BB::count_bit(BB::all_pawn_attacks<US>(ourPawns) & theirNonPawns);
     eval += PawnThreat * count;
 
 #if defined DEBUG_EVAL
@@ -932,7 +932,7 @@ Score Board::evaluate_threats(const EvalInfo& ei)
 
     // pions pouvant attaquer les non-pions ennemis en avançant
     Bitboard pawnPushes = BB::shift<UP>(ourPawns) & ~ei.occupied;
-    count = BB::count_bit(all_pawn_attacks<US>(pawnPushes) & theirNonPawns);
+    count = BB::count_bit(BB::all_pawn_attacks<US>(pawnPushes) & theirNonPawns);
     eval += PushThreat * count;
 
 #if defined DEBUG_EVAL
@@ -1124,8 +1124,8 @@ void Board::init_eval_info(EvalInfo& ei)
         (RelRanK2BB[BLACK] | BB::shift<NORTH>(ei.occupied)) & ei.pawns[BLACK]
     };
 
-    ei.mobilityArea[WHITE] = ~(b[WHITE] | all_pawn_attacks<BLACK>(ei.pawns[BLACK]));
-    ei.mobilityArea[BLACK] = ~(b[BLACK] | all_pawn_attacks<WHITE>(ei.pawns[WHITE]));
+    ei.mobilityArea[WHITE] = ~(b[WHITE] | BB::all_pawn_attacks<BLACK>(ei.pawns[BLACK]));
+    ei.mobilityArea[BLACK] = ~(b[BLACK] | BB::all_pawn_attacks<WHITE>(ei.pawns[WHITE]));
 
     // Sécurité du roi
     // Bitboard des cases entourant le roi ami
@@ -1153,8 +1153,8 @@ void Board::init_eval_info(EvalInfo& ei)
     ei.attackedBy[BLACK][KING] = Attacks::king_moves(king_square<BLACK>());
 
     // Attaques des pions
-    ei.attackedBy[WHITE][PAWN] = all_pawn_attacks<WHITE>(ei.pawns[WHITE]);
-    ei.attackedBy[BLACK][PAWN] = all_pawn_attacks<BLACK>(ei.pawns[BLACK]);
+    ei.attackedBy[WHITE][PAWN] = BB::all_pawn_attacks<WHITE>(ei.pawns[WHITE]);
+    ei.attackedBy[BLACK][PAWN] = BB::all_pawn_attacks<BLACK>(ei.pawns[BLACK]);
 
     ei.attacked[WHITE] = ei.attackedBy[WHITE][KING] | ei.attackedBy[WHITE][PAWN];
     ei.attacked[BLACK] = ei.attackedBy[BLACK][KING] | ei.attackedBy[BLACK][PAWN];

@@ -100,10 +100,6 @@ public:
     //! \brief  Retourne le Bitboard de TOUS les attaquants (Blancs et Noirs) de la case "sq"
     [[nodiscard]] Bitboard all_attackers(const int sq, const Bitboard occ) const noexcept;
 
-    template <Color C>
-    [[nodiscard]] constexpr Bitboard all_pawn_attacks(const Bitboard pawns);
-
-
     //! \brief Returns an attack bitboard where sliders are allowed
     //! to xray other sliders moving the same directions
     //  code venant de Weiss

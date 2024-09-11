@@ -216,41 +216,16 @@ template <Direction D>
     return b;
 }
 
-
-
-
-// Returns the combined attack bitboard of all pawns in the given bitboard
+//! \brief  Retourne le Bitboard des attaques de tous les pions de la couleur C
 template <Color C>
-[[nodiscard]] constexpr Bitboard pawn_attacks_span(Bitboard pawns) {
+[[nodiscard]] constexpr Bitboard all_pawn_attacks(const Bitboard pawns)
+{
     if constexpr (C == WHITE)
         return BB::north_west(pawns) | BB::north_east(pawns);
     else
-        return south_west(pawns) | south_east(pawns);
-}
-template <Color C>
-[[nodiscard]] constexpr Bitboard pawn_attacks_span(Bitboard pawns, Bitboard targets) {
-    if constexpr (C == WHITE)
-        return targets & (BB::north_west(pawns) | BB::north_east(pawns));
-    else
-        return targets & (south_west(pawns) | south_east(pawns));
+        return BB::south_west(pawns) | BB::south_east(pawns);
 }
 
-// Returns the combined attack bitboard of all pawns in the given bitboard
-template <Color C>
-[[nodiscard]] constexpr Bitboard pawn_attacks_double(Bitboard pawns) {
-    if constexpr (C == WHITE)
-        return BB::north_west(pawns) & BB::north_east(pawns);
-    else
-        return south_west(pawns) & south_east(pawns);
-}
-
-template <Color C>
-[[nodiscard]] constexpr Bitboard pawn_advance(Bitboard pawns, Bitboard occupied) {
-    if constexpr (C == WHITE)
-        return ~occupied & BB::north(pawns);
-    else
-        return ~occupied & south(pawns);
-}
 //======================================
 //! \brief  Impression d'un Bitboard
 //--------------------------------------

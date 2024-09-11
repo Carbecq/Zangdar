@@ -75,16 +75,6 @@ template <Color C>
     return mask;
 }
 
-//! \brief  Retourne le Bitboard des attaques de tous les pions de la couleur C
-template <Color C>
-[[nodiscard]] constexpr Bitboard Board::all_pawn_attacks(const Bitboard pawns)
-{
-    if constexpr (C == WHITE)
-        return BB::shift<NORTH_WEST>(pawns) | BB::shift<NORTH_EAST>(pawns);
-    else
-        return BB::shift<SOUTH_WEST>(pawns) | BB::shift<SOUTH_EAST>(pawns);
-}
-
 template <Color C>
 uint64_t Board::discoveredAttacks(int sq)
 {
@@ -107,9 +97,6 @@ template Bitboard Board::squares_attacked<BLACK>() const noexcept ;
 
 template Bitboard Board::attackers<WHITE>(const int sq) const noexcept;
 template Bitboard Board::attackers<BLACK>(const int sq) const noexcept;
-
-template Bitboard Board::all_pawn_attacks<WHITE>(const Bitboard pawns);
-template Bitboard Board::all_pawn_attacks<BLACK>(const Bitboard pawns);
 
 template uint64_t Board::discoveredAttacks<WHITE>(int sq);
 template uint64_t Board::discoveredAttacks<BLACK>(int sq);

@@ -42,6 +42,7 @@ A1, H5 = 7  11
 */
 
 // The Manhattan-Distance between two squares is determined by the minimal number of orthogonal King moves between these square
+// The Manhattan-Distance is the sum of the absolute rank-distance and file-distance of both squares.
 
 void calculate_manhattan_distance()
 {
@@ -57,6 +58,7 @@ void calculate_manhattan_distance()
 }
 
 // The Chebyshev distance is the minimal number of king moves between those squares
+// The Chebyshev distance is the maximum of the absolute rank- and file-distance of both squares.
 
 void calculate_chebyshev_distance()
 {
