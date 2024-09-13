@@ -140,6 +140,13 @@ public:
     //        }
     //    }
 
+    //  Détermine si case 'sq' est sur une colonne semi-ouverte
+    //  du point de vue 'C'
+    template <Color C>
+    [[nodiscard]] constexpr bool is_on_semiopen_file(int sq) const {
+        return !(occupancy_cp<C, PAWN>() & FileMask64[sq]);
+    }
+
     void set_fen(const std::string &fen, bool logTactics) noexcept;
     [[nodiscard]] std::string get_fen() const noexcept;
     void mirror_fen(const std::string &fen, bool logTactics);

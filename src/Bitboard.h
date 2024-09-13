@@ -216,7 +216,7 @@ template <Direction D>
     return b;
 }
 
-//! \brief  Retourne le Bitboard des attaques de tous les pions de la couleur C
+//! \brief  Retourne le Bitboard des attaques de tous les pions de la couleur C.
 template <Color C>
 [[nodiscard]] constexpr Bitboard all_pawn_attacks(const Bitboard pawns)
 {
@@ -224,6 +224,16 @@ template <Color C>
         return BB::north_west(pawns) | BB::north_east(pawns);
     else
         return BB::south_west(pawns) | BB::south_east(pawns);
+}
+
+//! \brief  Retourne le bitboard de l'avance de tous les pions de la couleur C.
+template<Color C>
+[[nodiscard]] constexpr Bitboard all_pawn_advance(const Bitboard pawns, const Bitboard occupied)
+{
+    if constexpr (C == WHITE)
+        return BB::north(pawns) & ~occupied;
+    else
+        return BB::south(pawns) & ~occupied;
 }
 
 //======================================

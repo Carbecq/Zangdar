@@ -327,16 +327,19 @@ void Tuner::InitCoefficients(double coeffs[NTERMS])
     InitCoeffArray( coeffs, Trace.PassedFreeAdv,    N_RANKS,    index);
     InitCoeffSingle(coeffs, Trace.PassedRookBack,               index);
 
-    // Divers
+    // Cavaliers
     InitCoeffSingle(coeffs, Trace.KnightBehindPawn,         index);
     InitCoeffArray2D( coeffs, Trace.KnightOutpost,     index);
 
+    // Fous
     InitCoeffSingle(coeffs, Trace.BishopPair,               index);
-    InitCoeffSingle(coeffs, Trace.BishopBehindPawn,         index);
     InitCoeffSingle(coeffs, Trace.BishopBadPawn,            index);
+    InitCoeffSingle(coeffs, Trace.BishopBehindPawn,         index);
+    InitCoeffSingle(coeffs, Trace.BishopLongDiagonal,       index);
 
-    InitCoeffSingle(coeffs, Trace.OpenForward,              index);
-    InitCoeffSingle(coeffs, Trace.SemiForward,              index);
+    // Tours
+    InitCoeffArray( coeffs, Trace.RookOnOpenFile,   2,      index);
+    InitCoeffSingle(coeffs, Trace.RookOnBlockedFile,        index);
 
     // Roi
     InitCoeffArray( coeffs, Trace.KingLineDanger,   28,     index);
@@ -406,11 +409,12 @@ void Tuner::InitBaseParams(double tparams[NTERMS][N_PHASES])
     InitBaseArray2D( tparams, KnightOutpost,  index);
 
     InitBaseSingle(tparams, BishopPair,             index);
-    InitBaseSingle(tparams, BishopBehindPawn,       index);
     InitBaseSingle(tparams, BishopBadPawn,          index);
+    InitBaseSingle(tparams, BishopBehindPawn,       index);
+    InitBaseSingle(tparams, BishopLongDiagonal,     index);
 
-    InitBaseSingle(tparams, OpenForward,            index);
-    InitBaseSingle(tparams, SemiForward,            index);
+    InitBaseArray( tparams, RookOnOpenFile,  2,     index);
+    InitBaseSingle(tparams, RookOnBlockedFile,      index);
 
     // Roi
     InitBaseArray( tparams, KingLineDanger, 28,     index);
@@ -593,17 +597,18 @@ void Tuner::PrintParameters(double params[NTERMS][N_PHASES], double current[NTER
     PrintArray2D( "KnightOutpost",  tparams, index,     2,2,      "[2][2]",  len);
 
     puts("\n// Fous");
-    PrintSingle("BishopPair",       tparams, index);
-    PrintSingle("BishopBehindPawn", tparams, index);
-    PrintSingle("BishopBadPawn",    tparams, index);
+    PrintSingle("BishopPair",           tparams, index);
+    PrintSingle("BishopBadPawn",        tparams, index);
+    PrintSingle("BishopBehindPawn",     tparams, index);
+    PrintSingle("BishopLongDiagonal",   tparams, index);
 
     puts("\n// Tours");
-    PrintSingle("OpenForward",      tparams, index);
-    PrintSingle("SemiForward",      tparams, index);
+    PrintArray( "RookOnOpenFile",   tparams, index,     2,  "[2]",  len);
+    PrintSingle("RookOnBlockedFile",tparams, index);
 
     puts("\n//----------------------------------------------------------");
     puts("// Roi");
-    PrintArray( "KingLineDanger",   tparams, index,     28,     "[28]", len);
+    PrintArray( "KingLineDanger",   tparams, index,     28, "[28]", len);
     PrintSingle("KingAttackPawn",   tparams, index);
     PrintSingle("PawnShelter",      tparams, index);
 

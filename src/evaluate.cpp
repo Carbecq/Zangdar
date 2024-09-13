@@ -437,6 +437,7 @@ Score Board::evaluate_knights(EvalInfo& ei)
 {
     constexpr Color THEM = ~US;
     constexpr Direction DOWN = (US == WHITE) ? SOUTH : NORTH;
+    constexpr Direction UP   = (US == WHITE) ? NORTH : SOUTH;
 
     int sq, sqpos;
     int count;
@@ -591,17 +592,17 @@ Score Board::evaluate_bishops(EvalInfo& ei)
         // Mauvais fou
         // https://hxim.github.io/Stockfish-Evaluation-Guide/
         // Bishop pawns. Number of pawns on the same color square as the bishop multiplied by one plus the number of our blocked pawns in the center files C, D, E or F.
-        bishopSquares = (BB::sq2BB(sq) & DarkSquares) ? DarkSquares : LightSquares;       // Bitboard de la couleur du fou
-        badPawns      = ei.pawns[US] & bishopSquares;                                     // Bitboard de nos pions de la couleur du fou
-        // Note : il y a bug dans Weiss 2 ??
-        blockedPawns  = BB::shift<DOWN>(occupancy_all()) & ei.pawns[US] & CenterFiles;    // Bitboard de nos pions centraux bloqués
+        bishopSquares = BB::test_bit(DarkSquares, sq) ? DarkSquares : LightSquares;    // Bitboard de la couleur du fou
+        badPawns      = ei.pawns[US] & bishopSquares;                                   // Bitboard de nos pions de la couleur du fou
+        blockedPawns  = ei.blockedPawns[US] & CenterFiles;                              // Bitboard de nos pions centraux bloqués
+        //TODO prendre blocked ou rammed ?
 
         count = BB::count_bit(badPawns) * BB::count_bit(blockedPawns);
         eval += count * BishopBadPawn;
 
 #if defined DEBUG_EVAL
         if (count)
-            printf("le fou %s en %s a %d mauvais pions et %d pions bloquants \n", camp[1][US].c_str(), square_name[sq].c_str(),
+            printf("le fou %s en %s a %d mauvais pions et %d pions bloqués centraux\n", camp[1][US].c_str(), square_name[sq].c_str(),
                    BB::count_bit(badPawns), BB::count_bit(blockedPawns));
 #endif
 #if defined USE_TUNER
@@ -623,6 +624,19 @@ Score Board::evaluate_bishops(EvalInfo& ei)
 #endif
         }
 
+
+        // Bonus for bishop on a long diagonal which can "see" both center squares
+        if (BB::multiple(Attacks::bishop_moves(sq, occupancy_p<PAWN>()) & CenterSquares))
+        {
+            eval += BishopLongDiagonal;
+
+#if defined DEBUG_EVAL
+            printf("le fou %s en %s contrôle le centre \n", camp[1][US].c_str(), square_name[sq].c_str());
+#endif
+#if defined USE_TUNER
+            ownTuner.Trace.BishopLongDiagonal[US]++;
+#endif
+                         }
 
         // mobilité
         Bitboard attackBB   = XRayBishopAttack<US>(sq);
@@ -658,7 +672,8 @@ template<Color US>
 Score Board::evaluate_rooks(EvalInfo& ei)
 {
     constexpr Color THEM = ~US;
-    constexpr Direction UP = (US == WHITE) ? NORTH : SOUTH;
+    constexpr Direction UP   = (US == WHITE) ? NORTH : SOUTH;
+    constexpr Direction DOWN = (US == WHITE) ? SOUTH : NORTH;
 
     int sq, sqpos;
     int count;
@@ -680,46 +695,44 @@ Score Board::evaluate_rooks(EvalInfo& ei)
 #endif
 
 
-        // Colonnes ouvertes
-        // TODO revoir ce test
-        Bitboard forward = BB::fill<UP>(BB::sq2BB(sq));
-        if (((ei.pawns[WHITE] | ei.pawns[BLACK]) & forward) == 0) // pas de pion ami ou ennemi
+        // Colonnes ouvertes et semi-ouvertes (Stockfish)
+        // Note : cette définition ne tient pas compte de la position
+        //        relative de la tour et du pion
+        if (is_on_semiopen_file<US>(sq))    // pas de pion ami
         {
-            eval += OpenForward;
+            eval += RookOnOpenFile[is_on_semiopen_file<THEM>(sq)];
 
 #if defined DEBUG_EVAL
-            printf("la tour %s en %s est sur une colonne ouverte \n",
-                   camp[0][US].c_str(), square_name[sq].c_str());
+            if (is_on_semiopen_file<THEM>(sq))
+                printf("la tour %s en %s est sur une colonne ouverte \n", camp[0][US].c_str(), square_name[sq].c_str());
+            else
+                printf("la tour %s en %s est sur une colonne semi-ouverte \n", camp[0][US].c_str(), square_name[sq].c_str());
 #endif
 #if defined USE_TUNER
-            ownTuner.Trace.OpenForward[US]++;
+            ownTuner.Trace.RookOnOpenFile[is_on_semiopen_file<THEM>(sq)][US]++;
 #endif
         }
-
-        // Colonnes semi-ouvertes
-        // ne pas ajouter les 2 bonus
-        else if ((ei.pawns[US] & forward) == 0) // pas de pion ami
+        else
         {
-            eval += SemiForward;
+            // If our pawn on this file is blocked, increase penalty (Stockfish)
+             if ( occupancy_cp<US, PAWN>()
+                & BB::shift<DOWN>(ei.occupied)
+                & FileMask64[sq] )
+            {
+                eval += RookOnBlockedFile;
 
 #if defined DEBUG_EVAL
-            printf("la tour %s en %s est sur une colonne semi-ouverte \n",
-                   camp[0][US].c_str(), square_name[sq].c_str());
+                printf("tour %s en %s : le pion sur la colonne est bloqué \n", camp[0][US].c_str(), square_name[sq].c_str());
 #endif
 #if defined USE_TUNER
-            ownTuner.Trace.SemiForward[US]++;
+                ownTuner.Trace.RookOnBlockedFile[US]++;
 #endif
+            }
         }
 
-        // Ethereal 14
-        // Rook gains a bonus for being located on seventh rank relative to its
-        // colour so long as the enemy king is on the last two ranks of the board
-        // if (   relativeRankOf(US, sq) == 6
-        //     && relativeRankOf(US, ei->kingSquare[THEM]) >= 6) {
-        //     eval += RookOnSeventh;
-        //     if (TRACE) T.RookOnSeventh[US]++;
-        // }
-
+        // à ajouter
+        //  + tour dirigée vers le roi ennemi, la dame ennemie ?
+        //  + tour coincée (stockfish)
 
         // mobilité
         Bitboard attackBB   = XRayRookAttack<US>(sq);
@@ -1101,6 +1114,12 @@ void Board::init_eval_info(EvalInfo& ei)
     ei.occupied     = occupancy_all();                                   // toutes les pièces (Blanches + Noires)
     ei.pawns[WHITE] = occupancy_cp<WHITE, PAWN>();
     ei.pawns[BLACK] = occupancy_cp<BLACK, PAWN>();
+
+    ei.rammedPawns[WHITE] = BB::all_pawn_advance<BLACK>(ei.pawns[BLACK], ~(ei.pawns[WHITE]));
+    ei.rammedPawns[BLACK] = BB::all_pawn_advance<WHITE>(ei.pawns[WHITE], ~(ei.pawns[BLACK]));
+
+    ei.blockedPawns[WHITE] = BB::all_pawn_advance<BLACK>(ei.occupied, ~(ei.pawns[WHITE]));
+    ei.blockedPawns[BLACK] = BB::all_pawn_advance<WHITE>(ei.occupied, ~(ei.pawns[BLACK]));
 
     ei.knights[WHITE] = occupancy_cp<WHITE, KNIGHT>();
     ei.knights[BLACK] = occupancy_cp<BLACK, KNIGHT>();
