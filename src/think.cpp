@@ -5,9 +5,6 @@
 #include "TranspositionTable.h"
 #include "Move.h"
 
-#define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
-
-
 //======================================================
 //! \brief  Lancement d'une recherche
 //!
@@ -603,7 +600,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
             //           r -= histScore / 6000;
 
             // Depth after reductions, avoiding going straight to quiescence
-            int lmrDepth = CLAMP(newDepth - R, 1, newDepth - 1);
+            int lmrDepth = std::clamp(newDepth - R, 1, newDepth - 1);
 
             // Search this move with reduced depth:
             score = -alpha_beta<~C>(-alpha-1, -alpha, lmrDepth, td, si+1);

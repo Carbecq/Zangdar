@@ -393,11 +393,10 @@ Score Board::evaluate_passed(EvalInfo& ei)
 #endif
         }
 
-        // Tour soutenant le pion
-        //  todo : REVOIR LE TEST; il ne devrait y avoir rien entre le pion et la tour ?
-        //         BB::PrintBB(BB::fill<DOWN>(ei.pawns[US]), "fill");
-        //         BB::PrintBB(ei.rooks[US], "rook");
-        if (ei.rooks[US] & BB::fill<DOWN>(BB::sq2BB(sq)))
+        // Tour soutenant le pion; il n'y a rien entre le pion et la tour
+        if (  ei.rooks[US]                          // les tours amies
+            & BB::fill<DOWN>(BB::sq2BB(sq))         // situées derrière le pion
+            & Attacks::rook_moves(sq, ei.occupied)) // cases attaquées par une tour en "sq"
         {
             eval += PassedRookBack;
 
