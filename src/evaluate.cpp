@@ -439,26 +439,36 @@ Score Board::evaluate_knights(EvalInfo& ei)
     constexpr Direction UP   = (US == WHITE) ? NORTH : SOUTH;
 
     int sq, sqpos;
-    int count;
     Score eval = 0;
     int defended;
     int outside;
 
     Bitboard bb = ei.knights[US];
+    int count;
     ei.phase24 += BB::count_bit(bb);
-    Bitboard enemyPawns = ei.pawns[THEM];
 
 
     while (bb)
     {
-        sq    = BB::pop_lsb(bb);                   // case où est la pièce
-        sqpos = SQ::relative_square<US>(sq);           // case inversée pour les tables
+        sq    = BB::pop_lsb(bb);                // case où est la pièce
+        sqpos = SQ::relative_square<US>(sq);    // case inversée pour les tables
         eval += KnightValue;                    // score matériel
         eval += KnightPSQT[sqpos];              // score positionnel
 
 #if defined USE_TUNER
         ownTuner.Trace.KnightValue[US]++;
         ownTuner.Trace.KnightPSQT[sqpos][US]++;
+#endif
+
+
+        // mobilité
+        Bitboard attackBB   = Attacks::knight_moves(sq);
+        Bitboard mobilityBB = attackBB & ei.mobilityArea[US];
+        count = BB::count_bit(mobilityBB);
+        eval += KnightMobility[count];
+
+#if defined USE_TUNER
+        ownTuner.Trace.KnightMobility[count][US]++;
 #endif
 
 
@@ -469,19 +479,13 @@ Score Board::evaluate_knights(EvalInfo& ei)
         // de la position adverse.
         // Les cavaliers sont les pièces qui profitent le mieux des avant-postes.
 
-        // Ajoute un bonus si le cavalier est sur un avant-poste :
+        // Définition d'un avant-poste :
         //      + rangs = 4,5,6 (pour Blancs)
         //      + pas de pion ennemi sur les cases adjacentes et en avant
         //        soit le cavalier est déjà attaqué,
         //        soit un pion ennemi pourrait avancer et attaquer le cavalier
 
-        // Augmente ce bonus si le cavalier est protégé par un de nos pions.
-
-        // TODO : a) être sur une colonne semi-ouverte
-        //        b) être sur une des colonnes C,D,E,F
-
-        if (    BB::test_bit(OutpostRanksMasks[US], sq)
-            && !(OutpostSquareMasks[US][sq] & enemyPawns))
+        if (BB::test_bit(ei.outposts[US], sq))
         {
             outside  = BB::test_bit(FILE_A_BB | FILE_H_BB, sq);
             defended = BB::test_bit(ei.attackedBy[US][PAWN], sq);
@@ -489,9 +493,19 @@ Score Board::evaluate_knights(EvalInfo& ei)
 
 #if defined DEBUG_EVAL
             if (defended)
-                printf("le cavalier %s en %s est sur un avant-poste défendu \n", camp[1][US].c_str(), square_name[sq].c_str());
+            {
+                if (outside)
+                    printf("le cavalier %s en %s est sur un avant-poste défendu extérieur\n", camp[1][US].c_str(), square_name[sq].c_str());
+                else
+                    printf("le cavalier %s en %s est sur un avant-poste défendu intérieur\n", camp[1][US].c_str(), square_name[sq].c_str());
+            }
             else
-                printf("le cavalier %s en %s est sur un avant-poste non défendu \n", camp[1][US].c_str(), square_name[sq].c_str());
+            {
+                if (outside)
+                    printf("le cavalier %s en %s est sur un avant-poste non défendu extérieur\n", camp[1][US].c_str(), square_name[sq].c_str());
+                else
+                    printf("le cavalier %s en %s est sur un avant-poste non défendu intérieur\n", camp[1][US].c_str(), square_name[sq].c_str());
+            }
 #endif
 #if defined USE_TUNER
             ownTuner.Trace.KnightOutpost[outside][defended][US]++;
@@ -514,15 +528,6 @@ Score Board::evaluate_knights(EvalInfo& ei)
         }
 
 
-        // mobilité
-        Bitboard attackBB   = Attacks::knight_moves(sq);
-        Bitboard mobilityBB = attackBB & ei.mobilityArea[US];
-        count = BB::count_bit(mobilityBB);
-        eval += KnightMobility[count];
-
-#if defined USE_TUNER
-        ownTuner.Trace.KnightMobility[count][US]++;
-#endif
 
         //  attaques et échecs pour calculer la sécurité du roi ennemi
         int nbr_attacks = BB::count_bit(mobilityBB & ei.KingZone[THEM]);
@@ -588,6 +593,17 @@ Score Board::evaluate_bishops(EvalInfo& ei)
         ownTuner.Trace.BishopPSQT[sqpos][US]++;
 #endif
 
+        // mobilité
+        Bitboard attackBB   = XRayBishopAttack<US>(sq);
+        Bitboard mobilityBB = attackBB & ei.mobilityArea[US];
+        count = BB::count_bit(mobilityBB);
+        eval += BishopMobility[count];
+
+#if defined USE_TUNER
+        ownTuner.Trace.BishopMobility[count][US]++;
+#endif
+
+
         // Mauvais fou
         // https://hxim.github.io/Stockfish-Evaluation-Guide/
         // Bishop pawns. Number of pawns on the same color square as the bishop multiplied by one plus the number of our blocked pawns in the center files C, D, E or F.
@@ -635,17 +651,8 @@ Score Board::evaluate_bishops(EvalInfo& ei)
 #if defined USE_TUNER
             ownTuner.Trace.BishopLongDiagonal[US]++;
 #endif
-                         }
+        }
 
-        // mobilité
-        Bitboard attackBB   = XRayBishopAttack<US>(sq);
-        Bitboard mobilityBB = attackBB & ei.mobilityArea[US];
-        count = BB::count_bit(mobilityBB);
-        eval += BishopMobility[count];
-
-#if defined USE_TUNER
-        ownTuner.Trace.BishopMobility[count][US]++;
-#endif
 
         //  attaques et échecs pour calculer la sécurité du roi
         int nbr_attacks = BB::count_bit(mobilityBB & ei.KingZone[THEM]);
@@ -694,6 +701,17 @@ Score Board::evaluate_rooks(EvalInfo& ei)
 #endif
 
 
+        // mobilité
+        Bitboard attackBB   = XRayRookAttack<US>(sq);
+        Bitboard mobilityBB = attackBB & ei.mobilityArea[US];
+        count = BB::count_bit(mobilityBB);
+        eval +=  RookMobility[count];
+
+#if defined USE_TUNER
+        ownTuner.Trace.RookMobility[count][US]++;
+#endif
+
+
         // Colonnes ouvertes et semi-ouvertes (Stockfish)
         // Note : cette définition ne tient pas compte de la position
         //        relative de la tour et du pion
@@ -733,15 +751,6 @@ Score Board::evaluate_rooks(EvalInfo& ei)
         //  + tour dirigée vers le roi ennemi, la dame ennemie ?
         //  + tour coincée (stockfish)
 
-        // mobilité
-        Bitboard attackBB   = XRayRookAttack<US>(sq);
-        Bitboard mobilityBB = attackBB & ei.mobilityArea[US];
-        count = BB::count_bit(mobilityBB);
-        eval +=  RookMobility[count];
-
-#if defined USE_TUNER
-        ownTuner.Trace.RookMobility[count][US]++;
-#endif
 
         //  attaques et échecs pour calculer la sécurité du roi
         int nbr_attacks = BB::count_bit(mobilityBB & ei.KingZone[THEM]);
@@ -1176,5 +1185,18 @@ void Board::init_eval_info(EvalInfo& ei)
 
     ei.attacked[WHITE] = ei.attackedBy[WHITE][KING] | ei.attackedBy[WHITE][PAWN];
     ei.attacked[BLACK] = ei.attackedBy[BLACK][KING] | ei.attackedBy[BLACK][PAWN];
+
+    // Berserk / Stockfish modifiée
+    ei.outposts[WHITE] =   (RANK_4_BB | RANK_5_BB | RANK_6_BB)              // rangées 4,5,6
+                         & ~BB::fill<SOUTH>(ei.attackedBy[BLACK][PAWN]);    // cases non attaquables par un pion noir,
+                                                                            // depuis sa case de départ, ou après un déplacement
+                         // & (  ei.attackedBy[WHITE][PAWN]                    // protégé par un pion blanc
+                         //    | BB::shift<SOUTH>(typePiecesBB[PAWN]))         // derrière un pion (blanc ou noir)
+
+    ei.outposts[BLACK] =   (RANK_3_BB | RANK_4_BB | RANK_5_BB)
+                         & ~BB::fill<NORTH>(ei.attackedBy[WHITE][PAWN]);
+                         // & (  ei.attackedBy[BLACK][PAWN]                    //
+                         //    | BB::shift<NORTH>(ei.pawns[WHITE] | ei.pawns[BLACK]))
+
 }
 

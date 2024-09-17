@@ -36,6 +36,7 @@ struct EvalInfo {
     // les rammedPawns sont aussi des blockedPawns
     Bitboard blockedPawns[N_COLORS];
 
+    Bitboard outposts[N_COLORS];
     Bitboard mobilityArea[N_COLORS];
     Bitboard KingZone[N_COLORS];
 

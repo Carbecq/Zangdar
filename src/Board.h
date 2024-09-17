@@ -62,7 +62,7 @@ public:
 
     //! \brief  Retourne le bitboard des pièces du type indiqué
     template<PieceType P>
-    [[nodiscard]] constexpr uint64_t occupancy_p() const noexcept { return typePiecesBB[P]; }
+    [[nodiscard]] constexpr Bitboard occupancy_p() const noexcept { return typePiecesBB[P]; }
 
     //! \brief  Retourne le bitboard des pièces de la couleur indiquée
     //! et du type indiqué

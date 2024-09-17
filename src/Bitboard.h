@@ -216,6 +216,14 @@ template <Direction D>
     return b;
 }
 
+[[nodiscard]] inline int count_open_file(Bitboard pawns)
+{
+    pawns |= pawns >> 8;
+    pawns |= pawns >> 16;
+    pawns |= pawns >> 32;
+    return BB::count_bit(~pawns & 0xFF);
+}
+
 //! \brief  Retourne le Bitboard des attaques de tous les pions de la couleur C.
 template <Color C>
 [[nodiscard]] constexpr Bitboard all_pawn_attacks(const Bitboard pawns)

@@ -10,7 +10,7 @@ DEFINES += STATIC
 QMAKE_LFLAGS += -flto
 
 #------------------------------------------------------
-DEFINES += -DUSE_HASH
+DEFINES += USE_HASH
 
 # ATTENTION : ne pas mettre "\" car ils sont reconnus comme caractères spéciaux
 # pour Github
