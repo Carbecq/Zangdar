@@ -173,6 +173,9 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     bool isRoot     = (si->ply == 0);
     bool isPVNode   = ((beta - alpha) != 1); // We are in a PV-node if we aren't in a null window.
 
+    // Prefetch La table de transposition aussitôt que possible
+    transpositionTable.prefetch(board.get_hash());
+
     // Ensure a fresh PV
     si->pv.length     = 0;
 

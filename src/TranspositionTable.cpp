@@ -324,3 +324,11 @@ int TranspositionTable::hash_full()
     return used/tt_buckets;
 }
 
+/// prefetch() preloads the given address in L1/L2 cache. This is a non-blocking
+/// function that doesn't stall the CPU waiting for data to be loaded from memory,
+/// which can be quite slow.
+void TranspositionTable::prefetch(const U64 hash)
+{
+    __builtin_prefetch(tt_entries + (hash & tt_mask));
+}
+

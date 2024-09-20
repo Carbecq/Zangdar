@@ -104,6 +104,8 @@ public:
 
     bool probe_pawn_table(U64 hash, Score &eval, Bitboard &passed);
     void store_pawn_table(U64 hash, Score eval, Bitboard passed);
+
+    void prefetch(const U64 hash);
 };
 
 extern TranspositionTable transpositionTable;
