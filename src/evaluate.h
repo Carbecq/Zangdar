@@ -24,14 +24,11 @@
 struct EvalInfo {
     Bitboard occupied;
     Bitboard pawns[N_COLORS];
-    Bitboard knights[N_COLORS];
-    Bitboard bishops[N_COLORS];
-    Bitboard rooks[N_COLORS];
-    Bitboard queens[N_COLORS];
     Bitboard passedPawns;
 
     // pions qui se bloquent mutuellement : pion blanc b5, pion noir b6
-    Bitboard rammedPawns[N_COLORS];
+    // Bitboard rammedPawns[N_COLORS];
+
     // pions bloqués par une pièce amie ou ennemie
     // les rammedPawns sont aussi des blockedPawns
     Bitboard blockedPawns[N_COLORS];
@@ -43,8 +40,8 @@ struct EvalInfo {
     int attackPower[N_COLORS] = {0, 0};
     int attackCount[N_COLORS] = {0, 0};
 
-    Bitboard attackedBy[N_COLORS][N_PIECES];
-    Bitboard attacked[N_COLORS];
+    Bitboard attacks[N_COLORS][N_PIECES];
+    Bitboard allAttacks[N_COLORS];
 
     int phase24;
 

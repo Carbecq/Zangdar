@@ -411,17 +411,10 @@ public:
     template <Color C> Score evaluate_king(EvalInfo& ei);
     template <Color C> Score evaluate_threats(const EvalInfo& ei);
     template <Color C> Score evaluate_passed(EvalInfo& ei);
-    template <Color C> Score evaluate_space(EvalInfo& ei);
-    template <Color C> Score evaluate_kingspawns(EvalInfo& ei);
-
-    Score evaluate_closedness(EvalInfo& ei);
-    Score evaluate_complexity(EvalInfo& ei, Score eval);
 
     int   scale_factor(const Score eval);
     void  init_eval_info(EvalInfo& ei);
     Score probe_pawn_cache(EvalInfo& ei);
-
-    bool material_draw(void);
 
     bool fast_see(const MOVE move, const int threshold) const;
     void test_value(const std::string& fen );

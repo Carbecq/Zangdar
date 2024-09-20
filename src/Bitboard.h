@@ -216,6 +216,7 @@ template <Direction D>
     return b;
 }
 
+//! \brief  Compte le nombre de colonnes ouvertes
 [[nodiscard]] inline int count_open_file(Bitboard pawns)
 {
     pawns |= pawns >> 8;
@@ -243,6 +244,12 @@ template<Color C>
     else
         return BB::south(pawns) & ~occupied;
 }
+
+//! \brief  Retourne le bitboard représentant la colonne 'file'
+[[nodiscard]] constexpr Bitboard file(int file) { return FILE_A_BB << file; }
+
+//! \brief  Retourne le bitboard représentant la rangée 'rank'
+[[nodiscard]] constexpr Bitboard rank(int rank) { return RANK_1_BB << (8 * rank); }
 
 //======================================
 //! \brief  Impression d'un Bitboard
@@ -278,6 +285,6 @@ inline void PrintBB(const Bitboard bb, const std::string& message)
     std::cout << ss.str() << std::endl;
 }
 
-}; // namespace
+} // namespace
 
 #endif

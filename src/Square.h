@@ -76,6 +76,13 @@ template <Color C>
 template <Color C>
 [[nodiscard]] constexpr int relative_rank64(const int sq) { return C == WHITE ? rank(sq) : RANK_8 - rank(sq); }
 
+//! \brief  Retourne le bitboard représentant la colonne de la case 'sq'
+[[nodiscard]] constexpr Bitboard fileBB(int square) { return BB::file(SQ::file(square)); }
+
+//! \brief  Retourne le bitboard représentant la rangée de la case 'sq'
+[[nodiscard]] constexpr Bitboard rankBB(int square) { return BB::rank(SQ::rank(square)); }
+
+
 
 } // namespace
 

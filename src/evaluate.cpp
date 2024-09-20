@@ -11,6 +11,8 @@
 https://github.com/nmrugg/stockfish.js/blob/master/src/evaluate.cpp
 
 https://hxim.github.io/Stockfish-Evaluation-Guide/
+https://www.chessprogramming.org/Evaluation
+
 */
 
 /*  Bien que beaucoup de codes implémentent des idées identiques,
@@ -29,13 +31,6 @@ https://hxim.github.io/Stockfish-Evaluation-Guide/
     Score eval = 0;
     EvalInfo ei;
 
-    // nullité
-    // On utilise les tables Syzygy, ce test de nullité est inutile
-
-    // voir le code de Sjeng (aussi Fruit-Mora), qui comporte un test s'il reste des pions
-    //    if (material_draw() == true)
-    //        return 0;
-
     // Initialisations
     init_eval_info(ei);
 
@@ -51,6 +46,7 @@ https://hxim.github.io/Stockfish-Evaluation-Guide/
 
     //--------------------------------
     // Evaluation des pions passés
+    //  + à faire après "evaluate_pieces" à cause du tableau "allAttacks"
     //--------------------------------
     eval += evaluate_passed<WHITE>(ei)  - evaluate_passed<BLACK>(ei);
 
@@ -131,7 +127,8 @@ Score Board::evaluate_pawns(EvalInfo& ei)
     int rank;
     Score eval = 0;
 
-    Bitboard pawns = ei.pawns[US];
+    const Bitboard upawns = ei.pawns[US];
+    const Bitboard tpawns = ei.pawns[THEM];
 
     // https://chessfox.com/pawn-structures-why-pawns-are-the-soul-of-chess/
 
@@ -148,7 +145,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
     // 1- des pions doublés désignent deux pions de la même couleur sur une même colonne.
     // 2- n'est pris en compte que si l'un empèche l'autre de bouger
     // 3- on ne compte qu'une seule fois les pions doublés
-    count = BB::count_bit(pawns & BB::north(pawns));
+    count = BB::count_bit(upawns & BB::north(upawns));
     eval += PawnDoubled * count;
 
 #if defined DEBUG_EVAL
@@ -161,7 +158,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
 
 
     // Pions doublés mais séparés d'une case
-    count = BB::count_bit(pawns & BB::shift<NORTH_NORTH>(pawns));
+    count = BB::count_bit(upawns & BB::shift<NORTH_NORTH>(upawns));
     eval += PawnDoubled2 * count;
 
 #if defined DEBUG_EVAL
@@ -175,7 +172,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
 
     // Pions liés
     // Des pions sont liés lorsqu'ils sont placés sur une diagonale et que l'un défend l'autre.
-    count = BB::count_bit(pawns & BB::all_pawn_attacks<THEM>(pawns));
+    count = BB::count_bit(upawns & BB::all_pawn_attacks<THEM>(upawns));
     eval += PawnSupport * count;
 
 #if defined DEBUG_EVAL
@@ -190,8 +187,8 @@ Score Board::evaluate_pawns(EvalInfo& ei)
     // Open pawns
     // undefended, unopposed pawns (#436)
     // Undefended, unopposed pawns are targets for constant pressure by rooks and queens.
-    Bitboard open = ~BB::fill<DOWN>(ei.pawns[THEM]);
-    count = BB::count_bit(pawns & open & ~BB::all_pawn_attacks<US>(pawns));
+    Bitboard open = ~BB::fill<DOWN>(tpawns);
+    count = BB::count_bit(upawns & open & ~BB::all_pawn_attacks<US>(upawns));
     eval += PawnOpen * count;
 
 #if defined DEBUG_EVAL
@@ -204,7 +201,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
 
 
     // Pions en phalange (Pawn Phalanx)
-    Bitboard phalanx = pawns & BB::west(pawns);
+    Bitboard phalanx = upawns & BB::west(upawns);
     while (phalanx)
     {
         rank  = SQ::relative_rank8<US>(SQ::rank(BB::pop_lsb(phalanx)));
@@ -220,7 +217,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
 
 
     // Evaluation des pions un par un
-    Bitboard bb = ei.pawns[US];
+    Bitboard bb = upawns;
     while (bb)
     {
         sq    = BB::pop_lsb(bb);                   // case où est la pièce
@@ -241,7 +238,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
         //  Un pion isolé est un pion qui n'a plus de pion de son camp sur les colonnes adjacentes.
         //  Un pion isolé peut être redoutable en milieu de partie1.
         //  C'est souvent une faiblesse en finale, car il est difficile à défendre.
-        if ((pawns & AdjacentFilesMask64[sq]) == 0)
+        if ((upawns & AdjacentFilesMask64[sq]) == 0)
         {
             eval += PawnIsolated;
 
@@ -257,7 +254,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
         // Pion passé
         //  un pion passé est un pion qui n'est pas gêné dans son avance vers la 8e rangée par un pion adverse,
         //  c'est-à-dire qu'il n'y a pas de pion adverse devant lui, ni sur la même colonne, ni sur une colonne adjacente
-        if ((PassedPawnMask[US][sq] & ei.pawns[THEM]) == 0)
+        if ((PassedPawnMask[US][sq] & tpawns) == 0)
         {
             rank  = SQ::rank(sqpos);
             eval += PawnPassed[rank];
@@ -270,7 +267,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
 #endif
 
             // Pion passé protégé
-            if (BB::sq2BB(sq) & BB::all_pawn_attacks<US>(pawns))
+            if (BB::sq2BB(sq) & BB::all_pawn_attacks<US>(upawns))
             {
                 eval += PassedDefended[rank];
 
@@ -381,7 +378,7 @@ Score Board::evaluate_passed(EvalInfo& ei)
 
 
         // Pion passé libre d'avancer
-        else if (!(BB::sq2BB(forward) & ei.attacked[THEM]))
+        else if (!(BB::sq2BB(forward) & ei.allAttacks[THEM]))
         {
             eval += PassedFreeAdv[rank];
 
@@ -394,7 +391,7 @@ Score Board::evaluate_passed(EvalInfo& ei)
         }
 
         // Tour soutenant le pion; il n'y a rien entre le pion et la tour
-        if (  ei.rooks[US]                          // les tours amies
+        if (  occupancy_cp<US, ROOK>()                          // les tours amies
             & BB::fill<DOWN>(BB::sq2BB(sq))         // situées derrière le pion
             & Attacks::rook_moves(sq, ei.occupied)) // cases attaquées par une tour en "sq"
         {
@@ -436,14 +433,13 @@ Score Board::evaluate_knights(EvalInfo& ei)
 {
     constexpr Color THEM = ~US;
     constexpr Direction DOWN = (US == WHITE) ? SOUTH : NORTH;
-    constexpr Direction UP   = (US == WHITE) ? NORTH : SOUTH;
 
     int sq, sqpos;
     Score eval = 0;
     int defended;
     int outside;
 
-    Bitboard bb = ei.knights[US];
+    Bitboard bb = occupancy_cp<US, KNIGHT>();
     int count;
     ei.phase24 += BB::count_bit(bb);
 
@@ -488,7 +484,7 @@ Score Board::evaluate_knights(EvalInfo& ei)
         if (BB::test_bit(ei.outposts[US], sq))
         {
             outside  = BB::test_bit(FILE_A_BB | FILE_H_BB, sq);
-            defended = BB::test_bit(ei.attackedBy[US][PAWN], sq);
+            defended = BB::test_bit(ei.attacks[US][PAWN], sq);
             eval += KnightOutpost[outside][defended];
 
 #if defined DEBUG_EVAL
@@ -539,8 +535,10 @@ Score Board::evaluate_knights(EvalInfo& ei)
             ei.attackPower[US] += nbr_attacks * AttackPower[KNIGHT] + nbr_checks * CheckPower[KNIGHT];
         }
 
-        ei.attackedBy[US][KNIGHT] |= attackBB;
-        ei.attacked[US]           |= attackBB;
+        //  Update des attaques
+        // ei.twoAttacks[US]      |= (attackBB & ei.allAttacks[US]);
+        ei.attacks[US][KNIGHT] |= attackBB;
+        ei.allAttacks[US]      |= attackBB;
     }
 
     return eval;
@@ -563,7 +561,7 @@ Score Board::evaluate_bishops(EvalInfo& ei)
     Bitboard blockedPawns;
 
     Score    eval = 0;
-    Bitboard bb   = ei.bishops[US];
+    Bitboard bb   = occupancy_cp<US, BISHOP>();
     ei.phase24 += BB::count_bit(bb);
 
     // Paire de fous
@@ -664,8 +662,10 @@ Score Board::evaluate_bishops(EvalInfo& ei)
             ei.attackPower[US] += nbr_attacks * AttackPower[BISHOP] + nbr_checks * CheckPower[BISHOP];
         }
 
-        ei.attackedBy[US][BISHOP] |= attackBB;
-        ei.attacked[US]           |= attackBB;
+        //  Update des attaques
+        // ei.twoAttacks[US]      |= (attackBB & ei.allAttacks[US]);
+        ei.attacks[US][BISHOP] |= attackBB;
+        ei.allAttacks[US]      |= attackBB;
     }
 
     return eval;
@@ -678,14 +678,13 @@ template<Color US>
 Score Board::evaluate_rooks(EvalInfo& ei)
 {
     constexpr Color THEM = ~US;
-    constexpr Direction UP   = (US == WHITE) ? NORTH : SOUTH;
     constexpr Direction DOWN = (US == WHITE) ? SOUTH : NORTH;
 
     int sq, sqpos;
     int count;
     Score eval = 0;
 
-    Bitboard bb = ei.rooks[US];
+    Bitboard bb = occupancy_cp<US, ROOK>();
     ei.phase24 += 2*BB::count_bit(bb);
 
     while (bb)
@@ -732,7 +731,7 @@ Score Board::evaluate_rooks(EvalInfo& ei)
         else
         {
             // If our pawn on this file is blocked, increase penalty (Stockfish)
-             if ( occupancy_cp<US, PAWN>()
+             if ( ei.pawns[US]
                 & BB::shift<DOWN>(ei.occupied)
                 & FileMask64[sq] )
             {
@@ -762,8 +761,10 @@ Score Board::evaluate_rooks(EvalInfo& ei)
             ei.attackPower[US] += nbr_attacks * AttackPower[ROOK] + nbr_checks * CheckPower[ROOK];
         }
 
-        ei.attackedBy[US][ROOK] |= attackBB;
-        ei.attacked[US]         |= attackBB;
+        //  Update des attaques
+        // ei.twoAttacks[US]    |= (attackBB & ei.allAttacks[US]);
+        ei.attacks[US][ROOK] |= attackBB;
+        ei.allAttacks[US]    |= attackBB;
     }
 
     return eval;
@@ -780,7 +781,7 @@ Score Board::evaluate_queens(EvalInfo& ei)
     int sq, sqpos;
     int count;
     Score eval = 0;
-    Bitboard bb = ei.queens[US];
+    Bitboard bb = occupancy_cp<US, QUEEN>();
     ei.phase24 += 4*BB::count_bit(bb);
 
     while (bb)
@@ -823,8 +824,10 @@ Score Board::evaluate_queens(EvalInfo& ei)
                                 + nbr_checks  * CheckPower[QUEEN];
         }
 
-        ei.attackedBy[US][QUEEN] |= attackBB;
-        ei.attacked[US]          |= attackBB;
+        //  Update des attaques
+        // ei.twoAttacks[US]     |= (attackBB & ei.allAttacks[US]);
+        ei.attacks[US][QUEEN] |= attackBB;
+        ei.allAttacks[US]     |= attackBB;
     }
 
     return eval;
@@ -934,12 +937,12 @@ Score Board::evaluate_threats(const EvalInfo& ei)
     Score eval = 0;
     Bitboard threats;
 
-    Bitboard ourPawns      = ei.pawns[US];
+    // Bitboard ourPawns      = occupancy_cp<US, PAWN>();
     Bitboard theirNonPawns = colorPiecesBB[THEM] ^ occupancy_cp<THEM, PAWN>();
     
 
     // pions attaquant les non-pions ennemis
-    count = BB::count_bit(BB::all_pawn_attacks<US>(ourPawns) & theirNonPawns);
+    count = BB::count_bit(BB::all_pawn_attacks<US>(ei.pawns[US]) & theirNonPawns);
     eval += PawnThreat * count;
 
 #if defined DEBUG_EVAL
@@ -952,7 +955,7 @@ Score Board::evaluate_threats(const EvalInfo& ei)
 
 
     // pions pouvant attaquer les non-pions ennemis en avançant
-    Bitboard pawnPushes = BB::shift<UP>(ourPawns) & ~ei.occupied;
+    Bitboard pawnPushes = BB::shift<UP>(ei.pawns[US]) & ~ei.occupied;
     count = BB::count_bit(BB::all_pawn_attacks<US>(pawnPushes) & theirNonPawns);
     eval += PushThreat * count;
 
@@ -967,7 +970,7 @@ Score Board::evaluate_threats(const EvalInfo& ei)
 
     // Threats by minor pieces
     Bitboard targets = theirNonPawns & ~occupancy_p<KING>();
-    threats = targets & (ei.attackedBy[US][KNIGHT] | ei.attackedBy[US][BISHOP]);
+    threats = targets & (ei.attacks[US][KNIGHT] | ei.attacks[US][BISHOP]);
     while (threats)
     {
         sq = BB::pop_lsb(threats);
@@ -983,8 +986,8 @@ Score Board::evaluate_threats(const EvalInfo& ei)
 
 
     // Threats by rooks
-    targets &= ~ei.attackedBy[THEM][PAWN];
-    threats = targets & ei.attackedBy[US][ROOK];
+    targets &= ~ei.attacks[THEM][PAWN];
+    threats = targets & ei.attacks[US][ROOK];
     while (threats)
     {
         sq = BB::pop_lsb(threats);
@@ -999,81 +1002,6 @@ Score Board::evaluate_threats(const EvalInfo& ei)
     }
 
     return eval;
-}
-
-
-//=================================================================
-//! \brief  La position est-elle nulle ?
-//!  Check if the board is (likely) drawn, logic from sjeng
-//-----------------------------------------------------------------
-bool Board::material_draw(void)
-{
-    //8/6R1/2k5/6P1/8/8/4nP2/6K1 w - - 1 41
-
-    // Code de Vice (chap 82)
-    //  >> vient de Sjeng 11.2 (draw.c) et neval.c , ligne 588
-    //  >> qui vient de Faile
-
-    // voir le code de Sjeng, qui comporte un test s'il reste des pions
-
-    // No draw with pawns or queens
-    if ( typePiecesBB[PAWN] || typePiecesBB[QUEEN])
-        return false;
-
-    // No rooks
-    if (!typePiecesBB[ROOK])
-    {
-        // No bishops
-        if (!typePiecesBB[BISHOP])
-        {
-            // Draw with 0-2 knights each (both 0 => KvK) (all nonpawns if any are knights)
-            return(    getNonPawnMaterialCount<WHITE>() <= 2
-                    &&  getNonPawnMaterialCount<BLACK>() <= 2);
-
-        }
-
-        // No knights
-        else if (!typePiecesBB[KNIGHT])
-        {
-            // Draw unless one side has 2 extra bishops (all nonpawns are bishops)
-            return( abs(  getNonPawnMaterialCount<WHITE>()
-                        - getNonPawnMaterialCount<BLACK>()) < 2);
-
-        }
-
-        // Draw with 1-2 knights vs 1 bishop (there is at least 1 bishop, and at last 1 knight)
-        else if (BB::count_bit(typePiecesBB[BISHOP]) == 1)
-        {
-            if (BB::count_bit(occupancy_cp<WHITE, BISHOP>()) == 1)
-                return getNonPawnMaterialCount<WHITE>() == 1 && getNonPawnMaterialCount<BLACK>() <= 2;
-            else
-                return getNonPawnMaterialCount<BLACK>() == 1 && getNonPawnMaterialCount<WHITE>() <= 2;
-        }
-    }
-
-    // Draw with 1 rook + up to 1 minor each
-    else if (   BB::count_bit(occupancy_cp<WHITE, ROOK>()) == 1
-             && BB::count_bit(occupancy_cp<BLACK, ROOK>()) == 1)
-    {
-        return    getNonPawnMaterialCount<WHITE>() <= 2
-               && getNonPawnMaterialCount<BLACK>() <= 2;
-    }
-
-    // Draw with 1 rook vs 1-2 minors
-    else if ( BB::count_bit(typePiecesBB[ROOK]) == 1)
-    {
-        if (BB::count_bit(occupancy_cp<WHITE, ROOK>()) == 1)
-            return( getNonPawnMaterialCount<WHITE>() == 1
-                    && getNonPawnMaterialCount<BLACK>() >= 1
-                    && getNonPawnMaterialCount<BLACK>() <= 2);
-        else
-            return( getNonPawnMaterialCount<BLACK>() == 1
-                    && getNonPawnMaterialCount<WHITE>() >= 1
-                    && getNonPawnMaterialCount<WHITE>() <= 2);
-
-    }
-
-    return false;
 }
 
 // Calculate scale factor to lower overall eval based on various features
@@ -1120,26 +1048,15 @@ void Board::init_eval_info(EvalInfo& ei)
     ei.phase24 = 0;
 
     ei.occupied     = occupancy_all();                                   // toutes les pièces (Blanches + Noires)
+
     ei.pawns[WHITE] = occupancy_cp<WHITE, PAWN>();
     ei.pawns[BLACK] = occupancy_cp<BLACK, PAWN>();
 
-    ei.rammedPawns[WHITE] = BB::all_pawn_advance<BLACK>(ei.pawns[BLACK], ~(ei.pawns[WHITE]));
-    ei.rammedPawns[BLACK] = BB::all_pawn_advance<WHITE>(ei.pawns[WHITE], ~(ei.pawns[BLACK]));
+    // ei.rammedPawns[WHITE] = BB::all_pawn_advance<BLACK>(ei.pawns[BLACK], ~(ei.pawns[WHITE]));
+    // ei.rammedPawns[BLACK] = BB::all_pawn_advance<WHITE>(ei.pawns[WHITE], ~(ei.pawns[BLACK]));
 
     ei.blockedPawns[WHITE] = BB::all_pawn_advance<BLACK>(ei.occupied, ~(ei.pawns[WHITE]));
     ei.blockedPawns[BLACK] = BB::all_pawn_advance<WHITE>(ei.occupied, ~(ei.pawns[BLACK]));
-
-    ei.knights[WHITE] = occupancy_cp<WHITE, KNIGHT>();
-    ei.knights[BLACK] = occupancy_cp<BLACK, KNIGHT>();
-
-    ei.bishops[WHITE] = occupancy_cp<WHITE, BISHOP>();
-    ei.bishops[BLACK] = occupancy_cp<BLACK, BISHOP>();
-
-    ei.rooks[WHITE] = occupancy_cp<WHITE, ROOK>();
-    ei.rooks[BLACK] = occupancy_cp<BLACK, ROOK>();
-
-    ei.queens[WHITE] = occupancy_cp<WHITE, QUEEN>();
-    ei.queens[BLACK] = occupancy_cp<BLACK, QUEEN>();
 
     // La zone de mobilité est définie ainsi (idée de Weiss) : toute case
     //  > ni attaquée par un pion adverse
@@ -1171,30 +1088,33 @@ void Board::init_eval_info(EvalInfo& ei)
     {
         for (int p=0; p<N_PIECES; p++)
         {
-            ei.attackedBy[c][p] = 0;
+            ei.attacks[c][p] = 0;
         }
     }
 
     // Attaques du roi
-    ei.attackedBy[WHITE][KING] = Attacks::king_moves(king_square<WHITE>());
-    ei.attackedBy[BLACK][KING] = Attacks::king_moves(king_square<BLACK>());
+    ei.attacks[WHITE][KING] = Attacks::king_moves(king_square<WHITE>());
+    ei.attacks[BLACK][KING] = Attacks::king_moves(king_square<BLACK>());
 
     // Attaques des pions
-    ei.attackedBy[WHITE][PAWN] = BB::all_pawn_attacks<WHITE>(ei.pawns[WHITE]);
-    ei.attackedBy[BLACK][PAWN] = BB::all_pawn_attacks<BLACK>(ei.pawns[BLACK]);
+    ei.attacks[WHITE][PAWN] = BB::all_pawn_attacks<WHITE>(ei.pawns[WHITE]);
+    ei.attacks[BLACK][PAWN] = BB::all_pawn_attacks<BLACK>(ei.pawns[BLACK]);
 
-    ei.attacked[WHITE] = ei.attackedBy[WHITE][KING] | ei.attackedBy[WHITE][PAWN];
-    ei.attacked[BLACK] = ei.attackedBy[BLACK][KING] | ei.attackedBy[BLACK][PAWN];
+    ei.allAttacks[WHITE] = ei.attacks[WHITE][KING] | ei.attacks[WHITE][PAWN];
+    ei.allAttacks[BLACK] = ei.attacks[BLACK][KING] | ei.attacks[BLACK][PAWN];
+
+    // ei.twoAttacks[WHITE] = ei.attacks[WHITE][PAWN];
+    // ei.twoAttacks[BLACK] = ei.attacks[BLACK][PAWN];
 
     // Berserk / Stockfish modifiée
     ei.outposts[WHITE] =   (RANK_4_BB | RANK_5_BB | RANK_6_BB)              // rangées 4,5,6
-                         & ~BB::fill<SOUTH>(ei.attackedBy[BLACK][PAWN]);    // cases non attaquables par un pion noir,
+                         & ~BB::fill<SOUTH>(ei.attacks[BLACK][PAWN]);    // cases non attaquables par un pion noir,
                                                                             // depuis sa case de départ, ou après un déplacement
                          // & (  ei.attackedBy[WHITE][PAWN]                    // protégé par un pion blanc
                          //    | BB::shift<SOUTH>(typePiecesBB[PAWN]))         // derrière un pion (blanc ou noir)
 
     ei.outposts[BLACK] =   (RANK_3_BB | RANK_4_BB | RANK_5_BB)
-                         & ~BB::fill<NORTH>(ei.attackedBy[WHITE][PAWN]);
+                         & ~BB::fill<NORTH>(ei.attacks[WHITE][PAWN]);
                          // & (  ei.attackedBy[BLACK][PAWN]                    //
                          //    | BB::shift<NORTH>(ei.pawns[WHITE] | ei.pawns[BLACK]))
 
