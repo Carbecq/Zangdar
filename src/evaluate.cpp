@@ -1004,9 +1004,14 @@ Score Board::evaluate_threats(const EvalInfo& ei)
     return eval;
 }
 
-// Calculate scale factor to lower overall eval based on various features
+//=====================================================================
+//! \brief  Calcule un facteur d'échelle pour tenir compte
+//! de divers facteurs dans l'évaluation
+//---------------------------------------------------------------------
 int Board::scale_factor(const Score eval)
 {
+    // Code provenant de Weiss
+
     Bitboard strongPawns = eval > 0 ? occupancy_cp<WHITE, PAWN>()
                                     : occupancy_cp<BLACK, PAWN>();
 
@@ -1018,7 +1023,6 @@ int Board::scale_factor(const Score eval)
     // Scale down when there aren't pawns on both sides of the board
     if (!(strongPawns & QueenSide) || !(strongPawns & KingSide))
         pawnScale -= 20;
-
 
     // Scale down eval for opposite-colored bishops endgames
     if (   getNonPawnMaterialCount<WHITE>() <= 2

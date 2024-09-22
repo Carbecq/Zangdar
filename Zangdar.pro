@@ -7,7 +7,7 @@ CONFIG += static
 QMAKE_LFLAGS += -static -static-libgcc -static-libstdc++ -lstdc++
 DEFINES += STATIC
 
-QMAKE_LFLAGS += -flto
+QMAKE_LFLAGS += -flto=auto
 
 #------------------------------------------------------
 DEFINES += USE_HASH
@@ -43,7 +43,7 @@ QMAKE_CXXFLAGS_RELEASE -= -O2
 
 # si NDEBUG est défini, alors assert ne fait rien
 
-QMAKE_CXXFLAGS_RELEASE += -pipe -std=c++20 -O3 -flto -DNDEBUG -fwhole-program
+QMAKE_CXXFLAGS_RELEASE += -pipe -std=c++20 -O3 -flto=auto -DNDEBUG -fwhole-program
 QMAKE_CXXFLAGS_RELEASE += -pedantic -Wshadow -Wall -Wextra -Wcast-qual -Wuninitialized
 
 VERSION = "$$cat(VERSION.txt)"

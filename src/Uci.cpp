@@ -16,7 +16,7 @@
 Board   uci_board;
 Timer   uci_timer;
 
-extern void test_perft(const std::string& abc, int dmax);
+extern void test_perft(const std::string& abc, const std::string& m_fen, int dmax);
 extern void test_divide(const std::string& abc, int dmax);
 extern void test_suite(const std::string& abc, int dmax);
 extern void test_eval(const std::string& abc);
@@ -145,9 +145,9 @@ void Uci::run()
             std::cout << "benchmark                     : Zangdar bench <depth> <nbr_threads> <hash_size>"     << std::endl;
             std::cout << "q(uit) "      << std::endl;
             std::cout << "v(ersion) "   << std::endl;
-            std::cout << "s <ref/big>                   : test suite_perft "                    << std::endl;
-            std::cout << "divide                        : test divide "                         << std::endl;
-            std::cout << "p <r/k/s>                     : test perft <Ref/Kiwipete/Silver2> "   << std::endl;
+            std::cout << "s <ref/big>                   : test suite_perft "                                    << std::endl;
+            std::cout << "divide                        : test divide "                                         << std::endl;
+            std::cout << "p <r/k/s/f>                   : test perft <Ref/Kiwipete/Silver2/fen> "               << std::endl;
             std::cout << "test                          : test de recherche sur un ensemble de positions"       << std::endl;
             std::cout << "eval                          : test evaluation"                                      << std::endl;
             std::cout << "see                           : test see"                                             << std::endl;
@@ -182,7 +182,7 @@ void Uci::run()
             std::string str;
             iss >> str;
 
-            test_perft(str, dmax);
+            test_perft(str, fen, dmax);
         }
 
         else if(token == "mirror")

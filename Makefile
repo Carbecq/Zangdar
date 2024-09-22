@@ -1,5 +1,5 @@
-#CXX = clang++
-CXX = g++
+CXX = clang++
+#CXX = g++
 
 SRC1 = src
 SRC2 = src/pyrrhic
@@ -193,8 +193,8 @@ PGO_FLAGS = -fno-asynchronous-unwind-tables
 #   Targets
 #---------------------------------------------------------------------
 
-basic: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_WARN) $(CFLAGS_OPT)
-basic: LDFLAGS = $(LDFLAGS_OPT)
+release: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_WARN) $(CFLAGS_OPT)
+release: LDFLAGS = $(LDFLAGS_OPT)
 
 debug: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_WARN) $(CFLAGS_DBG)
 debug: LDFLAGS = $(LDFLAGS_DBG)
@@ -214,9 +214,21 @@ ifeq ($(target_windows),yes)
 endif
 
 #---------------------------------------------------------------------
-#	PGO (code venant d'Ethereal)
+#	Dépendances
 #---------------------------------------------------------------------
 
+release: $(EXE)
+	$(info Génération en mode release)
+prof: $(EXE)
+	$(info Génération en mode profile)
+tune: $(EXE)
+	$(info Génération en mode tuning)
+debug: $(EXE)
+	$(info Génération en mode debug)
+
+#---------------------------------------------------------------------
+#	PGO (code venant d'Ethereal)
+#---------------------------------------------------------------------
 pgo:
 	rm -f *.gcda *.profdata *.profraw
 	$(CXX) $(PGO_GEN) $(CFLAGS) $(PGO_FLAGS) $(SRC) $(LDFLAGS) -o $(EXE)
@@ -225,20 +237,7 @@ pgo:
 	$(CXX) $(PGO_USE) $(CFLAGS) $(PGO_FLAGS) $(SRC) $(LDFLAGS) -o $(EXE)
 	rm -f *.gcda *.profdata *.profraw
 
-#---------------------------------------------------------------------
-#	Dépendances
-#---------------------------------------------------------------------
-
-all: $(EXE)
-
-basic: $(EXE)
-	$(info Génération en mode basic)
-prof: $(EXE)
-	$(info Génération en mode profile)
-tune: $(EXE)
-	$(info Génération en mode tuning)
-debug: $(EXE)
-	$(info Génération en mode debug)
+#----------------------------------------------------------------------
 
 $(EXE): $(OBJ)
 	@$(CXX) -o $@ $^ $(LDFLAGS)

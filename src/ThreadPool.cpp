@@ -116,7 +116,6 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
         {
             threadData[i].depth    = 0;
             threadData[i].seldepth = 0;
-      //      threadData[i].score    = -INFINITE;
             threadData[i].nodes    = 0;
             threadData[i].stopped  = false;
             threadData[i].tbhits   = 0;
