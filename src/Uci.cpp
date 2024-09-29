@@ -12,6 +12,7 @@
 #include "ThreadPool.h"
 #include "pyrrhic/tbprobe.h"
 #include "Move.h"
+#include "bench.h"
 
 Board   uci_board;
 Timer   uci_timer;
@@ -882,20 +883,11 @@ void Uci::bench(int argCount, char* argValue[])
     U64     nodes[256];
     MOVE    moves[256];
 
-    std::string     line;
-    std::string     aux;
-    int             total       = 0;
-    U64             total_nodes = 0;
-    U64             total_time  = 0;
+    int     total       = 0;
+    U64     total_nodes = 0;
+    U64     total_time  = 0;
 
-    std::string     str_file = "bench.csv";
-    std::ifstream   ifs(str_file, std::ifstream::in);
-    if (!ifs.is_open())
-    {
-        std::cout << "[Uci::bench] impossible d'ouvrir le fichier (" << str_file << ")" << std::endl;
-        return;
-    }
-    ownBook.set_useBook(false);
+   ownBook.set_useBook(false);
 
     int depth       = argCount > 2 ? atoi(argValue[2]) : 16;
     depth           = std::min(depth, MAX_PLY);
@@ -908,17 +900,8 @@ void Uci::bench(int argCount, char* argValue[])
         transpositionTable.set_hash_size(hash_size);
 
     // Boucle sur l'ensemble des positions de test
-    while (std::getline(ifs, line))
+    for (const auto& line : bench_pos)
     {
-        // ligne vide
-        if (line.size() < 3)
-            continue;
-
-        // Commentaire ou espace au début de la ligne
-        aux = line.substr(0,1);
-        if (aux == "#" || aux == "/" || aux == " ")
-            continue;
-
         // Exécution du test
         transpositionTable.clear();
         threadPool.reset();
@@ -952,8 +935,6 @@ void Uci::bench(int argCount, char* argValue[])
         total++;
     } // boucle position
 
-    ifs.close();
-
     printf("\n===============================================================================\n");
 
     for (int i=0; i<total; i++)
@@ -967,8 +948,6 @@ void Uci::bench(int argCount, char* argValue[])
 
     printf("===============================================================================\n");
 
-    std::cout << "===============================================" << std::endl;
-    std::cout << " Fichier " << str_file << std::endl;
     std::cout << "===============================================" << std::endl;
     std::cout << "total nodes = " << total_nodes << std::endl;
     std::cout << "time        = " << std::fixed << std::setprecision(3) << static_cast<double>(total_time)/1000.0 << " s" << std::endl;

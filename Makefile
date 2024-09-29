@@ -110,11 +110,11 @@ else ifeq ($(ARCH), bmi2-pext)
 
 else ifeq ($(ARCH), native-nopext)
 	DEFAULT_EXE = Zangdar-$(VERSION)-5950X-nopext
-    CFLAGS_ARCH += -march=native
+	CFLAGS_ARCH += -march=native
 
 else ifeq ($(ARCH), native-pext)
 	DEFAULT_EXE = Zangdar-$(VERSION)-5950X-pext
-    CFLAGS_ARCH += -march=native -DUSE_PEXT
+	CFLAGS_ARCH += -march=native -DUSE_PEXT
 
 endif
 
@@ -124,9 +124,9 @@ $(info Windows="$(target_windows)")
 
 ### Executable name
 ifeq ($(target_windows),yes)
-	EXE = $(DEFAULT_EXE).exe
+	EXE = $(DEFAULT_EXE)-$(CXX).exe
 else
-	EXE = $(DEFAULT_EXE)
+	EXE = $(DEFAULT_EXE)-$(CXX)
 endif
 
 #---------------------------------------------------------------------

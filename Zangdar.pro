@@ -182,7 +182,6 @@ QMAKE_CXXFLAGS_DEBUG += -DUSE_PEXT
 DISTFILES += \
     Makefile \
     VERSION.txt \
-    bench.csv \
     src/pyrrhic/LICENSE
 
 
@@ -202,6 +201,7 @@ HEADERS += \
     src/TranspositionTable.h \
     src/Tuner.h \
     src/Uci.h \
+    src/bench.h \
     src/bitmask.h \
     src/defines.h \
     src/evaluate.h \
