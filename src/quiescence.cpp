@@ -2,7 +2,7 @@
 #include "MovePicker.h"
 #include "Move.h"
 #include "Bitboard.h"
-//#include "TranspositionTable.h"
+#include "TranspositionTable.h"
 
 //=============================================================
 //! \brief  Recherche jusqu'à obtenir une position calme,
@@ -12,6 +12,10 @@ template <Color C>
 int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
 {
     assert(beta > alpha);
+
+    // Prefetch La table de transposition aussitôt que possible
+    transpositionTable.prefetch(board.get_hash());
+
 
     // Update node count and selective depth
     td->nodes++;
@@ -33,9 +37,9 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
 
     // profondeur de recherche max atteinte
     // prevent overflows
-    bool in_check = board.is_in_check<C>();
+    bool inCheck = board.is_in_check<C>();
     if (si->ply >= MAX_PLY)
-        return in_check ? 0 : board.evaluate();
+        return inCheck ? 0 : board.evaluate();
 
 
     // partie trop longue
@@ -44,26 +48,29 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
 
 
     // Est-ce que la table de transposition est utilisable ?
-   // Score tt_score;
-   // Score tt_eval;
-   // MOVE  tt_move  = Move::MOVE_NONE;
-   // int   tt_bound;
-   // int   tt_depth;
-   // bool  tt_hit   = transpositionTable.probe(board.hash, ply, tt_move, tt_score, tt_eval, tt_bound, tt_depth);
+    bool PVNode   = ((beta - alpha) != 1); // We are in a PV-node if we aren't in a null window.
+    int old_alpha = alpha;
+    Score tt_score;
+    Score tt_eval;
+    MOVE  tt_move  = Move::MOVE_NONE;
+    int   tt_bound;
+    int   tt_depth;
+    bool  tt_hit   = transpositionTable.probe(board.hash, si->ply, tt_move, tt_score, tt_eval, tt_bound, tt_depth);
 
-   // // note : on ne teste pas la profondeur, car dasn la Quiescence, elle est à 0
-   // if (tt_hit)
-   // {
-   //     if (   (tt_bound == BOUND_EXACT)
-   //         || (tt_bound == BOUND_LOWER && tt_score >= beta)
-   //         || (tt_bound == BOUND_UPPER && tt_score <= alpha))
-   //         return tt_score;
-   // }
+    // note : on ne teste pas la profondeur, car dasn la Quiescence, elle est à 0
+    // Trust TT if not a pvnode
+    if (tt_hit && !PVNode)
+    {
+        if (   (tt_bound == BOUND_EXACT)
+            || (tt_bound == BOUND_LOWER && tt_score >= beta)
+            || (tt_bound == BOUND_UPPER && tt_score <= alpha))
+            return tt_score;
+    }
 
     int static_eval;
 
     // stand pat
-    if (!in_check)
+    if (!inCheck)
     {
         // you do not allow the side to move to stand pat if the side to move is in check.
         static_eval = board.evaluate();
@@ -83,9 +90,10 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
         static_eval = -MATE + si->ply; // idée de Koivisto
     }
 
-    int     best_score = static_eval;
-    int     score;
-    MOVE    move;
+    int  best_score = static_eval;
+    MOVE best_move  = Move::MOVE_NONE;  // meilleur coup local
+    int  score;
+    MOVE move;
     MovePicker movePicker(&board, td, si->ply, Move::MOVE_NONE,
                           Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, 0);
 
@@ -93,7 +101,7 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
     while ((move = movePicker.next_move(true).move ) != Move::MOVE_NONE)
     {
         // Prune des prises inintéressantes
-        if (!in_check && movePicker.get_stage() > STAGE_GOOD_NOISY)
+        if (!inCheck && movePicker.get_stage() > STAGE_GOOD_NOISY)
             break;
 
 
@@ -105,7 +113,7 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
     *  issues and special endgame evaluation heuristics.             *
     *****************************************************************/
 
-        if (!in_check)
+        if (!inCheck)
         {
             if (Move::is_capturing(move))
             {
@@ -124,21 +132,32 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
         if (td->stopped)
             return 0;
 
-        // try for an early cutoff:
-        if(score >= beta)
-        {
-            return score;
-        }
-
         // Found a new best move in this position
         if (score > best_score)
         {
             best_score = score;
+            best_move  = move;
 
             // If score beats alpha we update alpha
             if (score > alpha)
+            {
                 alpha = score;
+
+                // try for an early cutoff:
+                if(score >= beta)
+                {
+
+                    transpositionTable.store(board.hash, move, score, static_eval, BOUND_LOWER, 0, si->ply);
+                    return score;
+                }
+            }
         }
+    }
+
+    if (!td->stopped)
+    {
+        int flag = (alpha != old_alpha) ? BOUND_EXACT : BOUND_UPPER;
+        transpositionTable.store(board.hash, best_move, best_score, static_eval, flag, 0, si->ply);
     }
 
     return best_score;

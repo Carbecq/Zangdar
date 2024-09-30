@@ -1,5 +1,5 @@
-CXX = clang++
-#CXX = g++
+#CXX = clang++
+CXX = g++
 
 SRC1 = src
 SRC2 = src/pyrrhic

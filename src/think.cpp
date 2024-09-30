@@ -170,11 +170,13 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
 
     constexpr Color THEM = ~C;
 
-    bool isRoot     = (si->ply == 0);
-    bool isPVNode   = ((beta - alpha) != 1); // We are in a PV-node if we aren't in a null window.
-
     // Prefetch La table de transposition aussitôt que possible
     transpositionTable.prefetch(board.get_hash());
+
+
+    bool isRoot = (si->ply == 0);
+    bool PVNode = ((beta - alpha) != 1); // We are in a PV-node if we aren't in a null window.
+
 
     // Ensure a fresh PV
     si->pv.length     = 0;
@@ -244,7 +246,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     if (tt_hit)
     {
         // Trust TT if not a pvnode and the entry depth is sufficiently high
-        if (   (tt_depth >= depth && !isPVNode)
+        if (   (tt_depth >= depth && !PVNode)
             && (   (tt_bound == BOUND_EXACT)
                 || (tt_bound == BOUND_LOWER && tt_score >= beta)
                 || (tt_bound == BOUND_UPPER && tt_score <= alpha)))
@@ -269,7 +271,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         }
 
         // Limit the score of this node based on the tb result
-        if (isPVNode)
+        if (PVNode)
         {
             // Never score something worse than the known Syzygy value
             if (tbBound == BOUND_LOWER)
@@ -317,7 +319,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     //  Controle si on va pouvoir utiliser des techniques de coupe pre-move
     int  score = -INFINITE;
 
-    if (!inCheck && !isRoot && !isPVNode && !si->excluded)
+    if (!inCheck && !isRoot && !PVNode && !si->excluded)
     {
         //---------------------------------------------------------------------
         //  RAZORING
@@ -382,7 +384,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         //---------------------------------------------------------------------
         int betaCut = beta + ProbCutMargin;
         if (   !inCheck
-            && !isPVNode
+            && !PVNode
             && depth >= ProbCutDepth
             && !excluded
             && !(tt_hit && tt_depth >= depth - 3 && tt_score < betaCut))
@@ -470,7 +472,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
 
 #ifdef ACC
         // Affichage du coup courant
-        if (ply==0 && isPVNode && !td->index && my_timer.elapsedTime() > CurrmoveTimerMS)
+        if (ply==0 && PVNode && !td->index && my_timer.elapsedTime() > CurrmoveTimerMS)
         {
             show_uci_current(move, legalMoves, depth);
         }
@@ -581,14 +583,14 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         bool doFullDepthSearch;
 
         if (   depth > 2
-            && move_count > (2 + isPVNode)
+            && move_count > (2 + PVNode)
             && !inCheck
             && isQuiet)
         {
             // Base reduction
             int R = Reductions[isQuiet][std::min(31, depth)][std::min(31, move_count)];
             // Reduce less in pv nodes
-            R -= isPVNode;
+            R -= PVNode;
             // Reduce less when improving
             R -= improving;
 
@@ -612,7 +614,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         }
         else
         {
-            doFullDepthSearch = !isPVNode || move_count > 1;
+            doFullDepthSearch = !PVNode || move_count > 1;
         }
 
         // Full depth zero-window search
@@ -620,7 +622,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
             score = -alpha_beta<~C>(-alpha-1, -alpha, newDepth, td, si+1);
 
         // Full depth alpha-beta window search
-        if (isPVNode && ((score > alpha && score < beta) || move_count == 1))
+        if (PVNode && ((score > alpha && score < beta) || move_count == 1))
             score = -alpha_beta<~C>(-beta, -alpha, newDepth, td, si+1);
 
 
