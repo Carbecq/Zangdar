@@ -585,29 +585,27 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         bool doFullDepthSearch;
 
         if (   depth > 2
-            && move_count > (2 + isPV)
-            && !isInCheck
-            && isQuiet)
+            && move_count > (2 + isPV) )
         {
             // Base reduction
             int R = Reductions[isQuiet][std::min(31, depth)][std::min(31, move_count)];
+
             // Reduce less in pv nodes
             R -= isPV;
             // Reduce less when improving
             R -= improving;
 
+            // Reduce quiets more if ttMove is a capture
+            R += Move::is_capturing(tt_move);
+
+            // Reduce more when opponent has few pieces
+            R += board.getNonPawnMaterialCount<THEM>() < 2;
+
             // Adjust based on history
             R -= std::max(-2, std::min(2, hist / 5000));
 
-            // Reduce less for killers
-            //            r -= move == mp.kill1 || move == mp.kill2;
-            // Reduce more for the side that last null moved
-            //           r += sideToMove == thread->nullMover;
-            // Adjust reduction by move history (-2 to +2)
-            //           r -= histScore / 6000;
-
             // Depth after reductions, avoiding going straight to quiescence
-            int lmrDepth = std::clamp(newDepth - R, 1, newDepth - 1);
+            int lmrDepth = std::clamp(newDepth - R, 1, newDepth);
 
             // Search this move with reduced depth:
             score = -alpha_beta<~C>(-alpha-1, -alpha, lmrDepth, td, si+1);
