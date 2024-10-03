@@ -175,7 +175,12 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
 
 
     bool isRoot = (si->ply == 0);
-    bool PVNode = ((beta - alpha) != 1); // We are in a PV-node if we aren't in a null window.
+
+    // For PVS, the node is a PV node if beta - alpha != 1 (full-window = not a null window)
+    // We do not want to do most pruning techniques on PV nodes
+    // Ne pas confondre avec PV NODE (notation Knuth)
+    // Utiliser plutôt la notation : EXACT
+    bool isPV = ((beta - alpha) != 1);
 
 
     // Ensure a fresh PV
@@ -205,20 +210,17 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     if (si->ply >= MAX_PLY)
         return board.evaluate();
 
-    // On a atteint la limite de taille de la partie ?
-    if (board.gamemove_counter >= MAX_HIST - 1)
-        return board.evaluate();
-
 
     //  Caractéristiques de la position
-    bool inCheck    = board.is_in_check<C>();
+    bool isInCheck  = board.is_in_check<C>();
+    int  score      = -INFINITE;
     int  best_score = -INFINITE;        // initially assume the worst case
     MOVE best_move  = Move::MOVE_NONE;  // meilleur coup local
     int  max_score  = INFINITE;         // best possible
     MOVE excluded   = si->excluded;
 
     //  Check Extension
-    if (inCheck == true && depth + 1 < MAX_PLY)
+    if (isInCheck == true && depth + 1 < MAX_PLY)
         depth++;
 
 
@@ -243,17 +245,20 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     int   tt_depth = -1;
     bool  tt_hit   = excluded ? false : transpositionTable.probe(board.hash, si->ply, tt_move, tt_score, tt_eval, tt_bound, tt_depth);
 
-    if (tt_hit)
+    // Trust TT if not a pvnode and the entry depth is sufficiently high
+    // At non-PV nodes we check for an early TT cutoff
+    //    (we do not return immediately on full PVS windows since this cuts
+    //     short the PV line)
+    if (tt_hit && !isPV && tt_depth >= depth)
     {
-        // Trust TT if not a pvnode and the entry depth is sufficiently high
-        if (   (tt_depth >= depth && !PVNode)
-            && (   (tt_bound == BOUND_EXACT)
+            if (   (tt_bound == BOUND_EXACT)
                 || (tt_bound == BOUND_LOWER && tt_score >= beta)
-                || (tt_bound == BOUND_UPPER && tt_score <= alpha)))
+                || (tt_bound == BOUND_UPPER && tt_score <= alpha))
         {
             return tt_score;
         }
     }
+
 
     // Probe the Syzygy     Tablebases
     int tbScore, tbBound;
@@ -271,7 +276,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         }
 
         // Limit the score of this node based on the tb result
-        if (PVNode)
+        if (isPV)
         {
             // Never score something worse than the known Syzygy value
             if (tbBound == BOUND_LOWER)
@@ -292,7 +297,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     //  Evaluation Statique
     int static_eval;
 
-    if (inCheck)
+    if (isInCheck)
     {
         si->eval = static_eval = -MATE + si->ply;
     }
@@ -302,11 +307,10 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     }
     else
     {
-        if (tt_eval != NOSCORE)
-            si->eval = static_eval = tt_eval;
-        else
-            si->eval = static_eval = board.evaluate();
+        si->eval = static_eval = (tt_eval != NOSCORE) ? tt_eval : board.evaluate();
     }
+
+
 
     // Re-initialise les killer des enfants
     td->killer1[si->ply+1] = Move::MOVE_NULL;
@@ -314,12 +318,10 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
 
     /*  Avons-nous amélioré la position ?
         Si on ne s'est pas amélioré dans cette ligne, on va pouvoir couper un peu plus */
-    bool improving = (si->ply >= 2) && !inCheck && (static_eval > (si-2)->eval);
+    bool improving = (si->ply >= 2) && !isInCheck && (static_eval > (si-2)->eval);
 
-    //  Controle si on va pouvoir utiliser des techniques de coupe pre-move
-    int  score = -INFINITE;
 
-    if (!inCheck && !isRoot && !PVNode && !si->excluded)
+    if (!isInCheck && !isRoot && !isPV && !si->excluded)
     {
         //---------------------------------------------------------------------
         //  RAZORING
@@ -383,8 +385,8 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         //  ProbCut
         //---------------------------------------------------------------------
         int betaCut = beta + ProbCutMargin;
-        if (   !inCheck
-            && !PVNode
+        if (   !isInCheck
+            && !isPV
             && depth >= ProbCutDepth
             && !excluded
             && !(tt_hit && tt_depth >= depth - 3 && tt_score < betaCut))
@@ -583,14 +585,14 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         bool doFullDepthSearch;
 
         if (   depth > 2
-            && move_count > (2 + PVNode)
-            && !inCheck
+            && move_count > (2 + isPV)
+            && !isInCheck
             && isQuiet)
         {
             // Base reduction
             int R = Reductions[isQuiet][std::min(31, depth)][std::min(31, move_count)];
             // Reduce less in pv nodes
-            R -= PVNode;
+            R -= isPV;
             // Reduce less when improving
             R -= improving;
 
@@ -614,7 +616,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         }
         else
         {
-            doFullDepthSearch = !PVNode || move_count > 1;
+            doFullDepthSearch = !isPV || move_count > 1;
         }
 
         // Full depth zero-window search
@@ -622,7 +624,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
             score = -alpha_beta<~C>(-alpha-1, -alpha, newDepth, td, si+1);
 
         // Full depth alpha-beta window search
-        if (PVNode && ((score > alpha && score < beta) || move_count == 1))
+        if (isPV && ((score > alpha && score < beta) || move_count == 1))
             score = -alpha_beta<~C>(-beta, -alpha, newDepth, td, si+1);
 
 
@@ -692,7 +694,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     {
         // On est en échec, et on n'a aucun coup : on est MAT
         // On n'est pas en échec, et on n'a aucun coup : on est PAT
-        return inCheck ? -MATE + si->ply : 0;
+        return isInCheck ? -MATE + si->ply : 0;
     }
 
     // don't let our score inflate too high (tb)

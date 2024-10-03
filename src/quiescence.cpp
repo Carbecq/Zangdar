@@ -37,18 +37,12 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
 
     // profondeur de recherche max atteinte
     // prevent overflows
-    bool inCheck = board.is_in_check<C>();
+    bool isInCheck = board.is_in_check<C>();
     if (si->ply >= MAX_PLY)
-        return inCheck ? 0 : board.evaluate();
-
-
-    // partie trop longue
-    if (board.gamemove_counter >= MAX_HIST - 1)
-        return board.evaluate();
+        return isInCheck ? 0 : board.evaluate();
 
 
     // Est-ce que la table de transposition est utilisable ?
-    bool PVNode   = ((beta - alpha) != 1); // We are in a PV-node if we aren't in a null window.
     int old_alpha = alpha;
     Score tt_score;
     Score tt_eval;
@@ -57,23 +51,26 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
     int   tt_depth;
     bool  tt_hit   = transpositionTable.probe(board.hash, si->ply, tt_move, tt_score, tt_eval, tt_bound, tt_depth);
 
-    // note : on ne teste pas la profondeur, car dasn la Quiescence, elle est à 0
-    // Trust TT if not a pvnode
-    if (tt_hit && !PVNode)
+    // note : on ne teste pas la profondeur, car dans la Quiescence, elle est à 0
+    //        dans la cas de la Quiescence, on cut tous les coups, y compris la PV
+    if (tt_hit)
     {
         if (   (tt_bound == BOUND_EXACT)
             || (tt_bound == BOUND_LOWER && tt_score >= beta)
             || (tt_bound == BOUND_UPPER && tt_score <= alpha))
+        {
             return tt_score;
+        }
     }
 
+    // Evaluation statique
     int static_eval;
 
-    // stand pat
-    if (!inCheck)
+    if (!isInCheck)
     {
         // you do not allow the side to move to stand pat if the side to move is in check.
-        static_eval = board.evaluate();
+        static_eval = si->eval = tt_eval != NOSCORE
+                               ? tt_eval : board.evaluate();
 
         // le score est trop mauvais pour moi, on n'a pas besoin
         // de chercher plus loin
@@ -90,6 +87,7 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
         static_eval = -MATE + si->ply; // idée de Koivisto
     }
 
+
     int  best_score = static_eval;
     MOVE best_move  = Move::MOVE_NONE;  // meilleur coup local
     int  score;
@@ -101,7 +99,7 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
     while ((move = movePicker.next_move(true).move ) != Move::MOVE_NONE)
     {
         // Prune des prises inintéressantes
-        if (!inCheck && movePicker.get_stage() > STAGE_GOOD_NOISY)
+        if (!isInCheck && movePicker.get_stage() > STAGE_GOOD_NOISY)
             break;
 
 
@@ -113,7 +111,7 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
     *  issues and special endgame evaluation heuristics.             *
     *****************************************************************/
 
-        if (!inCheck)
+        if (!isInCheck)
         {
             if (Move::is_capturing(move))
             {

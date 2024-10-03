@@ -8,9 +8,9 @@
 // https://www.chessprogramming.org/Node_Types
 
 static constexpr int BOUND_NONE  = 0;   //
-static constexpr int BOUND_EXACT = 1;   // PV-node   (Knuth's Type 1) : alpha < score < beta  ; the value returned is EXACT (not a BOUND)
+static constexpr int BOUND_UPPER = 1;   // All-nodes (Knuth's Type 3) : score <= alpha        ; appelé aussi FAIL-LOW
 static constexpr int BOUND_LOWER = 2;   // Cut-nodes (Knuth's Type 2) : score >= beta         ; appelé aussi FAIL-HIGH
-static constexpr int BOUND_UPPER = 3;   // All-nodes (Knuth's Type 3) : score <= alpha        ; appelé aussi FAIL-LOW
+static constexpr int BOUND_EXACT = 3;   // PV-node   (Knuth's Type 1) : alpha < score < beta  ; the value returned is EXACT (not a BOUND)
 
 class TranspositionTable;
 
