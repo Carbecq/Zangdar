@@ -1,6 +1,17 @@
 #include "Board.h"
 #include "Attacks.h"
 
+//! \brief Retourne le bitboard de toutes les pièces du camp "C", sauf le roi,  attaquant la case "sq"
+template <Color C>
+[[nodiscard]] constexpr Bitboard Board::attackers_no_king(const int sq) const noexcept
+{
+    // il faut regarder les attaques de pions depuis l'autre camp
+    return( (Attacks::pawn_attacks<~C>(sq)         & occupancy_cp<C, PAWN>())                                           |
+            (Attacks::knight_moves(sq)             & occupancy_cp<C, KNIGHT>())                                         |
+            (Attacks::bishop_moves(sq, occupancy_all()) & (occupancy_cp<C, BISHOP>() | occupancy_cp<C, QUEEN>())) |
+            (Attacks::rook_moves(sq,   occupancy_all()) & (occupancy_cp<C, ROOK>()   | occupancy_cp<C, QUEEN>())) );
+}
+
 //! \brief Retourne le bitboard de toutes les pièces du camp "C" attaquant la case "sq"
 template <Color C>
 [[nodiscard]] constexpr Bitboard Board::attackers(const int sq) const noexcept
@@ -97,6 +108,10 @@ template Bitboard Board::squares_attacked<BLACK>() const noexcept ;
 
 template Bitboard Board::attackers<WHITE>(const int sq) const noexcept;
 template Bitboard Board::attackers<BLACK>(const int sq) const noexcept;
+
+
+template Bitboard Board::attackers_no_king<WHITE>(const int sq) const noexcept;
+template Bitboard Board::attackers_no_king<BLACK>(const int sq) const noexcept;
 
 template uint64_t Board::discoveredAttacks<WHITE>(int sq);
 template uint64_t Board::discoveredAttacks<BLACK>(int sq);

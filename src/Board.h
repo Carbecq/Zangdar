@@ -18,12 +18,13 @@
 // celle-ci sera nécessaire pour effectuer un unmake_move
 struct UndoInfo
 {
-    U64  hash      = 0;          // nombre unique (?) correspondant à la position
-    U64  pawn_hash = 0;
+    U64  hash      = 0ULL;             // nombre unique (?) correspondant à la position
+    U64  pawn_hash = 0ULL;
     MOVE move      = Move::MOVE_NONE;
-    int  ep_square;              // case en-passant : si les blancs jouent e2-e4, la case est e3
-    int  halfmove_counter = 0;   // nombre de coups depuis une capture, ou un movement de pion
-    U32  castling;               // droit au roque
+    int  ep_square;                 // case en-passant : si les blancs jouent e2-e4, la case est e3
+    int  halfmove_counter = 0;      // nombre de coups depuis une capture, ou un movement de pion
+    U32  castling;                  // droit au roque
+    Bitboard checkers = 0ULL;       // pièces donnant échec
 };
 
 //=================================== evaluation
@@ -97,6 +98,10 @@ public:
     template <Color C>
     [[nodiscard]] constexpr Bitboard attackers(const int sq) const noexcept;
 
+    //! \brief Retourne le bitboard de toutes les pièces du camp "C", sauf le roi, attaquant la case "sq"
+    template <Color C>
+    [[nodiscard]] constexpr Bitboard attackers_no_king(const int sq) const noexcept;
+
     //! \brief  Retourne le Bitboard de TOUS les attaquants (Blancs et Noirs) de la case "sq"
     [[nodiscard]] Bitboard all_attackers(const int sq, const Bitboard occ) const noexcept;
 
@@ -167,13 +172,12 @@ public:
     template<Color C>
     [[nodiscard]] constexpr bool square_attacked(const int sq) const noexcept { return attackers<C>(sq) > 0; }
 
-    //! \brief  Retourne le bitboard des pièces attaquant le roi
+    //! \brief  Retourne le bitboard des pièces attaquant le roi de couleur C
     template<Color C>
-    [[nodiscard]] constexpr Bitboard checkers() const noexcept { return attackers<C>(king_square<C>()); }
+    [[nodiscard]] constexpr Bitboard king_attackers() const noexcept { return attackers_no_king<~C>(x_king[C]); }
 
-    //! \brief  Détermine si le roi est en échec
     template<Color C>
-    [[nodiscard]] constexpr bool is_in_check() const noexcept { return square_attacked<~C>(king_square<C>()); }
+    [[nodiscard]] constexpr bool is_in_check() const noexcept { return checkers > 0; }
 
     template<Color C> constexpr void legal_moves(MoveList &ml) noexcept;
     template<Color C> constexpr void legal_noisy(MoveList &ml) noexcept;
@@ -502,6 +506,7 @@ public:
     Bitboard typePiecesBB[7]  = {0ULL};     // bitboard des pièces pour chaque type de pièce
     std::array<PieceType, 64> pieceOn;      // donne le type de la pièce occupant la case indiquée
     int x_king[2];                          // position des rois
+    Bitboard checkers;                      // bitboard des pièces donnant échec
 
     Color side_to_move = Color::WHITE; // camp au trait
     int   ep_square    = NO_SQUARE;  // case en-passant : si les blancs jouent e2-e4, la case est e3

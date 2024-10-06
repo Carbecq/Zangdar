@@ -43,8 +43,7 @@ constexpr void Board::legal_moves(MoveList& ml) noexcept
     //Checkers of each piece type are identified by:
     //1. Projecting attacks FROM the king square
     //2. Intersecting this bitboard with the enemy bitboard of that piece type
-    Bitboard checkersBB = (Attacks::knight_moves(K)    & occupancy_cp<Them, KNIGHT>() ) |
-                          (Attacks::pawn_attacks<C>(K) & occupancy_cp<Them, PAWN>() );
+    Bitboard checkersBB = checkers;
 
     //Here, we identify slider checkers and pinners simultaneously, and candidates for such pinners
     //and checkers are represented by the bitboard <candidates>
@@ -59,13 +58,12 @@ constexpr void Board::legal_moves(MoveList& ml) noexcept
 
         //Do the squares in between the enemy slider and our king contain any of our pieces?
         //If not, add the slider to the checker bitboard
-        if (b1 == 0)
-            checkersBB |= BB::sq2BB(s);
 
         //If there is only one of our pieces between them, add our piece to the pinned bitboard
-        else if ((b1 & (b1 - 1)) == 0)
+        if (b1 && (b1 & (b1 - 1)) == 0)
             pinnedBB |= b1;
     }
+
     //-----------------------------------------------------------------------------------------
     const Bitboard unpinnedBB = colorPiecesBB[C] & ~pinnedBB;
 

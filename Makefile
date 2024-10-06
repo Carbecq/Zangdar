@@ -175,7 +175,6 @@ endif
 
 # https://stackoverflow.com/questions/5088460/flags-to-enable-thorough-and-verbose-g-warnings
 
-
 CFLAGS_COM  = -pipe -std=c++20 -DVERSION=\"$(VERSION)\" $(DEFS)
 CFLAGS_DBG  = -g -O0
 CFLAGS_WARN = $(CFLAGS_WARN1) $(CFLAGS_WARN2) $(CFLAGS_WARN3) $(CFLAGS_WARN4) $(CFLAGS_WARN5) $(CFLAGS_WARN6)
@@ -189,29 +188,30 @@ LDFLAGS_TUNE = -fopenmp
 
 PGO_FLAGS = -fno-asynchronous-unwind-tables
 
+### Executable statique avec Windows
+ifeq ($(target_windows),yes)
+	LDFLAGS_WIN = -static
+endif
+
+
 #---------------------------------------------------------------------
 #   Targets
 #---------------------------------------------------------------------
 
 release: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_WARN) $(CFLAGS_OPT)
-release: LDFLAGS = $(LDFLAGS_OPT)
+release: LDFLAGS = $(LDFLAGS_OPT) $(LDFLAGS_WIN)
 
 debug: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_WARN) $(CFLAGS_DBG)
-debug: LDFLAGS = $(LDFLAGS_DBG)
+debug: LDFLAGS = $(LDFLAGS_DBG) $(LDFLAGS_WIN)
 
 prof: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_WARN) $(CFLAGS_PROF)
-prof: LDFLAGS = $(LDFLAGS_PROF)
+prof: LDFLAGS = $(LDFLAGS_PROF) $(LDFLAGS_WIN)
 
 tune: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_WARN) $(CFLAGS_OPT) $(CFLAGS_TUNE)
-tune: LDFLAGS = $(LDFLAGS_OPT) $(LDFLAGS_TUNE)
+tune: LDFLAGS = $(LDFLAGS_OPT) $(LDFLAGS_TUNE) $(LDFLAGS_WIN)
 
 pgo: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_WARN) $(CFLAGS_OPT)
-pgo: LDFLAGS = $(LDFLAGS_OPT)
-
-### Executable statique avec Windows
-ifeq ($(target_windows),yes)
-	LDFLAGS += -static
-endif
+pgo: LDFLAGS = $(LDFLAGS_OPT) $(LDFLAGS_WIN)
 
 #---------------------------------------------------------------------
 #	Dépendances

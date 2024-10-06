@@ -131,7 +131,7 @@ MLMove MovePicker::next_move(bool skipQuiets)
         if (is_legal(tt_move))
             return MLMove{tt_move, 0};
 
-        /* fallthrough */
+        [[fallthrough]];
 
     case STAGE_GENERATE_NOISY:
 
@@ -143,11 +143,10 @@ MLMove MovePicker::next_move(bool skipQuiets)
             board->legal_noisy<WHITE>(mln);
         else
             board->legal_noisy<BLACK>(mln);
-
         score_noisy();
         stage = STAGE_GOOD_NOISY ;
 
-        /* fallthrough */
+        [[fallthrough]];
 
     case STAGE_GOOD_NOISY:
 
@@ -155,7 +154,6 @@ MLMove MovePicker::next_move(bool skipQuiets)
         if (mln.count != 0)
         {
             int  best     = get_best(mln);
-        //    MOVE bestMove = mln.mlmoves[best].move;
 
             // Don't play the table move twice
             if (mln.mlmoves[best].move == tt_move)
@@ -181,7 +179,7 @@ MLMove MovePicker::next_move(bool skipQuiets)
 
         stage = STAGE_KILLER_1;
 
-        /* fallthrough */
+        [[fallthrough]];
 
     case STAGE_KILLER_1:
 
@@ -196,7 +194,7 @@ MLMove MovePicker::next_move(bool skipQuiets)
                 return MLMove{killer1, 0};
         }
 
-        /* fallthrough */
+        [[fallthrough]];
 
     case STAGE_KILLER_2:
 
@@ -211,7 +209,7 @@ MLMove MovePicker::next_move(bool skipQuiets)
                 return MLMove{killer2, 0};
         }
 
-        /* fallthrough */
+        [[fallthrough]];
 
     case STAGE_COUNTER_MOVE:
 
@@ -228,7 +226,7 @@ MLMove MovePicker::next_move(bool skipQuiets)
                 return MLMove{counter, 0};
         }
 
-        /* fallthrough */
+        [[fallthrough]];
 
     case STAGE_GENERATE_QUIET:
 
@@ -248,12 +246,12 @@ MLMove MovePicker::next_move(bool skipQuiets)
         }
         stage = STAGE_QUIET;
 
-        /* fallthrough */
+        [[fallthrough]];
 
     case STAGE_QUIET:
 
         // Check to see if there are still more quiet moves
-        if (mlq.count > 0 && !skipQuiets)
+        if (mlq.count != 0 && !skipQuiets)
         {
             int  best     = get_best(mlq);
             MLMove bestMove = pop_move(mlq, best);
@@ -270,7 +268,7 @@ MLMove MovePicker::next_move(bool skipQuiets)
         // If no quiet moves left, advance stages
         stage = STAGE_BAD_NOISY;
 
-        /* fallthrough */
+        [[fallthrough]];
 
     case STAGE_BAD_NOISY:
 
@@ -290,7 +288,7 @@ MLMove MovePicker::next_move(bool skipQuiets)
 
         stage = STAGE_DONE;
 
-        /* fallthrough */
+        [[fallthrough]];
 
     case STAGE_DONE:
         return MLMove{Move::MOVE_NONE, 0};

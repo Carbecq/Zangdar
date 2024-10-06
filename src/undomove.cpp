@@ -7,13 +7,14 @@
 //-------------------------------------------------------------
 template <Color C> constexpr void Board::undo_move() noexcept
 {
+    constexpr Color Them     = ~C;
+
     // Swap sides
     side_to_move = ~side_to_move;
 
     gamemove_counter--;
     
     const auto &move    = game_history[gamemove_counter].move;
-    constexpr Color Them     = ~C;
     const auto dest     = Move::dest(move);
     const auto from     = Move::from(move);
     const auto piece    = Move::piece(move);
@@ -33,6 +34,9 @@ template <Color C> constexpr void Board::undo_move() noexcept
     // Déplacement du roi
     if (piece == KING)
         x_king[C] = from;
+
+    // Pièces donnant échec
+    checkers = game_history[gamemove_counter].checkers;
 
     // Castling
     castling = game_history[gamemove_counter].castling;
@@ -223,6 +227,8 @@ template <Color C> constexpr void Board::undo_nullmove() noexcept
     hash      = game_history[gamemove_counter].hash;
     pawn_hash = game_history[gamemove_counter].pawn_hash;
 #endif
+
+    checkers = game_history[gamemove_counter].checkers;
 
 #ifndef NDEBUG
     // on ne passe ici qu'en debug

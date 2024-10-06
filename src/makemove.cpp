@@ -56,7 +56,7 @@ template <Color C> constexpr void Board::make_move(const MOVE move) noexcept
     assert(pieceOn[from] == piece);
 
     // Sauvegarde des caractéristiques de la position
-    game_history[gamemove_counter] = UndoInfo{hash, pawn_hash, move, ep_square, halfmove_counter, castling} ;
+    game_history[gamemove_counter] = UndoInfo{hash, pawn_hash, move, ep_square, halfmove_counter, castling, checkers} ;
 
 // La prise en passant n'est valable que tout de suite
 // Il faut donc la supprimer
@@ -73,7 +73,7 @@ template <Color C> constexpr void Board::make_move(const MOVE move) noexcept
     if (piece == KING)
         x_king[C] = dest;
 
-// Droit au roque, remove ancient value
+    // Droit au roque, remove ancient value
 #if defined USE_HASH
     hash ^= castle_key[castling];
 #endif
@@ -420,6 +420,10 @@ template <Color C> constexpr void Board::make_move(const MOVE move) noexcept
 
     gamemove_counter++;
 
+    // pièces donnant échec
+    // attention à la couleur
+    checkers = king_attackers<~C>();
+
 #if defined USE_HASH
     hash ^= side_key;
 
@@ -440,6 +444,7 @@ template <Color C> constexpr void Board::make_move(const MOVE move) noexcept
 #endif
 #endif
 
+
 #ifndef NDEBUG
     // on ne passe ici qu'en debug
     assert(valid());
@@ -454,11 +459,10 @@ template <Color C> constexpr void Board::make_move(const MOVE move) noexcept
 template <Color C> constexpr void Board::make_nullmove() noexcept
 {
     // Sauvegarde des caractéristiques de la position
-    // NullMove = 0
-    game_history[gamemove_counter] = UndoInfo{hash, pawn_hash, Move::MOVE_NULL, ep_square, halfmove_counter, castling};
+    game_history[gamemove_counter] = UndoInfo{hash, pawn_hash, Move::MOVE_NULL, ep_square, halfmove_counter, castling, checkers};
 
-// La prise en passant n'est valable que tout de suite
-// Il faut donc la supprimer
+    // La prise en passant n'est valable que tout de suite
+    // Il faut donc la supprimer
 #if defined USE_HASH
     if (ep_square != NO_SQUARE) {
         hash ^= ep_key[ep_square];
@@ -478,6 +482,9 @@ template <Color C> constexpr void Board::make_nullmove() noexcept
     side_to_move = ~side_to_move;
 
     gamemove_counter++;
+
+    // Null move cannot gives check
+    checkers = 0ULL;
 
 #if defined USE_HASH
     hash ^= side_key;
