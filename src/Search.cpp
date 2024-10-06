@@ -46,12 +46,12 @@ void Search::show_uci_result(const ThreadData* td, U64 elapsed) const
     // commande envoyée à UCI
     // voir le document : uci_commands.txt
 
-//plante        std::cout.imbue(std::locale("fr"));
+    std::stringstream stream;
 
 // en mode UCI, il ne faut pas mettre les points de séparateur,
 // sinon Arena n'affiche pas correctement le nombre de nodes
 #if defined USE_PRETTY
-    std::cout.imbue(std::locale(std::locale::classic(), new MyNumPunct));
+    stream.imbue(std::locale(std::locale::classic(), new MyNumPunct));
     int l = 12;
 #endif
 
@@ -67,8 +67,6 @@ void Search::show_uci_result(const ThreadData* td, U64 elapsed) const
     U64 all_nodes  = threadPool.get_all_nodes();
     U64 all_tbhits = threadPool.get_all_tbhits();
     int hash_full  = transpositionTable.hash_full();
-
-    std::stringstream stream;
 
     stream << "info "
 
