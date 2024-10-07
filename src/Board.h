@@ -176,7 +176,7 @@ public:
     template<Color C>
     [[nodiscard]] constexpr Bitboard king_attackers() const noexcept { return attackers_no_king<~C>(x_king[C]); }
 
-    template<Color C>
+    //! \brief  Détermine si le camp au trait est en échec dans la position actuelle
     [[nodiscard]] constexpr bool is_in_check() const noexcept { return checkers > 0; }
 
     template<Color C> constexpr void legal_moves(MoveList &ml) noexcept;

@@ -82,10 +82,12 @@ std::string Board::display() const noexcept
     } else {
         ss << "EP       : " << square_name[ep()] << '\n';
     }
-    ss <<     "Turn     : " << (turn() == Color::WHITE ? 'w' : 'b') << '\n';
+    ss <<     "Turn     : " << side_name[turn()] << '\n';
+    ss <<     "InCheck  : " << bool_name[is_in_check()] << "\n";
     ss <<     "Hash     : " << hh << "\n";
     ss <<     "PawnHash : " << ph << "\n";
-    ss <<     "Fen      : " << get_fen();
+    ss <<     "Fen      : " << get_fen() << "\n";
+
     return(ss.str());
 }
 

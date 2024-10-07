@@ -37,7 +37,7 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
 
     // profondeur de recherche max atteinte
     // prevent overflows
-    bool isInCheck = board.is_in_check<C>();
+    bool isInCheck = board.is_in_check();
     if (si->ply >= MAX_PLY)
         return isInCheck ? 0 : board.evaluate();
 

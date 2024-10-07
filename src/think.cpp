@@ -212,7 +212,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
 
 
     //  Caractéristiques de la position
-    bool isInCheck  = board.is_in_check<C>();
+    bool isInCheck  = board.is_in_check();
     int  score      = -INFINITE;
     int  best_score = -INFINITE;        // initially assume the worst case
     MOVE best_move  = Move::MOVE_NONE;  // meilleur coup local

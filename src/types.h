@@ -24,6 +24,8 @@ const std::string camp[2][N_COLORS] = {
     {"Blanche", "Noire"}, {"Blanc", "Noir"}
 };
 
+const std::string bool_name[2] = { "false", "true" };
+
 //Inverts the color (WHITE -> BLACK) and (BLACK -> WHITE)
 constexpr Color operator~(Color C) { return Color(C ^ BLACK); }
 
