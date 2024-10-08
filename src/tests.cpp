@@ -410,34 +410,41 @@ void Board::test_value(const std::string& fen )
     std::cout << display() << std::endl;
 
     MoveList ml;
- //   U32 move;
+    U32 move;
 
     printf("side = %s : evaluation = %d \n", side_name[side_to_move].c_str(), evaluate());
 
     // generate successor moves
-//    legal_moves<WHITE>(ml);
-//    sort_moves(ml);
+   legal_moves<WHITE>(ml);
+   sort_moves(ml);
 
     // look over all moves
-//    for (int index=0; index<ml.count; index++)
-//    {
-//        move = ml.moves[index];
+   for (int index=0; index<ml.count; index++)
+   {
+       move = ml.mlmoves[index].move;
 
-//        // execute current move
-//        make_move<WHITE>(move);
+       // execute current move
+       make_move<WHITE>(move);
 
-//        bool doCheck    = is_in_check<BLACK>();
+       bool doCheck    = is_in_check();
 
-//        printf("side = %s : %s : value=%d score=%d ; ", side_name[side_to_move].c_str(),
-//               Move::name(move).c_str(), ml.values[index], evaluate());
-//        if (doCheck)
-//            printf("blanc fait échec \n");
-//        else
-//            printf("blanc ne fait pas échec \n");
+       printf("side = %s : %s : value=%d score=%d \n", side_name[side_to_move].c_str(),
+              Move::name(move).c_str(), ml.mlmoves[index].value, evaluate());
 
-//        // retract current move
-//        undo_move<WHITE>();
-//    }
+
+       printf("capturing ? %d \n", Move::is_capturing(move));
+       printf("enpassant ? %d \n", Move::is_enpassant(move));
+       printf("promotion ? %d \n", Move::is_promoting(move));
+       printf("tactique  ? %d \n", Move::is_tactical(move));
+
+       if (doCheck)
+           printf("blanc fait échec \n");
+       else
+           printf("blanc ne fait pas échec \n");
+
+       // retract current move
+       undo_move<WHITE>();
+   }
 }
 
 #include "MovePicker.h"

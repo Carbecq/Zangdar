@@ -67,6 +67,8 @@ struct EvalTrace {
     Score RookOnOpenFile[2][N_COLORS];
     Score RookOnBlockedFile[N_COLORS];
 
+    Score QueenRelativePin[N_COLORS];
+
     Score KingLineDanger[28][N_COLORS];
     Score KingAttackPawn[N_COLORS];
     Score PawnShelter[N_COLORS];
@@ -125,10 +127,10 @@ private:
     constexpr static double NPOSITIONS_d  = NPOSITIONS; // Total FENS in the book
 
 constexpr static int    N_PHASES    = 2;
-constexpr static int    NTERMS      = 569;     // Number of terms being tuned
-constexpr static double NTERMS_d    = 569;     // Number of terms being tuned
+constexpr static int    NTERMS      = 570;     // Number of terms being tuned
+constexpr static double NTERMS_d    = 570;     // Number of terms being tuned
 
-constexpr static int    MAXEPOCHS   =   10000000; // Max number of epochs allowed
+constexpr static int    MAXEPOCHS   =   20000; // Max number of epochs allowed
 constexpr static int    REPORTING   =     1000; // How often to print the new parameters
 constexpr static int    NPARTITIONS =      64; // Total thread partitions
 constexpr static double LRRATE      =    0.01; // Learning rate

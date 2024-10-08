@@ -22,15 +22,16 @@ namespace Move
 0100 0000 0000 0000 0000 0000 -> En-Passant
 1000 0000 0000 0000 0000 0000 -> Castle
 
-Note : la prise enpassant est aussi une capture
-
-
 0000 0000 0000 0000 0000 0000 0000 0000
           <--- move 24 bits        --->
 uuuu uuuu inutilisés
 
 */
 
+/*  Notes Importantes :
+ *      1- la prise enpassant est aussi une capture
+ *      2- une promotion avec capture est aussi une capture
+ */
 
 constexpr int     SHIFT_FROM  =  0;
 constexpr int     SHIFT_DEST  =  6;
@@ -143,16 +144,6 @@ constexpr U32 MOVE_NULL           = 0b00000001000000000000000000000000;
     return ((move & MOVE_DEPL_MASK)==MOVE_NONE);
 }
 
-//! \brief Détermine si le coup est une capture, y compris capture avec promotion et prise enpassant
-[[nodiscard]] constexpr bool is_capturing(const U32 move) noexcept {
-    return (move & MOVE_CAPT_MASK);
-}
-
-//! \brief Détermine si le coup est une promotion
-[[nodiscard]] constexpr bool is_promoting(const U32 move) noexcept {
-    return (move & MOVE_PROMO_MASK);
-}
-
 //! \brief Détermine si le coup est une poussée double de pion
 [[nodiscard]] constexpr bool is_double(const U32 move) noexcept {
     return (move & FLAG_DOUBLE_MASK);
@@ -163,12 +154,25 @@ constexpr U32 MOVE_NULL           = 0b00000001000000000000000000000000;
     return (move & FLAG_CASTLE_MASK);
 }
 
+//! \brief Détermine si le coup est une capture, y compris promotion avec capture et prise enpassant
+[[nodiscard]] constexpr bool is_capturing(const U32 move) noexcept {
+    return (move & MOVE_CAPT_MASK);
+}
+
+//! \brief Détermine si le coup est une promotion
+[[nodiscard]] constexpr bool is_promoting(const U32 move) noexcept {
+    return (move & MOVE_PROMO_MASK);
+}
+
 //! \brief Détermine si le coup est une prise en passant
 [[nodiscard]] constexpr bool is_enpassant(const U32 move) noexcept {
     return (move & FLAG_ENPASSANT_MASK);
 }
 
-//! \brief Détermine si le coup est tactique : prise ou promotion ou prise en passant
+//! \brief Détermine si le coup est tactique :
+//!     + prise
+//!     + promotion (avec ou sans prise)
+//!     + prise en passant
 [[nodiscard]] constexpr bool is_tactical(const U32 move) noexcept {
     return (move & (MOVE_CAPT_MASK | MOVE_PROMO_MASK | FLAG_ENPASSANT_MASK));
 }

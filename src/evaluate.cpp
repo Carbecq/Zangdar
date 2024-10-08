@@ -806,6 +806,20 @@ Score Board::evaluate_queens(EvalInfo& ei)
         ownTuner.Trace.QueenMobility[count][US]++;
 #endif
 
+        //  La Reine peut être victime d'une attaque à la découverte
+        if (discoveredAttacks<US>(sq))
+        {
+            eval += QueenRelativePin;
+
+#if defined DEBUG_EVAL
+            printf("la reine %s en %s pourrait subir une attaque à la découverte \n", camp[0][US].c_str(), square_name[sq].c_str());
+#endif
+#if defined USE_TUNER
+            ownTuner.Trace.QueenRelativePin[US]++;
+#endif
+        }
+
+
 
         //  attaques et échecs pour calculer la sécurité du roi
 

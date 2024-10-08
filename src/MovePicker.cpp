@@ -361,7 +361,7 @@ int MovePicker::get_best(const MoveList& ml)
     int best_index = 0;
 
     // Find highest scoring move
-    for (int i = 1; i < ml.count; i++)
+    for (size_t i = 1; i < ml.count; i++)
     {
         if (ml.mlmoves[i].value > ml.mlmoves[best_index].value)
             best_index = i;
@@ -434,7 +434,7 @@ bool MovePicker::is_legal(MOVE move)
         gen_legal = true;
     }
 
-    for (int n=0; n<mll.count; n++)
+    for (size_t n=0; n<mll.count; n++)
         if (mll.mlmoves[n].move == move)
             return true;
     return false;

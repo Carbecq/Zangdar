@@ -341,6 +341,8 @@ void Tuner::InitCoefficients(double coeffs[NTERMS])
     InitCoeffArray( coeffs, Trace.RookOnOpenFile,   2,      index);
     InitCoeffSingle(coeffs, Trace.RookOnBlockedFile,        index);
 
+    InitCoeffSingle(coeffs, Trace.QueenRelativePin,        index);
+
     // Roi
     InitCoeffArray( coeffs, Trace.KingLineDanger,   28,     index);
     InitCoeffSingle(coeffs, Trace.KingAttackPawn,           index);
@@ -415,6 +417,8 @@ void Tuner::InitBaseParams(double tparams[NTERMS][N_PHASES])
 
     InitBaseArray( tparams, RookOnOpenFile,  2,     index);
     InitBaseSingle(tparams, RookOnBlockedFile,      index);
+
+    InitBaseSingle(tparams, QueenRelativePin,      index);
 
     // Roi
     InitBaseArray( tparams, KingLineDanger, 28,     index);
@@ -605,6 +609,9 @@ void Tuner::PrintParameters(double params[NTERMS][N_PHASES], double current[NTER
     puts("\n// Tours");
     PrintArray( "RookOnOpenFile",   tparams, index,     2,  "[2]",  len);
     PrintSingle("RookOnBlockedFile",tparams, index);
+
+    puts("\n// Reines");
+    PrintSingle("QueenRelativePin",tparams, index);
 
     puts("\n//----------------------------------------------------------");
     puts("// Roi");

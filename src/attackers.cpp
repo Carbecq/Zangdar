@@ -86,17 +86,21 @@ template <Color C>
     return mask;
 }
 
+//===================================================================
+//! \brief  Retourne le bitboard des attaques à la découverte
+//! sur la case donnée
+//-------------------------------------------------------------------
 template <Color C>
-uint64_t Board::discoveredAttacks(int sq)
+[[nodiscard]] Bitboard Board::discoveredAttacks(const int sq) const noexcept
 {
-    uint64_t enemy    = colorPiecesBB[~C];
-    uint64_t occupiedBB = occupancy_all();
+    Bitboard enemy      = colorPiecesBB[~C];
+    Bitboard occupiedBB = occupancy_all();
 
-    uint64_t rAttacks = Attacks::rook_moves(sq, occupiedBB);
-    uint64_t bAttacks = Attacks::bishop_moves(sq, occupiedBB);
+    Bitboard rAttacks = Attacks::rook_moves(sq, occupiedBB);
+    Bitboard bAttacks = Attacks::bishop_moves(sq, occupiedBB);
 
-    uint64_t rooks   = (enemy & typePiecesBB[ROOK]) & ~rAttacks;
-    uint64_t bishops = (enemy & typePiecesBB[BISHOP]) & ~bAttacks;
+    Bitboard rooks   = (enemy & typePiecesBB[ROOK]) & ~rAttacks;
+    Bitboard bishops = (enemy & typePiecesBB[BISHOP]) & ~bAttacks;
 
     return (  rooks &   Attacks::rook_moves(sq, occupiedBB & ~rAttacks))
            | (bishops & Attacks::bishop_moves(sq, occupiedBB & ~bAttacks));
@@ -113,5 +117,5 @@ template Bitboard Board::attackers<BLACK>(const int sq) const noexcept;
 template Bitboard Board::attackers_no_king<WHITE>(const int sq) const noexcept;
 template Bitboard Board::attackers_no_king<BLACK>(const int sq) const noexcept;
 
-template uint64_t Board::discoveredAttacks<WHITE>(int sq);
-template uint64_t Board::discoveredAttacks<BLACK>(int sq);
+template Bitboard Board::discoveredAttacks<WHITE>(const int sq) const noexcept;
+template Bitboard Board::discoveredAttacks<BLACK>(const int sq) const noexcept;

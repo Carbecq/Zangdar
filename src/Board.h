@@ -127,6 +127,8 @@ public:
         return(Attacks::queen_moves(sq, occ));
     }
 
+    template <Color C>
+    [[nodiscard]] Bitboard discoveredAttacks(const int sq) const noexcept;
 
     //        switch (pt)
     //        {
@@ -145,8 +147,8 @@ public:
     //        }
     //    }
 
-    //  Détermine si case 'sq' est sur une colonne semi-ouverte
-    //  du point de vue 'C'
+    //! \brief  Détermine si case 'sq' est sur une colonne semi-ouverte
+    //!  du point de vue 'C'
     template <Color C>
     [[nodiscard]] constexpr bool is_on_semiopen_file(int sq) const {
         return !(occupancy_cp<C, PAWN>() & FileMask64[sq]);
@@ -493,9 +495,6 @@ public:
     bool probe_wdl(int &score, int &bound, int ply) const;
     MOVE convertPyrrhicMove(unsigned result) const;
     bool probe_root(MOVE& move) const;
-
-    //------------------------------------------------------------attackers
-    template <Color C> Bitboard discoveredAttacks(int sq);
 
     //*************************************************************************
     //*************************************************************************
