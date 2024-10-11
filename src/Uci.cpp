@@ -14,8 +14,8 @@
 #include "Move.h"
 #include "bench.h"
 
-Board   uci_board;
-Timer   uci_timer;
+Board       uci_board;
+Timer       uci_timer;
 
 extern void test_perft(const std::string& abc, const std::string& m_fen, int dmax);
 extern void test_divide(const std::string& abc, int dmax);
@@ -23,7 +23,6 @@ extern void test_suite(const std::string& abc, int dmax);
 extern void test_eval(const std::string& abc);
 extern void test_mirror();
 extern void test_see();
-
 
 //======================================
 //! \brief  Boucle principale UCI
@@ -36,29 +35,12 @@ void Uci::run()
     printlog(message);
 #endif
 
-    // print engine info
-    std::cout << "id name Zangdar " << Version << std::endl;
-    std::cout << "id author Philippe Chevalier" << std::endl;
+    // Note de Stockfish
 
-    /*
-     * This command tells the GUI which parameters can be changed in the engine.
-     *
-     * Quand dans Arena, on fait "Configure", on fait apparaitre une interface
-     * contenant les options données ici.
-     * Lorsque l'utilisateur va agir sur une de ces options,
-     * Arena va envoyer la commande "setoption.." au programme.
-     *
-     */
-    
-    std::cout << "option name Hash type spin default " << HASH_SIZE <<" min " << MIN_HASH_SIZE << " max " << MAX_HASH_SIZE << std::endl;
-    std::cout << "option name Clear Hash type button" << std::endl;
-    std::cout << "option name Threads type spin default 1 min 1 max " << MAX_THREADS << std::endl;
-    std::cout << "option name OwnBook type check default false" << std::endl;
-    std::cout << "option name BookPath type string default " << "./" << std::endl;
-    std::cout << "option name SyzygyPath type string default " << "<empty>" << std::endl;
-    std::cout << "option name MoveOverhead type spin default " << MOVE_OVERHEAD << " min 0 max 10000" << std::endl;
+    /// UCI::loop() waits for a command from the stdin, parses it and then calls the appropriate
+    /// function. It also intercepts an end-of-file (EOF) indication from the stdin to ensure a
+    /// graceful exit if the GUI dies unexpectedly.
 
-    std::cout << "uciok" << std::endl;
 
     // main loop
     std::string token;
@@ -67,40 +49,18 @@ void Uci::run()
     int         dmax = 4;
     int         tmax = 0;
 
-    while (getline(std::cin, line))
+    do
     {
+        if (!std::getline(std::cin, line))   // Wait for an input or an end-of-file (EOF) indication
+            line = "quit";
+
         std::istringstream iss(line);
-        token.clear();
+        token.clear();                      // Avoid a stale if getline() returns nothing or a blank line
         iss >> std::skipws >> token;
 
         //-------------------------------------------- gui -> engine
 
-        if (token == "stop")
-        {
-            // stop calculating as soon as possible
-            stop();
-        }
-
-        else if (token == "quit")
-        {
-            // quit the program as soon as possible
-            quit();
-            break;
-        }
-
-        else if (token == "uci")
-        {
-            /* "uciok" has to appear quickly after the GUI sent "uci",
-             * and lengthy init stuff is not allowed.
-             */
-
-            // print engine info
-            std::cout << "id name Zangdar " << Version << std::endl;
-            std::cout << "id author Philippe Chevalier" << std::endl;
-            std::cout << "uciok" << std::endl;
-        }
-
-        else if (token == "isready")
+        if (token == "isready")
         {
             /* "isready" is meant as ping/pong replacement AND feature done with init,
              * and the UCI spec explicitely mentions tablebase initialistion as example
@@ -114,6 +74,33 @@ void Uci::run()
             std::cout << "readyok" << std::endl;
         }
 
+        else if (token == "uci")
+        {
+            // "uciok" has to appear quickly after the GUI sent "uci",
+            // and lengthy init stuff is not allowed.
+
+            // print engine info
+            std::cout << "id name Zangdar " << Version  << std::endl;
+            std::cout << "id author Philippe Chevalier" << std::endl;
+
+            // This command tells the GUI which parameters can be changed in the engine.
+
+            // Quand dans Arena, on fait "Configure", on fait apparaitre une interface
+            // contenant les options données ici.
+            // Lorsque l'utilisateur va agir sur une de ces options,
+            // Arena va envoyer la commande "setoption.." au programme.
+
+            std::cout << "option name Hash type spin default " << HASH_SIZE <<" min " << MIN_HASH_SIZE << " max " << MAX_HASH_SIZE << std::endl;
+            std::cout << "option name Clear Hash type button" << std::endl;
+            std::cout << "option name Threads type spin default 1 min 1 max " << MAX_THREADS << std::endl;
+            std::cout << "option name OwnBook type check default false" << std::endl;
+            std::cout << "option name BookPath type string default " << "./" << std::endl;
+            std::cout << "option name SyzygyPath type string default " << "<empty>" << std::endl;
+            std::cout << "option name MoveOverhead type spin default " << MOVE_OVERHEAD << " min 0 max 10000" << std::endl;;
+
+            std::cout << "uciok" << std::endl;
+        }
+
         else if (token == "position")
         {
             // set up the position described in fenstring
@@ -124,7 +111,6 @@ void Uci::run()
         {
             // the next search (started with "position" and "go") will be from
             // a different game.
-            uci_board.set_fen(START_FEN, false);
             transpositionTable.clear();
             threadPool.reset();
         }
@@ -137,6 +123,19 @@ void Uci::run()
         else if (token == "setoption")
         {
             parse_options(iss);
+        }
+
+        else if (token == "stop")
+        {
+            // stop calculating as soon as possible
+            stop();
+        }
+
+        else if (token == "quit")
+        {
+            // quit the program as soon as possible
+            quit();
+            break;
         }
 
         //------------------------------------------------------- commandes non uci
@@ -268,8 +267,10 @@ void Uci::run()
             printf("compilateur Clang \n");
 #endif
         }
-    }
+    } while (token != "quit");
+
 }
+
 
 //==============================================================
 //! \brief uci command: stop
@@ -279,8 +280,6 @@ void Uci::run()
 void Uci::stop()
 {
     threadPool.stop();
-
-    //   std::cout << "UCI::stop" << std::endl;
 }
 
 void Uci::quit()
@@ -887,7 +886,7 @@ void Uci::bench(int argCount, char* argValue[])
     U64     total_nodes = 0;
     U64     total_time  = 0;
 
-   ownBook.set_useBook(false);
+    ownBook.set_useBook(false);
 
     int depth       = argCount > 2 ? atoi(argValue[2]) : 16;
     depth           = std::min(depth, MAX_PLY);

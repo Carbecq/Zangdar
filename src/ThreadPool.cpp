@@ -149,7 +149,7 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
 }
 
 //=================================================
-//! \brief  Arrêt de la recherche
+//! \brief  Arrêt de la recherche.
 //! L'arrêt a été commandé par la thread 0
 //! lorsqu'elle a fini sa recherche.
 //-------------------------------------------------
@@ -162,8 +162,8 @@ void ThreadPool::main_thread_stopped()
 }
 
 //=================================================
-//! \brief  On impose l'arrêt de la recherche
-//! que ce soit une commande uci-stop, ou autre.
+//! \brief  Blocage du programme en attendant
+//! les threads.
 //-------------------------------------------------
 void ThreadPool::wait(int start)
 {
@@ -175,13 +175,15 @@ void ThreadPool::wait(int start)
 }
 
 //=================================================
-//! \brief  On impose l'arrêt de la recherche
-//! que ce soit une commande uci-stop, ou autre.
+//! \brief  On impose l'arrêt de la recherche.
+//! Commande uci-stop.
 //-------------------------------------------------
 void ThreadPool::stop()
 {
+    // Message d'arrêt à la thread principale
     threadData[0].stopped = true;
 
+    // On bloque ici en attendant la thread principale
     if (threadData[0].thread.joinable())
         threadData[0].thread.join();
 }
