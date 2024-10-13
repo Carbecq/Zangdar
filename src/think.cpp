@@ -273,7 +273,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
 
     // Probe the Syzygy     Tablebases
     int tbScore, tbBound;
-    if (threadPool.get_useSyzygy() && board.probe_wdl(tbScore, tbBound, si->ply) == true)
+    if (!excluded && threadPool.get_useSyzygy() && board.probe_wdl(tbScore, tbBound, si->ply) == true)
     {
         td->tbhits++;
 
@@ -282,7 +282,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
             || (tbBound == BOUND_LOWER && tbScore >= beta)
             || (tbBound == BOUND_UPPER && tbScore <= alpha))
         {
-            transpositionTable.store(board.hash, Move::MOVE_NONE, tbScore, NOSCORE, tbBound, depth, MAX_PLY);
+            transpositionTable.store(board.hash, Move::MOVE_NONE, tbScore, NOSCORE, tbBound, MAX_PLY, si->ply);
             return tbScore;
         }
 
