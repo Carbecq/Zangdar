@@ -182,7 +182,8 @@ QMAKE_CXXFLAGS_DEBUG += -DUSE_PEXT
 DISTFILES += \
     Makefile \
     VERSION.txt \
-    src/pyrrhic/LICENSE
+    src/pyrrhic/LICENSE \
+    src/pyrrhic/README.md
 
 
 HEADERS += \
@@ -205,6 +206,7 @@ HEADERS += \
     src/bitmask.h \
     src/defines.h \
     src/evaluate.h \
+    src/pyrrhic/api.h \
     src/pyrrhic/stdendian.h \
     src/pyrrhic/tbconfig.h \
     src/pyrrhic/tbprobe.h \

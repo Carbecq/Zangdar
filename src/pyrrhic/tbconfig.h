@@ -1,7 +1,7 @@
 /*
  * (c) 2015 basil, all rights reserved,
  * Modifications Copyright (c) 2016-2019 by Jon Dart
- * Modifications Copyright (c) 2020-2020 by Andrew Grant
+ * Modifications Copyright (c) 2020-2024 by Andrew Grant
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,18 +38,14 @@
  * to define White as 0 and Black as 1.
  */
 
-// https://github.com/AndyGrant/Pyrrhic/
 #include "../Bitboard.h"
 #include "../Attacks.h"
 
-// Population count/Hamming weight
-#define PYRRHIC_POPCOUNT(x)             (BB::count_bit(x))
 
-// Returns the index of the least significant bit
-#define PYRRHIC_LSB(x)                  (BB::get_lsb(x))
 
-// Returns the index of the least significant bit and unsets it
-#define PYRRHIC_POPLSB(x)               (BB::PYRRHIC_pop_lsb(x))
+#define PYRRHIC_POPCOUNT(x)               (BB::count_bit(x))
+#define PYRRHIC_LSB(x)                    (BB::get_lsb(x))
+#define PYRRHIC_POPLSB(x)                 (BB::PYRRHIC_pop_lsb(x))
 
 #define PYRRHIC_PAWN_ATTACKS(sq, c)     (Attacks::pawn_attacks(!c, sq))
 #define PYRRHIC_KNIGHT_ATTACKS(sq)      (Attacks::knight_moves(sq))
@@ -58,17 +54,3 @@
 #define PYRRHIC_QUEEN_ATTACKS(sq, occ)  (Attacks::queen_moves(sq, occ))
 #define PYRRHIC_KING_ATTACKS(sq)        (Attacks::king_moves(sq))
 
-
-
-/*
- * Pyrrhic can produce scores for tablebase moves. These depend on the value
- * of a pawn, and the magnitude of mate scores, and will be engine specific.
- *
- * In Ethereal, I personally do not make use of these scores. They are to rank
- * moves. Without these values you are still able to detmine which moves Win,
- * Draw, and Lose. PYRRHIC_MAX_MATE_PLY should be your max search height.
- */
-#define PYRRHIC_VALUE_PAWN     (  100)
-#define PYRRHIC_VALUE_MATE     (32000)
-#define PYRRHIC_VALUE_DRAW     (    0)
-#define PYRRHIC_MAX_MATE_PLY   (MAX_PLY)
