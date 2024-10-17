@@ -1221,6 +1221,10 @@ finished:
     TB_NUM_DTZ = numDtz;
     TB_NUM_DTM = numDtm;
 
+    printf("info string Found %d WDL, %d DTM and %d DTZ tablebase files. Largest %d-men\n",
+           numWdl, numDtm, numDtz, TB_LARGEST);
+    fflush(stdout);
+
     return true;
 }
 
