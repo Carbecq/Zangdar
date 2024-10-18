@@ -35,13 +35,41 @@ struct EvalInfo {
 
     Bitboard outposts[N_COLORS];
     Bitboard mobilityArea[N_COLORS];
-    Bitboard KingZone[N_COLORS];
 
-    int attackPower[N_COLORS] = {0, 0};
-    int attackCount[N_COLORS] = {0, 0};
+    // kingRing[color] are the squares adjacent to the king plus some other
+    // very near squares, depending on king position.
+    Bitboard KingRing[N_COLORS];
 
-    Bitboard attacks[N_COLORS][N_PIECES];
-    Bitboard allAttacks[N_COLORS];
+    // kingAttackersCount[color] is the number of pieces of the given color
+    // which attack a square in the kingRing of the enemy king.
+    // int kingAttackersCount[N_COLORS];
+
+    // kingAttackersWeight[color] is the sum of the "weights" of the pieces of
+    // the given color which attack a square in the kingRing of the enemy king.
+    // The weights of the individual piece types are given by the elements in
+    // the KingAttackWeights array.
+    Score kingAttackersWeight[N_COLORS];
+
+    // kingAttacksCount[color] is the number of attacks by the given color to
+    // squares directly adjacent to the enemy king. Pieces which attack more
+    // than one square are counted multiple times. For instance, if there is
+    // a white knight on g5 and black's king is on g8, this white knight adds 2
+    // to kingAttacksCount[WHITE].
+    int kingAttacksCount[N_COLORS];
+
+
+    // attackedBy[color][piece type] is a bitboard representing all squares
+    // attacked by a given color and piece type.
+    Bitboard attackedBy[N_COLORS][N_PIECES];
+
+    // attacked[color] is a bitboard representing all squares
+    // attacked by a given color for all pieces type.
+    Bitboard attacked[N_COLORS];
+
+
+    // attackedBy2[color] are the squares attacked by at least 2 units of a given
+    // color, including x-rays. But diagonal x-rays through pawns are not computed.
+    Bitboard attackedBy2[N_COLORS];
 
     int phase24;
 
@@ -196,11 +224,11 @@ constexpr Score QueenRelativePin = S( -34,   17);
 
 //----------------------------------------------------------
 // Roi
-constexpr Score KingLineDanger[28] = { S(   0,    0), S(   0,    0), S(  30,  -29), S(  14,   19), S(  -8,   35), S( -15,   31), S( -19,   30), S( -28,   39),
-    S( -40,   42), S( -56,   42), S( -59,   42), S( -75,   47), S( -79,   47), S( -94,   47), S(-107,   50), S(-110,   47),
-    S(-119,   45), S(-132,   42), S(-138,   38), S(-146,   32), S(-158,   31), S(-185,   29), S(-182,   26), S(-203,   10),
-    S(-171,  -11), S(-143,  -26), S(-130,  -32), S(-135,  -34)
-};
+// constexpr Score KingLineDanger[28] = { S(   0,    0), S(   0,    0), S(  30,  -29), S(  14,   19), S(  -8,   35), S( -15,   31), S( -19,   30), S( -28,   39),
+//     S( -40,   42), S( -56,   42), S( -59,   42), S( -75,   47), S( -79,   47), S( -94,   47), S(-107,   50), S(-110,   47),
+//     S(-119,   45), S(-132,   42), S(-138,   38), S(-146,   32), S(-158,   31), S(-185,   29), S(-182,   26), S(-203,   10),
+//     S(-171,  -11), S(-143,  -26), S(-130,  -32), S(-135,  -34)
+// };
 constexpr Score KingAttackPawn = S(  -9,   38);
 constexpr Score PawnShelter = S(  31,  -11);
 
@@ -212,6 +240,16 @@ constexpr Score ThreatByMinor[N_PIECES] = { S(   0,    0), S(   0,    0), S(  27
 };
 constexpr Score ThreatByRook[N_PIECES] = { S(   0,    0), S(   0,    0), S(  25,   45), S(  32,   55), S( -14,   46), S(  99,  -65), S(   0,    0)
 };
+
+//----------------------------------------------------------
+// Sécurité du Roi
+// SafeCheck[PieceType] contains safe check bonus by piece type
+constexpr Score SafeCheck[N_PIECES] = { S(0, 0), S(0, 0), S(  82,   -2), S(  24,   11), S(  60,    6), S(  24,   21), S(0, 0) };
+constexpr Score UnsafeCheck[N_PIECES] = { S(0, 0), S(0, 0), S(   6,    2), S(  12,   12), S(  21,    0), S(   6,   14), S(0,0) };
+
+// KingAttackWeights[PieceType] contains king attack weights by piece type
+constexpr Score KingAttackWeights[N_PIECES] = {S(   0,    0), S(   0,    0), S(  20,    2), S(  16,    3), S(  18,  -13), S(5,    0), S(   0,    0)};
+constexpr Score KingAttacks[14] = {S( -46,   28), S( -53,   22), S( -61,   16), S( -65,   19), S( -64,   15), S( -57,   10), S( -41,    5), S( -21,   -5), S(  17,  -23), S(  39,  -21), S(  71,  -34), S(  82,   -8), S( 119,  -93), S(  80,   58)};
 
 //----------------------------------------------------------
 // Mobilité
@@ -241,11 +279,6 @@ constexpr Score QueenMobility[28] = { S( -65,  -48), S(-101,  -56), S( -80, -105
 
 //============================================================== FIN TUNER
 
-//------------------------------------------------------------
-//  Sécurité du Roi
-constexpr Score AttackPower[7]   = { 0, 0, 36, 22, 23, 78, 0 };
-constexpr Score CheckPower[7]    = { 0, 0, 68, 44, 88, 92, 0 };
-constexpr Score CountModifier[8] = { 0, 0, 63, 126, 96, 124, 124, 128 };
 
 //------------------------------------------------------------
 //  Bonus car on a le trait

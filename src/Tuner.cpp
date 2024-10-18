@@ -421,7 +421,7 @@ void Tuner::InitBaseParams(double tparams[NTERMS][N_PHASES])
     InitBaseSingle(tparams, QueenRelativePin,      index);
 
     // Roi
-    InitBaseArray( tparams, KingLineDanger, 28,     index);
+    // InitBaseArray( tparams, KingLineDanger, 28,     index);
     InitBaseSingle(tparams, KingAttackPawn,         index);
     InitBaseSingle(tparams, PawnShelter,            index);
 
