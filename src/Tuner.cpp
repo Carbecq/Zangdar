@@ -344,7 +344,6 @@ void Tuner::InitCoefficients(double coeffs[NTERMS])
     InitCoeffSingle(coeffs, Trace.QueenRelativePin,        index);
 
     // Roi
-    InitCoeffArray( coeffs, Trace.KingLineDanger,   28,     index);
     InitCoeffSingle(coeffs, Trace.KingAttackPawn,           index);
     InitCoeffSingle(coeffs, Trace.PawnShelter,              index);
 
@@ -353,6 +352,12 @@ void Tuner::InitCoefficients(double coeffs[NTERMS])
     InitCoeffSingle(coeffs, Trace.PushThreat,                   index);
     InitCoeffArray( coeffs, Trace.ThreatByMinor,    N_PIECES,   index);
     InitCoeffArray( coeffs, Trace.ThreatByRook,     N_PIECES,   index);
+
+    // Attaques sur le roi ennemi
+    InitCoeffArray( coeffs, Trace.SafeCheck,            N_PIECES,   index);
+    InitCoeffArray( coeffs, Trace.UnsafeCheck,          N_PIECES,   index);
+    InitCoeffArray( coeffs, Trace.KingAttackWeights,    N_PIECES,   index);
+    InitCoeffArray( coeffs, Trace.KingAttacks,          14,         index);
 
     // Mobilité
     InitCoeffArray(coeffs, Trace.KnightMobility,     9, index);
@@ -421,7 +426,6 @@ void Tuner::InitBaseParams(double tparams[NTERMS][N_PHASES])
     InitBaseSingle(tparams, QueenRelativePin,      index);
 
     // Roi
-    // InitBaseArray( tparams, KingLineDanger, 28,     index);
     InitBaseSingle(tparams, KingAttackPawn,         index);
     InitBaseSingle(tparams, PawnShelter,            index);
 
@@ -430,6 +434,12 @@ void Tuner::InitBaseParams(double tparams[NTERMS][N_PHASES])
     InitBaseSingle(tparams, PushThreat,              index);
     InitBaseArray( tparams, ThreatByMinor,  N_PIECES,      index);
     InitBaseArray( tparams, ThreatByRook,   N_PIECES,      index);
+
+    // Attaques sur le roi ennemi
+    InitBaseArray( tparams, SafeCheck,          N_PIECES,      index);
+    InitBaseArray( tparams, UnsafeCheck,        N_PIECES,      index);
+    InitBaseArray( tparams, KingAttackWeights,  N_PIECES,      index);
+    InitBaseArray( tparams, KingAttacks,        14,            index);
 
     // Mobilité
     InitBaseArray( tparams, KnightMobility,  9,      index);
@@ -615,7 +625,6 @@ void Tuner::PrintParameters(double params[NTERMS][N_PHASES], double current[NTER
 
     puts("\n//----------------------------------------------------------");
     puts("// Roi");
-    PrintArray( "KingLineDanger",   tparams, index,     28, "[28]", len);
     PrintSingle("KingAttackPawn",   tparams, index);
     PrintSingle("PawnShelter",      tparams, index);
 
@@ -625,6 +634,13 @@ void Tuner::PrintParameters(double params[NTERMS][N_PHASES], double current[NTER
     PrintSingle("PushThreat",       tparams, index);
     PrintArray( "ThreatByMinor",    tparams, index,     N_PIECES,     "[N_PIECES]", len);
     PrintArray( "ThreatByRook",     tparams, index,     N_PIECES,     "[N_PIECES]", len);
+
+    puts("\n//----------------------------------------------------------");
+    puts("// Attaques sur le roi ennemi");
+    PrintArray( "SafeCheck",            tparams, index,     N_PIECES,     "[N_PIECES]", len);
+    PrintArray( "UnsafeCheck",          tparams, index,     N_PIECES,     "[N_PIECES]", len);
+    PrintArray( "KingAttackWeights",    tparams, index,     N_PIECES,     "[N_PIECES]", len);
+    PrintArray( "KingAttacks",          tparams, index,     14,           "[14]",       len);
 
     PrintMobility(tparams, index);
     puts("");

@@ -417,7 +417,7 @@ public:
     template <Color C> Score evaluate_king(EvalInfo& ei);
     template <Color C> Score evaluate_threats(const EvalInfo& ei);
     template <Color C> Score evaluate_passed(EvalInfo& ei);
-    template <Color C> Score evaluate_safety(const EvalInfo& ei) const;
+    template <Color C> Score evaluate_king_attacks(const EvalInfo& ei) const;
 
     int   scale_factor(const Score eval);
     void  init_eval_info(EvalInfo& ei);

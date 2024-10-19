@@ -55,7 +55,10 @@ https://www.chessprogramming.org/Evaluation
     //--------------------------------
     eval += evaluate_threats<WHITE>(ei) - evaluate_threats<BLACK>(ei);
 
-    eval += evaluate_safety<WHITE>(ei) - evaluate_safety<BLACK>(ei);
+    //--------------------------------
+    // Evaluation des attaques sur le roi ennemi
+    //--------------------------------
+    eval += evaluate_king_attacks<WHITE>(ei) - evaluate_king_attacks<BLACK>(ei);
 
 #if defined USE_TUNER
     ownTuner.Trace.eval = eval;
@@ -525,13 +528,14 @@ Score Board::evaluate_knights(EvalInfo& ei)
 #endif
         }
 
-
-
-        //  attaques pour calculer la sécurité du roi ennemi
+        //  Attaques sur le roi ennemi
         if (Bitboard kingRingAtks = ei.KingRing[THEM] & attackBB; kingRingAtks!=0)
         {
             // ei.kingAttackersCount[US]++;
             ei.kingAttackersWeight[US] += KingAttackWeights[KNIGHT];
+#if defined USE_TUNER
+            ownTuner.Trace.KingAttackWeights[KNIGHT][US]++;
+#endif
             ei.kingAttacksCount[US]    += BB::count_bit(kingRingAtks);
         }
 
@@ -651,12 +655,14 @@ Score Board::evaluate_bishops(EvalInfo& ei)
 #endif
         }
 
-
-        //  attaques pour calculer la sécurité du roi
+        //  Attaques sur le roi ennemi
         if (Bitboard kingRingAtks = ei.KingRing[THEM] & attackBB; kingRingAtks!=0)
         {
             // ei.kingAttackersCount[US]++;
             ei.kingAttackersWeight[US] += KingAttackWeights[BISHOP];
+#if defined USE_TUNER
+            ownTuner.Trace.KingAttackWeights[BISHOP][US]++;
+#endif
             ei.kingAttacksCount[US]    += BB::count_bit(kingRingAtks);
         }
 
@@ -749,11 +755,14 @@ Score Board::evaluate_rooks(EvalInfo& ei)
         //  + tour coincée (stockfish)
 
 
-        //  attaques pour calculer la sécurité du roi
+        //  Attaques sur le roi ennemi
         if (Bitboard kingRingAtks = ei.KingRing[THEM] & attackBB; kingRingAtks!=0)
         {
             // ei.kingAttackersCount[US]++;
             ei.kingAttackersWeight[US] += KingAttackWeights[ROOK];
+#if defined USE_TUNER
+            ownTuner.Trace.KingAttackWeights[ROOK][US]++;
+#endif
             ei.kingAttacksCount[US]    += BB::count_bit(kingRingAtks);
         }
 
@@ -816,12 +825,14 @@ Score Board::evaluate_queens(EvalInfo& ei)
         }
 
 
-
-        //  attaques pour calculer la sécurité du roi
+        //  Attaques sur le roi ennemi
         if (Bitboard kingRingAtks = ei.KingRing[THEM] & attackBB; kingRingAtks!=0)
         {
             // ei.kingAttackersCount[US]++;
             ei.kingAttackersWeight[US] += KingAttackWeights[QUEEN];
+#if defined USE_TUNER
+            ownTuner.Trace.KingAttackWeights[QUEEN][US]++;
+#endif
             ei.kingAttacksCount[US]    += BB::count_bit(kingRingAtks);
         }
 
@@ -966,10 +977,10 @@ Score Board::evaluate_threats(const EvalInfo& ei)
 }
 
 //=================================================================
-//! \brief  Evaluation
+//! \brief  Evaluation des attaques sur le roi ennemi.
 //-----------------------------------------------------------------
 template<Color US>
-Score Board::evaluate_safety(const EvalInfo& ei) const
+Score Board::evaluate_king_attacks(const EvalInfo& ei) const
 {
     // Code provenant de Sirius 8;  voir aussi Stockfish
 
@@ -990,13 +1001,27 @@ Score Board::evaluate_safety(const EvalInfo& ei) const
 
     eval += SafeCheck[KNIGHT] * BB::count_bit(knightChecks & safe);
     eval += SafeCheck[BISHOP] * BB::count_bit(bishopChecks & safe);
-    eval += SafeCheck[ROOK]   * BB::count_bit(rookChecks & safe);
-    eval += SafeCheck[QUEEN]  * BB::count_bit(queenChecks & safe);
+    eval += SafeCheck[ROOK]   * BB::count_bit(rookChecks   & safe);
+    eval += SafeCheck[QUEEN]  * BB::count_bit(queenChecks  & safe);
+
+#if defined USE_TUNER
+    ownTuner.Trace.SafeCheck[KNIGHT][US]    += BB::count_bit(knightChecks & safe);
+    ownTuner.Trace.SafeCheck[BISHOP][US]    += BB::count_bit(bishopChecks & safe);
+    ownTuner.Trace.SafeCheck[ROOK][US]      += BB::count_bit(rookChecks   & safe);
+    ownTuner.Trace.SafeCheck[QUEEN][US]     += BB::count_bit(queenChecks  & safe);
+#endif
 
     eval += UnsafeCheck[KNIGHT] * BB::count_bit(knightChecks & ~safe);
     eval += UnsafeCheck[BISHOP] * BB::count_bit(bishopChecks & ~safe);
-    eval += UnsafeCheck[ROOK]   * BB::count_bit(rookChecks & ~safe);
-    eval += UnsafeCheck[QUEEN]  * BB::count_bit(queenChecks & ~safe);
+    eval += UnsafeCheck[ROOK]   * BB::count_bit(rookChecks   & ~safe);
+    eval += UnsafeCheck[QUEEN]  * BB::count_bit(queenChecks  & ~safe);
+
+#if defined USE_TUNER
+    ownTuner.Trace.UnsafeCheck[KNIGHT][US]  += BB::count_bit(knightChecks & ~safe);
+    ownTuner.Trace.UnsafeCheck[BISHOP][US]  += BB::count_bit(bishopChecks & ~safe);
+    ownTuner.Trace.UnsafeCheck[ROOK][US]    += BB::count_bit(rookChecks   & ~safe);
+    ownTuner.Trace.UnsafeCheck[QUEEN][US]   += BB::count_bit(queenChecks  & ~safe);
+#endif
 
     // Score des attaques sur le Roi
     eval += ei.kingAttackersWeight[US];
@@ -1004,6 +1029,10 @@ Score Board::evaluate_safety(const EvalInfo& ei) const
     // Nombre d'attaques sur le Roi
     int attackCount = std::min(ei.kingAttacksCount[US], 13);
     eval += KingAttacks[attackCount];
+
+#if defined USE_TUNER
+    ownTuner.Trace.KingAttacks[attackCount][US]++;
+#endif
 
     return eval;
 }

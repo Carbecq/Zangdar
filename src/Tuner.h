@@ -69,7 +69,6 @@ struct EvalTrace {
 
     Score QueenRelativePin[N_COLORS];
 
-    Score KingLineDanger[28][N_COLORS];
     Score KingAttackPawn[N_COLORS];
     Score PawnShelter[N_COLORS];
 
@@ -77,6 +76,11 @@ struct EvalTrace {
     Score PushThreat[N_COLORS];
     Score ThreatByMinor[N_PIECES][N_COLORS];
     Score ThreatByRook[N_PIECES][N_COLORS];
+
+    Score SafeCheck[N_PIECES][N_COLORS];
+    Score UnsafeCheck[N_PIECES][N_COLORS];
+    Score KingAttackWeights[N_PIECES][N_COLORS];
+    Score KingAttacks[14][N_COLORS];
 
     Score KnightMobility[9][N_COLORS];
     Score BishopMobility[14][N_COLORS];
@@ -127,8 +131,8 @@ private:
     constexpr static double NPOSITIONS_d  = NPOSITIONS; // Total FENS in the book
 
 constexpr static int    N_PHASES    = 2;
-constexpr static int    NTERMS      = 570;     // Number of terms being tuned
-constexpr static double NTERMS_d    = 570;     // Number of terms being tuned
+constexpr static int    NTERMS      = 577;     // Number of terms being tuned
+constexpr static double NTERMS_d    = 577;     // Number of terms being tuned
 
 constexpr static int    MAXEPOCHS   =   20000; // Max number of epochs allowed
 constexpr static int    REPORTING   =     1000; // How often to print the new parameters
