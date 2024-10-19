@@ -536,6 +536,11 @@ Score Board::evaluate_knights(EvalInfo& ei)
 #if defined USE_TUNER
             ownTuner.Trace.KingAttackWeights[KNIGHT][US]++;
 #endif
+#if defined DEBUG_EVAL
+            printf("le cavalier %s en %s attaque le roi ennemi %d fois \n", camp[1][US].c_str(), square_name[sq].c_str(), BB::count_bit(kingRingAtks));
+            BB::PrintBB(kingRingAtks, "kingRingAtks");
+            BB::PrintBB(attackBB, "attackBB");
+#endif
             ei.kingAttacksCount[US]    += BB::count_bit(kingRingAtks);
         }
 
@@ -663,6 +668,11 @@ Score Board::evaluate_bishops(EvalInfo& ei)
 #if defined USE_TUNER
             ownTuner.Trace.KingAttackWeights[BISHOP][US]++;
 #endif
+#if defined DEBUG_EVAL
+            printf("le fou %s en %s attaque le roi ennemi %d fois \n", camp[1][US].c_str(), square_name[sq].c_str(), BB::count_bit(kingRingAtks));
+            BB::PrintBB(kingRingAtks, "kingRingAtks");
+            BB::PrintBB(attackBB, "attackBB");
+#endif
             ei.kingAttacksCount[US]    += BB::count_bit(kingRingAtks);
         }
 
@@ -763,6 +773,10 @@ Score Board::evaluate_rooks(EvalInfo& ei)
 #if defined USE_TUNER
             ownTuner.Trace.KingAttackWeights[ROOK][US]++;
 #endif
+#if defined DEBUG_EVAL
+            printf("la tour %s en %s attaque le roi ennemi %d fois \n", camp[1][US].c_str(), square_name[sq].c_str(), BB::count_bit(kingRingAtks));
+            BB::PrintBB(kingRingAtks, "kingRingAtks");
+#endif
             ei.kingAttacksCount[US]    += BB::count_bit(kingRingAtks);
         }
 
@@ -776,7 +790,7 @@ Score Board::evaluate_rooks(EvalInfo& ei)
 }
 
 //=================================================================
-//! \brief  Evaluation des reines d'une couleur
+//! \brief  Evaluation des Dames d'une couleur
 //-----------------------------------------------------------------
 template<Color US>
 Score Board::evaluate_queens(EvalInfo& ei)
@@ -811,13 +825,13 @@ Score Board::evaluate_queens(EvalInfo& ei)
         ownTuner.Trace.QueenMobility[count][US]++;
 #endif
 
-        //  La Reine peut être victime d'une attaque à la découverte
+        //  La Dame peut être victime d'une attaque à la découverte
         if (discoveredAttacks<US>(sq))
         {
             eval += QueenRelativePin;
 
 #if defined DEBUG_EVAL
-            printf("la reine %s en %s pourrait subir une attaque à la découverte \n", camp[0][US].c_str(), square_name[sq].c_str());
+            printf("la dame %s en %s pourrait subir une attaque à la découverte \n", camp[0][US].c_str(), square_name[sq].c_str());
 #endif
 #if defined USE_TUNER
             ownTuner.Trace.QueenRelativePin[US]++;
@@ -832,6 +846,10 @@ Score Board::evaluate_queens(EvalInfo& ei)
             ei.kingAttackersWeight[US] += KingAttackWeights[QUEEN];
 #if defined USE_TUNER
             ownTuner.Trace.KingAttackWeights[QUEEN][US]++;
+#endif
+#if defined DEBUG_EVAL
+            printf("la dame %s en %s attaque le roi ennemi %d fois \n", camp[1][US].c_str(), square_name[sq].c_str(), BB::count_bit(kingRingAtks));
+            BB::PrintBB(kingRingAtks, "kingRingAtks");
 #endif
             ei.kingAttacksCount[US]    += BB::count_bit(kingRingAtks);
         }
@@ -997,6 +1015,7 @@ Score Board::evaluate_king_attacks(const EvalInfo& ei) const
     Bitboard rookChecks   = ei.attackedBy[US][ROOK] & rookCheckSquares;
     Bitboard queenChecks  = ei.attackedBy[US][QUEEN] & (bishopCheckSquares | rookCheckSquares);
 
+    // Cases non attaquées par l'ennemi; on ne tient pas compte des attaques du roi ennemi
     Bitboard safe = ~ei.attacked[THEM] | (~ei.attackedBy2[THEM] & ei.attackedBy[THEM][KING]);
 
     eval += SafeCheck[KNIGHT] * BB::count_bit(knightChecks & safe);
@@ -1023,13 +1042,16 @@ Score Board::evaluate_king_attacks(const EvalInfo& ei) const
     ownTuner.Trace.UnsafeCheck[QUEEN][US]   += BB::count_bit(queenChecks  & ~safe);
 #endif
 
-    // Score des attaques sur le Roi
+    // Score des attaques sur le Roi; c'est la somme des différentes pièces amies
     eval += ei.kingAttackersWeight[US];
 
     // Nombre d'attaques sur le Roi
     int attackCount = std::min(ei.kingAttacksCount[US], 13);
     eval += KingAttacks[attackCount];
 
+#if defined DEBUG_EVAL
+    printf("le roi ennemi %s en %s subit %d attaques\n", camp[1][THEM].c_str(), square_name[theirKing].c_str(), attackCount);
+#endif
 #if defined USE_TUNER
     ownTuner.Trace.KingAttacks[attackCount][US]++;
 #endif
@@ -1108,11 +1130,6 @@ void Board::init_eval_info(EvalInfo& ei)
     ei.mobilityArea[WHITE] = ~(b[WHITE] | BB::all_pawn_attacks<BLACK>(ei.pawns[BLACK]));
     ei.mobilityArea[BLACK] = ~(b[BLACK] | BB::all_pawn_attacks<WHITE>(ei.pawns[WHITE]));
 
-    // Sécurité du roi
-    // Bitboard des cases entourant le roi ami
-    // ei.KingZone[WHITE] = Attacks::king_moves(x_king[WHITE]);
-    // ei.KingZone[BLACK] = Attacks::king_moves(x_king[BLACK]);
-
     ei.kingAttackersWeight[WHITE] = 0;
     ei.kingAttackersWeight[BLACK] = 0;
     ei.kingAttacksCount[WHITE] = 0;
@@ -1134,12 +1151,15 @@ void Board::init_eval_info(EvalInfo& ei)
 
     ei.attacked[WHITE] = ei.attackedBy[WHITE][PAWN] = BB::all_pawn_attacks<WHITE>(ei.pawns[WHITE]);
 
+    // Le KingRing est constitué des cases autour du roi,
+    // ainsi que des 3 cases au Nord pour les Blancs,
+    //                       au Sud pour les Noirs
+
     Bitboard whiteKingAtks = Attacks::king_moves(king_square<WHITE>());
     ei.attackedBy[WHITE][KING] = whiteKingAtks;
     ei.attackedBy2[WHITE] = ei.attacked[WHITE] & whiteKingAtks;
     ei.attacked[WHITE] |= whiteKingAtks;
     ei.KingRing[WHITE] = (whiteKingAtks | BB::north(whiteKingAtks)) & ~BB::sq2BB(king_square<WHITE>());
-
 
     ei.attacked[BLACK] = ei.attackedBy[BLACK][PAWN] = BB::all_pawn_attacks<BLACK>(ei.pawns[BLACK]);
 
@@ -1148,22 +1168,6 @@ void Board::init_eval_info(EvalInfo& ei)
     ei.attackedBy2[BLACK] = ei.attacked[BLACK] & blackKingAtks;
     ei.attacked[BLACK] |= blackKingAtks;
     ei.KingRing[BLACK] = (blackKingAtks | BB::south(blackKingAtks)) & ~BB::sq2BB(king_square<BLACK>());
-
-
-
-    // Attaques du roi
-    // ei.attacksBy[WHITE][KING] = Attacks::king_moves(king_square<WHITE>());
-    // ei.attacksBy[BLACK][KING] = Attacks::king_moves(king_square<BLACK>());
-
-    // // Attaques des pions
-    // ei.attacksBy[WHITE][PAWN] = BB::all_pawn_attacks<WHITE>(ei.pawns[WHITE]);
-    // ei.attacksBy[BLACK][PAWN] = BB::all_pawn_attacks<BLACK>(ei.pawns[BLACK]);
-
-    // ei.attacks[WHITE] = ei.attacksBy[WHITE][KING] | ei.attacksBy[WHITE][PAWN];
-    // ei.attacks[BLACK] = ei.attacksBy[BLACK][KING] | ei.attacksBy[BLACK][PAWN];
-
-    // ei.attacksBy2[WHITE] = ei.attacks[WHITE];
-    // ei.attacksBy2[BLACK] = ei.attacks[BLACK];
 
     // Berserk / Stockfish modifiée
     ei.outposts[WHITE] =   (RANK_4_BB | RANK_5_BB | RANK_6_BB)              // rangées 4,5,6

@@ -413,7 +413,7 @@ void Board::test_value(const std::string& fen )
     U32 move;
 
     printf("side = %s : evaluation = %d \n", side_name[side_to_move].c_str(), evaluate());
-
+#if 0
     // generate successor moves
    legal_moves<WHITE>(ml);
    sort_moves(ml);
@@ -445,6 +445,7 @@ void Board::test_value(const std::string& fen )
        // retract current move
        undo_move<WHITE>();
    }
+#endif
 }
 
 #include "MovePicker.h"

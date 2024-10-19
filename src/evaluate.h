@@ -221,7 +221,7 @@ constexpr Score RookOnOpenFile[2] = { S(  10,   25), S(  30,   11)
 };
 constexpr Score RookOnBlockedFile = S(  -5,   -5);
 
-// Reines
+// Dames
 constexpr Score QueenRelativePin = S( -32,   29);
 
 //----------------------------------------------------------

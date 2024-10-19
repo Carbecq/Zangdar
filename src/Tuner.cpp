@@ -620,7 +620,7 @@ void Tuner::PrintParameters(double params[NTERMS][N_PHASES], double current[NTER
     PrintArray( "RookOnOpenFile",   tparams, index,     2,  "[2]",  len);
     PrintSingle("RookOnBlockedFile",tparams, index);
 
-    puts("\n// Reines");
+    puts("\n// Dames");
     PrintSingle("QueenRelativePin",tparams, index);
 
     puts("\n//----------------------------------------------------------");
