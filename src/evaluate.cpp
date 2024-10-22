@@ -532,16 +532,17 @@ Score Board::evaluate_knights(EvalInfo& ei)
         if (Bitboard kingRingAtks = ei.KingRing[THEM] & attackBB; kingRingAtks!=0)
         {
             // ei.kingAttackersCount[US]++;
-            ei.kingAttackersWeight[US] += KingAttackWeights[KNIGHT];
+            ei.KingAttackersWeight[US] += KingAttackersWeight[KNIGHT];
+            ei.KingAttacksCount[US]    += BB::count_bit(kingRingAtks);
+
 #if defined USE_TUNER
-            ownTuner.Trace.KingAttackWeights[KNIGHT][US]++;
+            ownTuner.Trace.KingAttackersWeight[KNIGHT][US]++;
 #endif
 #if defined DEBUG_EVAL
             printf("le cavalier %s en %s attaque le roi ennemi %d fois \n", camp[1][US].c_str(), square_name[sq].c_str(), BB::count_bit(kingRingAtks));
             BB::PrintBB(kingRingAtks, "kingRingAtks");
             BB::PrintBB(attackBB, "attackBB");
 #endif
-            ei.kingAttacksCount[US]    += BB::count_bit(kingRingAtks);
         }
 
         //  Update des attaques
@@ -664,16 +665,17 @@ Score Board::evaluate_bishops(EvalInfo& ei)
         if (Bitboard kingRingAtks = ei.KingRing[THEM] & attackBB; kingRingAtks!=0)
         {
             // ei.kingAttackersCount[US]++;
-            ei.kingAttackersWeight[US] += KingAttackWeights[BISHOP];
+            ei.KingAttackersWeight[US] += KingAttackersWeight[BISHOP];
+            ei.KingAttacksCount[US]    += BB::count_bit(kingRingAtks);
+
 #if defined USE_TUNER
-            ownTuner.Trace.KingAttackWeights[BISHOP][US]++;
+            ownTuner.Trace.KingAttackersWeight[BISHOP][US]++;
 #endif
 #if defined DEBUG_EVAL
             printf("le fou %s en %s attaque le roi ennemi %d fois \n", camp[1][US].c_str(), square_name[sq].c_str(), BB::count_bit(kingRingAtks));
             BB::PrintBB(kingRingAtks, "kingRingAtks");
             BB::PrintBB(attackBB, "attackBB");
 #endif
-            ei.kingAttacksCount[US]    += BB::count_bit(kingRingAtks);
         }
 
         //  Update des attaques
@@ -769,15 +771,16 @@ Score Board::evaluate_rooks(EvalInfo& ei)
         if (Bitboard kingRingAtks = ei.KingRing[THEM] & attackBB; kingRingAtks!=0)
         {
             // ei.kingAttackersCount[US]++;
-            ei.kingAttackersWeight[US] += KingAttackWeights[ROOK];
+            ei.KingAttackersWeight[US] += KingAttackersWeight[ROOK];
+            ei.KingAttacksCount[US]    += BB::count_bit(kingRingAtks);
+
 #if defined USE_TUNER
-            ownTuner.Trace.KingAttackWeights[ROOK][US]++;
+            ownTuner.Trace.KingAttackersWeight[ROOK][US]++;
 #endif
 #if defined DEBUG_EVAL
             printf("la tour %s en %s attaque le roi ennemi %d fois \n", camp[1][US].c_str(), square_name[sq].c_str(), BB::count_bit(kingRingAtks));
             BB::PrintBB(kingRingAtks, "kingRingAtks");
 #endif
-            ei.kingAttacksCount[US]    += BB::count_bit(kingRingAtks);
         }
 
         //  Update des attaques
@@ -843,15 +846,16 @@ Score Board::evaluate_queens(EvalInfo& ei)
         if (Bitboard kingRingAtks = ei.KingRing[THEM] & attackBB; kingRingAtks!=0)
         {
             // ei.kingAttackersCount[US]++;
-            ei.kingAttackersWeight[US] += KingAttackWeights[QUEEN];
+            ei.KingAttackersWeight[US] += KingAttackersWeight[QUEEN];
+            ei.KingAttacksCount[US]    += BB::count_bit(kingRingAtks);
+
 #if defined USE_TUNER
-            ownTuner.Trace.KingAttackWeights[QUEEN][US]++;
+            ownTuner.Trace.KingAttackersWeight[QUEEN][US]++;
 #endif
 #if defined DEBUG_EVAL
             printf("la dame %s en %s attaque le roi ennemi %d fois \n", camp[1][US].c_str(), square_name[sq].c_str(), BB::count_bit(kingRingAtks));
             BB::PrintBB(kingRingAtks, "kingRingAtks");
 #endif
-            ei.kingAttacksCount[US]    += BB::count_bit(kingRingAtks);
         }
 
 
@@ -1043,17 +1047,18 @@ Score Board::evaluate_king_attacks(const EvalInfo& ei) const
 #endif
 
     // Score des attaques sur le Roi; c'est la somme des différentes pièces amies
-    eval += ei.kingAttackersWeight[US];
+    // Le tuner est appelé pour chaque pièce
+    eval += ei.KingAttackersWeight[US];
 
     // Nombre d'attaques sur le Roi
-    int attackCount = std::min(ei.kingAttacksCount[US], 13);
-    eval += KingAttacks[attackCount];
+    int attackCount = std::min(ei.KingAttacksCount[US], 13);
+    eval += KingAttacksCount[attackCount];
 
 #if defined DEBUG_EVAL
     printf("le roi ennemi %s en %s subit %d attaques\n", camp[1][THEM].c_str(), square_name[theirKing].c_str(), attackCount);
 #endif
 #if defined USE_TUNER
-    ownTuner.Trace.KingAttacks[attackCount][US]++;
+    ownTuner.Trace.KingAttacksCount[attackCount][US]++;
 #endif
 
     return eval;
@@ -1130,10 +1135,10 @@ void Board::init_eval_info(EvalInfo& ei)
     ei.mobilityArea[WHITE] = ~(b[WHITE] | BB::all_pawn_attacks<BLACK>(ei.pawns[BLACK]));
     ei.mobilityArea[BLACK] = ~(b[BLACK] | BB::all_pawn_attacks<WHITE>(ei.pawns[WHITE]));
 
-    ei.kingAttackersWeight[WHITE] = 0;
-    ei.kingAttackersWeight[BLACK] = 0;
-    ei.kingAttacksCount[WHITE] = 0;
-    ei.kingAttacksCount[BLACK] = 0;
+    ei.KingAttackersWeight[WHITE] = 0;
+    ei.KingAttackersWeight[BLACK] = 0;
+    ei.KingAttacksCount[WHITE] = 0;
+    ei.KingAttacksCount[BLACK] = 0;
 
     // Clear passed pawns, filled in during pawn eval
     ei.passedPawns = 0;

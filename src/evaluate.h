@@ -48,14 +48,14 @@ struct EvalInfo {
     // the given color which attack a square in the kingRing of the enemy king.
     // The weights of the individual piece types are given by the elements in
     // the KingAttackWeights array.
-    Score kingAttackersWeight[N_COLORS];
+    Score KingAttackersWeight[N_COLORS];
 
     // kingAttacksCount[color] is the number of attacks by the given color to
     // squares directly adjacent to the enemy king. Pieces which attack more
     // than one square are counted multiple times. For instance, if there is
     // a white knight on g5 and black's king is on g8, this white knight adds 2
     // to kingAttacksCount[WHITE].
-    int kingAttacksCount[N_COLORS];
+    int KingAttacksCount[N_COLORS];
 
 
     // attackedBy[color][piece type] is a bitboard representing all squares
@@ -244,9 +244,9 @@ constexpr Score SafeCheck[N_PIECES] = { S(   0,    0), S(   0,    0), S( 123,   
 };
 constexpr Score UnsafeCheck[N_PIECES] = { S(   0,    0), S(   0,    0), S(  10,    0), S(  19,   22), S(  39,   -1), S(  12,   16), S(   0,    0)
 };
-constexpr Score KingAttackWeights[N_PIECES] = { S(   0,    0), S(   0,    0), S(  28,    5), S(  22,    9), S(  27,  -19), S(   7,   11), S(   0,    0)
+constexpr Score KingAttackersWeight[N_PIECES] = { S(   0,    0), S(   0,    0), S(  28,    5), S(  22,    9), S(  27,  -19), S(   7,   11), S(   0,    0)
 };
-constexpr Score KingAttacks[14] = { S( -43,   41), S( -60,   30), S( -72,   22), S( -79,   25), S( -79,   21), S( -69,    9), S( -46,   -1), S( -16,  -20),
+constexpr Score KingAttacksCount[14] = { S( -43,   41), S( -60,   30), S( -72,   22), S( -79,   25), S( -79,   21), S( -69,    9), S( -46,   -1), S( -16,  -20),
     S(  36,  -50), S(  64,  -40), S(  96,  -36), S( 114,    5), S( 144,  -86), S(  98,   65)
 };
 

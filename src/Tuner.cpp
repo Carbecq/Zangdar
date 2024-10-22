@@ -356,8 +356,8 @@ void Tuner::InitCoefficients(double coeffs[NTERMS])
     // Attaques sur le roi ennemi
     InitCoeffArray( coeffs, Trace.SafeCheck,            N_PIECES,   index);
     InitCoeffArray( coeffs, Trace.UnsafeCheck,          N_PIECES,   index);
-    InitCoeffArray( coeffs, Trace.KingAttackWeights,    N_PIECES,   index);
-    InitCoeffArray( coeffs, Trace.KingAttacks,          14,         index);
+    InitCoeffArray( coeffs, Trace.KingAttackersWeight,  N_PIECES,   index);
+    InitCoeffArray( coeffs, Trace.KingAttacksCount,     14,         index);
 
     // Mobilité
     InitCoeffArray(coeffs, Trace.KnightMobility,     9, index);
@@ -436,10 +436,10 @@ void Tuner::InitBaseParams(double tparams[NTERMS][N_PHASES])
     InitBaseArray( tparams, ThreatByRook,   N_PIECES,      index);
 
     // Attaques sur le roi ennemi
-    InitBaseArray( tparams, SafeCheck,          N_PIECES,      index);
-    InitBaseArray( tparams, UnsafeCheck,        N_PIECES,      index);
-    InitBaseArray( tparams, KingAttackWeights,  N_PIECES,      index);
-    InitBaseArray( tparams, KingAttacks,        14,            index);
+    InitBaseArray( tparams, SafeCheck,              N_PIECES,      index);
+    InitBaseArray( tparams, UnsafeCheck,            N_PIECES,      index);
+    InitBaseArray( tparams, KingAttackersWeight,    N_PIECES,      index);
+    InitBaseArray( tparams, KingAttacksCount,       14,            index);
 
     // Mobilité
     InitBaseArray( tparams, KnightMobility,  9,      index);
@@ -639,8 +639,8 @@ void Tuner::PrintParameters(double params[NTERMS][N_PHASES], double current[NTER
     puts("// Attaques sur le roi ennemi");
     PrintArray( "SafeCheck",            tparams, index,     N_PIECES,     "[N_PIECES]", len);
     PrintArray( "UnsafeCheck",          tparams, index,     N_PIECES,     "[N_PIECES]", len);
-    PrintArray( "KingAttackWeights",    tparams, index,     N_PIECES,     "[N_PIECES]", len);
-    PrintArray( "KingAttacks",          tparams, index,     14,           "[14]",       len);
+    PrintArray( "KingAttackersWeight",  tparams, index,     N_PIECES,     "[N_PIECES]", len);
+    PrintArray( "KingAttacksCount",     tparams, index,     14,           "[14]",       len);
 
     PrintMobility(tparams, index);
     puts("");

@@ -121,6 +121,12 @@ using CounterMoveTable         = MOVE[N_COLORS][N_PIECES][N_SQUARES];
 using CounterMoveHistoryTable  = I16[N_PIECES][N_SQUARES][N_PIECES][N_SQUARES];
 using FollowupMoveHistoryTable = I16[N_PIECES][N_SQUARES][N_PIECES][N_SQUARES];
 
+//! \brief  Détermination du signe d'une valeur
+//! \return -1 ou +1
+template <typename T>
+[[nodiscard]] inline int Sign(T val) {
+    return (T(0) < val) - (val < T(0));
+}
 
 #endif // TYPES_H
 

@@ -25,7 +25,6 @@
 struct EvalTrace {
     Score eval;
     int   scale;
-    // Score danger[N_COLORS];
 
     Score PawnValue[N_COLORS];
     Score KnightValue[N_COLORS];
@@ -79,8 +78,8 @@ struct EvalTrace {
 
     Score SafeCheck[N_PIECES][N_COLORS];
     Score UnsafeCheck[N_PIECES][N_COLORS];
-    Score KingAttackWeights[N_PIECES][N_COLORS];
-    Score KingAttacks[14][N_COLORS];
+    Score KingAttackersWeight[N_PIECES][N_COLORS];
+    Score KingAttacksCount[14][N_COLORS];
 
     Score KnightMobility[9][N_COLORS];
     Score BishopMobility[14][N_COLORS];
