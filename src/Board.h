@@ -24,7 +24,8 @@ struct UndoInfo
     int  ep_square;                 // case en-passant : si les blancs jouent e2-e4, la case est e3
     int  halfmove_counter = 0;      // nombre de coups depuis une capture, ou un movement de pion
     U32  castling;                  // droit au roque
-    Bitboard checkers = 0ULL;       // pièces donnant échec
+    Bitboard checkers = 0ULL;       // bitboard des pièces ennemies me donnant échec
+    Bitboard pinned   = 0ULL;       // bitboard des pièces amies clouées
 };
 
 //=================================== evaluation
@@ -98,9 +99,8 @@ public:
     template <Color C>
     [[nodiscard]] constexpr Bitboard attackers(const int sq) const noexcept;
 
-    //! \brief Retourne le bitboard de toutes les pièces du camp "C", sauf le roi, attaquant la case "sq"
     template <Color C>
-    [[nodiscard]] constexpr Bitboard attackers_no_king(const int sq) const noexcept;
+    void checkers_pinned() noexcept;
 
     //! \brief  Retourne le Bitboard de TOUS les attaquants (Blancs et Noirs) de la case "sq"
     [[nodiscard]] Bitboard all_attackers(const int sq, const Bitboard occ) const noexcept;
@@ -173,10 +173,6 @@ public:
     //! \brief  Détermine si la case sq est attaquée par le camp C
     template<Color C>
     [[nodiscard]] constexpr bool square_attacked(const int sq) const noexcept { return attackers<C>(sq) > 0; }
-
-    //! \brief  Retourne le bitboard des pièces attaquant le roi de couleur C
-    template<Color C>
-    [[nodiscard]] constexpr Bitboard king_attackers() const noexcept { return attackers_no_king<~C>(x_king[C]); }
 
     //! \brief  Détermine si le camp au trait est en échec dans la position actuelle
     [[nodiscard]] constexpr bool is_in_check() const noexcept { return checkers > 0; }
@@ -506,7 +502,8 @@ public:
     Bitboard typePiecesBB[7]  = {0ULL};     // bitboard des pièces pour chaque type de pièce
     std::array<PieceType, 64> pieceOn;      // donne le type de la pièce occupant la case indiquée
     int x_king[2];                          // position des rois
-    Bitboard checkers;                      // bitboard des pièces donnant échec
+    Bitboard checkers;                      // bitboard des pièces ennemies me donnant échec
+    Bitboard pinned;                        // bitboard des pièces amies clouées
 
     Color side_to_move = Color::WHITE; // camp au trait
     int   ep_square    = NO_SQUARE;  // case en-passant : si les blancs jouent e2-e4, la case est e3

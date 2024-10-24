@@ -923,75 +923,125 @@ Score Board::evaluate_king(EvalInfo& ei)
 template<Color US>
 Score Board::evaluate_threats(const EvalInfo& ei)
 {
-    constexpr Color THEM = ~US;
-    constexpr Direction UP = (US == WHITE) ? NORTH : SOUTH;
+    constexpr Color THEM        = ~US;
+    constexpr Direction UP      = (US == WHITE) ? NORTH : SOUTH;
+    constexpr Bitboard Rank3Rel = (US == WHITE) ? RANK_3_BB : RANK_6_BB;
 
-    int count;
     int sq;
+    int attacked;
     Score eval = 0;
+
+    const Bitboard covered        = ei.attackedBy[THEM][PAWN] | (ei.attackedBy2[THEM] & ~ei.attackedBy2[US]);
+    const Bitboard nonPawnEnemies = occupancy_c<THEM>() & ~occupancy_cp<THEM, PAWN>();
+    const Bitboard weak           = ~covered & ei.attacked[US];
     Bitboard threats;
 
-    // Bitboard ourPawns      = occupancy_cp<US, PAWN>();
-    Bitboard theirNonPawns = colorPiecesBB[THEM] ^ occupancy_cp<THEM, PAWN>();
-    
-
-    // pions attaquant les non-pions ennemis
-    count = BB::count_bit(BB::all_pawn_attacks<US>(ei.pawns[US]) & theirNonPawns);
-    eval += PawnThreat * count;
-
-#if defined DEBUG_EVAL
-    if (count)
-        printf("%d pions %s attaquent les non-pions ennemis \n", count, camp[1][US].c_str());
-#endif
-#if defined USE_TUNER
-    ownTuner.Trace.PawnThreat[US] += count;
-#endif
-
-
-    // pions pouvant attaquer les non-pions ennemis en avançant
-    Bitboard pawnPushes = BB::shift<UP>(ei.pawns[US]) & ~ei.occupied;
-    count = BB::count_bit(BB::all_pawn_attacks<US>(pawnPushes) & theirNonPawns);
-    eval += PushThreat * count;
-
-#if defined DEBUG_EVAL
-    if (count)
-        printf("%d pions %s peuvent attaquer les non-pions ennemis en avançant\n", count, camp[1][US].c_str());
-#endif
-#if defined USE_TUNER
-    ownTuner.Trace.PushThreat[US] += count;
-#endif
-
-
-    // Threats by minor pieces
-    Bitboard targets = theirNonPawns & ~occupancy_p<KING>();
-    threats = targets & (ei.attackedBy[US][KNIGHT] | ei.attackedBy[US][BISHOP]);
-    while (threats)
+    for (int piece = KNIGHT; piece <= ROOK; piece++)
     {
-        sq = BB::pop_lsb(threats);
-        eval += ThreatByMinor[pieceOn[sq]];
+        threats = occupancy_c<THEM>() & ei.attackedBy[US][piece];
+        if (piece == KNIGHT || piece == BISHOP)
+            threats &= nonPawnEnemies | weak;
+        else
+            threats &= weak;
 
-#if defined DEBUG_EVAL
-        printf("menace par la pièce mineure %s \n", piece_name[pieceOn[sq]].c_str());
-#endif
+        while (threats)
+        {
+            sq = BB::pop_lsb(threats);  // case de la pièce attaquée
+            attacked = pieceOn[sq];     // la pièce attaquée
+
+            switch (piece)              // la pièce attaquante
+            {
+            case KNIGHT:
+                eval += ThreatByKnight[attacked];
 #if defined USE_TUNER
-        ownTuner.Trace.ThreatByMinor[pieceOn[sq]][US]++;
+                ownTuner.Trace.ThreatByKnight[attacked][US]++;
+#endif
+                break;
+
+            case BISHOP:
+                eval += ThreatByBishop[attacked];
+#if defined USE_TUNER
+                ownTuner.Trace.ThreatByBishop[attacked][US]++;
+#endif
+                break;
+
+            case ROOK:
+                eval += ThreatByRook[attacked];
+#if defined USE_TUNER
+                ownTuner.Trace.ThreatByRook[attacked][US]++;
+#endif
+                break;
+            }
+        }
+    }
+
+    // Roi
+    Bitboard kingThreats = weak & ei.attackedBy[US][KING] & occupancy_c<THEM>();
+    if (kingThreats)
+    {
+        eval += ThreatByKing;
+#if defined USE_TUNER
+        ownTuner.Trace.ThreatByKing[US]++;
 #endif
     }
 
-
-    // Threats by rooks
-    targets &= ~ei.attackedBy[THEM][PAWN];
-    threats = targets & ei.attackedBy[US][ROOK];
-    while (threats)
-    {
-        sq = BB::pop_lsb(threats);
-        eval += ThreatByRook[pieceOn[sq]];
-
-#if defined DEBUG_EVAL
-        printf("menace par la tour %s en %s \n", piece_name[pieceOn[sq]].c_str(), square_name[sq].c_str());
-#endif
+    // Pièces attaquées et non défendues
+    Bitboard hangingPieces = occupancy_c<THEM>() & ~ei.attacked[THEM] & ei.attacked[US];
+    eval += BB::count_bit(hangingPieces) * HangingThreat;
 #if defined USE_TUNER
-        ownTuner.Trace.ThreatByRook[pieceOn[sq]][US]++;
+    ownTuner.Trace.HangingThreat[US] += BB::count_bit(hangingPieces);
+#endif
+
+    // Pièces attaquées par des pions
+    Bitboard pawnThreats = nonPawnEnemies & ei.attackedBy[US][PAWN];
+    eval += BB::count_bit(pawnThreats) * PawnThreat;
+
+    // Pièces pouvant être attaquées par l'avance de pion
+    Bitboard pawnPushes = BB::shift<UP>(ei.pawns[US])          & ~ei.occupied;  // avance d'1 case des pions
+    pawnPushes         |= BB::shift<UP>(pawnPushes & Rank3Rel) & ~ei.occupied;  // avance d'1 case des pions, SI il sont sur la 3ème rangée
+    pawnPushes         &= (ei.attacked[US] | ~ei.attacked[THEM]);               // pions protégés et non attaqués
+    Bitboard pawnPushAttacks = BB::all_pawn_attacks<US>(pawnPushes);
+    pawnPushAttacks         &= nonPawnEnemies;
+
+    eval += BB::count_bit(pawnPushAttacks)          * PawnPushThreat
+          + BB::count_bit(pawnPushAttacks & pinned) * PawnPushPinnedThreat;
+
+#if defined USE_TUNER
+    ownTuner.Trace.PawnThreat[US]            += BB::count_bit(pawnThreats);
+    ownTuner.Trace.PawnPushThreat[US]        += BB::count_bit(pawnPushAttacks) ;
+    ownTuner.Trace.PawnPushPinnedThreat[US]  += BB::count_bit(pawnPushAttacks & pinned);
+#endif
+
+    // Attaque de la dame ennemie
+    Bitboard bb = occupancy_cp<THEM, QUEEN>();
+    if (bb)
+    {
+        int oppQueenSquare = BB::pop_lsb(bb);
+
+        Bitboard knightQueenHits = Attacks::knight_moves(oppQueenSquare)
+                                 & ei.attackedBy[US][KNIGHT]
+                                 & ~occupancy_cp<US, PAWN>()
+                                 & ~covered;
+        eval += BB::count_bit(knightQueenHits) * KnightCheckQueen;
+
+        Bitboard bishopQueenHits = Attacks::bishop_moves(oppQueenSquare, ei.occupied)
+                                 & ei.attackedBy[US][BISHOP]
+                                 & ~occupancy_cp<US, PAWN>()
+                                 & ~covered
+                                 & ei.attackedBy2[US];
+        eval += BB::count_bit(bishopQueenHits) * BishopCheckQueen;
+
+        Bitboard rookQueenHits = Attacks::rook_moves(oppQueenSquare, ei.occupied)
+                               & ei.attackedBy[US][ROOK]
+                               & ~occupancy_cp<US, PAWN>()
+                               & ~covered
+                               & ei.attackedBy2[US];
+        eval += BB::count_bit(rookQueenHits) * RookCheckQueen;
+
+#if defined USE_TUNER
+        ownTuner.Trace.KnightCheckQueen[US] += BB::count_bit(knightQueenHits);
+        ownTuner.Trace.BishopCheckQueen[US] += BB::count_bit(bishopQueenHits);
+        ownTuner.Trace.RookCheckQueen[US]   += BB::count_bit(rookQueenHits) ;
 #endif
     }
 
@@ -1103,7 +1153,7 @@ int Board::scale_factor(const Score eval)
 //-------------------------------------------------------------
 void Board::init_eval_info(EvalInfo& ei)
 {
-    // Initialisation des bitboards
+    // Initialisation des Bitboards
     constexpr Bitboard  RelRanK2BB[2] = {                          // La rangée 2, relativement à la couleur
                                         RankMask8[SQ::relative_rank8<WHITE>(RANK_2)],
                                         RankMask8[SQ::relative_rank8<BLACK>(RANK_2)],

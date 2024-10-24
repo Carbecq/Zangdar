@@ -293,7 +293,7 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
 //-----------------------------------------
 
     // pièces attaquant le roi
-    checkers = (side_to_move == WHITE) ? king_attackers<WHITE>() : king_attackers<BLACK>();
+    (side_to_move == WHITE) ? checkers_pinned<WHITE>() : checkers_pinned<BLACK>();
 
 // Calculate hash
 #if defined USE_HASH
@@ -537,7 +537,7 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
 //-----------------------------------------
 
     // pièces attaquant le roi
-    checkers = (side_to_move == WHITE) ? king_attackers<WHITE>() : king_attackers<BLACK>();
+    (side_to_move == WHITE) ? checkers_pinned<WHITE>() : checkers_pinned<BLACK>();
 
 // Calculate hash
 #if defined USE_HASH

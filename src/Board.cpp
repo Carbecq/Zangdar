@@ -119,7 +119,7 @@ void Board::clear() noexcept
     castling     = CASTLE_NONE;
     side_to_move = Color::WHITE;
     
-    game_history.fill(UndoInfo{0, 0, 0, 0, 0, 0});
+    game_history.fill(UndoInfo{0, 0, 0, 0, 0, 0, 0, 0});
 }
 
 //==========================================================

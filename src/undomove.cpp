@@ -37,6 +37,7 @@ template <Color C> constexpr void Board::undo_move() noexcept
 
     // Pièces donnant échec
     checkers = game_history[gamemove_counter].checkers;
+    pinned   = game_history[gamemove_counter].pinned;
 
     // Castling
     castling = game_history[gamemove_counter].castling;
@@ -229,6 +230,7 @@ template <Color C> constexpr void Board::undo_nullmove() noexcept
 #endif
 
     checkers = game_history[gamemove_counter].checkers;
+    pinned   = game_history[gamemove_counter].pinned;
 
 #ifndef NDEBUG
     // on ne passe ici qu'en debug

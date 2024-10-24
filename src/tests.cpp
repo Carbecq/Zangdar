@@ -413,6 +413,9 @@ void Board::test_value(const std::string& fen )
     U32 move;
 
     printf("side = %s : evaluation = %d \n", side_name[side_to_move].c_str(), evaluate());
+    BB::PrintBB(checkers, "checkers");
+    BB::PrintBB(pinned, "pinned");
+
 #if 0
     // generate successor moves
    legal_moves<WHITE>(ml);

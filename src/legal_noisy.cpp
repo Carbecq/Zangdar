@@ -25,7 +25,6 @@ constexpr void Board::legal_noisy(MoveList& ml) noexcept
     
     const Bitboard occupiedBB = occupancy_all();     // toutes les pièces (Blanches + Noires)
     Bitboard emptyBB    = ~occupiedBB;
-    const Bitboard usBB       = colorPiecesBB[C];
     Bitboard enemyBB    = colorPiecesBB[Them];
 
     const Bitboard bq         = typePiecesBB[BISHOP] | typePiecesBB[QUEEN];
@@ -36,37 +35,8 @@ constexpr void Board::legal_noisy(MoveList& ml) noexcept
     //  algorithme de Surge
     //-----------------------------------------------------------------------------------------
 
-    int s;
-    Bitboard b1;
-
-    //    const Bitboard our_diag_sliders   = diagonal_sliders<C>();
-    const Bitboard their_diag_sliders = diagonal_sliders<Them>();
-    //    const Bitboard our_orth_sliders   = orthogonal_sliders<C>();
-    const Bitboard their_orth_sliders = orthogonal_sliders<Them>();
-
-    //Checkers of each piece type are identified by:
-    //1. Projecting attacks FROM the king square
-    //2. Intersecting this bitboard with the enemy bitboard of that piece type
     Bitboard checkersBB = checkers;
-
-    //Here, we identify slider checkers and pinners simultaneously, and candidates for such pinners
-    //and checkers are represented by the bitboard <candidates>
-    Bitboard candidates = (Attacks::rook_moves(K, enemyBB)   & their_orth_sliders) |
-                          (Attacks::bishop_moves(K, enemyBB) & their_diag_sliders);
-
-    Bitboard pinnedBB = 0;
-    while (candidates)
-    {
-        s  = BB::pop_lsb(candidates);
-        b1 = squares_between(K, s) & usBB;
-
-        //Do the squares in between the enemy slider and our king contain any of our pieces?
-        //If not, add the slider to the checker bitboard
-
-        //If there is only one of our pieces between them, add our piece to the pinned bitboard
-        if (b1 && (b1 & (b1 - 1)) == 0)
-            pinnedBB |= b1;
-    }
+    Bitboard pinnedBB   = pinned;
 
     //-----------------------------------------------------------------------------------------
     const Bitboard unpinnedBB = colorPiecesBB[C] & ~pinnedBB;

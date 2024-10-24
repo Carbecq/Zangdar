@@ -348,10 +348,17 @@ void Tuner::InitCoefficients(double coeffs[NTERMS])
     InitCoeffSingle(coeffs, Trace.PawnShelter,              index);
 
     // Menaces
-    InitCoeffSingle(coeffs, Trace.PawnThreat,                   index);
-    InitCoeffSingle(coeffs, Trace.PushThreat,                   index);
-    InitCoeffArray( coeffs, Trace.ThreatByMinor,    N_PIECES,   index);
-    InitCoeffArray( coeffs, Trace.ThreatByRook,     N_PIECES,   index);
+    InitCoeffArray( coeffs, Trace.ThreatByKnight,       N_PIECES,   index);
+    InitCoeffArray( coeffs, Trace.ThreatByBishop,       N_PIECES,   index);
+    InitCoeffArray( coeffs, Trace.ThreatByRook,         N_PIECES,   index);
+    InitCoeffSingle(coeffs, Trace.ThreatByKing,                     index);
+    InitCoeffSingle(coeffs, Trace.HangingThreat,                    index);
+    InitCoeffSingle(coeffs, Trace.PawnThreat,                       index);
+    InitCoeffSingle(coeffs, Trace.PawnPushThreat,                   index);
+    InitCoeffSingle(coeffs, Trace.PawnPushPinnedThreat,             index);
+    InitCoeffSingle(coeffs, Trace.KnightCheckQueen,                 index);
+    InitCoeffSingle(coeffs, Trace.BishopCheckQueen,                 index);
+    InitCoeffSingle(coeffs, Trace.RookCheckQueen,                   index);
 
     // Attaques sur le roi ennemi
     InitCoeffArray( coeffs, Trace.SafeCheck,            N_PIECES,   index);
@@ -430,10 +437,17 @@ void Tuner::InitBaseParams(double tparams[NTERMS][N_PHASES])
     InitBaseSingle(tparams, PawnShelter,            index);
 
     // Menaces
-    InitBaseSingle(tparams, PawnThreat,              index);
-    InitBaseSingle(tparams, PushThreat,              index);
-    InitBaseArray( tparams, ThreatByMinor,  N_PIECES,      index);
-    InitBaseArray( tparams, ThreatByRook,   N_PIECES,      index);
+    InitBaseArray( tparams, ThreatByKnight,         N_PIECES,   index);
+    InitBaseArray( tparams, ThreatByBishop,         N_PIECES,   index);
+    InitBaseArray( tparams, ThreatByRook,           N_PIECES,   index);
+    InitBaseSingle(tparams, ThreatByKing,                       index);
+    InitBaseSingle(tparams, HangingThreat,                      index);
+    InitBaseSingle(tparams, PawnThreat,                         index);
+    InitBaseSingle(tparams, PawnPushThreat,                     index);
+    InitBaseSingle(tparams, PawnPushPinnedThreat,               index);
+    InitBaseSingle(tparams, KnightCheckQueen,                   index);
+    InitBaseSingle(tparams, BishopCheckQueen,                   index);
+    InitBaseSingle(tparams, RookCheckQueen,                     index);
 
     // Attaques sur le roi ennemi
     InitBaseArray( tparams, SafeCheck,              N_PIECES,      index);
@@ -630,10 +644,17 @@ void Tuner::PrintParameters(double params[NTERMS][N_PHASES], double current[NTER
 
     puts("\n//----------------------------------------------------------");
     puts("// Menaces");
-    PrintSingle("PawnThreat",       tparams, index);
-    PrintSingle("PushThreat",       tparams, index);
-    PrintArray( "ThreatByMinor",    tparams, index,     N_PIECES,     "[N_PIECES]", len);
-    PrintArray( "ThreatByRook",     tparams, index,     N_PIECES,     "[N_PIECES]", len);
+    PrintArray( "ThreatByKnight",           tparams, index,     N_PIECES,     "[N_PIECES]", len);
+    PrintArray( "ThreatByBishop",           tparams, index,     N_PIECES,     "[N_PIECES]", len);
+    PrintArray( "ThreatByRook",             tparams, index,     N_PIECES,     "[N_PIECES]", len);
+    PrintSingle("ThreatByKing",             tparams, index);
+    PrintSingle("HangingThreat",            tparams, index);
+    PrintSingle("PawnThreat",               tparams, index);
+    PrintSingle("PawnPushThreat",           tparams, index);
+    PrintSingle("PawnPushPinnedThreat",     tparams, index);
+    PrintSingle("KnightCheckQueen",         tparams, index);
+    PrintSingle("BishopCheckQueen",         tparams, index);
+    PrintSingle("RookCheckQueen",           tparams, index);
 
     puts("\n//----------------------------------------------------------");
     puts("// Attaques sur le roi ennemi");

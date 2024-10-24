@@ -56,7 +56,7 @@ template <Color C> constexpr void Board::make_move(const MOVE move) noexcept
     assert(pieceOn[from] == piece);
 
     // Sauvegarde des caractéristiques de la position
-    game_history[gamemove_counter] = UndoInfo{hash, pawn_hash, move, ep_square, halfmove_counter, castling, checkers} ;
+    game_history[gamemove_counter] = UndoInfo{hash, pawn_hash, move, ep_square, halfmove_counter, castling, checkers, pinned} ;
 
 // La prise en passant n'est valable que tout de suite
 // Il faut donc la supprimer
@@ -420,9 +420,9 @@ template <Color C> constexpr void Board::make_move(const MOVE move) noexcept
 
     gamemove_counter++;
 
-    // pièces donnant échec
-    // attention à la couleur
-    checkers = king_attackers<~C>();
+    // pièces donnant échec, pièces clouées
+    // attention : on a chabgé de camp !!!
+    checkers_pinned<~C>();
 
 #if defined USE_HASH
     hash ^= side_key;
@@ -459,7 +459,7 @@ template <Color C> constexpr void Board::make_move(const MOVE move) noexcept
 template <Color C> constexpr void Board::make_nullmove() noexcept
 {
     // Sauvegarde des caractéristiques de la position
-    game_history[gamemove_counter] = UndoInfo{hash, pawn_hash, Move::MOVE_NULL, ep_square, halfmove_counter, castling, checkers};
+    game_history[gamemove_counter] = UndoInfo{hash, pawn_hash, Move::MOVE_NULL, ep_square, halfmove_counter, castling, checkers, pinned};
 
     // La prise en passant n'est valable que tout de suite
     // Il faut donc la supprimer
@@ -484,7 +484,11 @@ template <Color C> constexpr void Board::make_nullmove() noexcept
     gamemove_counter++;
 
     // Null move cannot gives check
-    checkers = 0ULL;
+    //TODO à améliorer
+    // attention : on a chabgé de camp !!!
+    checkers_pinned<~C>();
+    // checkers = 0ULL;
+    // pinned = ??
 
 #if defined USE_HASH
     hash ^= side_key;
