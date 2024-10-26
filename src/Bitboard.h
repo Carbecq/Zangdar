@@ -216,8 +216,19 @@ template <Direction D>
     return b;
 }
 
+//! \brief  Retourne le bitboard des colonnes ouvertes
+//! \param[in]  pawns   : bitboard de tous les pions (blancs et noirs)
+[[nodiscard]] inline Bitboard open_files(Bitboard pawns)
+{
+    pawns |= pawns >> 8;
+    pawns |= pawns >> 16;
+    pawns |= pawns >> 32;
+    return (~pawns & 0xFF);
+}
+
 //! \brief  Compte le nombre de colonnes ouvertes
-[[nodiscard]] inline int count_open_file(Bitboard pawns)
+//! \param[in]  pawns   : bitboard de tous les pions (blancs et noirs)
+[[nodiscard]] inline int count_open_files(Bitboard pawns)
 {
     pawns |= pawns >> 8;
     pawns |= pawns >> 16;
