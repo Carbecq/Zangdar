@@ -367,14 +367,14 @@ public:
     //! SUPPOSE qu'il y a une pièce sur cette case !!
     [[nodiscard]] constexpr Color color_on(const int sq) const noexcept
     {
-        return( (colorPiecesBB[WHITE] & BB::sq2BB(sq)) ? WHITE : BLACK);
+        return( (colorPiecesBB[WHITE] & BB::square_BB(sq)) ? WHITE : BLACK);
     }
 
     //! \brief  Retourne le type de la pièce située sur la case sq
     [[nodiscard]] constexpr PieceType piece_on(const int sq) const noexcept
     {
         for (int i = PAWN; i <= KING; ++i) {
-            if (typePiecesBB[i] & BB::sq2BB(sq)) {
+            if (typePiecesBB[i] & BB::square_BB(sq)) {
                 return PieceType(i);
             }
         }
@@ -467,8 +467,8 @@ public:
     //-----------------------------------------------------------------------------
     void set_piece(const int sq, const Color s, const PieceType p) noexcept
     {
-        colorPiecesBB[s] |= BB::sq2BB(sq);
-        typePiecesBB[p]  |= BB::sq2BB(sq);
+        colorPiecesBB[s] |= BB::square_BB(sq);
+        typePiecesBB[p]  |= BB::square_BB(sq);
         pieceOn[sq] = p;
     }
 
@@ -548,7 +548,7 @@ inline std::ostream &operator << (std::ostream &os, const Board &pos) noexcept
 
     while (i >= 0) {
         const auto sq = i;
-        const auto bb = BB::sq2BB(sq);
+        const auto bb = BB::square_BB(sq);
 
         if (pos.occupancy_cp<Color::WHITE, PAWN>() & bb) {
             os << 'P';

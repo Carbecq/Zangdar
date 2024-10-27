@@ -22,8 +22,8 @@ constexpr auto RANK_6_BB = 0x0000ff0000000000ULL;
 constexpr auto RANK_7_BB = 0x00ff000000000000ULL;
 constexpr auto RANK_8_BB = 0xff00000000000000ULL;
 
-constexpr Bitboard FileMask8[N_FILES] = {FILE_A_BB, FILE_B_BB, FILE_C_BB, FILE_D_BB, FILE_E_BB, FILE_F_BB, FILE_G_BB, FILE_H_BB};
-constexpr Bitboard RankMask8[N_RANKS] = {RANK_1_BB, RANK_2_BB, RANK_3_BB, RANK_4_BB, RANK_5_BB, RANK_6_BB, RANK_7_BB, RANK_8_BB};
+constexpr Bitboard FILE_BB[N_FILES] = {FILE_A_BB, FILE_B_BB, FILE_C_BB, FILE_D_BB, FILE_E_BB, FILE_F_BB, FILE_G_BB, FILE_H_BB};
+constexpr Bitboard RANK_BB[N_RANKS] = {RANK_1_BB, RANK_2_BB, RANK_3_BB, RANK_4_BB, RANK_5_BB, RANK_6_BB, RANK_7_BB, RANK_8_BB};
 
 constexpr Bitboard NOT_FILE_A_BB = ~FILE_A_BB;
 constexpr Bitboard NOT_FILE_H_BB = ~FILE_H_BB;

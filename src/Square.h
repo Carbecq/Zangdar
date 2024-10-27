@@ -11,9 +11,7 @@ namespace SQ {
 
 // The constexpr specifier declares that it is possible to evaluate the value of the function or variable at compile time.
 
-[[nodiscard]] constexpr int square(const int f, const int r) noexcept {
-    return (8*r + f);
-}
+[[nodiscard]] inline int square(const int f, const int r) noexcept { return (8*r + f); }
 
 [[nodiscard]] inline int square(const std::string& str) noexcept {
     const int file = str[0] - 'a';
@@ -50,22 +48,29 @@ template <Color C>
         return sq ^ 56;
 }
 
+//! \brief  crée un bitboard à partir de la colonne d'une case
+[[nodiscard]] inline Bitboard square_file_BB(const int sq) noexcept { return FILE_BB[SQ::file(sq)];}
+
+//! \brief  crée un bitboard à partir de la rangée d'une case
+[[nodiscard]] inline Bitboard square_rank_BB(const int sq) noexcept { return RANK_BB[SQ::rank(sq)]; }
+
+
 //! \brief Contrôle si la case "sq" est sur la rangée précédant la promotion (7ème/2ème)
 template <Color C>
 [[nodiscard]] constexpr bool is_on_seventh_rank(const int sq) {
-    return (PromotingRank[C] & BB::sq2BB(sq));
+    return (PromotingRank[C] & BB::square_BB(sq));
 }
 
 //! \brief Contrôle si la case "sq" est sur la rangée de promotion (8ème, 1ère)
 template <Color C>
 [[nodiscard]] constexpr bool is_promotion(const int sq) {
-    return (PromotionRank[C] & BB::sq2BB(sq));
+    return (PromotionRank[C] & BB::square_BB(sq));
 }
 
 //! \brief Contrôle si la case "sq" est sur la rangée de départ (2ème/7ème)
 template <Color C>
 [[nodiscard]] constexpr bool is_on_second_rank(const int sq) {
-    return(StartingRank[C] & BB::sq2BB(sq));
+    return(StartingRank[C] & BB::square_BB(sq));
 }
 
 //! \brief Convertit une rangée en la rangée relativement à sa couleur

@@ -13,7 +13,7 @@
 namespace BB {
 
 //! \brief  crée un bitboard à partir d'une case
-constexpr Bitboard sq2BB(const int sq) noexcept { return(1ULL << sq);}
+[[nodiscard]] constexpr Bitboard square_BB(const int sq) noexcept { return(1ULL << sq);}
 
 //! \brief  récupère le bit à la position donnée
 [[nodiscard]] constexpr bool get_bit(Bitboard b, const int sq)  noexcept { return (b & (1ULL << sq)) ; }
@@ -276,7 +276,7 @@ inline void PrintBB(const Bitboard bb, const std::string& message)
 
     while (i >= 0) {
         const auto sq = i;
-        if (bb & BB::sq2BB(sq)) {
+        if (bb & BB::square_BB(sq)) {
             ss << "1 ";
         } else {
             ss << ". ";

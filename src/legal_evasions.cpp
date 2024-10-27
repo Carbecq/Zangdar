@@ -73,9 +73,9 @@ constexpr void Board::legal_evasions(MoveList& ml) noexcept
         from = ep - 1;              // 28 - 1 = 27 = d4
         
         Bitboard our_pawns = occupancy_cp<C, PAWN>();
-        if (SQ::file(to) > 0 && our_pawns & BB::sq2BB(from) )
+        if (SQ::file(to) > 0 && our_pawns & BB::square_BB(from) )
         {
-            pieceBB = occupiedBB ^ BB::sq2BB(from) ^ BB::sq2BB(ep) ^ BB::sq2BB(to);
+            pieceBB = occupiedBB ^ BB::square_BB(from) ^ BB::square_BB(ep) ^ BB::square_BB(to);
 
             if ( !(Attacks::bishop_moves(K, pieceBB) & bq & colorPiecesBB[Them]) &&
                 !(Attacks::rook_moves(K, pieceBB)   & rq & colorPiecesBB[Them]) )
@@ -85,9 +85,9 @@ constexpr void Board::legal_evasions(MoveList& ml) noexcept
         }
 
         from = ep + 1;          // 28 + 1 = 29 = f4
-        if (SQ::file(to) < 7 && our_pawns & BB::sq2BB(from) )
+        if (SQ::file(to) < 7 && our_pawns & BB::square_BB(from) )
         {
-            pieceBB = occupiedBB ^ BB::sq2BB(from) ^ BB::sq2BB(ep) ^ BB::sq2BB(to);
+            pieceBB = occupiedBB ^ BB::square_BB(from) ^ BB::square_BB(ep) ^ BB::square_BB(to);
 
             if ( !(Attacks::bishop_moves(K, pieceBB) & bq & colorPiecesBB[Them]) &&
                 !(Attacks::rook_moves(K, pieceBB)   & rq & colorPiecesBB[Them]) )
@@ -101,11 +101,11 @@ constexpr void Board::legal_evasions(MoveList& ml) noexcept
     // pawn
     pieceBB = typePiecesBB[PAWN] & unpinnedBB;
 
-    attackBB = (C ? (pieceBB & ~FileMask8[0]) >> 9 : (pieceBB & ~FileMask8[0]) << 7) & enemyBB;
+    attackBB = (C ? (pieceBB & ~FILE_BB[0]) >> 9 : (pieceBB & ~FILE_BB[0]) << 7) & enemyBB;
     push_capture_promotions(ml, attackBB & PromotionRank[C], pawn_left);
     push_pawn_capture_moves(ml, attackBB & ~PromotionRank[C], pawn_left);
 
-    attackBB = (C ? (pieceBB & ~FileMask8[7]) >> 7 : (pieceBB & ~FileMask8[7]) << 9) & enemyBB;
+    attackBB = (C ? (pieceBB & ~FILE_BB[7]) >> 7 : (pieceBB & ~FILE_BB[7]) << 9) & enemyBB;
     push_capture_promotions(ml, attackBB & PromotionRank[C], pawn_right);
     push_pawn_capture_moves(ml, attackBB & ~PromotionRank[C], pawn_right);
 
@@ -113,7 +113,7 @@ constexpr void Board::legal_evasions(MoveList& ml) noexcept
     push_quiet_promotions(ml, attackBB & PromotionRank[C], pawn_push);
 
     push_pawn_quiet_moves(ml, attackBB & ~PromotionRank[C], pawn_push, Move::FLAG_NONE);
-    attackBB = (C ? (((pieceBB & RankMask8[6]) >> 8) & ~occupiedBB) >> 8 : (((pieceBB & RankMask8[1]) << 8) & ~occupiedBB) << 8) & emptyBB;
+    attackBB = (C ? (((pieceBB & RANK_BB[6]) >> 8) & ~occupiedBB) >> 8 : (((pieceBB & RANK_BB[1]) << 8) & ~occupiedBB) << 8) & emptyBB;
     push_pawn_quiet_moves(ml, attackBB, 2 * pawn_push, Move::FLAG_DOUBLE_MASK);
 
     // knight
@@ -158,7 +158,7 @@ constexpr void Board::legal_evasions(MoveList& ml) noexcept
      *   dans cette position, si le roi va à gauche, il est toujours attaqué.
      *   si on laisse le roi dans l'échiquier, il ne sera pas attaqué
      */
-    colorPiecesBB[C] ^= BB::sq2BB(K);
+    colorPiecesBB[C] ^= BB::square_BB(K);
 
     auto mask = Attacks::king_moves(K) & colorPiecesBB[Them];
     while (mask)
@@ -176,7 +176,7 @@ constexpr void Board::legal_evasions(MoveList& ml) noexcept
     }
 
     // remet le roi dans l'échiquier
-    colorPiecesBB[C] ^= BB::sq2BB(K);
+    colorPiecesBB[C] ^= BB::square_BB(K);
 }
 
 // Explicit instantiations.

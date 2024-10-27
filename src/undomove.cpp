@@ -167,7 +167,7 @@ template <Color C> constexpr void Board::undo_move() noexcept
             //====================================================================================
             //  Petit Roque
             //------------------------------------------------------------------------------------
-            if ((BB::sq2BB(dest)) & FILE_G_BB)
+            if ((BB::square_BB(dest)) & FILE_G_BB)
             {
                 // Move the rook
                 BB::toggle_bit2(colorPiecesBB[C],  ksc_castle_rook_from[C], ksc_castle_rook_to[C]);
@@ -182,7 +182,7 @@ template <Color C> constexpr void Board::undo_move() noexcept
             //====================================================================================
             //  Grand Roque
             //------------------------------------------------------------------------------------
-            else if ((BB::sq2BB(dest)) & FILE_C_BB)
+            else if ((BB::square_BB(dest)) & FILE_C_BB)
             {
                 // Move the rook
                 BB::toggle_bit2(colorPiecesBB[C], qsc_castle_rook_from[C], qsc_castle_rook_to[C]);

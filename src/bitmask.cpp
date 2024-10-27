@@ -103,9 +103,9 @@ void calculate_squares_between()
                     } else if (dy < 0) {
                         sq1 = SQ::south(sq1);
                     }
-                    mask |= BB::sq2BB(sq1);
+                    mask |= BB::square_BB(sq1);
                 }
-                SQUARES_BETWEEN_MASK[i][j] = mask & ~BB::sq2BB(sq2);
+                SQUARES_BETWEEN_MASK[i][j] = mask & ~BB::square_BB(sq2);
             }
         }
     }
@@ -129,8 +129,8 @@ void init_bitmasks()
 {
     for (int sq = 0; sq < N_SQUARES; ++sq)
     {
-        RankMask64[sq]         = RankMask8[SQ::rank(sq)];
-        FileMask64[sq]         = FileMask8[SQ::file(sq)];
+        RankMask64[sq]         = RANK_BB[SQ::rank(sq)];
+        FileMask64[sq]         = FILE_BB[SQ::file(sq)];
         DiagonalMask64[sq]     = DiagMask16[((sq >> 3) - (sq & 7)) & 15];
         AntiDiagonalMask64[sq] = ADiagMask16[((sq >> 3) + (sq & 7)) ^ 7];
     }
@@ -185,8 +185,8 @@ void init_bitmasks()
     */
     for (int sq = 0; sq < 64; sq++)
     {
-        RearSpanMask[WHITE][sq] = (PassedPawnMask[BLACK][sq] & FileMask8[sq % 8]);
-        RearSpanMask[BLACK][sq] = (PassedPawnMask[WHITE][sq] & FileMask8[sq % 8]);
+        RearSpanMask[WHITE][sq] = (PassedPawnMask[BLACK][sq] & FILE_BB[sq % 8]);
+        RearSpanMask[BLACK][sq] = (PassedPawnMask[WHITE][sq] & FILE_BB[sq % 8]);
     }
 
 
@@ -195,8 +195,8 @@ void init_bitmasks()
     */
     for (int sq = 0; sq < 64; sq++) {
 
-        BackwardMask[WHITE][sq] = (PassedPawnMask[BLACK][sq] & ~FileMask8[sq % 8]);
-        BackwardMask[BLACK][sq] = (PassedPawnMask[WHITE][sq] & ~FileMask8[sq % 8]);
+        BackwardMask[WHITE][sq] = (PassedPawnMask[BLACK][sq] & ~FILE_BB[sq % 8]);
+        BackwardMask[BLACK][sq] = (PassedPawnMask[WHITE][sq] & ~FILE_BB[sq % 8]);
 
         if (sq % 8 != FILE_H)
         {
@@ -309,8 +309,8 @@ void init_bitmasks()
     for (int rank = 0; rank < N_RANKS; rank++)
     {
         for (int i = rank; i < N_RANKS; i++)
-            ForwardRanksMasks[WHITE][rank] |= RankMask8[i];
-        ForwardRanksMasks[BLACK][rank] = ~ForwardRanksMasks[WHITE][rank] | RankMask8[rank];
+            ForwardRanksMasks[WHITE][rank] |= RANK_BB[i];
+        ForwardRanksMasks[BLACK][rank] = ~ForwardRanksMasks[WHITE][rank] | RANK_BB[rank];
     }
 
     // Init a table of bitmasks for the squares on a file above a given square, by colour

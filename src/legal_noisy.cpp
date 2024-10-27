@@ -76,14 +76,14 @@ constexpr void Board::legal_noisy(MoveList& ml) noexcept
         if (can_castle_k<C>())
         {
             /*  squares_between(ksq, ksc_castle_king_to[us])   : case F1
-                 *  BB::sq2BB(ksc_castle_king_to[us])                   : case G1
+                 *  BB::square_BB(ksc_castle_king_to[us])                   : case G1
                  */
-            const Bitboard blockers         = occupancy_all() ^ BB::sq2BB(K) ^ BB::sq2BB(ksc_castle_rook_from[C]);
+            const Bitboard blockers         = occupancy_all() ^ BB::square_BB(K) ^ BB::square_BB(ksc_castle_rook_from[C]);
             const Bitboard king_path        = (squares_between(K, ksc_castle_king_to[C])  |
-                                        BB::sq2BB(ksc_castle_king_to[C])) ;
+                                        BB::square_BB(ksc_castle_king_to[C])) ;
             const bool     king_path_clear  = BB::empty(king_path & blockers);
             const Bitboard rook_path        = squares_between(ksc_castle_rook_to[C], ksc_castle_rook_from[C])
-                                       | BB::sq2BB(ksc_castle_rook_to[C]);
+                                       | BB::square_BB(ksc_castle_rook_to[C]);
             const bool     rook_path_clear  = BB::empty(rook_path & blockers);
 
             if (king_path_clear && rook_path_clear && !(squares_attacked<Them>() & king_path))
@@ -91,12 +91,12 @@ constexpr void Board::legal_noisy(MoveList& ml) noexcept
         }
         if (can_castle_q<C>())
         {
-            const Bitboard blockers         = occupancy_all() ^ BB::sq2BB(K) ^ BB::sq2BB(qsc_castle_rook_from[C]);
+            const Bitboard blockers         = occupancy_all() ^ BB::square_BB(K) ^ BB::square_BB(qsc_castle_rook_from[C]);
             const Bitboard king_path        = (squares_between(K, qsc_castle_king_to[C]) |
-                                        BB::sq2BB(qsc_castle_king_to[C]));
+                                        BB::square_BB(qsc_castle_king_to[C]));
             const bool     king_path_clear  = BB::empty(king_path & blockers);
             const Bitboard rook_path        = squares_between(qsc_castle_rook_to[C], qsc_castle_rook_from[C])
-                                       | BB::sq2BB(qsc_castle_rook_to[C]);
+                                       | BB::square_BB(qsc_castle_rook_to[C]);
             const bool     rook_path_clear = BB::empty(rook_path & blockers);
 
             if (king_path_clear && rook_path_clear && !(squares_attacked<Them>() & king_path))
@@ -110,14 +110,14 @@ constexpr void Board::legal_noisy(MoveList& ml) noexcept
             from = BB::pop_lsb(pieceBB);
             d = dir[from];
             
-            if (d == abs(pawn_left) && (BB::sq2BB(to = from + pawn_left) & Attacks::pawn_attacks<C>(from) & enemyBB ))
+            if (d == abs(pawn_left) && (BB::square_BB(to = from + pawn_left) & Attacks::pawn_attacks<C>(from) & enemyBB ))
             {
                 if (SQ::is_on_seventh_rank<C>(from))
                     push_capture_promotion(ml, from, to);
                 else
                     add_capture_move(ml, from, to, PAWN, pieceOn[to], Move::FLAG_NONE);
             }
-            else if (d == abs(pawn_right) && (BB::sq2BB(to = from + pawn_right) & Attacks::pawn_attacks<C>(from) & enemyBB))
+            else if (d == abs(pawn_right) && (BB::square_BB(to = from + pawn_right) & Attacks::pawn_attacks<C>(from) & enemyBB))
             {
                 if (SQ::is_on_seventh_rank<C>(from))
                     push_capture_promotion(ml, from, to);
@@ -190,9 +190,9 @@ constexpr void Board::legal_noisy(MoveList& ml) noexcept
         from = ep - 1;              // 28 - 1 = 27 = d4
         
         Bitboard our_pawns = occupancy_cp<C, PAWN>();
-        if (SQ::file(to) > 0 && our_pawns & BB::sq2BB(from) )
+        if (SQ::file(to) > 0 && our_pawns & BB::square_BB(from) )
         {
-            pieceBB = occupiedBB ^ BB::sq2BB(from) ^ BB::sq2BB(ep) ^ BB::sq2BB(to);
+            pieceBB = occupiedBB ^ BB::square_BB(from) ^ BB::square_BB(ep) ^ BB::square_BB(to);
 
             if (!(Attacks::bishop_moves(K, pieceBB) & bq & colorPiecesBB[Them]) &&
                 !(Attacks::rook_moves(K, pieceBB)   & rq & colorPiecesBB[Them]) )
@@ -202,9 +202,9 @@ constexpr void Board::legal_noisy(MoveList& ml) noexcept
         }
 
         from = ep + 1;          // 28 + 1 = 29 = f4
-        if (SQ::file(to) < 7 && our_pawns & BB::sq2BB(from) )
+        if (SQ::file(to) < 7 && our_pawns & BB::square_BB(from) )
         {
-            pieceBB = occupiedBB ^ BB::sq2BB(from) ^ BB::sq2BB(ep) ^ BB::sq2BB(to);
+            pieceBB = occupiedBB ^ BB::square_BB(from) ^ BB::square_BB(ep) ^ BB::square_BB(to);
 
             if ( !(Attacks::bishop_moves(K, pieceBB) & bq & colorPiecesBB[Them]) &&
                 !(Attacks::rook_moves(K, pieceBB)   & rq & colorPiecesBB[Them]) )
@@ -218,11 +218,11 @@ constexpr void Board::legal_noisy(MoveList& ml) noexcept
     // pawn
     pieceBB = typePiecesBB[PAWN] & unpinnedBB;
 
-    attackBB = (C ? (pieceBB & ~FileMask8[0]) >> 9 : (pieceBB & ~FileMask8[0]) << 7) & enemyBB;
+    attackBB = (C ? (pieceBB & ~FILE_BB[0]) >> 9 : (pieceBB & ~FILE_BB[0]) << 7) & enemyBB;
     push_capture_promotions(ml, attackBB & PromotionRank[C], pawn_left);
     push_pawn_capture_moves(ml, attackBB & ~PromotionRank[C], pawn_left);
 
-    attackBB = (C ? (pieceBB & ~FileMask8[7]) >> 7 : (pieceBB & ~FileMask8[7]) << 9) & enemyBB;
+    attackBB = (C ? (pieceBB & ~FILE_BB[7]) >> 7 : (pieceBB & ~FILE_BB[7]) << 9) & enemyBB;
     push_capture_promotions(ml, attackBB & PromotionRank[C], pawn_right);
     push_pawn_capture_moves(ml, attackBB & ~PromotionRank[C], pawn_right);
 
@@ -266,7 +266,7 @@ constexpr void Board::legal_noisy(MoveList& ml) noexcept
      *   dans cette position, si le roi va à gauche, il est toujours attaqué.
      *   si on laisse le roi dans l'échiquier, il ne sera pas attaqué
      */
-    colorPiecesBB[C] ^= BB::sq2BB(K);
+    colorPiecesBB[C] ^= BB::square_BB(K);
 
     auto mask = Attacks::king_moves(K) & colorPiecesBB[Them];
     while (mask)
@@ -277,7 +277,7 @@ constexpr void Board::legal_noisy(MoveList& ml) noexcept
     }
 
     // remet le roi dans l'échiquier
-    colorPiecesBB[C] ^= BB::sq2BB(K);
+    colorPiecesBB[C] ^= BB::square_BB(K);
 }
 
 

@@ -272,7 +272,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
 #endif
 
             // Pion passé protégé
-            if (BB::sq2BB(sq) & BB::all_pawn_attacks<US>(upawns))
+            if (BB::square_BB(sq) & BB::all_pawn_attacks<US>(upawns))
             {
                 eval += PassedDefended[rank];
 
@@ -284,7 +284,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
 #endif
             }
 
-            ei.passedPawns |= BB::sq2BB(sq);
+            ei.passedPawns |= BB::square_BB(sq);
         }
 
     } // pions
@@ -383,7 +383,7 @@ Score Board::evaluate_passed(EvalInfo& ei)
 
 
         // Pion passé libre d'avancer
-        else if (!(BB::sq2BB(forward) & ei.attacked[THEM]))
+        else if (!(BB::square_BB(forward) & ei.attacked[THEM]))
         {
             eval += PassedFreeAdv[rank];
 
@@ -397,7 +397,7 @@ Score Board::evaluate_passed(EvalInfo& ei)
 
         // Tour soutenant le pion; il n'y a rien entre le pion et la tour
         if (  occupancy_cp<US, ROOK>()                          // les tours amies
-            & BB::fill<DOWN>(BB::sq2BB(sq))         // situées derrière le pion
+            & BB::fill<DOWN>(BB::square_BB(sq))         // situées derrière le pion
             & Attacks::rook_moves(sq, ei.occupied)) // cases attaquées par une tour en "sq"
         {
             eval += PassedRookBack;
@@ -1004,7 +1004,7 @@ Score Board::evaluate_threats(const EvalInfo& ei)
     pawnPushAttacks         &= nonPawnEnemies;
 
     eval += BB::count_bit(pawnPushAttacks)          * PawnPushThreat
-          + BB::count_bit(pawnPushAttacks & pinned) * PawnPushPinnedThreat;
+            + BB::count_bit(pawnPushAttacks & pinned) * PawnPushPinnedThreat;
 
 #if defined USE_TUNER
     ownTuner.Trace.PawnThreat[US]            += BB::count_bit(pawnThreats);
@@ -1019,23 +1019,23 @@ Score Board::evaluate_threats(const EvalInfo& ei)
         int oppQueenSquare = BB::pop_lsb(bb);
 
         Bitboard knightQueenHits = Attacks::knight_moves(oppQueenSquare)
-                                 & ei.attackedBy[US][KNIGHT]
-                                 & ~occupancy_cp<US, PAWN>()
-                                 & ~covered;
+                                   & ei.attackedBy[US][KNIGHT]
+                                   & ~occupancy_cp<US, PAWN>()
+                                   & ~covered;
         eval += BB::count_bit(knightQueenHits) * KnightCheckQueen;
 
         Bitboard bishopQueenHits = Attacks::bishop_moves(oppQueenSquare, ei.occupied)
-                                 & ei.attackedBy[US][BISHOP]
-                                 & ~occupancy_cp<US, PAWN>()
-                                 & ~covered
-                                 & ei.attackedBy2[US];
+                                   & ei.attackedBy[US][BISHOP]
+                                   & ~occupancy_cp<US, PAWN>()
+                                   & ~covered
+                                   & ei.attackedBy2[US];
         eval += BB::count_bit(bishopQueenHits) * BishopCheckQueen;
 
         Bitboard rookQueenHits = Attacks::rook_moves(oppQueenSquare, ei.occupied)
-                               & ei.attackedBy[US][ROOK]
-                               & ~occupancy_cp<US, PAWN>()
-                               & ~covered
-                               & ei.attackedBy2[US];
+                                 & ei.attackedBy[US][ROOK]
+                                 & ~occupancy_cp<US, PAWN>()
+                                 & ~covered
+                                 & ei.attackedBy2[US];
         eval += BB::count_bit(rookQueenHits) * RookCheckQueen;
 
 #if defined USE_TUNER
@@ -1155,8 +1155,8 @@ void Board::init_eval_info(EvalInfo& ei)
 {
     // Initialisation des Bitboards
     constexpr Bitboard  RelRanK2BB[2] = {                          // La rangée 2, relativement à la couleur
-                                        RankMask8[SQ::relative_rank8<WHITE>(RANK_2)],
-                                        RankMask8[SQ::relative_rank8<BLACK>(RANK_2)],
+                                        RANK_BB[SQ::relative_rank8<WHITE>(RANK_2)],
+                                        RANK_BB[SQ::relative_rank8<BLACK>(RANK_2)],
                                         };
 
     ei.phase24 = 0;
@@ -1214,7 +1214,7 @@ void Board::init_eval_info(EvalInfo& ei)
     ei.attackedBy[WHITE][KING] = whiteKingAtks;
     ei.attackedBy2[WHITE] = ei.attacked[WHITE] & whiteKingAtks;
     ei.attacked[WHITE] |= whiteKingAtks;
-    ei.KingRing[WHITE] = (whiteKingAtks | BB::north(whiteKingAtks)) & ~BB::sq2BB(king_square<WHITE>());
+    ei.KingRing[WHITE] = (whiteKingAtks | BB::north(whiteKingAtks)) & ~BB::square_BB(king_square<WHITE>());
 
     ei.attacked[BLACK] = ei.attackedBy[BLACK][PAWN] = BB::all_pawn_attacks<BLACK>(ei.pawns[BLACK]);
 
@@ -1222,7 +1222,7 @@ void Board::init_eval_info(EvalInfo& ei)
     ei.attackedBy[BLACK][KING] = blackKingAtks;
     ei.attackedBy2[BLACK] = ei.attacked[BLACK] & blackKingAtks;
     ei.attacked[BLACK] |= blackKingAtks;
-    ei.KingRing[BLACK] = (blackKingAtks | BB::south(blackKingAtks)) & ~BB::sq2BB(king_square<BLACK>());
+    ei.KingRing[BLACK] = (blackKingAtks | BB::south(blackKingAtks)) & ~BB::square_BB(king_square<BLACK>());
 
     // Berserk / Stockfish modifiée
     ei.outposts[WHITE] =   (RANK_4_BB | RANK_5_BB | RANK_6_BB)              // rangées 4,5,6
