@@ -1,3 +1,4 @@
+#include <chrono>
 #include "Tuner.h"
 #include <cmath>
 #include <cstring>
@@ -37,26 +38,36 @@ void Tuner::runTexelTuning()
     double error = 0;
     double rate = LRRATE;
 
-    TexelEntry *entries = (TexelEntry*) calloc(NPOSITIONS, sizeof(TexelEntry));
-    TupleStack          = (TexelTuple*) calloc(STACKSIZE,  sizeof(TexelTuple));
-
-    printf("Tuning %d terms using %d positions from %s\n", NTERMS, NPOSITIONS, DATASET);
+    std::cout <<"Tuning << " << NTERMS << " terms using " << NPOSITIONS << " positions from " << DATASET << std::endl;
 
     // Initialisation des valeurs de base
+
+    std::cout << "InitBaseParams ...";
     InitBaseParams(baseParams);
+    std::cout << " done" << std::endl;
+
+    std::cout << "PrintParameters ...";
     PrintParameters(params, baseParams);
+    std::cout << " done" << std::endl;
 
     // Initialisation du tuner
-    InitTunerEntries(entries);
+    std::cout << "InitTunerEntries ... \n";
+    InitTunerEntries();
+    std::cout << "InitTunerEntries done" << std::endl;
 
-    printf("Optimal K...\r");
-    K = ComputeOptimalK(entries);
-    printf("Optimal K: %g\n\n", K);
+    std::cout << "Optimal K... \n" << std::endl;
+    K = ComputeOptimalK();
+    std::cout << "Optimal K: " << K << std::endl;
 
-    for (int epoch = 1; epoch <= MAXEPOCHS; epoch++) {
+    auto start_search      = std::chrono::high_resolution_clock::now();
+    auto start_report      = start_search;
+
+    for (int epoch = 1; epoch <= MAXEPOCHS; epoch++)
+    {
+        // std::cout << "epoch "  << epoch << std::endl;
 
         double gradient[NTERMS][N_PHASES] = { {0} };
-        ComputeGradient(entries, gradient, params, K);
+        ComputeGradient(gradient, params, K);
 
         for (int i = 0; i < NTERMS; i++) 
         {
@@ -73,7 +84,7 @@ void Tuner::runTexelTuning()
             params[i][EG] -= rate * momentum[i][EG] / (1e-8 + sqrt(velocity[i][EG]));
         }
 
-        error = TunedEvaluationErrors(entries, params, K);
+        error = TunedEvaluationErrors(params, K);
         // printf("\rEpoch [%d] Error = [%.8f], Rate = [%g]", epoch, error, rate);
 
         // Pre-scheduled Learning Rate drops
@@ -83,6 +94,12 @@ void Tuner::runTexelTuning()
         {
             printf("\rEpoch [%d] Error = [%.8f], Rate = [%g]", epoch, error, rate);
             PrintParameters(params, baseParams);
+            auto end            = std::chrono::high_resolution_clock::now();
+            auto delta_report   = std::chrono::duration_cast<std::chrono::milliseconds>(end - start_report);
+            auto delta_search   = std::chrono::duration_cast<std::chrono::milliseconds>(end - start_search);
+            std::cout << "epoch = " << epoch << " ; sec = " << delta_report.count()/1000.0 << "  " << delta_search.count()/1000.0 << std::endl;
+
+            start_report = end;
         }
     }
 }
@@ -91,7 +108,7 @@ void Tuner::runTexelTuning()
 //! \brief  Initalisation du tuner avec les valeurs
 //! du DATASET
 //------------------------------------------------------------
-void Tuner::InitTunerEntries(TexelEntry* entries)
+void Tuner::InitTunerEntries()
 {
     Board board;
 
@@ -114,6 +131,8 @@ void Tuner::InitTunerEntries(TexelEntry* entries)
     std::string     str_res;
     std::string     str;
     std::string     aux;
+    Position        position;
+
     std::vector<std::string> liste;
     int  index = 0;
     bool f = true;
@@ -144,11 +163,11 @@ void Tuner::InitTunerEntries(TexelEntry* entries)
 
         // Lichess
         if (line.find("[1.0]") != std::string::npos)
-            entries[index].result = 1.0;
+            position.result = 1.0;
         else if (line.find("[0.5]") != std::string::npos)
-            entries[index].result = 0.5;
+            position.result = 0.5;
         else if (line.find("[0.0]") != std::string::npos)
-            entries[index].result = 0.0;
+            position.result = 0.0;
         else
         {
             printf("Cannot Parse %s\n", line.c_str());
@@ -157,11 +176,11 @@ void Tuner::InitTunerEntries(TexelEntry* entries)
 
         // Zurichess
         // if (line.find("1-0") != std::string::npos)
-        //     entries[index].result = 1.0;
+        //     position.result = 1.0;
         // else if (line.find("1/2-1/2") != std::string::npos)
-        //     entries[index].result = 0.5;
+        //     position.result = 0.5;
         // else if (line.find("0-1") != std::string::npos)
-        //     entries[index].result = 0.0;
+        //     position.result = 0.0;
         // else
         // {
         //     printf("Cannot Parse %s\n", line.c_str());
@@ -173,7 +192,8 @@ void Tuner::InitTunerEntries(TexelEntry* entries)
         {
             // Set the board with the current FEN and initialize
             board.set_fen(str_fen, false);
-            InitTunerEntry(entries[index], &board);
+            InitTunerEntry(position, &board);
+            positions[index] = position;
             index++;
         }
 
@@ -198,51 +218,60 @@ void Tuner::InitTunerEntries(TexelEntry* entries)
 //! \brief  Initialisation d'une entrée du tuner
 //! Chaque entrée correspond à une position du dataset
 //-----------------------------------------------------------------------
-void Tuner::InitTunerEntry(TexelEntry& entry, Board *board)
+void Tuner::InitTunerEntry(Position& position, Board *board)
 {
     // phase calculée à partir du nombre de pièces
     int phase24 = board->get_phase24();
 
     // phase24 =  0  : EndGame
     //           24  : MiddleGame
-    entry.pfactors[MG] = 0 + phase24 / 24.0;   // 0-24 -> 0-1 ; donc 1 en MG
-    entry.pfactors[EG] = 1 - phase24 / 24.0;   // 0-24 -> 1-0 ; donc 1 en EG
+    position.pfactors[MG] = 0 + phase24 / 24.0;   // 0-24 -> 0-1 ; donc 1 en MG
+    position.pfactors[EG] = 1 - phase24 / 24.0;   // 0-24 -> 1-0 ; donc 1 en EG
 
     // phase
-    entry.phase256 = board->get_phase256(phase24);
+    position.phase256 = board->get_phase256(phase24);
 
-    double coeffs[NTERMS];
     Trace = EmptyTrace;
+
+    // les coefficients sont relatifs à une position
+    std::array<Score, NTERMS> coeffs;
 
     // Save a WHITE POV static evaluation
     // Evaluation should be from White POV,
     // but we still call evaluate() from stm perspective
     // to get right tempo evaluation
-    entry.seval = (board->side_to_move == WHITE) ? board->evaluate()
+    position.seval = (board->side_to_move == WHITE) ? board->evaluate()
                                                  : -board->evaluate();
 
     // Initialisation des coefficients de "Trace"
     // à partir de l'évaluation
+    // std::cout << "InitCoefficients ...";
     InitCoefficients(coeffs);
+    // std::cout << " done" << std::endl;
 
     // Allocation mémoire des tuples de l'entrée
     // et initialisation à partir des coefficients "coeffs"
-    InitTunerTuples(entry, coeffs);
+    // std::cout << "InitTunerTuples ..." << position.seval;
+    InitTunerTuples(position, coeffs);
+    // std::cout << " done" << std::endl;
+
 
     // 5. Save Final evaluation for easier gradient recalculation
     // As we called evaluate() from stm perspective
     // we need to adjust it here to be from WHITE POW
-    entry.eval  = Trace.eval;
-    entry.turn  = board->side_to_move;
+    position.eval  = Trace.eval;
+    position.turn  = board->side_to_move;
 
     // 6. Also save modifiers to know is it is
     // OCBEndgame
-    entry.scale = Trace.scale / 128.0;
+    position.scale = Trace.scale / 128.0;
 }
 
-void Tuner::InitTunerTuples(TexelEntry& entry, const double coeffs[NTERMS])
+//==========================================================================
+//! \brief  Allocation mémoire des coefficients de chaque entrée
+//--------------------------------------------------------------------------
+void Tuner::InitTunerTuples(Position& position, const std::array<Score, NTERMS>& coeffs)
 {
-    static int allocs = 0;
     int length = 0, tidx = 0;
 
     // Count the needed Coefficients
@@ -250,47 +279,19 @@ void Tuner::InitTunerTuples(TexelEntry& entry, const double coeffs[NTERMS])
     for (int i = 0; i < NTERMS; i++)
         length += coeffs[i] != 0.0;
 
-    // TupleStack est alloué au départ, puis chaque entrée
-    // va en utiliser une portion.
-    // Lorsque tout le tableau TupleStack est utilisé, on refait
-    // une allocation.
-    // Cette méthode permet de limiter les allocations.
-
-    /* |..........|...........|..............   TupleStack
-     * |          |           |
-     * entrée 1   |           |
-     *            entrée 2    |
-     *                        |
-     *                        entrée 3
-     */
-
-    // Il ne reste plus assez de place dans TupleStack
-    // Il faut re-allouer de la mémoire.
-    if (length > TupleStackSize)
-    {
-        TupleStackSize = STACKSIZE;
-        TupleStack = (TexelTuple*)calloc(STACKSIZE, sizeof(TexelTuple));    // nouvelle allocation
-        int ttupleMB = STACKSIZE * sizeof(TexelTuple) / (1 << 20);
-        printf("Allocating [%dMB] x%d\r", ttupleMB, ++allocs);
-    }
-
-    // Pointe l'entrée sur la portion de TupleStack
-    // qui lui est destinée.
-    entry.tuples   = TupleStack;    // pointe l'entrée sur sa zone de TupleStack
-    entry.ntuples  = length;        // nombre d'éléments effectifs (non-nuls)
-    TupleStack     += length;       // déplace le pointeur pour la prochaine entrée
-    TupleStackSize -= length;       // diminue la place disponible restante de TupleStack
+    // length est beaucoup plus petit que NTERMS
+    // ce qui permet un gain de mémoire
 
     // Initialise les éléments de tuples
     // i = index dans les coefficients
+    position.tuples.resize(length);
     for (int i = 0; i < NTERMS; i++)
         if (coeffs[i] != 0.0)
-            entry.tuples[tidx++] = {i, coeffs[i]};
-
-
+            position.tuples[tidx++] = {i, coeffs[i]} ;
 }
 
-void Tuner::InitCoefficients(double coeffs[NTERMS])
+
+void Tuner::InitCoefficients(std::array<Score, NTERMS>& coeffs)
 {
     int index = 0;
 
@@ -302,34 +303,34 @@ void Tuner::InitCoefficients(double coeffs[NTERMS])
     InitCoeffSingle(coeffs, Trace.QueenValue,   index);
 
     // PSQT
-    InitCoeffArray(coeffs, Trace.PawnPSQT,      N_SQUARES, index);
-    InitCoeffArray(coeffs, Trace.KnightPSQT,    N_SQUARES, index);
-    InitCoeffArray(coeffs, Trace.BishopPSQT,    N_SQUARES, index);
-    InitCoeffArray(coeffs, Trace.RookPSQT,      N_SQUARES, index);
-    InitCoeffArray(coeffs, Trace.QueenPSQT,     N_SQUARES, index);
-    InitCoeffArray(coeffs, Trace.KingPSQT,      N_SQUARES, index);
+    InitCoeffArray1D(coeffs, Trace.PawnPSQT,       index);
+    InitCoeffArray1D(coeffs, Trace.KnightPSQT,     index);
+    InitCoeffArray1D(coeffs, Trace.BishopPSQT,     index);
+    InitCoeffArray1D(coeffs, Trace.RookPSQT,       index);
+    InitCoeffArray1D(coeffs, Trace.QueenPSQT,      index);
+    InitCoeffArray1D(coeffs, Trace.KingPSQT,       index);
 
     // Pions
     InitCoeffSingle(coeffs, Trace.PawnDoubled,                  index);
     InitCoeffSingle(coeffs, Trace.PawnDoubled2,                 index);
     InitCoeffSingle(coeffs, Trace.PawnSupport,                  index);
     InitCoeffSingle(coeffs, Trace.PawnOpen,                     index);
-    InitCoeffArray( coeffs, Trace.PawnPhalanx,      N_RANKS,    index);
+    InitCoeffArray1D(coeffs, Trace.PawnPhalanx,          index);
     InitCoeffSingle(coeffs, Trace.PawnIsolated,                 index);
-    InitCoeffArray( coeffs, Trace.PawnPassed,       N_RANKS,    index);
-    InitCoeffArray( coeffs, Trace.PassedDefended,   N_RANKS,    index);
+    InitCoeffArray1D(coeffs, Trace.PawnPassed,           index);
+    InitCoeffArray1D(coeffs, Trace.PassedDefended,       index);
 
     // Pions passés
     InitCoeffSingle(coeffs, Trace.PassedSquare,                 index);
-    InitCoeffArray( coeffs, Trace.PassedDistUs,     N_RANKS,    index);
+    InitCoeffArray1D(coeffs, Trace.PassedDistUs,         index);
     InitCoeffSingle(coeffs, Trace.PassedDistThem,               index);
-    InitCoeffArray( coeffs, Trace.PassedBlocked,    N_RANKS,    index);
-    InitCoeffArray( coeffs, Trace.PassedFreeAdv,    N_RANKS,    index);
+    InitCoeffArray1D(coeffs, Trace.PassedBlocked,        index);
+    InitCoeffArray1D(coeffs, Trace.PassedFreeAdv,        index);
     InitCoeffSingle(coeffs, Trace.PassedRookBack,               index);
 
     // Cavaliers
     InitCoeffSingle(coeffs, Trace.KnightBehindPawn,         index);
-    InitCoeffArray2D( coeffs, Trace.KnightOutpost,     index);
+    InitCoeffArray2D(coeffs, Trace.KnightOutpost,     index);
 
     // Fous
     InitCoeffSingle(coeffs, Trace.BishopPair,               index);
@@ -338,7 +339,7 @@ void Tuner::InitCoefficients(double coeffs[NTERMS])
     InitCoeffSingle(coeffs, Trace.BishopLongDiagonal,       index);
 
     // Tours
-    InitCoeffArray( coeffs, Trace.RookOnOpenFile,   2,      index);
+    InitCoeffArray1D(coeffs, Trace.RookOnOpenFile,         index);
     InitCoeffSingle(coeffs, Trace.RookOnBlockedFile,        index);
 
     InitCoeffSingle(coeffs, Trace.QueenRelativePin,        index);
@@ -348,9 +349,9 @@ void Tuner::InitCoefficients(double coeffs[NTERMS])
     InitCoeffSingle(coeffs, Trace.PawnShelter,              index);
 
     // Menaces
-    InitCoeffArray( coeffs, Trace.ThreatByKnight,       N_PIECES,   index);
-    InitCoeffArray( coeffs, Trace.ThreatByBishop,       N_PIECES,   index);
-    InitCoeffArray( coeffs, Trace.ThreatByRook,         N_PIECES,   index);
+    InitCoeffArray1D(coeffs, Trace.ThreatByKnight,          index);
+    InitCoeffArray1D(coeffs, Trace.ThreatByBishop,          index);
+    InitCoeffArray1D(coeffs, Trace.ThreatByRook,            index);
     InitCoeffSingle(coeffs, Trace.ThreatByKing,                     index);
     InitCoeffSingle(coeffs, Trace.HangingThreat,                    index);
     InitCoeffSingle(coeffs, Trace.PawnThreat,                       index);
@@ -361,21 +362,24 @@ void Tuner::InitCoefficients(double coeffs[NTERMS])
     InitCoeffSingle(coeffs, Trace.RookCheckQueen,                   index);
 
     // Attaques sur le roi ennemi
-    InitCoeffArray( coeffs, Trace.SafeCheck,            N_PIECES,   index);
-    InitCoeffArray( coeffs, Trace.UnsafeCheck,          N_PIECES,   index);
-    InitCoeffArray( coeffs, Trace.KingAttackersWeight,  N_PIECES,   index);
-    InitCoeffArray( coeffs, Trace.KingAttacksCount,     14,         index);
+    InitCoeffArray1D(coeffs, Trace.SafeCheck,               index);
+    InitCoeffArray1D(coeffs, Trace.UnsafeCheck,             index);
+    InitCoeffArray1D(coeffs, Trace.KingAttackersWeight,     index);
+    InitCoeffArray1D(coeffs, Trace.KingAttacksCount,              index);
 
     // Mobilité
-    InitCoeffArray(coeffs, Trace.KnightMobility,     9, index);
-    InitCoeffArray(coeffs, Trace.BishopMobility,    14, index);
-    InitCoeffArray(coeffs, Trace.RookMobility,      15, index);
-    InitCoeffArray(coeffs, Trace.QueenMobility,     28, index);
+    InitCoeffArray1D(coeffs, Trace.KnightMobility,      index);
+    InitCoeffArray1D(coeffs, Trace.BishopMobility,     index);
+    InitCoeffArray1D(coeffs, Trace.RookMobility,       index);
+    InitCoeffArray1D(coeffs, Trace.QueenMobility,      index);
+
+
 
     if (index != NTERMS){
         printf("Error in InitCoefficients(): i = %d ; NTERMS = %d\n", index, NTERMS);
         exit(EXIT_FAILURE);
     }
+
 }
 
 //===============================================================
@@ -385,6 +389,11 @@ void Tuner::InitBaseParams(double tparams[NTERMS][N_PHASES])
 {
     int index = 0;
 
+#if defined PARAM_ZERO
+    for (int i=0; i<NTERMS; i++)
+        InitBaseSingle(tparams, 0,      index);
+#else
+
     // Piece values
     InitBaseSingle(tparams, PawnValue,      index);
     InitBaseSingle(tparams, KnightValue,    index);
@@ -393,29 +402,29 @@ void Tuner::InitBaseParams(double tparams[NTERMS][N_PHASES])
     InitBaseSingle(tparams, QueenValue,     index);
 
     // PSQT
-    InitBaseArray(tparams, PawnPSQT,    N_SQUARES, index);
-    InitBaseArray(tparams, KnightPSQT,  N_SQUARES, index);
-    InitBaseArray(tparams, BishopPSQT,  N_SQUARES, index);
-    InitBaseArray(tparams, RookPSQT,    N_SQUARES, index);
-    InitBaseArray(tparams, QueenPSQT,   N_SQUARES, index);
-    InitBaseArray(tparams, KingPSQT,    N_SQUARES, index);
+    InitBaseArray1D(tparams, PawnPSQT,        index);
+    InitBaseArray1D(tparams, KnightPSQT,      index);
+    InitBaseArray1D(tparams, BishopPSQT,      index);
+    InitBaseArray1D(tparams, RookPSQT,        index);
+    InitBaseArray1D(tparams, QueenPSQT,       index);
+    InitBaseArray1D(tparams, KingPSQT,        index);
 
     // Pions
-    InitBaseSingle(tparams, PawnDoubled,             index);
-    InitBaseSingle(tparams, PawnDoubled2,            index);
-    InitBaseSingle(tparams, PawnSupport,             index);
-    InitBaseSingle(tparams, PawnOpen,                index);
-    InitBaseArray( tparams, PawnPhalanx,    N_RANKS, index);
-    InitBaseSingle(tparams, PawnIsolated,            index);
-    InitBaseArray( tparams, PawnPassed,     N_RANKS, index);
-    InitBaseArray( tparams, PassedDefended, N_RANKS, index);
+    InitBaseSingle(tparams, PawnDoubled,    index);
+    InitBaseSingle(tparams, PawnDoubled2,   index);
+    InitBaseSingle(tparams, PawnSupport,    index);
+    InitBaseSingle(tparams, PawnOpen,       index);
+    InitBaseArray1D( tparams, PawnPhalanx,    index);
+    InitBaseSingle(tparams, PawnIsolated,   index);
+    InitBaseArray1D( tparams, PawnPassed,     index);
+    InitBaseArray1D( tparams, PassedDefended, index);
 
     // Pions passés
     InitBaseSingle(tparams, PassedSquare,            index);
-    InitBaseArray( tparams, PassedDistUs,   N_RANKS,       index);
+    InitBaseArray1D( tparams, PassedDistUs,          index);
     InitBaseSingle(tparams, PassedDistThem,          index);
-    InitBaseArray( tparams, PassedBlocked,  N_RANKS,       index);
-    InitBaseArray( tparams, PassedFreeAdv,  N_RANKS,       index);
+    InitBaseArray1D( tparams, PassedBlocked,         index);
+    InitBaseArray1D( tparams, PassedFreeAdv,         index);
     InitBaseSingle(tparams, PassedRookBack,          index);
 
     // Divers
@@ -427,7 +436,7 @@ void Tuner::InitBaseParams(double tparams[NTERMS][N_PHASES])
     InitBaseSingle(tparams, BishopBehindPawn,       index);
     InitBaseSingle(tparams, BishopLongDiagonal,     index);
 
-    InitBaseArray( tparams, RookOnOpenFile,  2,     index);
+    InitBaseArray1D( tparams, RookOnOpenFile,       index);
     InitBaseSingle(tparams, RookOnBlockedFile,      index);
 
     InitBaseSingle(tparams, QueenRelativePin,      index);
@@ -437,9 +446,9 @@ void Tuner::InitBaseParams(double tparams[NTERMS][N_PHASES])
     InitBaseSingle(tparams, PawnShelter,            index);
 
     // Menaces
-    InitBaseArray( tparams, ThreatByKnight,         N_PIECES,   index);
-    InitBaseArray( tparams, ThreatByBishop,         N_PIECES,   index);
-    InitBaseArray( tparams, ThreatByRook,           N_PIECES,   index);
+    InitBaseArray1D( tparams, ThreatByKnight,            index);
+    InitBaseArray1D( tparams, ThreatByBishop,            index);
+    InitBaseArray1D( tparams, ThreatByRook,              index);
     InitBaseSingle(tparams, ThreatByKing,                       index);
     InitBaseSingle(tparams, HangingThreat,                      index);
     InitBaseSingle(tparams, PawnThreat,                         index);
@@ -450,21 +459,23 @@ void Tuner::InitBaseParams(double tparams[NTERMS][N_PHASES])
     InitBaseSingle(tparams, RookCheckQueen,                     index);
 
     // Attaques sur le roi ennemi
-    InitBaseArray( tparams, SafeCheck,              N_PIECES,      index);
-    InitBaseArray( tparams, UnsafeCheck,            N_PIECES,      index);
-    InitBaseArray( tparams, KingAttackersWeight,    N_PIECES,      index);
-    InitBaseArray( tparams, KingAttacksCount,       14,            index);
+    InitBaseArray1D( tparams, SafeCheck,            index);
+    InitBaseArray1D( tparams, UnsafeCheck,          index);
+    InitBaseArray1D( tparams, KingAttackersWeight,  index);
+    InitBaseArray1D( tparams, KingAttacksCount,     index);
 
     // Mobilité
-    InitBaseArray( tparams, KnightMobility,  9,      index);
-    InitBaseArray( tparams, BishopMobility, 14,      index);
-    InitBaseArray( tparams, RookMobility,   15,      index);
-    InitBaseArray( tparams, QueenMobility,  28,      index);
+    InitBaseArray1D( tparams, KnightMobility,       index);
+    InitBaseArray1D( tparams, BishopMobility,       index);
+    InitBaseArray1D( tparams, RookMobility,         index);
+    InitBaseArray1D( tparams, QueenMobility,        index);
+
 
     if (index != NTERMS) {
         printf("Error 1 in InitBaseParams(): i = %d ; NTERMS = %d\n", index, NTERMS);
         exit(EXIT_FAILURE);
     }
+#endif
 }
 
 
@@ -474,26 +485,26 @@ double Tuner::Sigmoid(double K, double E)
 }
 
 
-double Tuner::ComputeOptimalK(const TexelEntry *entries)
+double Tuner::ComputeOptimalK()
 {
     const double rate = 100, delta = 1e-5, deviation_goal = 1e-6;
     double K = 2, deviation = 1;
 
     while (fabs(deviation) > deviation_goal)
     {
-        double up   = StaticEvaluationErrors(entries, K + delta);
-        double down = StaticEvaluationErrors(entries, K - delta);
+        double up   = StaticEvaluationErrors(K + delta);
+        double down = StaticEvaluationErrors(K - delta);
         deviation = (up - down) / (2 * delta);
         K -= deviation * rate;
 
-        printf("up = %g ; down = %g ; deviation = %g ; goal = %g \n", up, down, fabs(deviation), deviation_goal);
+        std::cout << "up = " << up << " ; down = " << down << " ; deviation = " << deviation << " ; goal = " << deviation_goal << std::endl;
     }
 
     return K;
 
 }
 
-double Tuner::StaticEvaluationErrors(const TexelEntry* entries, double K)
+double Tuner::StaticEvaluationErrors(double K)
 {
     // Compute the error of the dataset using the Static Evaluation.
     // We provide simple speedups that make use of the OpenMP Library.
@@ -502,53 +513,53 @@ double Tuner::StaticEvaluationErrors(const TexelEntry* entries, double K)
     {
 #pragma omp for schedule(static, NPOSITIONS / NPARTITIONS) reduction(+:total)
         for (int i = 0; i < NPOSITIONS; i++)
-            total += pow(entries[i].result - Sigmoid(K, entries[i].seval), 2);
+            total += pow(positions[i].result - Sigmoid(K, positions[i].seval), 2);
     }
 
     return total / (double) NPOSITIONS;
 }
 
-double Tuner::LinearEvaluation(const TexelEntry& entry, double params[NTERMS][N_PHASES])
+double Tuner::LinearEvaluation(const Position& position, double params[NTERMS][N_PHASES])
 {
-    double midgame = MgScore(entry.eval);
-    double endgame = EgScore(entry.eval);
+    double midgame = MgScore(position.eval);
+    double endgame = EgScore(position.eval);
 
     // Save any modifications for MG or EG for each evaluation type
-    for (int i = 0; i < entry.ntuples; i++)
+    for (int i = 0; i < position.tuples.size(); i++)
     {
-        int termIndex = entry.tuples[i].index;
-        midgame += (double) entry.tuples[i].coeff * params[termIndex][MG];
-        endgame += (double) entry.tuples[i].coeff * params[termIndex][EG];
+        int termIndex = position.tuples[i].index;
+        midgame += (double) position.tuples[i].coeff * params[termIndex][MG];
+        endgame += (double) position.tuples[i].coeff * params[termIndex][EG];
     }
 
-    double eval = ( midgame * entry.phase256
-                   +   endgame * (256.0 - entry.phase256) * entry.scale ) / 256.0;
+    double eval = ( midgame * position.phase256
+                   +   endgame * (256.0 - position.phase256) * position.scale ) / 256.0;
 
-    return eval + (entry.turn == WHITE ? Tempo : -Tempo);
+    return eval + (position.turn == WHITE ? Tempo : -Tempo);
 
 }
 
-void Tuner::UpdateSingleGradient(const TexelEntry& entry, double gradient[NTERMS][N_PHASES], double params[NTERMS][N_PHASES], double K)
+void Tuner::UpdateSingleGradient(const Position& position, double gradient[NTERMS][N_PHASES], double params[NTERMS][N_PHASES], double K)
 {
-    double E = LinearEvaluation(entry, params);
+    double E = LinearEvaluation(position, params);
     double S = Sigmoid(K, E);
-    double X = (entry.result - S) * S * (1 - S);
+    double X = (position.result - S) * S * (1 - S);
 
-    double mgBase = X * entry.pfactors[MG];
-    double egBase = X * entry.pfactors[EG];
+    double mgBase = X * position.pfactors[MG];
+    double egBase = X * position.pfactors[EG];
 
-    for (int i = 0; i < entry.ntuples; i++)
+    for (int i = 0; i < position.tuples.size(); i++)
     {
-        int    index = entry.tuples[i].index;
-        double coeff = entry.tuples[i].coeff;
+        int    index = position.tuples[i].index;
+        double coeff = position.tuples[i].coeff;
 
         gradient[index][MG] += mgBase * coeff;
-        gradient[index][EG] += egBase * coeff * entry.scale;
+        gradient[index][EG] += egBase * coeff * position.scale;
     }
 
 }
 
-void Tuner::ComputeGradient(const TexelEntry *entries, double gradient[NTERMS][N_PHASES], double params[NTERMS][N_PHASES], double K)
+void Tuner::ComputeGradient(double gradient[NTERMS][N_PHASES], double params[NTERMS][N_PHASES], double K)
 {
 
 #pragma omp parallel shared(gradient)
@@ -557,7 +568,7 @@ void Tuner::ComputeGradient(const TexelEntry *entries, double gradient[NTERMS][N
 
 #pragma omp for schedule(static, NPOSITIONS / NPARTITIONS)
         for (int i = 0; i < NPOSITIONS; i++)
-            UpdateSingleGradient(entries[i], local, params, K);
+            UpdateSingleGradient(positions[i], local, params, K);
 
         for (int i = 0; i < NTERMS; i++) {
             gradient[i][MG] += local[i][MG];
@@ -567,7 +578,7 @@ void Tuner::ComputeGradient(const TexelEntry *entries, double gradient[NTERMS][N
 
 }
 
-double Tuner::TunedEvaluationErrors(const TexelEntry *entries, double params[NTERMS][N_PHASES], double K)
+double Tuner::TunedEvaluationErrors(double params[NTERMS][N_PHASES], double K)
 {
     double total = 0.0;
 
@@ -575,11 +586,10 @@ double Tuner::TunedEvaluationErrors(const TexelEntry *entries, double params[NTE
     {
 #pragma omp for schedule(static, NPOSITIONS / NPARTITIONS) reduction(+:total)
         for (int i = 0; i < NPOSITIONS; i++)
-            total += pow(entries[i].result - Sigmoid(K, LinearEvaluation(entries[i], params)), 2);
+            total += pow(positions[i].result - Sigmoid(K, LinearEvaluation(positions[i], params)), 2);
     }
 
     return total / (double) NPOSITIONS;
-
 }
 
 
@@ -666,6 +676,7 @@ void Tuner::PrintParameters(double params[NTERMS][N_PHASES], double current[NTER
     PrintMobility(tparams, index);
     puts("");
 
+
     if (index != NTERMS) {
         printf("Error 2 in PrintParameters(): i = %d ; NTERMS = %d\n", index, NTERMS);
         exit(EXIT_FAILURE);
@@ -751,14 +762,14 @@ void Tuner::PrintArray2D(const std::string& name, double params[NTERMS][N_PHASES
 {
     printf("constexpr Score %s%s = { ", name.c_str(), dim.c_str());
 
-    for (size_t i=0; i<imax; i++)
+    for (int i=0; i<imax; i++)
     {
         if (i == 0)
             printf("  { ");
         else
             printf("\n  { ");
 
-        for (size_t j=0; j<jmax; j++)
+        for (int j=0; j<jmax; j++)
         {
             if (j && j % length == 0)
                 printf("\n    ");
@@ -785,29 +796,29 @@ void Tuner::InitBaseSingle(double tparams[NTERMS][N_PHASES], const Score data, i
 }
 
 //! \brief  Initialisation d'un tableau[imax]
-void Tuner::InitBaseArray(double tparams[NTERMS][N_PHASES], const Score* data, int imax, int& index)
-{
-    for (size_t i=0; i<imax; i++)
-    {
-        tparams[index][MG] = static_cast<double>(MgScore(data[i]));
-        tparams[index][EG] = static_cast<double>(EgScore(data[i]));
-        index++;
-    }
-}
+// void Tuner::InitBaseArray(double tparams[NTERMS][N_PHASES], const Score* data, int imax, int& index)
+// {
+//     for (int i=0; i<imax; i++)
+//     {
+//         tparams[index][MG] = static_cast<double>(MgScore(data[i]));
+//         tparams[index][EG] = static_cast<double>(EgScore(data[i]));
+//         index++;
+//     }
+// }
 
 //! \brief  Initialisation d'une valeur simple
 //! à partir des données de Trace
-void Tuner::InitCoeffSingle(double coeffs[NTERMS], Score score[2], int& index)
+void Tuner::InitCoeffSingle(std::array<Score, NTERMS>& coeffs, Score score[N_COLORS], int& index)
 {
     coeffs[index++] = score[WHITE] - score[BLACK];
 }
 
 // note : en 2D, seul la première dimension peut être absente
-void Tuner::InitCoeffArray(double coeffs[NTERMS], Score score[][2], int imax, int& index)
-{
-    for (size_t i=0; i<imax; i++)
-        coeffs[index++] = score[i][WHITE] - score[i][BLACK];
-}
+// void Tuner::InitCoeffArray(std::array<Score, NTERMS>& coeffs, Score score[][N_COLORS], int imax, int& index)
+// {
+//     for (int i=0; i<imax; i++)
+//         coeffs[index++] = score[i][WHITE] - score[i][BLACK];
+// }
 
 #endif
 
