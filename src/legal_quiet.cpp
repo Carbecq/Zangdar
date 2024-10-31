@@ -40,7 +40,7 @@ constexpr void Board::legal_quiet(MoveList& ml) noexcept
     const Bitboard unpinnedBB = colorPiecesBB[C] & ~pinnedBB;
 
     constexpr int pawn_push = PUSH[C];
-    const int *dir = allmask[K].direction;
+    const int *dir = DirectionMask[K].direction;
     Bitboard pieceBB;
     Bitboard attackBB;
     int from, to, d;

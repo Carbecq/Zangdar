@@ -19,7 +19,6 @@ extern void init_bitmasks();
 
 int main(int argCount, char* argValue[])
 {
-    init_bitmasks();
     Attacks::init_masks();
 
     //  Benchmark

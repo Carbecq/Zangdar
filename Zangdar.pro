@@ -228,7 +228,6 @@ SOURCES += \
     src/Uci.cpp \
     src/add_moves.cpp \
     src/attackers.cpp \
-    src/bitmask.cpp \
     src/evaluate.cpp \
     src/fen.cpp \
     src/legal_evasions.cpp \

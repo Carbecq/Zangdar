@@ -43,7 +43,7 @@ constexpr void Board::legal_noisy(MoveList& ml) noexcept
     constexpr int pawn_left = PUSH[C] - 1;
     constexpr int pawn_right = PUSH[C] + 1;
     constexpr int pawn_push = PUSH[C];
-    const int *dir = allmask[K].direction;
+    const int *dir = DirectionMask[K].direction;
     Bitboard pieceBB;
     Bitboard attackBB;
     int from, to, d, ep;
