@@ -4,7 +4,6 @@
 #include <string>
 #include <iomanip>
 #include "Board.h"
-#include "Square.h"
 
 //    rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 //                                                1 2    3 4 5

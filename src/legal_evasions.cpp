@@ -1,7 +1,6 @@
 #include "Board.h"
 #include "Bitboard.h"
 #include "Attacks.h"
-#include "Square.h"
 #include "Move.h"
 
 constexpr int PUSH[] = {8, -8};
@@ -73,9 +72,9 @@ constexpr void Board::legal_evasions(MoveList& ml) noexcept
         from = ep - 1;              // 28 - 1 = 27 = d4
         
         Bitboard our_pawns = occupancy_cp<C, PAWN>();
-        if (SQ::file(to) > 0 && our_pawns & BB::square_BB(from) )
+        if (SQ::file(to) > 0 && our_pawns & SQ::square_BB(from) )
         {
-            pieceBB = occupiedBB ^ BB::square_BB(from) ^ BB::square_BB(ep) ^ BB::square_BB(to);
+            pieceBB = occupiedBB ^ SQ::square_BB(from) ^ SQ::square_BB(ep) ^ SQ::square_BB(to);
 
             if ( !(Attacks::bishop_moves(K, pieceBB) & bq & colorPiecesBB[Them]) &&
                 !(Attacks::rook_moves(K, pieceBB)   & rq & colorPiecesBB[Them]) )
@@ -85,9 +84,9 @@ constexpr void Board::legal_evasions(MoveList& ml) noexcept
         }
 
         from = ep + 1;          // 28 + 1 = 29 = f4
-        if (SQ::file(to) < 7 && our_pawns & BB::square_BB(from) )
+        if (SQ::file(to) < 7 && our_pawns & SQ::square_BB(from) )
         {
-            pieceBB = occupiedBB ^ BB::square_BB(from) ^ BB::square_BB(ep) ^ BB::square_BB(to);
+            pieceBB = occupiedBB ^ SQ::square_BB(from) ^ SQ::square_BB(ep) ^ SQ::square_BB(to);
 
             if ( !(Attacks::bishop_moves(K, pieceBB) & bq & colorPiecesBB[Them]) &&
                 !(Attacks::rook_moves(K, pieceBB)   & rq & colorPiecesBB[Them]) )
@@ -158,7 +157,7 @@ constexpr void Board::legal_evasions(MoveList& ml) noexcept
      *   dans cette position, si le roi va à gauche, il est toujours attaqué.
      *   si on laisse le roi dans l'échiquier, il ne sera pas attaqué
      */
-    colorPiecesBB[C] ^= BB::square_BB(K);
+    colorPiecesBB[C] ^= SQ::square_BB(K);
 
     auto mask = Attacks::king_moves(K) & colorPiecesBB[Them];
     while (mask)
@@ -176,7 +175,7 @@ constexpr void Board::legal_evasions(MoveList& ml) noexcept
     }
 
     // remet le roi dans l'échiquier
-    colorPiecesBB[C] ^= BB::square_BB(K);
+    colorPiecesBB[C] ^= SQ::square_BB(K);
 }
 
 // Explicit instantiations.

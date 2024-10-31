@@ -1,7 +1,6 @@
 #include "PolyBook.h"
 #include <string>
 #include "Attacks.h"
-#include "Square.h"
 #include "Move.h"
 
 //=================================================

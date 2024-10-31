@@ -1,6 +1,6 @@
 #include "bitmask.h"
 #include "Attacks.h"
-#include "Square.h"
+#include "Bitboard.h"
 
 Bitboard RankMask64[N_SQUARES] = {0};
 Bitboard FileMask64[N_SQUARES] = {0};
@@ -103,9 +103,9 @@ void calculate_squares_between()
                     } else if (dy < 0) {
                         sq1 = SQ::south(sq1);
                     }
-                    mask |= BB::square_BB(sq1);
+                    mask |= SQ::square_BB(sq1);
                 }
-                SQUARES_BETWEEN_MASK[i][j] = mask & ~BB::square_BB(sq2);
+                SQUARES_BETWEEN_MASK[i][j] = mask & ~SQ::square_BB(sq2);
             }
         }
     }

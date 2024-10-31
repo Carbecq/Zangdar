@@ -12,8 +12,9 @@
 
 namespace BB {
 
-//! \brief  crée un bitboard à partir d'une case
-[[nodiscard]] constexpr Bitboard square_BB(const int sq) noexcept { return(1ULL << sq);}
+
+
+//------------
 
 //! \brief  récupère le bit à la position donnée
 [[nodiscard]] constexpr bool get_bit(Bitboard b, const int sq)  noexcept { return (b & (1ULL << sq)) ; }
@@ -256,11 +257,6 @@ template<Color C>
         return BB::south(pawns) & ~occupied;
 }
 
-//! \brief  Retourne le bitboard représentant la colonne 'file'
-[[nodiscard]] constexpr Bitboard file(int file) { return FILE_A_BB << file; }
-
-//! \brief  Retourne le bitboard représentant la rangée 'rank'
-[[nodiscard]] constexpr Bitboard rank(int rank) { return RANK_1_BB << (8 * rank); }
 
 //======================================
 //! \brief  Impression d'un Bitboard
@@ -276,7 +272,7 @@ inline void PrintBB(const Bitboard bb, const std::string& message)
 
     while (i >= 0) {
         const auto sq = i;
-        if (bb & BB::square_BB(sq)) {
+        if (bb & SQ::square_BB(sq)) {
             ss << "1 ";
         } else {
             ss << ". ";

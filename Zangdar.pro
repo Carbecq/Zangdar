@@ -196,7 +196,6 @@ HEADERS += \
     src/OrderInfo.h \
     src/PolyBook.h \
     src/Search.h \
-    src/Square.h \
     src/ThreadPool.h \
     src/Timer.h \
     src/TranspositionTable.h \

@@ -72,14 +72,14 @@ constexpr void Board::legal_quiet(MoveList& ml) noexcept
         if (can_castle_k<C>())
         {
             /*  squares_between(ksq, ksc_castle_king_to[us])   : case F1
-                 *  BB::square_BB(ksc_castle_king_to[us])                   : case G1
+                 *  SQ::square_BB(ksc_castle_king_to[us])                   : case G1
                  */
-            const Bitboard blockers         = occupancy_all() ^ BB::square_BB(K) ^ BB::square_BB(ksc_castle_rook_from[C]);
+            const Bitboard blockers         = occupancy_all() ^ SQ::square_BB(K) ^ SQ::square_BB(ksc_castle_rook_from[C]);
             const Bitboard king_path        = (squares_between(K, ksc_castle_king_to[C])  |
-                                        BB::square_BB(ksc_castle_king_to[C])) ;
+                                        SQ::square_BB(ksc_castle_king_to[C])) ;
             const bool     king_path_clear  = BB::empty(king_path & blockers);
             const Bitboard rook_path        = squares_between(ksc_castle_rook_to[C], ksc_castle_rook_from[C])
-                                       | BB::square_BB(ksc_castle_rook_to[C]);
+                                       | SQ::square_BB(ksc_castle_rook_to[C]);
             const bool     rook_path_clear  = BB::empty(rook_path & blockers);
 
             if (king_path_clear && rook_path_clear && !(squares_attacked<Them>() & king_path))
@@ -87,12 +87,12 @@ constexpr void Board::legal_quiet(MoveList& ml) noexcept
         }
         if (can_castle_q<C>())
         {
-            const Bitboard blockers         = occupancy_all() ^ BB::square_BB(K) ^ BB::square_BB(qsc_castle_rook_from[C]);
+            const Bitboard blockers         = occupancy_all() ^ SQ::square_BB(K) ^ SQ::square_BB(qsc_castle_rook_from[C]);
             const Bitboard king_path        = (squares_between(K, qsc_castle_king_to[C]) |
-                                        BB::square_BB(qsc_castle_king_to[C]));
+                                        SQ::square_BB(qsc_castle_king_to[C]));
             const bool     king_path_clear  = BB::empty(king_path & blockers);
             const Bitboard rook_path        = squares_between(qsc_castle_rook_to[C], qsc_castle_rook_from[C])
-                                       | BB::square_BB(qsc_castle_rook_to[C]);
+                                       | SQ::square_BB(qsc_castle_rook_to[C]);
             const bool     rook_path_clear = BB::empty(rook_path & blockers);
 
             if (king_path_clear && rook_path_clear && !(squares_attacked<Them>() & king_path))
@@ -106,10 +106,10 @@ constexpr void Board::legal_quiet(MoveList& ml) noexcept
             from = BB::pop_lsb(pieceBB);
             d = dir[from];
             
-            if (/*do_quiet && */ d == abs(pawn_push) && (BB::square_BB(to = from + pawn_push) & emptyBB))
+            if (/*do_quiet && */ d == abs(pawn_push) && (SQ::square_BB(to = from + pawn_push) & emptyBB))
             {
                 add_quiet_move(ml, from, to, PAWN, Move::FLAG_NONE);
-                if (SQ::is_on_second_rank<C>(from) && (BB::square_BB(to += pawn_push) & emptyBB))
+                if (SQ::is_on_second_rank<C>(from) && (SQ::square_BB(to += pawn_push) & emptyBB))
                     add_quiet_move(ml, from, to, PAWN, Move::FLAG_DOUBLE_MASK);
             }
         }
@@ -216,7 +216,7 @@ constexpr void Board::legal_quiet(MoveList& ml) noexcept
      *   dans cette position, si le roi va à gauche, il est toujours attaqué.
      *   si on laisse le roi dans l'échiquier, il ne sera pas attaqué
      */
-    colorPiecesBB[C] ^= BB::square_BB(K);
+    colorPiecesBB[C] ^= SQ::square_BB(K);
 
     auto mask = Attacks::king_moves(K) & ~occupiedBB;
     while (mask)
@@ -227,7 +227,7 @@ constexpr void Board::legal_quiet(MoveList& ml) noexcept
     }
 
     // remet le roi dans l'échiquier
-    colorPiecesBB[C] ^= BB::square_BB(K);
+    colorPiecesBB[C] ^= SQ::square_BB(K);
 }
 
 // Explicit instantiations.

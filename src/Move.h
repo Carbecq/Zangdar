@@ -4,8 +4,8 @@
 #include <ostream>
 #include <sstream>
 #include "defines.h"
-#include "Square.h"
-
+#include "types.h"
+#include "bitmask.h"
 
 namespace Move
 {

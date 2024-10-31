@@ -1,5 +1,4 @@
 #include "Board.h"
-#include "Square.h"
 #include "Move.h"
 
 /* This is the castle_mask array. We can use it to determine
@@ -335,7 +334,7 @@ template <Color C> constexpr void Board::make_move(const MOVE move) noexcept
             //====================================================================================
             //  Petit Roque
             //------------------------------------------------------------------------------------
-            if ((BB::square_BB(dest)) & FILE_G_BB)
+            if ((SQ::square_BB(dest)) & FILE_G_BB)
             {
                 assert(piece == KING);
                 assert(captured == NO_TYPE);
@@ -376,7 +375,7 @@ template <Color C> constexpr void Board::make_move(const MOVE move) noexcept
             //====================================================================================
             //  Grand Roque
             //------------------------------------------------------------------------------------
-            else if ((BB::square_BB(dest)) & FILE_C_BB)
+            else if ((SQ::square_BB(dest)) & FILE_C_BB)
             {
                 assert(piece == KING);
                 assert(captured == NO_TYPE);

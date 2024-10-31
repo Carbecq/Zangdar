@@ -31,7 +31,7 @@ constexpr Bitboard NOT_FILE_H_BB = ~FILE_H_BB;
 constexpr Bitboard NOT_FILE_HG_BB = 4557430888798830399ULL;
 constexpr Bitboard NOT_FILE_AB_BB = 18229723555195321596ULL;
 
-constexpr Bitboard DiagMask16[] = {
+constexpr Bitboard DiagMask16[16] = {
   0x8040201008040201ULL, 0x4020100804020100ULL, 0x2010080402010000ULL,
   0x1008040201000000ULL, 0x0804020100000000ULL, 0x0402010000000000ULL,
   0x0201000000000000ULL, 0x0100000000000000ULL,
@@ -40,7 +40,7 @@ constexpr Bitboard DiagMask16[] = {
   0x0000000080402010ULL, 0x0000008040201008ULL, 0x0000804020100804ULL,
   0x0080402010080402ULL
 };
-constexpr Bitboard ADiagMask16[] = {
+constexpr Bitboard ADiagMask16[16] = {
   0x0102040810204080ULL, 0x0001020408102040ULL, 0x0000010204081020ULL,
   0x0000000102040810ULL, 0x0000000001020408ULL, 0x0000000000010204ULL,
   0x0000000000000102ULL, 0x0000000000000001ULL,
@@ -50,8 +50,8 @@ constexpr Bitboard ADiagMask16[] = {
   0x0204081020408000ULL
 };
 
-
-constexpr Bitboard AdjacentFilesMask8[8] =
+//! \brief  donne le bitboard des colonnes adjacentes à la colonne donnée
+constexpr Bitboard AdjacentFilesMask8[N_FILES] =
 {
  FILE_B_BB,
  FILE_A_BB | FILE_C_BB,
@@ -115,6 +115,104 @@ constexpr Bitboard PassedPawnMask[N_COLORS][N_SQUARES] = {
 };
 
 constexpr Bitboard OutpostRanksMasks[N_COLORS] = { RANK_4_BB | RANK_5_BB | RANK_6_BB, RANK_3_BB | RANK_4_BB | RANK_5_BB };
+
+//================================================================================
+
+namespace SQ {
+
+// The constexpr specifier declares that it is possible to evaluate the value of the function or variable at compile time.
+
+[[nodiscard]] inline int square(const int f, const int r) noexcept { return (8*r + f); }
+
+[[nodiscard]] inline int square(const std::string& str) noexcept {
+    const int file = str[0] - 'a';
+    const int rank = str[1] - '1';
+    return(rank * 8 + file);
+}
+
+inline std::ostream &operator<<(std::ostream &os, const int square) noexcept {
+    os << square_name[square];
+    return os;
+}
+
+[[nodiscard]] constexpr int rank(int square) noexcept { return (square >> 3);   }   // sq / 8
+[[nodiscard]] constexpr int file(int square) noexcept { return (square & 7);    }   // sq % 8
+
+[[nodiscard]] constexpr int north(int square)       noexcept { return (square + NORTH);         }
+[[nodiscard]] constexpr int north_west(int square)  noexcept { return (square + NORTH + WEST);  }
+[[nodiscard]] constexpr int west(int square)        noexcept { return (square + WEST);          }
+[[nodiscard]] constexpr int south_west(int square)  noexcept { return (square + SOUTH + WEST);  }
+[[nodiscard]] constexpr int south(int square)       noexcept { return (square + SOUTH);         }
+[[nodiscard]] constexpr int south_east(int square)  noexcept { return (square + SOUTH + EAST);  }
+[[nodiscard]] constexpr int east(int square)        noexcept { return (square + EAST);          }
+[[nodiscard]] constexpr int north_east(int square)  noexcept { return (square + NORTH + EAST);  }
+[[nodiscard]] constexpr int south_south(int square) noexcept { return (square + 2*SOUTH);       }
+[[nodiscard]] constexpr int north_north(int square) noexcept { return (square + 2*NORTH);       }
+
+// flip vertically
+[[nodiscard]] constexpr int flip_square(int sq) noexcept { return sq ^ 56;}
+template <Color C>
+[[nodiscard]] constexpr int relative_square(int sq) noexcept {
+    if constexpr ( C == WHITE)
+        return sq;
+    else
+        return sq ^ 56;
+}
+
+//---------------------------------------------------
+
+//! \brief  crée un bitboard à partir d'une case
+[[nodiscard]] inline Bitboard square_BB(const int sq) noexcept { return(1ULL << sq);}
+
+//-------------
+
+//! \brief  Retourne le bitboard représentant toutes les cases appartenant à la colonne 'file'
+[[nodiscard]] inline Bitboard file_mask8(int file) { return FILE_BB[file]; }
+
+//! \brief  Retourne le bitboard représentant toutes les cases appartenant à la colonne de la case 'square'
+[[nodiscard]] inline Bitboard file_mask64(const int square) noexcept { return FILE_BB[SQ::file(square)];}
+// [[nodiscard]] constexpr Bitboard fileBB(int square) { return BB::file(SQ::file(square)); }
+
+//-------------
+
+//! \brief  Retourne le bitboard représentant toutes les cases appartenant à la rangée 'rank'
+[[nodiscard]] inline Bitboard rank_mask8(int rank) { return RANK_BB[rank]; }
+
+//! \brief  Retourne le bitboard représentant toutes les cases appartenant à la rangée de la case 'square'
+// [[nodiscard]] constexpr Bitboard rankBB(int square) { return BB::rank(SQ::rank(square)); }
+[[nodiscard]] inline Bitboard rank_mask64(const int square) noexcept { return RANK_BB[SQ::rank(square)]; }
+
+//---------------------------------------------------
+
+
+//! \brief Contrôle si la case "sq" est sur la rangée précédant la promotion (7ème/2ème)
+template <Color C>
+[[nodiscard]] constexpr bool is_on_seventh_rank(const int sq) {
+    return (PromotingRank[C] & square_BB(sq));
+}
+
+//! \brief Contrôle si la case "sq" est sur la rangée de promotion (8ème, 1ère)
+template <Color C>
+[[nodiscard]] constexpr bool is_promotion(const int sq) {
+    return (PromotionRank[C] & square_BB(sq));
+}
+
+//! \brief Contrôle si la case "sq" est sur la rangée de départ (2ème/7ème)
+template <Color C>
+[[nodiscard]] constexpr bool is_on_second_rank(const int sq) {
+    return(StartingRank[C] & square_BB(sq));
+}
+
+//! \brief Convertit une rangée en la rangée relativement à sa couleur
+template <Color C>
+[[nodiscard]] constexpr int relative_rank8(const int r) { return C == WHITE ? r : RANK_8 - r; }
+
+//! \brief Convertit une rangée en la rangée relativement à sa couleur
+template <Color C>
+[[nodiscard]] constexpr int relative_rank64(const int sq) { return C == WHITE ? rank(sq) : RANK_8 - rank(sq); }
+
+
+} // namespace
 
 //================================================================================
 
