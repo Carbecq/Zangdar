@@ -365,7 +365,7 @@ public:
 
     //! \brief  Retourne la couleur de la pièce située sur la case sq
     //! SUPPOSE qu'il y a une pièce sur cette case !!
-    [[nodiscard]] inline Color color_on(const int sq) const noexcept
+    [[nodiscard]] constexpr Color color_on(const int sq) const noexcept
     {
         return( (colorPiecesBB[WHITE] & SQ::square_BB(sq)) ? WHITE : BLACK);
     }
