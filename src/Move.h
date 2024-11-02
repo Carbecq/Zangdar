@@ -4,10 +4,6 @@
 #include <ostream>
 #include <sstream>
 #include "defines.h"
-<<<<<<< ours
-=======
-#include "types.h"
->>>>>>> theirs
 #include "bitmask.h"
 
 namespace Move
