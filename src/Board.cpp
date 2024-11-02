@@ -29,7 +29,7 @@ std::string Board::display() const noexcept
 
     while (i >= 0) {
         const auto sq = i;
-        const auto bb = BB::square_BB(sq);
+        const auto bb = SQ::square_BB(sq);
         
         if (occupancy_cp<Color::WHITE, PAWN>() & bb) {
             ss << 'P';

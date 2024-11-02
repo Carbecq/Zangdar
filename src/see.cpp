@@ -44,7 +44,7 @@ bool Board::fast_see(const MOVE move, const int threshold) const
 
     // Bitboard de toutes les cases occupées, en enlevant la pièce de départ
     // et en ajoutant la case d'arrivée
-    Bitboard occupiedBB  = (occupancy_all() ^ BB::square_BB(from)) | BB::square_BB(dest);
+    Bitboard occupiedBB  = (occupancy_all() ^ SQ::square_BB(from)) | SQ::square_BB(dest);
 
     // Bitboard de toutes les attaques (Blanches et Noires) de la case d'arrivée
     Bitboard all_attackersBB = all_attackers(dest, occupiedBB);
@@ -99,7 +99,7 @@ bool Board::fast_see(const MOVE move, const int threshold) const
         }
 
         // Supprime l'attaquant "piece" des occupants
-        occupiedBB ^= BB::square_BB(BB::get_lsb(my_attackers & typePiecesBB[piece]));
+        occupiedBB ^= SQ::square_BB(BB::get_lsb(my_attackers & typePiecesBB[piece]));
 
         // Si l'attaque était diagonale, il peut y avoir
         // des attaquants fou ou dame cachés derrière

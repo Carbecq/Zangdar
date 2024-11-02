@@ -196,7 +196,6 @@ HEADERS += \
     src/OrderInfo.h \
     src/PolyBook.h \
     src/Search.h \
-    src/Square.h \
     src/ThreadPool.h \
     src/Timer.h \
     src/TranspositionTable.h \
@@ -229,7 +228,6 @@ SOURCES += \
     src/Uci.cpp \
     src/add_moves.cpp \
     src/attackers.cpp \
-    src/bitmask.cpp \
     src/evaluate.cpp \
     src/fen.cpp \
     src/legal_evasions.cpp \

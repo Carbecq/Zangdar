@@ -41,7 +41,7 @@ void Board::checkers_pinned() noexcept
         //Do the squares in between the enemy slider and our king contain any of our pieces?
         //If not, add the slider to the checker bitboard
         if (b1 == 0)
-            checkers |= BB::square_BB(s);
+            checkers |= SQ::square_BB(s);
 
         //If there is only one of our pieces between them, add our piece to the pinned bitboard
         else if ((b1 & (b1 - 1)) == 0)

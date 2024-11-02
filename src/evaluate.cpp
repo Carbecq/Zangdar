@@ -272,7 +272,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
 #endif
 
             // Pion passé protégé
-            if (BB::square_BB(sq) & BB::all_pawn_attacks<US>(upawns))
+            if (SQ::square_BB(sq) & BB::all_pawn_attacks<US>(upawns))
             {
                 eval += PassedDefended[rank];
 
@@ -284,7 +284,7 @@ Score Board::evaluate_pawns(EvalInfo& ei)
 #endif
             }
 
-            ei.passedPawns |= BB::square_BB(sq);
+            ei.passedPawns |= SQ::square_BB(sq);
         }
 
     } // pions
@@ -383,7 +383,7 @@ Score Board::evaluate_passed(EvalInfo& ei)
 
 
         // Pion passé libre d'avancer
-        else if (!(BB::square_BB(forward) & ei.attacked[THEM]))
+        else if (!(SQ::square_BB(forward) & ei.attacked[THEM]))
         {
             eval += PassedFreeAdv[rank];
 
@@ -397,7 +397,7 @@ Score Board::evaluate_passed(EvalInfo& ei)
 
         // Tour soutenant le pion; il n'y a rien entre le pion et la tour
         if (  occupancy_cp<US, ROOK>()                          // les tours amies
-            & BB::fill<DOWN>(BB::square_BB(sq))         // situées derrière le pion
+            & BB::fill<DOWN>(SQ::square_BB(sq))         // situées derrière le pion
             & Attacks::rook_moves(sq, ei.occupied)) // cases attaquées par une tour en "sq"
         {
             eval += PassedRookBack;
@@ -1214,7 +1214,7 @@ void Board::init_eval_info(EvalInfo& ei)
     ei.attackedBy[WHITE][KING] = whiteKingAtks;
     ei.attackedBy2[WHITE] = ei.attacked[WHITE] & whiteKingAtks;
     ei.attacked[WHITE] |= whiteKingAtks;
-    ei.KingRing[WHITE] = (whiteKingAtks | BB::north(whiteKingAtks)) & ~BB::square_BB(king_square<WHITE>());
+    ei.KingRing[WHITE] = (whiteKingAtks | BB::north(whiteKingAtks)) & ~SQ::square_BB(king_square<WHITE>());
 
     ei.attacked[BLACK] = ei.attackedBy[BLACK][PAWN] = BB::all_pawn_attacks<BLACK>(ei.pawns[BLACK]);
 
@@ -1222,7 +1222,7 @@ void Board::init_eval_info(EvalInfo& ei)
     ei.attackedBy[BLACK][KING] = blackKingAtks;
     ei.attackedBy2[BLACK] = ei.attacked[BLACK] & blackKingAtks;
     ei.attacked[BLACK] |= blackKingAtks;
-    ei.KingRing[BLACK] = (blackKingAtks | BB::south(blackKingAtks)) & ~BB::square_BB(king_square<BLACK>());
+    ei.KingRing[BLACK] = (blackKingAtks | BB::south(blackKingAtks)) & ~SQ::square_BB(king_square<BLACK>());
 
     // Berserk / Stockfish modifiée
     ei.outposts[WHITE] =   (RANK_4_BB | RANK_5_BB | RANK_6_BB)              // rangées 4,5,6

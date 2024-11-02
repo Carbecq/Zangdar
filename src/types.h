@@ -124,7 +124,7 @@ using FollowupMoveHistoryTable = I16[N_PIECES][N_SQUARES][N_PIECES][N_SQUARES];
 //! \brief  Détermination du signe d'une valeur
 //! \return -1 ou +1
 template <typename T>
-[[nodiscard]] inline int Sign(T val) {
+[[nodiscard]] constexpr int Sign(T val) {
     return (T(0) < val) - (val < T(0));
 }
 

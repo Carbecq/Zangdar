@@ -1,6 +1,5 @@
 #include "Bitboard.h"
 #include "Board.h"
-#include "Square.h"
 #include <iostream>
 
 bool Board::valid() const noexcept

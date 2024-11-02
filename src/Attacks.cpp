@@ -1,5 +1,5 @@
-#include "Square.h"
 #include "Attacks.h"
+#include "Bitboard.h"
 
 namespace Attacks {
 
