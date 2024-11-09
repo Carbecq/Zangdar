@@ -86,7 +86,7 @@ constexpr void Board::legal_noisy(MoveList& ml) noexcept
             const bool     rook_path_clear  = BB::empty(rook_path & blockers);
 
             if (king_path_clear && rook_path_clear && !(squares_attacked<Them>() & king_path))
-                add_quiet_move(ml, K, ksc_castle_king_to[C], KING, Move::FLAG_CASTLE_MASK);
+                ml.add_quiet_move(K, ksc_castle_king_to[C], KING, Move::FLAG_CASTLE_MASK);
         }
         if (can_castle_q<C>())
         {
@@ -99,7 +99,7 @@ constexpr void Board::legal_noisy(MoveList& ml) noexcept
             const bool     rook_path_clear = BB::empty(rook_path & blockers);
 
             if (king_path_clear && rook_path_clear && !(squares_attacked<Them>() & king_path))
-                add_quiet_move(ml, K, qsc_castle_king_to[C], KING, Move::FLAG_CASTLE_MASK);
+                ml.add_quiet_move(K, qsc_castle_king_to[C], KING, Move::FLAG_CASTLE_MASK);
         }
 
         // pawn (pinned)

@@ -180,13 +180,12 @@ public:
     template<Color C> constexpr void legal_moves(MoveList &ml) noexcept;
     template<Color C> constexpr void legal_noisy(MoveList &ml) noexcept;
     template<Color C> constexpr void legal_quiet(MoveList &ml) noexcept;
-    template<Color C> constexpr void legal_evasions(MoveList &ml) noexcept;
 
     template<Color C> void apply_token(const std::string &token) noexcept;
 
     void verify_MvvLva();
 
-    void add_quiet_move(MoveList &ml, int from, int dest, PieceType piece, U32 flags) const noexcept;
+    // void add_quiet_move(MoveList &ml, int from, int dest, PieceType piece, U32 flags) const noexcept;
     void add_capture_move(
         MoveList &ml,
         int from,

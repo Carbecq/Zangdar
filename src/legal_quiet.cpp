@@ -83,7 +83,7 @@ constexpr void Board::legal_quiet(MoveList& ml) noexcept
             const bool     rook_path_clear  = BB::empty(rook_path & blockers);
 
             if (king_path_clear && rook_path_clear && !(squares_attacked<Them>() & king_path))
-                add_quiet_move(ml, K, ksc_castle_king_to[C], KING, Move::FLAG_CASTLE_MASK);
+                ml.add_quiet_move(K, ksc_castle_king_to[C], KING, Move::FLAG_CASTLE_MASK);
         }
         if (can_castle_q<C>())
         {
@@ -96,7 +96,7 @@ constexpr void Board::legal_quiet(MoveList& ml) noexcept
             const bool     rook_path_clear = BB::empty(rook_path & blockers);
 
             if (king_path_clear && rook_path_clear && !(squares_attacked<Them>() & king_path))
-                add_quiet_move(ml, K, qsc_castle_king_to[C], KING, Move::FLAG_CASTLE_MASK);
+                ml.add_quiet_move(K, qsc_castle_king_to[C], KING, Move::FLAG_CASTLE_MASK);
         }
 
         // pawn (pinned)
@@ -108,9 +108,9 @@ constexpr void Board::legal_quiet(MoveList& ml) noexcept
             
             if (/*do_quiet && */ d == abs(pawn_push) && (SQ::square_BB(to = from + pawn_push) & emptyBB))
             {
-                add_quiet_move(ml, from, to, PAWN, Move::FLAG_NONE);
+                ml.add_quiet_move(from, to, PAWN, Move::FLAG_NONE);
                 if (SQ::is_on_second_rank<C>(from) && (SQ::square_BB(to += pawn_push) & emptyBB))
-                    add_quiet_move(ml, from, to, PAWN, Move::FLAG_DOUBLE_MASK);
+                    ml.add_quiet_move(from, to, PAWN, Move::FLAG_DOUBLE_MASK);
             }
         }
 
@@ -223,7 +223,7 @@ constexpr void Board::legal_quiet(MoveList& ml) noexcept
     {
         to = BB::pop_lsb(mask);
         if (!square_attacked<Them>(to))
-            add_quiet_move(ml, K, to, KING, Move::FLAG_NONE);
+            ml.add_quiet_move(K, to, KING, Move::FLAG_NONE);
     }
 
     // remet le roi dans l'échiquier

@@ -50,7 +50,7 @@ DEFS += -DUSE_HASH
 #  NE PAS UTILISER PRETTY avec
 #       + Arena (score mal affiché)
 #       + test STS
-# DEFS += -DUSE_PRETTY
+DEFS += -DUSE_PRETTY
 
 #---------------------------------------------------------------------
 #   Architecture

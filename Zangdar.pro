@@ -216,7 +216,6 @@ HEADERS += \
 SOURCES += \
     src/Attacks.cpp \
     src/Board.cpp \
-    src/MoveList.cpp \
     src/MovePicker.cpp \
     src/OrderInfo.cpp \
     src/PolyBook.cpp \
@@ -230,7 +229,6 @@ SOURCES += \
     src/attackers.cpp \
     src/evaluate.cpp \
     src/fen.cpp \
-    src/legal_evasions.cpp \
     src/legal_moves.cpp \
     src/legal_noisy.cpp \
     src/legal_quiet.cpp \

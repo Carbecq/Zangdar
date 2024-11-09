@@ -1,19 +1,6 @@
 #include "Board.h"
 #include "Move.h"
 
-//=================================================================
-//! \brief  Ajoute un coup tranquille à la liste des coups
-//!
-//! \param[in]  ml      MoveList de stockage des coups
-//! \param[in]  from    position de départ de la pièce
-//! \param[in]  dest    position d'arrivée de la pièce
-//! \param[in]  piece   type de la pièce jouant
-//! \param[in]  flags   flags du coup (avance double, prise en-passant, roque)
-//-----------------------------------------------------------------
-void Board::add_quiet_move(MoveList& ml, int from, int dest, PieceType piece, U32 flags)  const noexcept
-{
-    ml.mlmoves[ml.count++].move = Move::CODE(from, dest, piece, NO_TYPE, NO_TYPE, flags);
-}
 
 //=================================================================
 //! \brief  Ajoute un coup de capture à la liste des coups
@@ -72,7 +59,7 @@ void Board::push_quiet_moves(MoveList& ml, Bitboard attack, const int from)
 
     while (attack) {
         to = BB::pop_lsb(attack);
-        add_quiet_move(ml, from, to, pieceOn[from], Move::FLAG_NONE);
+        ml.add_quiet_move(from, to, pieceOn[from], Move::FLAG_NONE);
     }
 }
 void Board::push_capture_moves(MoveList& ml, Bitboard attack, const int from)
@@ -91,7 +78,7 @@ void Board::push_piece_quiet_moves(MoveList& ml, Bitboard attack, const int from
 
     while (attack) {
         to = BB::pop_lsb(attack);
-        add_quiet_move(ml, from, to, piece, Move::FLAG_NONE);
+        ml.add_quiet_move(from, to, piece, Move::FLAG_NONE);
     }
 }
 
@@ -148,7 +135,7 @@ void Board::push_pawn_quiet_moves(MoveList& ml, Bitboard attack, const int dir, 
 
     while (attack) {
         to = BB::pop_lsb(attack);
-        add_quiet_move(ml, to - dir, to, PAWN, flags);
+        ml.add_quiet_move(to - dir, to, PAWN, flags);
     }
 }
 void Board::push_pawn_capture_moves(MoveList& ml, Bitboard attack, const int dir)
