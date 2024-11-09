@@ -230,8 +230,6 @@ SOURCES += \
     src/evaluate.cpp \
     src/fen.cpp \
     src/legal_moves.cpp \
-    src/legal_noisy.cpp \
-    src/legal_quiet.cpp \
     src/main.cpp \
     src/makemove.cpp \
     src/perft.cpp \

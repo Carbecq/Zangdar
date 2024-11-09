@@ -526,9 +526,9 @@ void test_see()
         board.set_fen(fen, false);
 
         if (board.turn() == WHITE)
-            board.legal_moves<WHITE>(ml);
+            board.legal_moves<WHITE, MoveGenType::QUIET>(ml);
         else
-            board.legal_moves<BLACK>(ml);
+            board.legal_moves<BLACK, MoveGenType::QUIET>(ml);
 
         move = 0;
 

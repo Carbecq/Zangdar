@@ -28,57 +28,64 @@ MovePicker::MovePicker(Board* _board, const ThreadData *_thread_data, int _ply,
     int nbr_promo = 0;
     int nbr_capt_promo = 0;
     int nbr_pep = 0;
+    int nbr_cas = 0;
 
     if (board->turn() == WHITE)
     {
-        board->legal_moves<WHITE>(mll);
-        // _board->legal_noisy<WHITE>(mln);
-        // _board->legal_quiet<WHITE>(mlq);
+        board->legal_moves<WHITE, MoveGenType::ALL>(mll);
+        board->legal_noisy<WHITE>(mln);
+        board->legal_quiet<WHITE>(mlq);
     }
     else
     {
-        board->legal_moves<BLACK>(mll);
-        // _board->legal_noisy<BLACK>(mln);
-        // _board->legal_quiet<BLACK>(mlq);
+        board->legal_moves<BLACK, MoveGenType::ALL>(mll);
+        board->legal_noisy<BLACK>(mln);
+        board->legal_quiet<BLACK>(mlq);
     }
 
     for (int i=0; i<mll.count; i++)
     {
-
-        if (Move::is_capturing(mll.moves[i]))
+        if (Move::is_capturing(mll.mlmoves[i].move))
         {
-            if (Move::is_promoting(mll.moves[i]))
+            if (Move::is_promoting(mll.mlmoves[i].move))
             {
                 nbr_capt_promo++;
-                mln.moves[mln.count++] = mll.moves[i];
+                // mln.mlmoves[mln.count++].move = mll.mlmoves[i].move;
                 nbr_noisy++;
             }
-            else if (!Move::is_promoting(mll.moves[i]))
+            else if (!Move::is_promoting(mll.mlmoves[i].move))
             {
                 nbr_capt++;
-                mln.moves[mln.count++] = mll.moves[i];
+                // mln.mlmoves[mln.count++].move = mll.mlmoves[i].move;
                 nbr_noisy++;
             }
-
         }
-        else if (Move::is_promoting(mll.moves[i]))
+        else if (Move::is_promoting(mll.mlmoves[i].move))
         {
             nbr_promo++;
-            mln.moves[mln.count++] = mll.moves[i];
+            // mln.mlmoves[mln.count++].move = mll.mlmoves[i].move;
             nbr_noisy++;
         }
-        else if(Move::is_enpassant(mll.moves[i]))
+        else if(Move::is_enpassant(mll.mlmoves[i].move))
         {
             nbr_pep++;
-            mln.moves[mln.count++] = mll.moves[i];
+            // mln.mlmoves[mln.count++].move = mll.mlmoves[i].move;
             nbr_noisy++;
         }
+        else if(Move::is_castling(mll.mlmoves[i].move))
+        {
+            nbr_cas++;
+            // mln.mlmoves[mln.count++].move = mll.mlmoves[i].move;
+        }
+
         else
         {
-            mlq.moves[mlq.count++] = mll.moves[i];
+            // mlq.mlmoves[mlq.count++].move = mll.mlmoves[i].move;
             nbr_quiet++;
         }
     }
+    nbr_noisy = mln.size();
+    nbr_quiet = mlq.size();
 
     if (mll.count != (nbr_noisy + nbr_quiet))
     {
@@ -90,7 +97,7 @@ MovePicker::MovePicker(Board* _board, const ThreadData *_thread_data, int _ply,
         std::cout << "nbr_noisy =  " << mln.count << std::endl;
     }
 
-    if (nbr_noisy != (nbr_capt+nbr_capt_promo+nbr_promo+nbr_pep))
+    if (nbr_noisy != (nbr_capt + nbr_capt_promo + nbr_promo + nbr_pep))
     {
         std::cout << ">>>>>>>>>>> erreur 2 " << std::endl;
         std::cout << "nbr_noisy =  " << nbr_noisy << std::endl;
@@ -98,6 +105,7 @@ MovePicker::MovePicker(Board* _board, const ThreadData *_thread_data, int _ply,
         std::cout << "nbr_capt_promo =  " << nbr_capt_promo << std::endl;
         std::cout << "nbr_promo =  " << nbr_promo << std::endl;
         std::cout << "nbr_pep =  " << nbr_pep << std::endl;
+        std::cout << "nbr_castling =  " << nbr_cas << std::endl;
         std::cout << "nbr_noisy =  " << mln.count << std::endl;
     }
 
@@ -108,8 +116,9 @@ MovePicker::MovePicker(Board* _board, const ThreadData *_thread_data, int _ply,
     if (nbr_quiet != mlq.count)
         std::cout << ">>>>>>>>>>> erreur 4 " << std::endl;
 
-    score_noisy(board);
-    score_quiet(board);
+    // std::cout << "vérification terminée" << std::endl;
+    // score_noisy(board);
+    // score_quiet(board);
 #endif
 }
 
@@ -140,9 +149,9 @@ MLMove MovePicker::next_move(bool skipQuiets)
         // this stage is only a helper. Advance to the next one.
 
         if (board->turn() == WHITE)
-            board->legal_noisy<WHITE>(mln);
+            board->legal_moves<WHITE, MoveGenType::NOISY>(mln);
         else
-            board->legal_noisy<BLACK>(mln);
+            board->legal_moves<BLACK, MoveGenType::NOISY>(mln);
         score_noisy();
         stage = STAGE_GOOD_NOISY ;
 
@@ -237,9 +246,9 @@ MLMove MovePicker::next_move(bool skipQuiets)
             if (gen_quiet == false)
             {
                 if (board->turn() == WHITE)
-                    board->legal_quiet<WHITE>(mlq);
+                    board->legal_moves<WHITE, MoveGenType::QUIET>(mlq);
                 else
-                    board->legal_quiet<BLACK>(mlq);
+                    board->legal_moves<BLACK, MoveGenType::QUIET>(mlq);
                 gen_quiet = true;
                 score_quiet();
             }
@@ -428,9 +437,9 @@ bool MovePicker::is_legal(MOVE move)
     if (gen_legal == false)
     {
         if (board->turn() == WHITE)
-            board->legal_moves<WHITE>(mll);
+            board->legal_moves<WHITE, MoveGenType::ALL>(mll);
         else
-            board->legal_moves<BLACK>(mll);
+            board->legal_moves<BLACK, MoveGenType::ALL>(mll);
         gen_legal = true;
     }
 

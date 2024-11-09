@@ -45,6 +45,14 @@ constexpr const int castle_king_from[] = {E1, E8};
 constexpr const int ksc_castle_king_to[] = {G1, G8};
 constexpr const int qsc_castle_king_to[] = {C1, C8};
 
+//TODO : noisy : uniquement la promotion en dame
+//                la mettre avant les captures dans le choix du coup
+
+enum MoveGenType {
+    NOISY = 1,              // captures, promotions, prise en passant
+    QUIET = 2,              // déplacements, roque, pas de capture, pas de promotion
+    ALL   = NOISY | QUIET
+};
 
 class Board
 {
@@ -177,15 +185,13 @@ public:
     //! \brief  Détermine si le camp au trait est en échec dans la position actuelle
     [[nodiscard]] constexpr bool is_in_check() const noexcept { return checkers > 0; }
 
-    template<Color C> constexpr void legal_moves(MoveList &ml) noexcept;
-    template<Color C> constexpr void legal_noisy(MoveList &ml) noexcept;
-    template<Color C> constexpr void legal_quiet(MoveList &ml) noexcept;
+    template<Color C, MoveGenType MGType> constexpr void legal_moves(MoveList &ml) noexcept;
 
     template<Color C> void apply_token(const std::string &token) noexcept;
 
     void verify_MvvLva();
 
-    // void add_quiet_move(MoveList &ml, int from, int dest, PieceType piece, U32 flags) const noexcept;
+    void add_quiet_move(MoveList &ml, int from, int dest, PieceType piece, U32 flags) const noexcept;
     void add_capture_move(
         MoveList &ml,
         int from,

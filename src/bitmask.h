@@ -216,6 +216,12 @@ template <Color C>
 //  Initialisations utilisant constexpr et lambda; nécessite C++17
 //================================================================================
 
+// ATTENTION : std::abs n'est PAS constexpr (jusquà C++23 ??)
+template<typename T>
+constexpr T myabs(T t) {
+    return ( (t) < T(0) ? -(t) : (t));
+}
+
 constexpr std::array<Bitboard, N_SQUARES> RankMask64 = [] {
     auto b = decltype(RankMask64){};
     for (int sq = 0; sq < N_SQUARES; ++sq) {
@@ -283,8 +289,8 @@ constexpr std::array<std::array<int, N_SQUARES>, N_SQUARES> MANHATTAN_DISTANCE =
     {
         for (int sq2 = A1; sq2 <= H8; ++sq2)
         {
-            int vertical   = abs(SQ::rank(sq1) - SQ::rank(sq2));
-            int horizontal = abs(SQ::file(sq1) - SQ::file(sq2));
+            int vertical   = myabs(SQ::rank(sq1) - SQ::rank(sq2));
+            int horizontal = myabs(SQ::file(sq1) - SQ::file(sq2));
             b[sq1][sq2] = vertical + horizontal;
         }
     }
@@ -301,8 +307,8 @@ constexpr std::array<std::array<int, N_SQUARES>, N_SQUARES> CHEBYSHEV_DISTANCE =
     {
         for (int sq2 = A1; sq2 <= H8; ++sq2)
         {
-            int vertical   = abs(SQ::rank(sq1) - SQ::rank(sq2));
-            int horizontal = abs(SQ::file(sq1) - SQ::file(sq2));
+            int vertical   = myabs(SQ::rank(sq1) - SQ::rank(sq2));
+            int horizontal = myabs(SQ::file(sq1) - SQ::file(sq2));
             b[sq1][sq2] = std::max(vertical, horizontal);
         }
     }
@@ -471,7 +477,7 @@ constexpr std::array<Mask, N_SQUARES> DirectionMask = [] {
                 if (y != NO_SQUARE)
                 {
                     d[sq][y] = king_dir[i][0] + 8 * king_dir[i][1];
-                    b[sq].direction[y] = abs(d[sq][y]);
+                    b[sq].direction[y] = myabs(d[sq][y]);
                 }
             }
         }

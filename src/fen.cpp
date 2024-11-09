@@ -686,7 +686,7 @@ template <Color C>
 void Board::apply_token(const std::string& token) noexcept
 {
     MoveList ml;
-    legal_moves<C>(ml);
+    legal_moves<C, MoveGenType::ALL>(ml);
 
     for (const auto &mlmove : ml.mlmoves)
     {

@@ -13,7 +13,7 @@ template <Color C, bool divide=false>
     U32 move;
 
     MoveList ml;
-    legal_moves<C>(ml);
+    legal_moves<C, MoveGenType::ALL>(ml);
 
     // on génère des coups légaux, on peut
     // faire un bulk-counting
