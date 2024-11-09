@@ -17,12 +17,11 @@
 Board       uci_board;
 Timer       uci_timer;
 
-extern void test_perft(const std::string& abc, const std::string& m_fen, int dmax);
-extern void test_divide(const std::string& abc, int dmax);
-extern void test_suite(const std::string& abc, int dmax);
-extern void test_eval(const std::string& abc);
-extern void test_mirror();
-extern void test_see();
+template <bool divide> void test_perft(const std::string& abc, const std::string& m_fen, int dmax);
+void test_suite(const std::string& abc, int dmax);
+void test_eval(const std::string& abc);
+void test_mirror();
+void test_see();
 
 //======================================
 //! \brief  Boucle principale UCI
@@ -145,13 +144,13 @@ void Uci::run()
             std::cout << "benchmark                     : Zangdar bench <depth> <nbr_threads> <hash_size>"     << std::endl;
             std::cout << "q(uit) "      << std::endl;
             std::cout << "v(ersion) "   << std::endl;
-            std::cout << "s <ref/big>                   : test suite_perft "                                    << std::endl;
-            std::cout << "divide                        : test divide "                                         << std::endl;
-            std::cout << "p <r/k/s/f>                   : test perft <Ref/Kiwipete/Silver2/fen> "               << std::endl;
+            std::cout << "s <ref/big> [dmax]            : test suite_perft "                                    << std::endl;
+            std::cout << "p <r/k/s/f> [dmax]            : test perft  <Ref/Kiwipete/Silver2/fen> "              << std::endl;
+            std::cout << "d <r/k/s/f> [dmax]            : test divide <Ref/Kiwipete/Silver2/fen> "              << std::endl;
             std::cout << "test                          : test de recherche sur un ensemble de positions"       << std::endl;
             std::cout << "eval                          : test evaluation"                                      << std::endl;
             std::cout << "see                           : test see"                                             << std::endl;
-            std::cout << "run <s/k/q/f/w/b>             : test de recherche <Silver2/Kiwipete/Quies/Fine70/WAC2/BUG/REF>"           << std::endl;
+            std::cout << "run <s/k/q/f/w/b> [dmax]      : test de recherche <Silver2/Kiwipete/Quies/Fine70/WAC2/BUG/REF>"           << std::endl;
             std::cout << "mirror                        : test mirror"                                          << std::endl;
             std::cout << "fen [str]                     : positionne la chaine fen"                             << std::endl;
             std::cout << "dmax [p]                      : positionne la profondeur de recherche"                << std::endl;
@@ -168,21 +167,27 @@ void Uci::run()
         {
             std::string str;
             iss >> str;
+            iss >> dmax;
 
             test_suite(str, dmax);
-        }
-
-        else if (token == "divide")
-        {
-            test_divide(fen, dmax);
         }
 
         else if (token == "p")
         {
             std::string str;
             iss >> str;
+            iss >> dmax;
 
-            test_perft(str, fen, dmax);
+            test_perft<false>(str, fen, dmax);
+        }
+
+        else if (token == "d")
+        {
+            std::string str;
+            iss >> str;
+            iss >> dmax;
+
+            test_perft<true>(str, fen, dmax);
         }
 
         else if(token == "mirror")
@@ -204,6 +209,7 @@ void Uci::run()
         {
             std::string str;
             iss >> str;
+            iss >> dmax;
 
             go_run(str, fen, dmax, tmax);
         }

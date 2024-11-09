@@ -132,9 +132,9 @@ void test_suite(const std::string& abc, int dmax)
 
                 // Exécution du test perft pour cette position et cette profondeur
                 if (CB->turn() == WHITE)
-                    actual = CB->perft<WHITE>(depth);
+                    actual = CB->perft<WHITE, false>(depth);
                 else
-                    actual = CB->perft<BLACK>(depth);
+                    actual = CB->perft<BLACK, false>(depth);
 
                 total_expected += expected;
                 total_actual   += actual;
@@ -181,6 +181,7 @@ void test_suite(const std::string& abc, int dmax)
 //! \brief  lancement d'un test perft sur une position
 //! \param  depth   profondeur max de recherche
 //---------------------------------------------------------
+template <bool divide>
 void test_perft(const std::string& str, const std::string& m_fen, int depth)
 {
     std::string fen;
@@ -218,73 +219,28 @@ void test_perft(const std::string& str, const std::string& m_fen, int depth)
     std::cout << CB.display() << std::endl;
     std::cout << std::endl;
 
-    //    CB.test_rays();
-
-
     auto start      = std::chrono::high_resolution_clock::now();
-    auto start_time = std::chrono::steady_clock::now();
-    U64 total;
+    U64  total;
 
     if (CB.turn() == WHITE)
-        total = CB.perft<WHITE>(depth);
+        total = CB.perft<WHITE, divide>(depth);
     else
-        total = CB.perft<BLACK>(depth);
+        total = CB.perft<BLACK, divide>(depth);
 
     auto end        = std::chrono::high_resolution_clock::now();
-    auto end_time   = std::chrono::steady_clock::now();
-
     auto delta      = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    auto delta_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+    auto msec       = delta.count();
 
-    auto sec        = delta.count()/1000.0;
-    auto sec_time   = delta_time.count()/1000.0;
-
-    std::cout << "sec      = " << sec << std::endl;
-    std::cout << "sec time = " << sec_time << std::endl;
-
+    std::cout << "Time            : " << msec << " msec" << std::endl;
     std::cout << "Total           : " << std::setw(10) << total << std::endl;
-    if (sec > 0)
-        std::cout << "Million Moves/s : " << std::fixed << std::setprecision(1) << static_cast<double>(total)/static_cast<double>(sec)/1000000.0 << std::endl;
+    if (msec > 0)
+        std::cout << "Million Moves/s : " << std::fixed << std::setprecision(1) << static_cast<double>(total)/static_cast<double>(msec)/1000.0 << std::endl;
     if (total == nbr[depth])
         std::cout << "resultat        : OK " << std::endl;
     else
         std::cout << "resultat        : >>>>>>>>>>>>>>>>>>>>>>>>>>>> KO : bon = " << nbr[depth] << std::endl;
 
     std::cout << "evaluation      : " << CB.evaluate() << std::endl;
-}
-
-//========================================================
-//! \brief  lancement d'un test perft sur une position
-//! \param  depth   profondeur max de recherche
-//---------------------------------------------------------
-void test_divide(const std::string &fen, int depth)
-{
-    U64 nbr[10] = {1, 20, 400, 8902,  197281,   4865609,   119060324,   3195901860,  84998978956,   2439530234167  };
-
-    Board board(fen);
-
-    std::cout << board << std::endl;
-    std::cout << std::endl;
-
-    auto start = std::chrono::high_resolution_clock::now();
-    U64 total;
-
-    if (board.turn() == WHITE)
-        total = board.divide<WHITE>(depth);
-    else
-        total = board.divide<BLACK>(depth);
-
-    auto end = std::chrono::high_resolution_clock::now();
-    auto sec = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()/1000.0;
-
-    std::cout << "Total           : " << std::setw(10) << total << std::endl;
-    if (sec > 0)
-        std::cout << "Million Moves/s : " << std::fixed << std::setprecision(1) << static_cast<double>(total)/static_cast<double>(sec)/1000000.0 << std::endl;
-    if (total == nbr[depth])
-        std::cout << "resultat        : OK " << std::endl;
-    else
-        std::cout << "resultat        : >>>>>>>>>>>>>>>>>>>>>>>>>>>> KO : total = " << total << " ; bon = " << nbr[depth] << std::endl;
-
 }
 
 //========================================================
@@ -664,3 +620,5 @@ void test_see()
 
 }
 
+template void test_perft<true>(const std::string& str, const std::string& m_fen, int depth);
+template void test_perft<false>(const std::string& str, const std::string& m_fen, int depth);

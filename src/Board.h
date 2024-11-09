@@ -212,8 +212,7 @@ public:
     void push_pawn_quiet_moves(MoveList &ml, Bitboard attack, const int dir, U32 flags);
     void push_pawn_capture_moves(MoveList &ml, Bitboard attack, const int dir);
 
-    template<Color C> [[nodiscard]] std::uint64_t perft(const int depth) noexcept;
-    template<Color C> [[nodiscard]] std::uint64_t divide(const int depth) noexcept;
+    template<Color C, bool divide> [[nodiscard]] std::uint64_t perft(const int depth) noexcept;
 
     template<Color C> [[nodiscard]] constexpr bool can_castle() const noexcept
     {
