@@ -1,5 +1,6 @@
 #include "Board.h"
 #include "Move.h"
+#include "types.h"
 
 //=============================================================
 //! \brief  Enlève un coup
@@ -112,8 +113,8 @@ template <Color C> constexpr void Board::undo_move() noexcept
             BB::toggle_bit(typePiecesBB[PAWN], dest);
             BB::toggle_bit(typePiecesBB[promo], dest);
             
-            pieceOn[from]= PAWN;
-            pieceOn[dest]  = NO_TYPE;
+            pieceOn[from] = PAWN;
+            pieceOn[dest] = NO_TYPE;
         }
     }
 
@@ -127,8 +128,8 @@ template <Color C> constexpr void Board::undo_move() noexcept
         //------------------------------------------------------------------------------------
         if (Move::is_double(move))
         {
-            pieceOn[from]= piece;
-            pieceOn[dest]  = NO_TYPE;
+            pieceOn[from] = piece;
+            pieceOn[dest] = NO_TYPE;
         }
 
         //====================================================================================
@@ -142,8 +143,8 @@ template <Color C> constexpr void Board::undo_move() noexcept
                 BB::toggle_bit(typePiecesBB[PAWN], SQ::south(dest));
                 BB::toggle_bit(colorPiecesBB[Color::BLACK], SQ::south(dest));
                 
-                pieceOn[from]= PAWN;
-                pieceOn[dest]  = NO_TYPE;
+                pieceOn[from] = PAWN;
+                pieceOn[dest] = NO_TYPE;
                 pieceOn[SQ::south(dest)] = PAWN;
             }
             else
@@ -151,8 +152,8 @@ template <Color C> constexpr void Board::undo_move() noexcept
                 BB::toggle_bit(typePiecesBB[PAWN], SQ::north(dest));
                 BB::toggle_bit(colorPiecesBB[Color::WHITE], SQ::north(dest));
                 
-                pieceOn[from]= PAWN;
-                pieceOn[dest]  = NO_TYPE;
+                pieceOn[from] = PAWN;
+                pieceOn[dest] = NO_TYPE;
                 pieceOn[SQ::north(dest)] = PAWN;
             }
         }
@@ -169,13 +170,13 @@ template <Color C> constexpr void Board::undo_move() noexcept
             if ((SQ::square_BB(dest)) & FILE_G_BB)
             {
                 // Move the rook
-                BB::toggle_bit2(colorPiecesBB[C],  ksc_castle_rook_from[C], ksc_castle_rook_to[C]);
-                BB::toggle_bit2(typePiecesBB[ROOK], ksc_castle_rook_from[C], ksc_castle_rook_to[C]);
+                BB::toggle_bit2(colorPiecesBB[C],   get_rook_from<C, CastleSide::KING_SIDE>(), get_rook_dest<C, CastleSide::KING_SIDE>());
+                BB::toggle_bit2(typePiecesBB[ROOK], get_rook_from<C, CastleSide::KING_SIDE>(), get_rook_dest<C, CastleSide::KING_SIDE>());
                 
-                pieceOn[from]= piece;
-                pieceOn[dest]  = NO_TYPE;
-                pieceOn[ksc_castle_rook_from[C]] = ROOK;
-                pieceOn[ksc_castle_rook_to[C]]   = NO_TYPE;
+                pieceOn[from] = piece;
+                pieceOn[dest] = NO_TYPE;
+                pieceOn[get_rook_from<C, CastleSide::KING_SIDE>()] = ROOK;
+                pieceOn[get_rook_dest<C, CastleSide::KING_SIDE>()] = NO_TYPE;
             }
 
             //====================================================================================
@@ -184,13 +185,13 @@ template <Color C> constexpr void Board::undo_move() noexcept
             else if ((SQ::square_BB(dest)) & FILE_C_BB)
             {
                 // Move the rook
-                BB::toggle_bit2(colorPiecesBB[C], qsc_castle_rook_from[C], qsc_castle_rook_to[C]);
-                BB::toggle_bit2(typePiecesBB[ROOK], qsc_castle_rook_from[C], qsc_castle_rook_to[C]);
+                BB::toggle_bit2(colorPiecesBB[C],   get_rook_from<C, CastleSide::QUEEN_SIDE>(), get_rook_dest<C, CastleSide::QUEEN_SIDE>());
+                BB::toggle_bit2(typePiecesBB[ROOK], get_rook_from<C, CastleSide::QUEEN_SIDE>(), get_rook_dest<C, CastleSide::QUEEN_SIDE>());
                 
-                pieceOn[from]= piece;
-                pieceOn[dest]  = NO_TYPE;
-                pieceOn[qsc_castle_rook_from[C]] = ROOK;
-                pieceOn[qsc_castle_rook_to[C]]   = NO_TYPE;
+                pieceOn[from] = piece;
+                pieceOn[dest] = NO_TYPE;
+                pieceOn[get_rook_from<C, CastleSide::QUEEN_SIDE>()] = ROOK;
+                pieceOn[get_rook_dest<C, CastleSide::QUEEN_SIDE>()] = NO_TYPE;
             }
         }
     }

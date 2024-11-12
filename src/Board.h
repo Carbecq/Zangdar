@@ -13,7 +13,6 @@
 #include "evaluate.h"
 #include "Attacks.h"
 
-
 // structure destinée à stocker l'historique de make_move.
 // celle-ci sera nécessaire pour effectuer un unmake_move
 struct UndoInfo
@@ -33,26 +32,6 @@ struct UndoInfo
 /*******************************************************
  ** Droit au roque
  **---------------------------------------------------*/
-enum Castle { CASTLE_NONE = 0, CASTLE_WK = 1, CASTLE_WQ = 2, CASTLE_BK = 4, CASTLE_BQ = 8 };
-
-constexpr const int ksc_castle_rook_from[] = {H1, H8};
-constexpr const int ksc_castle_rook_to[] = {F1, F8};
-
-constexpr const int qsc_castle_rook_from[] = {A1, A8};
-constexpr const int qsc_castle_rook_to[] = {D1, D8};
-
-constexpr const int castle_king_from[] = {E1, E8};
-constexpr const int ksc_castle_king_to[] = {G1, G8};
-constexpr const int qsc_castle_king_to[] = {C1, C8};
-
-//TODO : noisy : uniquement la promotion en dame
-//                la mettre avant les captures dans le choix du coup
-
-enum MoveGenType {
-    NOISY = 1,              // captures, promotions, prise en passant
-    QUIET = 2,              // déplacements, roque, pas de capture, pas de promotion
-    ALL   = NOISY | QUIET
-};
 
 class Board
 {
@@ -64,43 +43,39 @@ public:
     void parse_position(std::istringstream &is);
 
     //! \brief  Retourne le camp à jouer
-    [[nodiscard]] constexpr Color turn() const noexcept { return side_to_move; }
+    [[nodiscard]] constexpr inline Color turn() const noexcept { return side_to_move; }
 
     //! \brief  Retourne le bitboard des pièces de la couleur indiquée
     template<Color C>
-    [[nodiscard]] constexpr Bitboard occupancy_c() const noexcept { return colorPiecesBB[C]; }
+    [[nodiscard]] constexpr inline Bitboard occupancy_c() const noexcept { return colorPiecesBB[C]; }
 
     //! \brief  Retourne le bitboard des pièces du type indiqué
     template<PieceType P>
-    [[nodiscard]] constexpr Bitboard occupancy_p() const noexcept { return typePiecesBB[P]; }
+    [[nodiscard]] constexpr inline Bitboard occupancy_p() const noexcept { return typePiecesBB[P]; }
 
     //! \brief  Retourne le bitboard des pièces de la couleur indiquée
     //! et du type indiqué
     template<Color C, PieceType P>
-    [[nodiscard]] constexpr Bitboard occupancy_cp() const noexcept { return colorPiecesBB[C] & typePiecesBB[P]; }
+    [[nodiscard]] constexpr inline Bitboard occupancy_cp() const noexcept { return colorPiecesBB[C] & typePiecesBB[P]; }
 
     //! \brief  Retourne le bitboard de toutes les pièces Blanches et Noires
-    [[nodiscard]] constexpr Bitboard occupancy_all() const noexcept { return colorPiecesBB[WHITE] | colorPiecesBB[BLACK]; }
+    [[nodiscard]] constexpr inline Bitboard occupancy_all() const noexcept { return colorPiecesBB[WHITE] | colorPiecesBB[BLACK]; }
 
     //! \brief  Retourne le bitboard de toutes les cases vides
-    [[nodiscard]] constexpr Bitboard occupancy_none() const noexcept { return ~occupancy_all(); }
+    [[nodiscard]] constexpr inline Bitboard occupancy_none() const noexcept { return ~occupancy_all(); }
 
     //! \brief  Retourne le bitboard des Fous et des Dames
     template<Color C>
-    constexpr Bitboard diagonal_sliders() const
+    constexpr inline Bitboard diagonal_sliders() const
     {
-        return C == WHITE
-                   ? occupancy_cp<WHITE, BISHOP>() | occupancy_cp<WHITE, QUEEN>()
-                   : occupancy_cp<BLACK, BISHOP>() | occupancy_cp<BLACK, QUEEN>();
+        return occupancy_cp<C, BISHOP>() | occupancy_cp<C, QUEEN>();
     }
 
     //! \brief  Retourne le bitboard des Tours et des Dames
     template<Color C>
-    constexpr Bitboard orthogonal_sliders() const
+    constexpr inline Bitboard orthogonal_sliders() const
     {
-        return C == WHITE
-                   ? occupancy_cp<WHITE, ROOK>() | occupancy_cp<WHITE, QUEEN>()
-                   : occupancy_cp<BLACK, ROOK>() | occupancy_cp<BLACK, QUEEN>();
+        return occupancy_cp<C, ROOK>() | occupancy_cp<C, QUEEN>();
     }
 
     //! \brief Retourne le bitboard de toutes les pièces du camp "C" attaquant la case "sq"
@@ -191,6 +166,13 @@ public:
 
     void verify_MvvLva();
 
+    //==============================================
+
+
+
+
+
+
     void add_quiet_move(MoveList &ml, int from, int dest, PieceType piece, U32 flags) const noexcept;
     void add_capture_move(
         MoveList &ml,
@@ -219,64 +201,105 @@ public:
 
     template<Color C, bool divide> [[nodiscard]] std::uint64_t perft(const int depth) noexcept;
 
-    template<Color C> [[nodiscard]] constexpr bool can_castle() const noexcept
+    //=========================================================================
+
+    template<Color C> constexpr inline bool can_castle() const
     {
-        switch (C) {
-        case WHITE:
+        if constexpr (C == WHITE)
             return castling & (CASTLE_WK | CASTLE_WQ);
-            break;
-        case BLACK:
+        else
             return castling & (CASTLE_BK | CASTLE_BQ);
-            break;
-        default:
-            return false;
-        }
     }
 
-    template<Color C> [[nodiscard]] constexpr bool can_castle_k() const noexcept
+    template<Color C, CastleSide side> constexpr inline bool can_castle() const
     {
-        switch (C) {
-        case WHITE:
+        if constexpr      (C == WHITE && side == KING_SIDE)
             return castling & CASTLE_WK;
-            break;
-        case BLACK:
-            return castling & CASTLE_BK;
-            break;
-        default:
-            return false;
-        }
-    }
-
-    template<Color C> [[nodiscard]] constexpr bool can_castle_q() const noexcept
-    {
-        switch (C) {
-        case WHITE:
+        else if constexpr (C == WHITE && side == QUEEN_SIDE)
             return castling & CASTLE_WQ;
-            break;
-        case BLACK:
+        else if constexpr (C == BLACK && side == KING_SIDE)
+            return castling & CASTLE_BK;
+        else if constexpr (C == BLACK && side == QUEEN_SIDE)
             return castling & CASTLE_BQ;
-            break;
-        default:
-            return false;
-        }
     }
 
-    [[nodiscard]] constexpr bool white_can_castle_k() const noexcept
+    template <Color C, CastleSide side>
+    constexpr inline Bitboard get_king_path()   // cases ne devant pas être attaquées
     {
-        return castling & CASTLE_WK;
+        if constexpr      (C == WHITE && side == KING_SIDE)
+            return F1G1_BB;
+        else if constexpr (C == WHITE && side == QUEEN_SIDE)
+            return C1D1_BB;
+        else if constexpr (C == BLACK && side == KING_SIDE)
+            return F8G8_BB;
+        else if constexpr (C == BLACK && side == QUEEN_SIDE)
+            return C8D8_BB;
     }
-    [[nodiscard]] constexpr bool white_can_castle_q() const noexcept
+
+    template <Color C, CastleSide side>
+    constexpr inline Bitboard get_rook_path()   // cases devant être libres
     {
-        return castling & CASTLE_WQ;
+        if constexpr      (C == WHITE && side == KING_SIDE)
+            return F1G1_BB;
+        else if constexpr (C == WHITE && side == QUEEN_SIDE)
+            return B1D1_BB;
+        else if constexpr (C == BLACK && side == KING_SIDE)
+            return F8G8_BB;
+        else if constexpr (C == BLACK && side == QUEEN_SIDE)
+            return B8D8_BB;
     }
-    [[nodiscard]] constexpr bool black_can_castle_k() const noexcept
+
+    template <Color C>
+    constexpr inline int get_king_from()
     {
-        return castling & CASTLE_BK;
+        if constexpr (C == WHITE)
+            return (E1);
+        else
+            return (E8);
     }
-    [[nodiscard]] constexpr bool black_can_castle_q() const noexcept
+
+    template <Color C, CastleSide side>
+    constexpr inline int get_king_dest()
     {
-        return castling & CASTLE_BQ;
+        if constexpr      (C == WHITE && side == KING_SIDE)
+            return (G1);
+        else if constexpr (C == WHITE && side == QUEEN_SIDE)
+            return (C1);
+        else if constexpr (C == BLACK && side == KING_SIDE)
+            return (G8);
+        else if constexpr (C == BLACK && side == QUEEN_SIDE)
+            return (C8);
     }
+
+    template <Color C, CastleSide side>
+    constexpr inline int get_rook_from()
+    {
+        if constexpr      (C == WHITE && side == KING_SIDE)
+            return (H1);
+        else if constexpr (C == WHITE && side == QUEEN_SIDE)
+            return (A1);
+        else if constexpr (C == BLACK && side == KING_SIDE)
+            return (H8);
+        else if constexpr (C == BLACK && side == QUEEN_SIDE)
+            return (A8);
+    }
+    template <Color C, CastleSide side>
+    constexpr inline int get_rook_dest()
+    {
+        if constexpr      (C == WHITE && side == KING_SIDE)
+            return (F1);
+        else if constexpr (C == WHITE && side == QUEEN_SIDE)
+            return (D1);
+        else if constexpr (C == BLACK && side == KING_SIDE)
+            return (F8);
+        else if constexpr (C == BLACK && side == QUEEN_SIDE)
+            return (D8);
+    }
+
+    template <Color C, CastleSide side>
+    constexpr inline void gen_castle(MoveList& ml);
+
+    //=========================================================================
 
     template<Color C> constexpr void make_move(const MOVE move) noexcept;
     template<Color C> constexpr void undo_move() noexcept;
@@ -511,7 +534,7 @@ public:
 
     Color side_to_move = Color::WHITE; // camp au trait
     int   ep_square    = NO_SQUARE;  // case en-passant : si les blancs jouent e2-e4, la case est e3
-    U32   castling     = CASTLE_NONE; // droit au roque
+    U32   castling     = Castle::CASTLE_NONE; // droit au roque
 
     /*
      * The Halfmove Clock inside an chess position object takes care of enforcing the fifty-move rule.
@@ -594,10 +617,10 @@ inline std::ostream &operator << (std::ostream &os, const Board &pos) noexcept
     os << "\n    a b c d e f g h\n\n";
 
     os << "Castling : ";
-    os << (pos.white_can_castle_k() ? "K" : "");
-    os << (pos.white_can_castle_q() ? "Q" : "");
-    os << (pos.black_can_castle_k() ? "k" : "");
-    os << (pos.black_can_castle_q() ? "q" : "");
+    os << (pos.can_castle<WHITE, CastleSide::KING_SIDE>()  ? "K" : "");
+    os << (pos.can_castle<WHITE, CastleSide::QUEEN_SIDE>() ? "Q" : "");
+    os << (pos.can_castle<BLACK, CastleSide::KING_SIDE>()  ? "k" : "");
+    os << (pos.can_castle<BLACK, CastleSide::QUEEN_SIDE>() ? "q" : "");
     os << '\n';
     if (pos.ep() == NO_SQUARE) {
         os << "EP       : -\n";

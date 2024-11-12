@@ -21,7 +21,7 @@ DEFINES += HOME='\\"$${HOME_STR}\\"'
 
 #------------------------------------------------------
 
-DEFINES += USE_TUNER
+# DEFINES += USE_TUNER
 # QMAKE_CXXFLAGS_RELEASE += -fopenmp
 # LIBS += -fopenmp
 

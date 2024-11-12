@@ -152,7 +152,7 @@ inline std::ostream &operator<<(std::ostream &os, const int square) noexcept {
 // flip vertically
 [[nodiscard]] constexpr int flip_square(int sq) noexcept { return sq ^ 56;}
 template <Color C>
-[[nodiscard]] constexpr int relative_square(int sq) noexcept {
+[[nodiscard]] constexpr inline int relative_square(int sq) noexcept {
     if constexpr ( C == WHITE)
         return sq;
     else
@@ -162,23 +162,23 @@ template <Color C>
 //---------------------------------------------------
 
 //! \brief  crée un bitboard à partir d'une case
-[[nodiscard]] constexpr Bitboard square_BB(const int sq) noexcept { return(1ULL << sq);}
+[[nodiscard]] constexpr inline Bitboard square_BB(const int sq) noexcept { return(1ULL << sq);}
 
 //-------------
 
 //! \brief  Retourne le bitboard représentant toutes les cases appartenant à la colonne 'file'
-[[nodiscard]] constexpr Bitboard file_mask8(int file) { return FILE_BB[file]; }
+[[nodiscard]] constexpr inline Bitboard file_mask8(int file) { return FILE_BB[file]; }
 
 //! \brief  Retourne le bitboard représentant toutes les cases appartenant à la colonne de la case 'square'
-[[nodiscard]] constexpr Bitboard file_mask64(const int square) noexcept { return FILE_BB[SQ::file(square)];}
+[[nodiscard]] constexpr inline Bitboard file_mask64(const int square) noexcept { return FILE_BB[SQ::file(square)];}
 
 //-------------
 
 //! \brief  Retourne le bitboard représentant toutes les cases appartenant à la rangée 'rank'
-[[nodiscard]] constexpr Bitboard rank_mask8(int rank) { return RANK_BB[rank]; }
+[[nodiscard]] constexpr inline Bitboard rank_mask8(int rank) { return RANK_BB[rank]; }
 
 //! \brief  Retourne le bitboard représentant toutes les cases appartenant à la rangée de la case 'square'
-[[nodiscard]] constexpr Bitboard rank_mask64(const int square) noexcept { return RANK_BB[SQ::rank(square)]; }
+[[nodiscard]] constexpr inline Bitboard rank_mask64(const int square) noexcept { return RANK_BB[SQ::rank(square)]; }
 
 //---------------------------------------------------
 

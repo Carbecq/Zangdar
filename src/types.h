@@ -128,5 +128,36 @@ template <typename T>
     return (T(0) < val) - (val < T(0));
 }
 
+//==================================================
+
+enum Castle { CASTLE_NONE = 0, CASTLE_WK = 1, CASTLE_WQ = 2, CASTLE_BK = 4, CASTLE_BQ = 8 };
+
+enum CastleSide {
+    KING_SIDE,
+    QUEEN_SIDE
+};
+
+//TODO : noisy : uniquement la promotion en dame
+//                la mettre avant les captures dans le choix du coup
+
+enum MoveGenType {
+    NOISY = 1,              // captures, promotions, prise en passant
+    QUIET = 2,              // déplacements, roque, pas de capture, pas de promotion
+    ALL   = NOISY | QUIET
+};
+
+constexpr static Bitboard F1G1_BB = 0x60;                   // petit roque ; cases entre le roi et la tour
+constexpr static Bitboard F8G8_BB = 0x6000000000000000;
+
+constexpr static Bitboard B1D1_BB = 0xE;                    // grand roque ; cases entre le roi et la tour
+constexpr static Bitboard B8D8_BB = 0xE00000000000000;
+
+constexpr static Bitboard C1D1_BB = 0xC;                    // grand roque ; cases qui ne doivent pas être attaquées
+constexpr static Bitboard C8D8_BB = 0xC00000000000000;
+
+
+
+
+
 #endif // TYPES_H
 

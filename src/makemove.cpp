@@ -1,5 +1,6 @@
 #include "Board.h"
 #include "Move.h"
+#include <cassert>
 
 /* This is the castle_mask array. We can use it to determine
 the castling permissions after a move. What we do is
@@ -336,51 +337,10 @@ template <Color C> constexpr void Board::make_move(const MOVE move) noexcept
             //------------------------------------------------------------------------------------
             if ((SQ::square_BB(dest)) & FILE_G_BB)
             {
-                assert(piece == KING);
+                assert(piece    == KING);
                 assert(captured == NO_TYPE);
-                assert(promo == NO_TYPE);
-                assert(dest == ksc_castle_king_to[C]);
-                assert(pieceOn[from] == KING);
-                assert(pieceOn[dest]   == NO_TYPE);
-
-                BB::toggle_bit2(colorPiecesBB[C], from, dest);
-                BB::toggle_bit2(typePiecesBB[piece], from, dest);
-                
-                pieceOn[from] = NO_TYPE;
-                pieceOn[dest] = piece;
-
-                assert(pieceOn[from] == NO_TYPE);
-                assert(pieceOn[dest] == KING);
-
-#if defined USE_HASH
-                hash ^= piece_key[C][piece][from];
-                hash ^= piece_key[C][piece][dest];
-                hash ^= piece_key[C][ROOK][ksc_castle_rook_from[C]];
-                hash ^= piece_key[C][ROOK][ksc_castle_rook_to[C]];
-#endif
-
-                // Move the rook
-                BB::toggle_bit2(colorPiecesBB[C], ksc_castle_rook_from[C], ksc_castle_rook_to[C]);
-                BB::toggle_bit2(typePiecesBB[ROOK], ksc_castle_rook_from[C], ksc_castle_rook_to[C]);
-                
-                pieceOn[ksc_castle_rook_from[C]] = NO_TYPE;
-                pieceOn[ksc_castle_rook_to[C]]   = ROOK;
-
-                // Check if rook is at destination
-                assert(pieceOn[ksc_castle_rook_to[C]] == ROOK);
-                // Check that king is on its destination square
-                assert(pieceOn[ksc_castle_king_to[C]] == KING);
-            }
-
-            //====================================================================================
-            //  Grand Roque
-            //------------------------------------------------------------------------------------
-            else if ((SQ::square_BB(dest)) & FILE_C_BB)
-            {
-                assert(piece == KING);
-                assert(captured == NO_TYPE);
-                assert(promo == NO_TYPE);
-                assert(dest == qsc_castle_king_to[C]);
+                assert(promo    == NO_TYPE);
+                assert((dest    == get_king_dest<C, CastleSide::KING_SIDE>())  );
                 assert(pieceOn[from] == KING);
                 assert(pieceOn[dest] == NO_TYPE);
 
@@ -396,20 +356,61 @@ template <Color C> constexpr void Board::make_move(const MOVE move) noexcept
 #if defined USE_HASH
                 hash ^= piece_key[C][piece][from];
                 hash ^= piece_key[C][piece][dest];
-                hash ^= piece_key[C][ROOK][qsc_castle_rook_from[C]];
-                hash ^= piece_key[C][ROOK][qsc_castle_rook_to[C]];
+                hash ^= piece_key[C][ROOK][get_rook_from<C, CastleSide::KING_SIDE>()];
+                hash ^= piece_key[C][ROOK][get_rook_dest<C, CastleSide::KING_SIDE>()];
 #endif
 
                 // Move the rook
-                BB::toggle_bit2(colorPiecesBB[C], qsc_castle_rook_from[C], qsc_castle_rook_to[C]);
-                BB::toggle_bit2(typePiecesBB[ROOK], qsc_castle_rook_from[C], qsc_castle_rook_to[C]);
-                pieceOn[qsc_castle_rook_from[C]] = NO_TYPE;
-                pieceOn[qsc_castle_rook_to[C]]   = ROOK;
+                BB::toggle_bit2(colorPiecesBB[C],   get_rook_from<C, CastleSide::KING_SIDE>(), get_rook_dest<C, CastleSide::KING_SIDE>());
+                BB::toggle_bit2(typePiecesBB[ROOK], get_rook_from<C, CastleSide::KING_SIDE>(), get_rook_dest<C, CastleSide::KING_SIDE>());
+                
+                pieceOn[get_rook_from<C, CastleSide::KING_SIDE>()] = NO_TYPE;
+                pieceOn[get_rook_dest<C, CastleSide::KING_SIDE>()] = ROOK;
 
                 // Check if rook is at destination
-                assert(piece_on(qsc_castle_rook_to[C]) == ROOK);
+                assert(piece_on(get_rook_dest<C, CastleSide::KING_SIDE>()) == ROOK);
                 // Check that king is on its destination square
-                assert(piece_on(qsc_castle_king_to[C]) == KING);
+                assert(piece_on(get_king_dest<C, CastleSide::KING_SIDE>()) == KING);
+            }
+
+            //====================================================================================
+            //  Grand Roque
+            //------------------------------------------------------------------------------------
+            else if ((SQ::square_BB(dest)) & FILE_C_BB)
+            {
+                assert(piece == KING);
+                assert(captured == NO_TYPE);
+                assert(promo == NO_TYPE);
+                assert((dest == get_king_dest<C, CastleSide::QUEEN_SIDE>() ));
+                assert(pieceOn[from] == KING);
+                assert(pieceOn[dest] == NO_TYPE);
+
+                BB::toggle_bit2(colorPiecesBB[C], from, dest);
+                BB::toggle_bit2(typePiecesBB[piece], from, dest);
+                
+                pieceOn[from] = NO_TYPE;
+                pieceOn[dest] = piece;
+
+                assert(pieceOn[from] == NO_TYPE);
+                assert(pieceOn[dest] == KING);
+
+#if defined USE_HASH
+                hash ^= piece_key[C][piece][from];
+                hash ^= piece_key[C][piece][dest];
+                hash ^= piece_key[C][ROOK][get_rook_from<C, CastleSide::QUEEN_SIDE>()];
+                hash ^= piece_key[C][ROOK][get_rook_dest<C, CastleSide::QUEEN_SIDE>()];
+#endif
+
+                // Move the rook
+                BB::toggle_bit2(colorPiecesBB[C],   get_rook_from<C, CastleSide::QUEEN_SIDE>(), get_rook_dest<C, CastleSide::QUEEN_SIDE>());
+                BB::toggle_bit2(typePiecesBB[ROOK], get_rook_from<C, CastleSide::QUEEN_SIDE>(), get_rook_dest<C, CastleSide::QUEEN_SIDE>());
+                pieceOn[get_rook_from<C, CastleSide::QUEEN_SIDE>()] = NO_TYPE;
+                pieceOn[get_rook_dest<C, CastleSide::QUEEN_SIDE>()] = ROOK;
+
+                // Check if rook is at destination
+                assert(piece_on(get_rook_dest<C, CastleSide::QUEEN_SIDE>()) == ROOK);
+                // Check that king is on its destination square
+                assert(piece_on(get_king_dest<C, CastleSide::QUEEN_SIDE>()) == KING);
             }
         } // Roques
     } // Special

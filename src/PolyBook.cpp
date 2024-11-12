@@ -77,10 +77,10 @@ U64 PolyBook::calculate_hash(const Board& board)
     // castling
     offset = 768;
 
-    if(board.can_castle_k<WHITE>()) hash ^= Random64Poly[offset + 0];
-    if(board.can_castle_q<WHITE>()) hash ^= Random64Poly[offset + 1];
-    if(board.can_castle_k<BLACK>()) hash ^= Random64Poly[offset + 2];
-    if(board.can_castle_q<BLACK>()) hash ^= Random64Poly[offset + 3];
+    if(board.can_castle<WHITE, CastleSide::KING_SIDE>())  hash ^= Random64Poly[offset + 0];
+    if(board.can_castle<WHITE, CastleSide::QUEEN_SIDE>()) hash ^= Random64Poly[offset + 1];
+    if(board.can_castle<BLACK, CastleSide::KING_SIDE>())  hash ^= Random64Poly[offset + 2];
+    if(board.can_castle<BLACK, CastleSide::QUEEN_SIDE>()) hash ^= Random64Poly[offset + 3];
 
     // enpassant
     // enable en passant flag only if there si a pawn capable to

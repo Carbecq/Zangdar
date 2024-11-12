@@ -72,10 +72,10 @@ std::string Board::display() const noexcept
     ss << "\n    a b c d e f g h\n\n";
 
     ss << "Castling : ";
-    ss << (white_can_castle_k() ? "K" : "");
-    ss << (white_can_castle_q() ? "Q" : "");
-    ss << (black_can_castle_k() ? "k" : "");
-    ss << (black_can_castle_q() ? "q" : "");
+    ss << (can_castle<WHITE, CastleSide::KING_SIDE>()  ? "K" : "");
+    ss << (can_castle<WHITE, CastleSide::QUEEN_SIDE>() ? "Q" : "");
+    ss << (can_castle<BLACK, CastleSide::KING_SIDE>()  ? "k" : "");
+    ss << (can_castle<BLACK, CastleSide::QUEEN_SIDE>() ? "q" : "");
     ss << '\n';
     if (ep() == NO_SQUARE) {
         ss << "EP       : -\n";

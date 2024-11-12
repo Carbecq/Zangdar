@@ -594,13 +594,13 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     //------------------------------------------------------- castling
 
     std::string part;
-    if (can_castle_k<WHITE>())
+    if (can_castle<WHITE, CastleSide::KING_SIDE>())
         part += "K";
-    if (can_castle_q<WHITE>())
+    if (can_castle<WHITE, CastleSide::QUEEN_SIDE>())
         part += "Q";
-    if (can_castle_k<BLACK>())
+    if (can_castle<BLACK, CastleSide::KING_SIDE>())
         part += "k";
-    if (can_castle_q<BLACK>())
+    if (can_castle<BLACK, CastleSide::QUEEN_SIDE>())
         part += "q";
     if (part.empty())
         part = "-";
