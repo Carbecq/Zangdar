@@ -332,7 +332,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     bool improving = (si->ply >= 2) && !isInCheck && (static_eval > (si-2)->eval);
 
 
-    if (!isInCheck && !isRoot && !isPV && !si->excluded)
+    if (!isInCheck && !isRoot && !isPV && !excluded)
     {
         //---------------------------------------------------------------------
         //  RAZORING
@@ -370,25 +370,24 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
             && static_eval >= beta
             && (si-1)->move != Move::MOVE_NULL
             && (si-2)->move != Move::MOVE_NULL
-            && !excluded
             && board.getNonPawnMaterial<C>())
         {
-            int R = 2 + (32 * depth + std::min(static_eval - beta, 384)) / 128;
+            int R = 3 + (32.0 * depth + std::min(static_eval - beta, 384)) / 128.0;
 
             board.make_nullmove<C>();
             si->move = Move::MOVE_NULL;
-            score = -alpha_beta<~C>(-beta, -beta + 1, depth - 1 - R, td, si+1);
+            int null_score = -alpha_beta<~C>(-beta, -beta + 1, depth - 1 - R, td, si+1);
             board.undo_nullmove<C>();
 
             if (td->stopped)
                 return 0;
 
             // Cutoff
-            if (score >= beta)
+            if (null_score >= beta)
             {
                 // (Stockfish) : on ne retourne pas un score proche du mat
                 //               car ce score ne serait pas prouvé
-                return(score >= TBWIN_IN_X ? beta : score);
+                return(null_score >= TBWIN_IN_X ? beta : null_score);
             }
         }
 
@@ -399,7 +398,6 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         if (   !isInCheck
             && !isPV
             && depth >= ProbCutDepth
-            && !excluded
             && !(tt_hit && tt_depth >= depth - 3 && tt_score < betaCut))
         {
             MovePicker movePicker(&board, td, si->ply, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, 0);

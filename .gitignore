@@ -1,8 +1,7 @@
-build-Zangdar*/*
+build*/*
 src/*.o
 src/*/*.o
-Zangdar.pro.user.*
-src/Z/
+Zangdar.pro.user*
 doc/
 test/
 ignore_src/
