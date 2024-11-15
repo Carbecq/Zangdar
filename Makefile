@@ -116,6 +116,10 @@ else ifeq ($(ARCH), native-pext)
 	DEFAULT_EXE = Zangdar-$(VERSION)-5950X-pext
 	CFLAGS_ARCH += -march=native -DUSE_PEXT
 
+else
+	ARCH = native-pext
+	DEFAULT_EXE = Zangdar-$(VERSION)-5950X-nopext
+	CFLAGS_ARCH += -march=native
 endif
 
 $(info CXX="$(CXX)")
@@ -145,7 +149,7 @@ CFLAGS_WARN3 = -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-promo
 CFLAGS_WARN4 = -Wstrict-overflow=5 -Wswitch-default -Wundef -Wno-unused
 CFLAGS_WARN5 = -Wuninitialized -Wattributes -Waddress -Wmissing-prototypes -Wconditional-uninitialized
 
-PGO_MERGE = llvm-profdata-18 merge -output=zangdar.profdata *.profraw
+PGO_MERGE = llvm-profdata merge -output=zangdar.profdata *.profraw
 PGO_GEN   = -fprofile-instr-generate
 PGO_USE   = -fprofile-instr-use=zangdar.profdata
 
@@ -166,7 +170,7 @@ PGO_USE   = -fprofile-use
 endif
 
 ifeq ($(target_windows),yes)
-	PGO_BENCH = $(EXE) bench 16 > nul 2>&1
+	PGO_BENCH = ./$(EXE) bench 16 > nul 2>&1
 	PGO_CLEAN = rmdir /s /q $(PGO_DIR)
 else
 	PGO_BENCH = ./$(EXE) bench 16 > /dev/null 2>&1
