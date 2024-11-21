@@ -39,11 +39,7 @@ It has the following features :
   - can use several threads
 
 + **Evaluation**
-  - Static Exchange Evaluation, only for Quiescence
-  - Material
-  - Piece/Square Table
-  - Positional bonus
-  - Mobility
+  - Since version 3, Zangdar uses a NNUE.
  
 + **Syzygy Tables**
   - Can use of endgame tables, but need a SSD to work correctly
@@ -53,16 +49,16 @@ It has the following features :
 
 + **Communication**
   - UCI
-  - Options to change OpeningBook usage, OpeningBook location, Hash size, Threads number
+  - Options to change OpeningBook usage, OpeningBook location, Hash size, Threads number, Sizygy tables usage.
  
    
 + **Usage**
 - The program is only an engine, so it need one interface (Arena, Banksgui...).
-- I provide only binaries for Windows. I stopped developping with Linux, as this crush my windows boot. All are compiled in static, so you don't need extrernal libraries. 
+- I provide binaries for Windows. I develop with Linux, but as binaries are not portable, I don't distribute it. A Makefile is given and should work without too much work. All are compiled in static, so you don't need extrernal libraries. 
 By default, the opening book is disabled. It can be re-enabled by using an uci option. Zangdar will search the book in the binary's directory. This location can too be specified with an uci option. The book is of polyglot format, and must be named 'book.bin'.
 
 + **Compilation**
-You must have a C++ compiler that use at least C++20. I use QtCreator on Windows 11, that compiles with mingw.
+You must have a C++ compiler that use at least C++20. I use now MSYS2 for Windows 11, that compiles with clang++.
 I provide also binaries for several architectures.
 
 + **Old Releases**
