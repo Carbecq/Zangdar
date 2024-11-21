@@ -10,7 +10,7 @@
 #include "Move.h"
 
 
-void sort_moves(MoveList& ml);
+static void sort_moves(MoveList& ml);
 
 //====================================================
 //! \brief Réalisation d'une série de tests "perft"
@@ -27,7 +27,9 @@ void test_suite(const std::string& abc, int dmax)
     //  perftsuite_ref  : petite suite permettant de voir s'il y a eu perte de perfo
     //  perftsuite_big  : énorme suite pour contrôler le générateur de coups
 
-    std::string     str_file = Home + "tests/perftsuite_" + abc + ".epd";
+    std::string     str_file(HOME);
+    str_file += "tests/perftsuite_" + abc + ".epd";
+
     std::ifstream file(str_file);
     if (!file.is_open())
     {
@@ -278,7 +280,8 @@ void test_eval(const std::string& fen)
 //----------------------------------------------------
 void test_mirror(void)
 {
-    std::string     str_file = Home + "tests/mirror.epd";
+    std::string     str_file(HOME);
+    str_file += "tests/mirror.epd";
 
     std::ifstream file(str_file);
     if (!file.is_open())
@@ -412,7 +415,7 @@ void Board::test_value(const std::string& fen )
 //======================================================
 //! \brief  Ordonne les captures en fonction de MvvLva
 //------------------------------------------------------
-void sort_moves(MoveList& ml)
+static void sort_moves(MoveList& ml)
 {
     for (size_t i=0; i<ml.count; i++)
     {
@@ -452,7 +455,9 @@ void sort_moves(MoveList& ml)
 //--------------------------------------------------------
 void test_see()
 {
-    std::string   str_file = Home + "tests/see.epd";
+    std::string   str_file(HOME);
+    str_file += "tests/see.epd";
+
     std::ifstream file(str_file);
     if (!file.is_open())
     {
@@ -532,7 +537,7 @@ void test_see()
 
         move = 0;
 
-        for (int i=0; i<ml.count; i++)
+        for (Usize i=0; i<ml.count; i++)
         {
             MOVE m = ml.mlmoves[i].move;
 
@@ -595,7 +600,7 @@ void test_see()
         {
             printf("coup non trouvé %s \n", strm.c_str());
             printf("%s \n", fen.c_str());
-            for (int i=0; i<ml.count; i++)
+            for (Usize i=0; i<ml.count; i++)
             {
                 MOVE m = ml.mlmoves[i].move;
 

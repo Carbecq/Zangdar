@@ -17,11 +17,6 @@
 Board       uci_board;
 Timer       uci_timer;
 
-template <bool divide> void test_perft(const std::string& abc, const std::string& m_fen, int dmax);
-void test_suite(const std::string& abc, int dmax);
-void test_eval(const std::string& abc);
-void test_mirror();
-void test_see();
 
 //======================================
 //! \brief  Boucle principale UCI
@@ -79,7 +74,7 @@ void Uci::run()
             // and lengthy init stuff is not allowed.
 
             // print engine info
-            std::cout << "id name Zangdar " << Version  << std::endl;
+            std::cout << "id name Zangdar " << VERSION  << std::endl;
             std::cout << "id author Philippe Chevalier" << std::endl;
 
             // This command tells the GUI which parameters can be changed in the engine.
@@ -161,7 +156,7 @@ void Uci::run()
 
         else if (token == "v")
         {
-            std::cout << "Zangdar " << Version << std::endl;
+            std::cout << "Zangdar " << VERSION << std::endl;
         }
         else if (token == "s")
         {
@@ -640,8 +635,9 @@ void Uci::go_test(int dmax, int tmax)
     // le fichier tests/0000.txt contient la liste des fichiers de test
     // les noms non commentés seront utilisés.
 
-    std::string     str_0000 = "0000.txt";
-    std::string     str_path = Home + "tests/" + str_0000;
+    std::string     str_0000("0000.txt");
+    std::string     str_path(HOME);
+    str_path += "tests/" + str_0000;
 
     std::string     line;
     std::string     aux;
@@ -688,7 +684,9 @@ void Uci::go_test(int dmax, int tmax)
 
         std::cout << "test du fichier : [" << str_line << "]" << std::endl;
 
-        str_file = Home + "tests/" + str_line;
+        str_file = HOME;
+        str_file += "tests/" + str_line;
+
         ifs.open(str_file, std::ifstream::in);
         if (!ifs.is_open())
         {

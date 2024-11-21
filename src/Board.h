@@ -12,6 +12,7 @@
 #include "Move.h"
 #include "evaluate.h"
 #include "Attacks.h"
+#include "NNUE.h"
 
 // structure destinée à stocker l'historique de make_move.
 // celle-ci sera nécessaire pour effectuer un unmake_move
@@ -80,13 +81,29 @@ public:
 
     //! \brief Retourne le bitboard de toutes les pièces du camp "C" attaquant la case "sq"
     template <Color C>
-    [[nodiscard]] constexpr Bitboard attackers(const int sq) const noexcept;
+    [[nodiscard]] constexpr Bitboard attackers(const int sq) const noexcept
+    {
+        // il faut regarder les attaques de pions depuis l'autre camp
+        return( (Attacks::pawn_attacks<~C>(sq)         & occupancy_cp<C, PAWN>())                                           |
+                (Attacks::knight_moves(sq)             & occupancy_cp<C, KNIGHT>())                                         |
+                (Attacks::king_moves(sq)               & occupancy_cp<C, KING>())                                           |
+                (Attacks::bishop_moves(sq, occupancy_all()) & (occupancy_cp<C, BISHOP>() | occupancy_cp<C, QUEEN>())) |
+                (Attacks::rook_moves(sq,   occupancy_all()) & (occupancy_cp<C, ROOK>()   | occupancy_cp<C, QUEEN>())) );
+    }
 
     template <Color C>
     void checkers_pinned() noexcept;
 
     //! \brief  Retourne le Bitboard de TOUS les attaquants (Blancs et Noirs) de la case "sq"
-    [[nodiscard]] Bitboard all_attackers(const int sq, const Bitboard occ) const noexcept;
+    [[nodiscard]] Bitboard all_attackers(const int sq, const Bitboard occ) const noexcept
+    {
+        return( (Attacks::pawn_attacks(BLACK, sq) & occupancy_cp<WHITE, PAWN>())       |
+                (Attacks::pawn_attacks(WHITE, sq) & occupancy_cp<BLACK, PAWN>())       |
+                (Attacks::knight_moves(sq)        & typePiecesBB[KNIGHT])                         |
+                (Attacks::king_moves(sq)          & typePiecesBB[KING])                           |
+                (Attacks::bishop_moves(sq, occ)   & (typePiecesBB[BISHOP] | typePiecesBB[QUEEN])) |
+                (Attacks::rook_moves(sq,   occ)   & (typePiecesBB[ROOK]   | typePiecesBB[QUEEN])) );
+    }
 
     //! \brief Returns an attack bitboard where sliders are allowed
     //! to xray other sliders moving the same directions
@@ -151,7 +168,7 @@ public:
 
     //! \brief Retourne le bitboard des cases attaquées
     template<Color C>
-    [[nodiscard]] constexpr Bitboard squares_attacked() const noexcept;
+    [[nodiscard]] Bitboard squares_attacked() const noexcept;
 
     //! \brief  Détermine si la case sq est attaquée par le camp C
     template<Color C>
@@ -160,7 +177,7 @@ public:
     //! \brief  Détermine si le camp au trait est en échec dans la position actuelle
     [[nodiscard]] constexpr bool is_in_check() const noexcept { return checkers > 0; }
 
-    template<Color C, MoveGenType MGType> constexpr void legal_moves(MoveList &ml) noexcept;
+    template<Color C, MoveGenType MGType> void legal_moves(MoveList &ml) noexcept;
 
     template<Color C> void apply_token(const std::string &token) noexcept;
 
@@ -296,15 +313,47 @@ public:
             return (D8);
     }
 
+    /* Le roque nécessite plusieurs conditions :
+
+    1) Toutes les cases qui séparent le roi de la tour doivent être vides.
+        Par conséquent, il n'est pas permis de prendre une pièce adverse en roquant ;
+    2) Ni le roi, ni la tour ne doivent avoir quitté leur position initiale.
+        Par conséquent, le roi et la tour doivent être dans la première rangée du joueur,
+        et chaque camp ne peut roquer qu'une seule fois par partie ;
+        en revanche, le roi peut déjà avoir subi des échecs, s'il s'est soustrait à ceux-ci sans se déplacer.
+    3) Aucune des cases (de départ, de passage ou d'arrivée) par lesquelles transite le roi lors du roque
+        ne doit être contrôlée par une pièce adverse.
+        Par conséquent, le roque n'est pas possible si le roi est en échec.
+    4) En revanche la tour, ainsi que sa case adjacente dans le cas du grand roque, peuvent être menacées.
+
+
+    A B C D E F G H
+    T       R     T
+    T         T R
+        R T
+
+    */
+
+    //=======================================================================
+    //! \brief  Ajoute les coups du roque
+    //-----------------------------------------------------------------------
     template <Color C, CastleSide side>
-    constexpr inline void gen_castle(MoveList& ml);
+    constexpr inline void gen_castle(MoveList& ml)
+    {
+        if (   can_castle<C, side>()
+            && BB::empty(get_rook_path<C, side>() & occupancy_all())
+            && !(squares_attacked<~C>() & get_king_path<C, side>()) )
+        {
+            add_quiet_move(ml, get_king_from<C>(), get_king_dest<C, side>(), KING, Move::FLAG_CASTLE_MASK);
+        }
+    }
 
     //=========================================================================
 
-    template<Color C> constexpr void make_move(const MOVE move) noexcept;
-    template<Color C> constexpr void undo_move() noexcept;
-    template<Color C> constexpr void make_nullmove() noexcept;
-    template<Color C> constexpr void undo_nullmove() noexcept;
+    template<Color C> void make_move(const MOVE move) noexcept;
+    template<Color C> void undo_move() noexcept;
+    template<Color C> void make_nullmove() noexcept;
+    template<Color C> void undo_nullmove() noexcept;
 
     constexpr void calculate_hash(U64& khash, U64& phash) const noexcept
     {
@@ -492,11 +541,15 @@ public:
     //=============================================================================
     //! \brief  Met une pièce à la case indiquée
     //-----------------------------------------------------------------------------
-    void set_piece(const int sq, const Color s, const PieceType p) noexcept
+    void set_piece(const int square, const Color color, const PieceType piece) noexcept
     {
-        colorPiecesBB[s] |= SQ::square_BB(sq);
-        typePiecesBB[p]  |= SQ::square_BB(sq);
-        pieceOn[sq] = p;
+        colorPiecesBB[color] |= SQ::square_BB(square);
+        typePiecesBB[piece]  |= SQ::square_BB(square);
+        pieceOn[square]       = piece;
+
+#if defined USE_NNUE
+        nnue.update_feature<true>(color, piece, square);
+#endif
     }
 
     bool test_mirror(const std::string &line);
@@ -558,7 +611,9 @@ public:
 
     std::array<UndoInfo, MAX_HIST> game_history;
 
-
+#if defined USE_NNUE
+    NNUE nnue;
+#endif
 
 };  // class Board
 

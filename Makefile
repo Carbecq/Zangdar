@@ -36,8 +36,9 @@ endif
 
 # needed only for tests
 # just comment it if you want
-HOMEDEF = \"/mnt/Datas/Echecs/Programmation/Zangdar/\"
-DEFS = -DHOME=$(HOMEDEF)
+#HOME = \"/mnt/Datas/Echecs/Programmation/Zangdar/\"
+HOME = \"./\"
+DEFS = -DHOME=$(HOME)
 
 #  Désactiver USE_HASH pour la mesure de performances brutes
 DEFS += -DUSE_HASH
@@ -51,6 +52,14 @@ DEFS += -DUSE_HASH
 #       + Arena (score mal affiché)
 #       + test STS
 # DEFS += -DUSE_PRETTY
+
+#---------------------------------------------------
+#  NNUE
+#---------------------------------------------------
+
+NETWORK = \"networks/clarity_net005.nnue\"
+DEFS += -DUSE_NNUE
+CFLAGS_NNUE = -DNETWORK=$(NETWORK)
 
 #---------------------------------------------------------------------
 #   Architecture
@@ -179,7 +188,7 @@ endif
 
 # https://stackoverflow.com/questions/5088460/flags-to-enable-thorough-and-verbose-g-warnings
 
-CFLAGS_COM  = -pipe -std=c++20 -DVERSION=\"$(VERSION)\" $(DEFS)
+CFLAGS_COM  = -pipe -std=c++20 -DVERSION=\"$(VERSION)\" $(DEFS) $(CFLAGS_NNUE)
 CFLAGS_DBG  = -g -O0
 CFLAGS_WARN = $(CFLAGS_WARN1) $(CFLAGS_WARN2) $(CFLAGS_WARN3) $(CFLAGS_WARN4) $(CFLAGS_WARN5) $(CFLAGS_WARN6)
 CFLAGS_PROF = -pg

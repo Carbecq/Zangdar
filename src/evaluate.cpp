@@ -2,6 +2,7 @@
 #include "defines.h"
 #include "evaluate.h"
 #include "TranspositionTable.h"
+#include "NNUE.h"
 
 #if defined USE_TUNER
 #include "Tuner.h"
@@ -28,6 +29,13 @@ https://www.chessprogramming.org/Evaluation
 //------------------------------------------
 [[nodiscard]] Score Board::evaluate()
 {
+#if defined USE_NNUE
+    if (side_to_move == WHITE)
+        return nnue.evaluate<WHITE>();
+    else
+        return nnue.evaluate<BLACK>();
+#endif
+
     Score eval = 0;
     EvalInfo ei;
 
@@ -970,6 +978,9 @@ Score Board::evaluate_threats(const EvalInfo& ei)
 #if defined USE_TUNER
                 ownTuner.Trace.ThreatByRook[attacked][US]++;
 #endif
+                break;
+
+            default:
                 break;
             }
         }

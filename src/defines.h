@@ -22,6 +22,8 @@ using U64   = uint64_t;
 using CHAR  = char;
 using UCHAR = unsigned char;
 
+using Usize = size_t;
+
 using Bitboard  = U64;
 using MOVE      = U32;
 
@@ -90,20 +92,6 @@ const std::string WAC_2           = "8/7p/5k2/5p2/p1p2P2/Pr1pPK2/1P1R3P/8 b - -"
 
 //=========================================================
 
-#ifdef HOME
-const std::string Home = HOME;
-#else
-const std::string Home = "./";
-#endif
-
-#ifdef VERSION
-const std::string Version = VERSION;
-#else
-const std::string Version = "2";
-#endif
-
-//=========================================================
-
 extern void printlog(const std::string& message);
 extern std::vector<std::string> split(const std::string& s, char delimiter);
 
@@ -116,6 +104,15 @@ void binary_print(T code, const std::string& message)
     std::string binary = std::bitset<8*sizeof(T)>(code).to_string(); //to binary
     std::cout << message << " : " << binary<< std::endl;
 }
+
+//=========================================================
+//  Quelques prototypes pour le compilateur
+
+template <bool divide> extern void test_perft(const std::string& abc, const std::string& m_fen, int dmax);
+void test_suite(const std::string& abc, int dmax);
+void test_eval(const std::string& abc);
+void test_mirror();
+void test_see();
 
 
 #endif // DEFINES_H

@@ -14,7 +14,7 @@ constexpr int PUSH[] = {8, -8};
 //! algorithme de Mperft
 //-----------------------------------------------------------------
 template <Color C, MoveGenType MGType>
-constexpr void Board::legal_moves(MoveList& ml) noexcept
+void Board::legal_moves(MoveList& ml) noexcept
 {
     constexpr Color Them = ~C;
     const int   K = king_square<C>();

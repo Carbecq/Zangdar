@@ -3,6 +3,8 @@
 #include "Attacks.h"
 #include "Move.h"
 
+static void test_poly();
+
 //=================================================
 //! \brief  Constructeur
 //-------------------------------------------------
@@ -266,7 +268,7 @@ MOVE PolyBook::poly_to_move(U16 polyMove, const Board& board)
 }
 
 
-void test_poly()
+static void test_poly()
 {
     Board board;
     PolyBook book;

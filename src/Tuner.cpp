@@ -112,7 +112,9 @@ void Tuner::InitTunerEntries()
 {
     Board board;
 
-    std::string     str_file = Home + DATASET;
+    std::string     str_file(HOME);
+    str_file += DATASET;
+
     std::ifstream   file(str_file);
 
     // Ouverture du fichier

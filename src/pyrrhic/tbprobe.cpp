@@ -333,18 +333,18 @@ typedef struct PyrrhicPosition {
     uint8_t rule50, ep; bool turn;
 } PyrrhicPosition;
 
-unsigned pyrrhic_move_to        (PyrrhicMove move) { return (move >> PYRRHIC_SHIFT_TO    ) & PYRRHIC_MASK_TO         ; }
-unsigned pyrrhic_move_from      (PyrrhicMove move) { return (move >> PYRRHIC_SHIFT_FROM  ) & PYRRHIC_MASK_FROM       ; }
-unsigned pyrrhic_move_promotes  (PyrrhicMove move) { return (move >> PYRRHIC_SHIFT_FLAGS ) & PYRRHIC_MASK_PROMO_FLAGS; }
+static unsigned pyrrhic_move_to        (PyrrhicMove move) { return (move >> PYRRHIC_SHIFT_TO    ) & PYRRHIC_MASK_TO         ; }
+static unsigned pyrrhic_move_from      (PyrrhicMove move) { return (move >> PYRRHIC_SHIFT_FROM  ) & PYRRHIC_MASK_FROM       ; }
+static unsigned pyrrhic_move_promotes  (PyrrhicMove move) { return (move >> PYRRHIC_SHIFT_FLAGS ) & PYRRHIC_MASK_PROMO_FLAGS; }
 
-int pyrrhic_colour_of_piece     (uint8_t piece) { return !(piece >>  3); }
-int pyrrhic_type_of_piece       (uint8_t piece) { return  (piece & 0x7); }
+static int pyrrhic_colour_of_piece     (uint8_t piece) { return !(piece >>  3); }
+static int pyrrhic_type_of_piece       (uint8_t piece) { return  (piece & 0x7); }
 
-bool pyrrhic_test_bit           (uint64_t bb, int sq)  { return (bb >> sq) & 0x1;               }
-void pyrrhic_enable_bit         (uint64_t *b, int sq)  { *b |=  (1ull << sq);                   }
-void pyrrhic_disable_bit        (uint64_t *b, int sq)  { *b &= ~(1ull << sq);                   }
-bool pyrrhic_promo_square       (int sq)               { return (PYRRHIC_PROMOSQS >> sq) & 0x1; }
-bool pyrrhic_pawn_start_square  (int colour, int sq)   { return (sq >> 3) == (colour ? 1 : 6);  }
+static bool pyrrhic_test_bit           (uint64_t bb, int sq)  { return (bb >> sq) & 0x1;               }
+static void pyrrhic_enable_bit         (uint64_t *b, int sq)  { *b |=  (1ull << sq);                   }
+static void pyrrhic_disable_bit        (uint64_t *b, int sq)  { *b &= ~(1ull << sq);                   }
+static bool pyrrhic_promo_square       (int sq)               { return (PYRRHIC_PROMOSQS >> sq) & 0x1; }
+static bool pyrrhic_pawn_start_square  (int colour, int sq)   { return (sq >> 3) == (colour ? 1 : 6);  }
 
 // The only two forward-declarations that are needed
 bool pyrrhic_do_move(PyrrhicPosition *pos, const PyrrhicPosition *pos0, PyrrhicMove move);
@@ -353,7 +353,7 @@ bool pyrrhic_legal_move(const PyrrhicPosition *pos, PyrrhicMove move);
 
 const char pyrrhic_piece_to_char[] = " PNBRQK  pnbrqk";
 
-uint64_t pyrrhic_pieces_by_type(const PyrrhicPosition *pos, int colour, int piece) {
+static uint64_t pyrrhic_pieces_by_type(const PyrrhicPosition *pos, int colour, int piece) {
 
     assert(PYRRHIC_PAWN <= piece && piece <= PYRRHIC_KING);
     assert(colour == PYRRHIC_WHITE || colour == PYRRHIC_BLACK);
@@ -371,7 +371,7 @@ uint64_t pyrrhic_pieces_by_type(const PyrrhicPosition *pos, int colour, int piec
     }
 }
 
-int pyrrhic_char_to_piece_type(char c) {
+static int pyrrhic_char_to_piece_type(char c) {
 
     for (int i = PYRRHIC_PAWN; i <= PYRRHIC_KING; i++)
         if (c == pyrrhic_piece_to_char[i])
@@ -380,7 +380,7 @@ int pyrrhic_char_to_piece_type(char c) {
 }
 
 
-uint64_t pyrrhic_calc_key(const PyrrhicPosition *pos, int mirror) {
+static uint64_t pyrrhic_calc_key(const PyrrhicPosition *pos, int mirror) {
 
     uint64_t white = mirror ? pos->black : pos->white;
     uint64_t black = mirror ? pos->white : pos->black;
@@ -397,7 +397,7 @@ uint64_t pyrrhic_calc_key(const PyrrhicPosition *pos, int mirror) {
            + PYRRHIC_POPCOUNT(black & pos->pawns  ) * PYRRHIC_PRIME_BPAWN;
 }
 
-uint64_t pyrrhic_calc_key_from_pcs(int *pieces, int mirror) {
+static uint64_t pyrrhic_calc_key_from_pcs(int *pieces, int mirror) {
 
     return pieces[PYRRHIC_WQUEEN  ^ (mirror ? 8 : 0)] * PYRRHIC_PRIME_WQUEEN
            + pieces[PYRRHIC_WROOK   ^ (mirror ? 8 : 0)] * PYRRHIC_PRIME_WROOK
@@ -411,7 +411,7 @@ uint64_t pyrrhic_calc_key_from_pcs(int *pieces, int mirror) {
            + pieces[PYRRHIC_BPAWN   ^ (mirror ? 8 : 0)] * PYRRHIC_PRIME_BPAWN;
 }
 
-uint64_t pyrrhic_calc_key_from_pieces(uint8_t *pieces, int length) {
+static uint64_t pyrrhic_calc_key_from_pieces(uint8_t *pieces, int length) {
 
     static const uint64_t PyrrhicPrimes[] = {
         PYRRHIC_PRIME_NONE , PYRRHIC_PRIME_WPAWN , PYRRHIC_PRIME_WKNIGHT, PYRRHIC_PRIME_WBISHOP,
@@ -428,17 +428,17 @@ uint64_t pyrrhic_calc_key_from_pieces(uint8_t *pieces, int length) {
 }
 
 
-uint64_t pyrrhic_do_bb_move(uint64_t bb, unsigned from, unsigned to) {
+static uint64_t pyrrhic_do_bb_move(uint64_t bb, unsigned from, unsigned to) {
     return (((bb >> from) & 0x1) << to) | (bb & (~(1ull << from) & ~(1ull << to)));
 }
 
-PyrrhicMove pyrrhic_build_move(unsigned flags, unsigned from, unsigned to) {
+static PyrrhicMove pyrrhic_build_move(unsigned flags, unsigned from, unsigned to) {
     return ((to    & PYRRHIC_MASK_TO    ) << PYRRHIC_SHIFT_TO    )
     | ((from  & PYRRHIC_MASK_FROM  ) << PYRRHIC_SHIFT_FROM  )
         | ((flags & PYRRHIC_MASK_FLAGS ) << PYRRHIC_SHIFT_FLAGS );
 }
 
-PyrrhicMove* pyrrhic_add_move(PyrrhicMove *moves, bool promotes, bool enpass, unsigned from, unsigned to) {
+static PyrrhicMove* pyrrhic_add_move(PyrrhicMove *moves, bool promotes, bool enpass, unsigned from, unsigned to) {
 
     if (enpass)
         *moves++ = pyrrhic_build_move(PYRRHIC_FLAG_ENPASS, from, to);
@@ -457,7 +457,7 @@ PyrrhicMove* pyrrhic_add_move(PyrrhicMove *moves, bool promotes, bool enpass, un
 }
 
 
-PyrrhicMove* pyrrhic_gen_captures(const PyrrhicPosition *pos, PyrrhicMove *moves) {
+static PyrrhicMove* pyrrhic_gen_captures(const PyrrhicPosition *pos, PyrrhicMove *moves) {
 
     uint64_t us   = pos->turn ? pos->white : pos->black;
     uint64_t them = pos->turn ? pos->black : pos->white;
@@ -500,7 +500,7 @@ PyrrhicMove* pyrrhic_gen_captures(const PyrrhicPosition *pos, PyrrhicMove *moves
     return moves;
 }
 
-PyrrhicMove* pyrrhic_gen_moves(const PyrrhicPosition *pos, PyrrhicMove *moves) {
+static PyrrhicMove* pyrrhic_gen_moves(const PyrrhicPosition *pos, PyrrhicMove *moves) {
 
     const unsigned Forward = (pos->turn == PYRRHIC_WHITE ? 8 : -8);
 
@@ -555,7 +555,7 @@ PyrrhicMove* pyrrhic_gen_moves(const PyrrhicPosition *pos, PyrrhicMove *moves) {
     return moves;
 }
 
-PyrrhicMove* pyrrhic_gen_legal(const PyrrhicPosition *pos, PyrrhicMove *moves) {
+static PyrrhicMove* pyrrhic_gen_legal(const PyrrhicPosition *pos, PyrrhicMove *moves) {
 
     PyrrhicMove _moves[TB_MAX_MOVES];
     PyrrhicMove *end = pyrrhic_gen_moves(pos, _moves);
@@ -568,23 +568,23 @@ PyrrhicMove* pyrrhic_gen_legal(const PyrrhicPosition *pos, PyrrhicMove *moves) {
 }
 
 
-bool pyrrhic_is_pawn_move(const PyrrhicPosition *pos, PyrrhicMove move) {
+static bool pyrrhic_is_pawn_move(const PyrrhicPosition *pos, PyrrhicMove move) {
     uint64_t us = pos->turn ? pos->white : pos->black;
     return pyrrhic_test_bit(us & pos->pawns, pyrrhic_move_from(move));
 }
 
-bool pyrrhic_is_en_passant(const PyrrhicPosition *pos, PyrrhicMove move) {
+static bool pyrrhic_is_en_passant(const PyrrhicPosition *pos, PyrrhicMove move) {
     return pyrrhic_is_pawn_move(pos, move)
     && pyrrhic_move_to(move) == pos->ep && pos->ep;
 }
 
-bool pyrrhic_is_capture(const PyrrhicPosition *pos, PyrrhicMove move) {
+static bool pyrrhic_is_capture(const PyrrhicPosition *pos, PyrrhicMove move) {
     uint64_t them = pos->turn ? pos->black : pos->white;
     return pyrrhic_test_bit(them, pyrrhic_move_to(move))
            || pyrrhic_is_en_passant(pos, move);
 }
 
-bool pyrrhic_is_legal(const PyrrhicPosition *pos) {
+static bool pyrrhic_is_legal(const PyrrhicPosition *pos) {
 
     uint64_t us   = pos->turn ? pos->black : pos->white;
     uint64_t them = pos->turn ? pos->white : pos->black;
@@ -597,7 +597,7 @@ bool pyrrhic_is_legal(const PyrrhicPosition *pos) {
            && !(PYRRHIC_PAWN_ATTACKS(sq, !pos->turn) & pos->pawns & them);
 }
 
-bool pyrrhic_is_check(const PyrrhicPosition *pos) {
+static bool pyrrhic_is_check(const PyrrhicPosition *pos) {
 
     uint64_t us   = pos->turn ? pos->white : pos->black;
     uint64_t them = pos->turn ? pos->black : pos->white;
@@ -609,7 +609,7 @@ bool pyrrhic_is_check(const PyrrhicPosition *pos) {
            || (PYRRHIC_PAWN_ATTACKS(sq, pos->turn) & (pos->pawns & them));
 }
 
-bool pyrrhic_is_mate(const PyrrhicPosition *pos) {
+static bool pyrrhic_is_mate(const PyrrhicPosition *pos) {
 
     if (!pyrrhic_is_check(pos)) return 0;
 
@@ -649,10 +649,16 @@ bool pyrrhic_do_move(PyrrhicPosition *pos, const PyrrhicPosition *pos0, PyrrhicM
         pyrrhic_disable_bit(&pos->pawns, to);
 
         switch (promotes) {
-        case PYRRHIC_FLAG_QPROMO: pyrrhic_enable_bit(&pos->queens , to); break;
-        case PYRRHIC_FLAG_RPROMO: pyrrhic_enable_bit(&pos->rooks  , to); break;
-        case PYRRHIC_FLAG_BPROMO: pyrrhic_enable_bit(&pos->bishops, to); break;
-        case PYRRHIC_FLAG_NPROMO: pyrrhic_enable_bit(&pos->knights, to); break;
+        case PYRRHIC_FLAG_QPROMO: pyrrhic_enable_bit(&pos->queens , to);
+            break;
+        case PYRRHIC_FLAG_RPROMO: pyrrhic_enable_bit(&pos->rooks  , to);
+            break;
+        case PYRRHIC_FLAG_BPROMO: pyrrhic_enable_bit(&pos->bishops, to);
+            break;
+        case PYRRHIC_FLAG_NPROMO: pyrrhic_enable_bit(&pos->knights, to);
+            break;
+        default:
+            break;
         }
 
         pos->rule50 = 0;
@@ -1020,12 +1026,12 @@ static void init_tb(char *str)
 #define PIECEENTRY(x) ((struct PieceEntry *)(x))
 #define PAWNENTRY(x) ((struct PawnEntry *)(x))
 
-int num_tables(struct BaseEntry *be, const int type)
+static int num_tables(struct BaseEntry *be, const int type)
 {
   return be->hasPawns ? type == DTM ? 6 : 4 : 1;
 }
 
-struct EncInfo *first_ei(struct BaseEntry *be, const int type)
+static struct EncInfo *first_ei(struct BaseEntry *be, const int type)
 {
   return  be->hasPawns
         ? &PAWNENTRY(be)->ei[type == WDL ? 0 : type == DTM ? 8 : 20]
@@ -1463,7 +1469,7 @@ static void init_indices(void)
   }
 }
 
-int leading_pawn(int *p, struct BaseEntry *be, const int enc)
+static int leading_pawn(int *p, struct BaseEntry *be, const int enc)
 {
   for (int i = 1; i < be->pawns[0]; i++)
     if (Flap[enc-1][p[0]] > Flap[enc-1][p[i]])
@@ -1472,7 +1478,7 @@ int leading_pawn(int *p, struct BaseEntry *be, const int enc)
   return enc == FILE_ENC ? FileToFile[p[0] & 7] : (p[0] - 8) >> 3;
 }
 
-size_t encode(int *p, struct EncInfo *ei, struct BaseEntry *be,
+static size_t encode(int *p, struct EncInfo *ei, struct BaseEntry *be,
     const int enc)
 {
   int n = be->num;
@@ -1954,7 +1960,7 @@ inline static int fill_squares(const PyrrhicPosition *pos, uint8_t *pc, bool fli
   return i;
 }
 
-int probe_table(const PyrrhicPosition *pos, int s, int *success, const int type)
+static int probe_table(const PyrrhicPosition *pos, int s, int *success, const int type)
 {
   // Obtain the position's material-signature key
   uint64_t key = pyrrhic_calc_key(pos,false);

@@ -150,7 +150,8 @@ inline std::ostream &operator<<(std::ostream &os, const int square) noexcept {
 [[nodiscard]] constexpr int north_north(int square) noexcept { return (square + 2*NORTH);       }
 
 // flip vertically
-[[nodiscard]] constexpr int flip_square(int sq) noexcept { return sq ^ 56;}
+[[nodiscard]] constexpr inline int flip_square(int sq) noexcept { return sq ^ 56;}
+
 template <Color C>
 [[nodiscard]] constexpr inline int relative_square(int sq) noexcept {
     if constexpr ( C == WHITE)

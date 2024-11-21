@@ -13,14 +13,14 @@
 //----------------------------------------------------------------------
 std::vector<std::string> split(const std::string& s, char delimiter)
 {
-   std::vector<std::string> tokens;
-   std::string token;
-   std::istringstream tokenStream(s);
-   while (std::getline(tokenStream, token, delimiter))
-   {
-      tokens.push_back(token);
-   }
-   return tokens;
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream tokenStream(s);
+    while (std::getline(tokenStream, token, delimiter))
+    {
+        tokens.push_back(token);
+    }
+    return tokens;
 }
 
 //======================================
@@ -29,10 +29,11 @@ std::vector<std::string> split(const std::string& s, char delimiter)
 void printlog(const std::string& message)
 {
     std::ofstream myfile;
-    std::string str = Home;
+    std::string str(HOME);
     str += "/debug.txt";
-      myfile.open(str, std::ios_base::app); // append instead of overwrite
-      myfile << message << std::endl;
-      myfile.close();
+
+    myfile.open(str, std::ios_base::app); // append instead of overwrite
+    myfile << message << std::endl;
+    myfile.close();
 }
 

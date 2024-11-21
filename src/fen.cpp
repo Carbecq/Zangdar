@@ -43,6 +43,10 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
         return;
     }
 
+#if defined USE_NNUE
+    nnue.reset();
+#endif
+
     // est-ce une notation FEN ou EPD ?
     bool epd = false;
     int count = std::count(fen.begin(), fen.end(), ';');

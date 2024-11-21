@@ -1,6 +1,7 @@
 build*/*
 src/*.o
 src/*/*.o
+networks/
 Zangdar.pro.user*
 doc/
 test/

@@ -1,41 +1,6 @@
 #include "Board.h"
 #include "Move.h"
 
-/* Le roque nécessite plusieurs conditions :
-
-    1) Toutes les cases qui séparent le roi de la tour doivent être vides.
-        Par conséquent, il n'est pas permis de prendre une pièce adverse en roquant ;
-    2) Ni le roi, ni la tour ne doivent avoir quitté leur position initiale.
-        Par conséquent, le roi et la tour doivent être dans la première rangée du joueur,
-        et chaque camp ne peut roquer qu'une seule fois par partie ;
-        en revanche, le roi peut déjà avoir subi des échecs, s'il s'est soustrait à ceux-ci sans se déplacer.
-    3) Aucune des cases (de départ, de passage ou d'arrivée) par lesquelles transite le roi lors du roque
-        ne doit être contrôlée par une pièce adverse.
-        Par conséquent, le roque n'est pas possible si le roi est en échec.
-    4) En revanche la tour, ainsi que sa case adjacente dans le cas du grand roque, peuvent être menacées.
-
-
-    A B C D E F G H
-    T       R     T
-    T         T R
-        R T
-
-    */
-
-//=======================================================================
-//! \brief  Ajoute les coups du roque
-//-----------------------------------------------------------------------
-template <Color C, CastleSide side>
-constexpr inline void Board::gen_castle(MoveList& ml)
-{
-    if (   can_castle<C, side>()
-        && BB::empty(get_rook_path<C, side>() & occupancy_all())
-        && !(squares_attacked<~C>() & get_king_path<C, side>()) )
-    {
-        add_quiet_move(ml, get_king_from<C>(), get_king_dest<C, side>(), KING, Move::FLAG_CASTLE_MASK);
-    }
-}
-
 //=================================================================
 //! \brief  Ajoute un coup tranquille à la liste des coups
 //!
@@ -200,8 +165,3 @@ void Board::push_pawn_capture_moves(MoveList& ml, Bitboard attack, const int dir
 
 
 
-template void Board::gen_castle<Color::WHITE, CastleSide::KING_SIDE>(MoveList& ml);
-template void Board::gen_castle<Color::WHITE, CastleSide::QUEEN_SIDE>(MoveList& ml);
-
-template void Board::gen_castle<Color::BLACK, CastleSide::KING_SIDE>(MoveList& ml);
-template void Board::gen_castle<Color::BLACK, CastleSide::QUEEN_SIDE>(MoveList& ml);

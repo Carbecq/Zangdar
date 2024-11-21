@@ -11,6 +11,7 @@ QMAKE_LFLAGS += -flto=auto
 
 #------------------------------------------------------
 DEFINES += USE_HASH
+DEFINES += USE_NNUE
 
 # ATTENTION : ne pas mettre "\" car ils sont reconnus comme caractères spéciaux
 # pour Github
@@ -21,9 +22,9 @@ DEFINES += HOME='\\"$${HOME_STR}\\"'
 
 #------------------------------------------------------
 
-# DEFINES += USE_TUNER
-# QMAKE_CXXFLAGS_RELEASE += -fopenmp
-# LIBS += -fopenmp
+DEFINES += USE_TUNER
+QMAKE_CXXFLAGS_RELEASE += -fopenmp
+LIBS += -fopenmp
 
 #------------------------------------------------------
 
@@ -193,6 +194,7 @@ HEADERS += \
     src/Move.h \
     src/MoveList.h \
     src/MovePicker.h \
+    src/NNUE.h \
     src/OrderInfo.h \
     src/PolyBook.h \
     src/Search.h \
@@ -205,6 +207,7 @@ HEADERS += \
     src/bitmask.h \
     src/defines.h \
     src/evaluate.h \
+    src/incbin/incbin.h \
     src/pyrrhic/api.h \
     src/pyrrhic/stdendian.h \
     src/pyrrhic/tbconfig.h \
@@ -217,6 +220,7 @@ SOURCES += \
     src/Attacks.cpp \
     src/Board.cpp \
     src/MovePicker.cpp \
+    src/NNUE.cpp \
     src/OrderInfo.cpp \
     src/PolyBook.cpp \
     src/Search.cpp \

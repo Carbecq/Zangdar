@@ -49,33 +49,9 @@ void Board::checkers_pinned() noexcept
     }
 }
 
-//! \brief Retourne le bitboard de toutes les pièces du camp "C" attaquant la case "sq"
-template <Color C>
-[[nodiscard]] constexpr Bitboard Board::attackers(const int sq) const noexcept
-{
-    // il faut regarder les attaques de pions depuis l'autre camp
-    return( (Attacks::pawn_attacks<~C>(sq)         & occupancy_cp<C, PAWN>())                                           |
-            (Attacks::knight_moves(sq)             & occupancy_cp<C, KNIGHT>())                                         |
-            (Attacks::king_moves(sq)               & occupancy_cp<C, KING>())                                           |
-            (Attacks::bishop_moves(sq, occupancy_all()) & (occupancy_cp<C, BISHOP>() | occupancy_cp<C, QUEEN>())) |
-            (Attacks::rook_moves(sq,   occupancy_all()) & (occupancy_cp<C, ROOK>()   | occupancy_cp<C, QUEEN>())) );
-}
-
-//! \brief  Retourne le Bitboard de TOUS les attaquants (Blancs et Noirs) de la case "sq"
-[[nodiscard]] Bitboard Board::all_attackers(const int sq, const Bitboard occ) const noexcept
-{
-    return( (Attacks::pawn_attacks(BLACK, sq) & occupancy_cp<WHITE, PAWN>())       |
-            (Attacks::pawn_attacks(WHITE, sq) & occupancy_cp<BLACK, PAWN>())       |
-            (Attacks::knight_moves(sq)        & typePiecesBB[KNIGHT])                         |
-            (Attacks::king_moves(sq)          & typePiecesBB[KING])                           |
-            (Attacks::bishop_moves(sq, occ)   & (typePiecesBB[BISHOP] | typePiecesBB[QUEEN])) |
-            (Attacks::rook_moves(sq,   occ)   & (typePiecesBB[ROOK]   | typePiecesBB[QUEEN])) );
-}
-
-
 //! \brief Retourne le Bitboard des cases attaquées
 template <Color C>
-[[nodiscard]] constexpr Bitboard Board::squares_attacked() const noexcept {
+[[nodiscard]] Bitboard Board::squares_attacked() const noexcept {
     Bitboard mask = 0ULL;
 
     // Pawns
@@ -146,10 +122,6 @@ template <Color C>
 // Explicit instantiations.
 template Bitboard Board::squares_attacked<WHITE>() const noexcept ;
 template Bitboard Board::squares_attacked<BLACK>() const noexcept ;
-
-template Bitboard Board::attackers<WHITE>(const int sq) const noexcept;
-template Bitboard Board::attackers<BLACK>(const int sq) const noexcept;
-
 
 template void Board::checkers_pinned<WHITE>() noexcept;
 template void Board::checkers_pinned<BLACK>() noexcept;

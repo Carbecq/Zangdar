@@ -5,9 +5,13 @@
 //=============================================================
 //! \brief  Enlève un coup
 //-------------------------------------------------------------
-template <Color C> constexpr void Board::undo_move() noexcept
+template <Color C> void Board::undo_move() noexcept
 {
     constexpr Color Them     = ~C;
+
+#if defined USE_NNUE
+    nnue.pop(); // retourne a l'accumulateur précédent
+#endif
 
     // Swap sides
     side_to_move = ~side_to_move;
@@ -205,7 +209,7 @@ template <Color C> constexpr void Board::undo_move() noexcept
 //===================================================================
 //! \brief  Enlève un NullMove
 //-------------------------------------------------------------------
-template <Color C> constexpr void Board::undo_nullmove() noexcept
+template <Color C> void Board::undo_nullmove() noexcept
 {
     // Swap sides
     side_to_move = ~side_to_move;
