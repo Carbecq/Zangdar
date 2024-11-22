@@ -36,8 +36,8 @@ endif
 
 # needed only for tests
 # just comment it if you want
-#HOME = \"/mnt/Datas/Echecs/Programmation/Zangdar/\"
-HOME = \"./\"
+HOME = \"/mnt/Datas/Echecs/Programmation/Zangdar/\"
+#HOME = \"./\"
 DEFS = -DHOME=$(HOME)
 
 #  Désactiver USE_HASH pour la mesure de performances brutes
@@ -45,7 +45,7 @@ DEFS += -DUSE_HASH
 
 # DEFS += -DDEBUG_EVAL
 # DEFS += -DDEBUG_LOG
-# DEFS += -DDEBUG_HASH
+DEFS += -DDEBUG_HASH
 # DEFS += -DDEBUG_TIME
 
 #  NE PAS UTILISER PRETTY avec

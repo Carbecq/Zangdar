@@ -92,8 +92,8 @@ template <Color C> void Board::undo_move() noexcept
                 BB::toggle_bit(typePiecesBB[captured], dest);
                 BB::toggle_bit(colorPiecesBB[Them], dest);
                 
-                pieceOn[from]= PAWN;
-                pieceOn[dest]  = captured;
+                pieceOn[from] = PAWN;
+                pieceOn[dest] = captured;
             }
 
             //====================================================================================
@@ -167,20 +167,31 @@ template <Color C> void Board::undo_move() noexcept
         //------------------------------------------------------------------------------------
         else if (Move::is_castling(move))
         {
-
             //====================================================================================
             //  Petit Roque
             //------------------------------------------------------------------------------------
             if ((SQ::square_BB(dest)) & FILE_G_BB)
             {
-                // Move the rook
-                BB::toggle_bit2(colorPiecesBB[C],   get_rook_from<C, CastleSide::KING_SIDE>(), get_rook_dest<C, CastleSide::KING_SIDE>());
-                BB::toggle_bit2(typePiecesBB[ROOK], get_rook_from<C, CastleSide::KING_SIDE>(), get_rook_dest<C, CastleSide::KING_SIDE>());
-                
-                pieceOn[from] = piece;
+                pieceOn[from] = KING;
                 pieceOn[dest] = NO_TYPE;
-                pieceOn[get_rook_from<C, CastleSide::KING_SIDE>()] = ROOK;
-                pieceOn[get_rook_dest<C, CastleSide::KING_SIDE>()] = NO_TYPE;
+
+                // Move the rook
+                if constexpr (C == WHITE)
+                {
+                    BB::toggle_bit2(colorPiecesBB[C],   H1, F1);
+                    BB::toggle_bit2(typePiecesBB[ROOK], H1, F1);
+
+                    pieceOn[H1] = ROOK;
+                    pieceOn[F1] = NO_TYPE;
+                }
+                else
+                {
+                    BB::toggle_bit2(colorPiecesBB[C],   H8, F8);
+                    BB::toggle_bit2(typePiecesBB[ROOK], H8, F8);
+
+                    pieceOn[H8] = ROOK;
+                    pieceOn[F8] = NO_TYPE;
+                }
             }
 
             //====================================================================================
@@ -188,66 +199,78 @@ template <Color C> void Board::undo_move() noexcept
             //------------------------------------------------------------------------------------
             else if ((SQ::square_BB(dest)) & FILE_C_BB)
             {
-                // Move the rook
-                BB::toggle_bit2(colorPiecesBB[C],   get_rook_from<C, CastleSide::QUEEN_SIDE>(), get_rook_dest<C, CastleSide::QUEEN_SIDE>());
-                BB::toggle_bit2(typePiecesBB[ROOK], get_rook_from<C, CastleSide::QUEEN_SIDE>(), get_rook_dest<C, CastleSide::QUEEN_SIDE>());
-                
-                pieceOn[from] = piece;
+                pieceOn[from] = KING;
                 pieceOn[dest] = NO_TYPE;
-                pieceOn[get_rook_from<C, CastleSide::QUEEN_SIDE>()] = ROOK;
-                pieceOn[get_rook_dest<C, CastleSide::QUEEN_SIDE>()] = NO_TYPE;
+
+                // Move the rook
+                if constexpr (C == WHITE)
+                {
+                    BB::toggle_bit2(colorPiecesBB[C],   A1, D1);
+                    BB::toggle_bit2(typePiecesBB[ROOK], A1, D1);
+
+                    pieceOn[A1] = ROOK;
+                    pieceOn[D1] = NO_TYPE;
+                }
+                else
+                {
+                    BB::toggle_bit2(colorPiecesBB[C],   A8, D8);
+                    BB::toggle_bit2(typePiecesBB[ROOK], A8, D8);
+
+                    pieceOn[A8] = ROOK;
+                    pieceOn[D8] = NO_TYPE;
+                }
             }
         }
     }
 
 #ifndef NDEBUG
-    // on ne passe ici qu'en debug
-    valid();
+        // on ne passe ici qu'en debug
+        valid();
 #endif
-}
+    }
 
-//===================================================================
-//! \brief  Enlève un NullMove
-//-------------------------------------------------------------------
-template <Color C> void Board::undo_nullmove() noexcept
-{
-    // Swap sides
-    side_to_move = ~side_to_move;
+    //===================================================================
+    //! \brief  Enlève un NullMove
+    //-------------------------------------------------------------------
+    template <Color C> void Board::undo_nullmove() noexcept
+    {
+        // Swap sides
+        side_to_move = ~side_to_move;
 
-    gamemove_counter--;
+        gamemove_counter--;
 
-    // En passant
-    ep_square = game_history[gamemove_counter].ep_square;
+        // En passant
+        ep_square = game_history[gamemove_counter].ep_square;
 
-    // Halfmoves
-    halfmove_counter = game_history[gamemove_counter].halfmove_counter;
+        // Halfmoves
+        halfmove_counter = game_history[gamemove_counter].halfmove_counter;
 
-    // Fullmoves
-    fullmove_counter -= (C == Color::BLACK);
+        // Fullmoves
+        fullmove_counter -= (C == Color::BLACK);
 
-    // Castling
-    castling = game_history[gamemove_counter].castling;
+        // Castling
+        castling = game_history[gamemove_counter].castling;
 
 #if defined USE_HASH
-    hash      = game_history[gamemove_counter].hash;
-    pawn_hash = game_history[gamemove_counter].pawn_hash;
+        hash      = game_history[gamemove_counter].hash;
+        pawn_hash = game_history[gamemove_counter].pawn_hash;
 #endif
 
-    checkers = game_history[gamemove_counter].checkers;
-    pinned   = game_history[gamemove_counter].pinned;
+        checkers = game_history[gamemove_counter].checkers;
+        pinned   = game_history[gamemove_counter].pinned;
 
 #ifndef NDEBUG
-    // on ne passe ici qu'en debug
-    valid();
+        // on ne passe ici qu'en debug
+        valid();
 #endif
-}
+    }
 
 
 
-// Explicit instantiations.
+    // Explicit instantiations.
 
-template void Board::undo_move<WHITE>() noexcept ;
-template void Board::undo_move<BLACK>() noexcept ;
+    template void Board::undo_move<WHITE>() noexcept ;
+    template void Board::undo_move<BLACK>() noexcept ;
 
-template void Board::undo_nullmove<WHITE>() noexcept ;
-template void Board::undo_nullmove<BLACK>() noexcept ;
+    template void Board::undo_nullmove<WHITE>() noexcept ;
+    template void Board::undo_nullmove<BLACK>() noexcept ;

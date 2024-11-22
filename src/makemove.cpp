@@ -77,7 +77,7 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
     if (piece == KING)
         x_king[C] = dest;
 
-    // Droit au roque, remove ancient value
+// Droit au roque, remove ancient value
 #if defined USE_HASH
     hash ^= castle_key[castling];
 #endif
@@ -101,12 +101,14 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
     //------------------------------------------------------------------------------------
     if (Move::flags(move) == Move::FLAG_NONE)
     {
-
         //====================================================================================
         //  Déplacement simple
         //------------------------------------------------------------------------------------
         if (Move::is_depl(move))
         {
+            assert(captured == NO_TYPE);
+            assert(promo    == NO_TYPE);
+
             BB::toggle_bit2(colorPiecesBB[C], from, dest);
             BB::toggle_bit2(typePiecesBB[piece], from, dest);
             
@@ -115,15 +117,11 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
 
 #if defined USE_NNUE
             nnue.update_feature<false>(C, piece, from);     // remove piece
-            nnue.update_feature<true>(C, piece, dest);    // add piece
+            nnue.update_feature<true>(C, piece, dest);      // add piece
 #endif
-
 #if defined USE_HASH
             hash ^= piece_key[C][piece][from] ^ piece_key[C][piece][dest];
 #endif
-
-            assert(captured == NO_TYPE);
-            assert(promo == NO_TYPE);
 
             if (piece == PAWN)
             {
@@ -144,27 +142,32 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
             //------------------------------------------------------------------------------------
             if (Move::is_promoting(move))
             {
-                // suppression du pion
-                BB::toggle_bit(typePiecesBB[PAWN], from);
+                assert(piece    == PAWN);
+                assert(captured != NO_TYPE);
+                assert(promo    != NO_TYPE);
+                assert(SQ::file(dest) != SQ::file(from));
+                assert((C == Color::WHITE && SQ::rank(dest) == 7) ||
+                       (C == Color::BLACK && SQ::rank(dest) == 0));
+                assert((C == Color::WHITE && SQ::rank(from) == 6) ||
+                       (C == Color::BLACK && SQ::rank(from) == 1));
+
+                BB::toggle_bit(typePiecesBB[PAWN], from);       // suppression du pion
                 BB::toggle_bit(colorPiecesBB[C], from);
 
-                // Remove the captured piece
-                BB::toggle_bit(typePiecesBB[captured], dest);
+                BB::toggle_bit(typePiecesBB[captured], dest);   // Remove the captured piece
                 BB::toggle_bit(colorPiecesBB[Them], dest);
 
-                // Ajoute la pièce promue
-                BB::toggle_bit(typePiecesBB[promo], dest);
+                BB::toggle_bit(typePiecesBB[promo], dest);      // Ajoute la pièce promue
                 BB::toggle_bit(colorPiecesBB[C], dest);
                 
                 pieceOn[from] = NO_TYPE;
                 pieceOn[dest] = promo;
 
 #if defined USE_NNUE
-                nnue.update_feature<false>(C, PAWN, from);     // remove piece
-                nnue.update_feature<false>(~C, captured, dest);    // remove captured
-                nnue.update_feature<true>(C, promo, dest);    // add promoted
+                nnue.update_feature<false>(C, PAWN, from);          // remove pawn
+                nnue.update_feature<false>(~C, captured, dest);     // remove captured
+                nnue.update_feature<true>(C, promo, dest);          // add promoted
 #endif
-
 #if defined USE_HASH
                 hash ^= piece_key[C][piece][from];
                 hash ^= piece_key[C][promo][dest];
@@ -172,14 +175,6 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
 
                 pawn_hash ^= piece_key[C][PAWN][from];
 #endif
-                assert(piece == PAWN);
-                assert(captured != NO_TYPE);
-                assert(promo != NO_TYPE);
-                assert(SQ::file(dest) != SQ::file(from));
-                assert((C == Color::WHITE && SQ::rank(dest) == 7) ||
-                       (C == Color::BLACK && SQ::rank(dest) == 0));
-                assert((C == Color::WHITE && SQ::rank(from) == 6) ||
-                       (C == Color::BLACK && SQ::rank(from) == 1));
 
                 halfmove_counter = 0;
             }
@@ -189,40 +184,34 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
             //------------------------------------------------------------------------------------
             else
             {
-                BB::toggle_bit2(colorPiecesBB[C],   from, dest);
+                assert(captured != NO_TYPE);
+                assert(promo == NO_TYPE);
+
+                BB::toggle_bit2(colorPiecesBB[C],    from, dest);   //  déplacement de la pièce
                 BB::toggle_bit2(typePiecesBB[piece], from, dest);
-                
+
+                BB::toggle_bit(colorPiecesBB[Them],    dest);       //  suppression de la pièce prise
+                BB::toggle_bit(typePiecesBB[captured], dest);
+
                 pieceOn[from] = NO_TYPE;
                 pieceOn[dest] = piece;
 
 #if defined USE_NNUE
-                nnue.update_feature<false>(~C, captured, dest);     // remove piece
-                nnue.update_feature<false>(C, piece, from);     // remove piece
-                nnue.update_feature<true>(C, piece, dest);    // add piece
+                nnue.update_feature<false>(C, piece, from);
+                nnue.update_feature<true>(C, piece, dest);
+                nnue.update_feature<false>(~C, captured, dest);
 #endif
-
 #if defined USE_HASH
                 hash ^= piece_key[C][piece][from] ^ piece_key[C][piece][dest];
+                hash ^= piece_key[Them][captured][dest];
 
                 if (piece == PAWN)
                     pawn_hash ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
-#endif
-
-                assert(captured != NO_TYPE);
-                
-                BB::toggle_bit(colorPiecesBB[Them], dest);
-                BB::toggle_bit(typePiecesBB[captured], dest);
-
-                halfmove_counter = 0;
-
-#if defined USE_HASH
-                hash ^= piece_key[Them][captured][dest];
-
                 if (captured == PAWN)
                     pawn_hash ^= piece_key[Them][PAWN][dest];
 #endif
-                assert(promo == NO_TYPE);
-            }
+                halfmove_counter = 0;
+             }
         }
 
         //====================================================================================
@@ -230,40 +219,36 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
         //------------------------------------------------------------------------------------
         else if (Move::is_promoting(move))
         {
-            // suppression du pion
-            BB::toggle_bit(typePiecesBB[PAWN], from);
+            assert(piece    == PAWN);
+            assert(captured == NO_TYPE);
+            assert(promo    != NO_TYPE);
+            assert(SQ::file(dest) == SQ::file(from));
+            assert((C == Color::WHITE && SQ::rank(dest) == 7) ||
+                   (C == Color::BLACK && SQ::rank(dest) == 0));
+            assert((C == Color::WHITE && SQ::rank(from) == 6) ||
+                   (C == Color::BLACK && SQ::rank(from) == 1));
+
+            BB::toggle_bit(typePiecesBB[PAWN], from);       // suppression du pion
             BB::toggle_bit(colorPiecesBB[C], from);
 
-            // Ajoute la pièce promue
-            BB::toggle_bit(typePiecesBB[promo], dest);
+            BB::toggle_bit(typePiecesBB[promo], dest);      // Ajoute la pièce promue
             BB::toggle_bit(colorPiecesBB[C], dest);
             
             pieceOn[from] = NO_TYPE;
             pieceOn[dest] = promo;
 
 #if defined USE_NNUE
-            nnue.update_feature<false>(C, PAWN, from);     // remove piece
-            nnue.update_feature<true>(C, promo, dest);    // add promoted
+            nnue.update_feature<false>(C, PAWN, from);
+            nnue.update_feature<true>(C, promo, dest);
 #endif
-
 #if defined USE_HASH
             hash ^= piece_key[C][piece][from];
             hash ^= piece_key[C][promo][dest];
 
             pawn_hash ^= piece_key[C][PAWN][from];
 #endif
-            assert(piece == PAWN);
-            assert(captured == NO_TYPE);
-            assert(promo != NO_TYPE);
-            assert(SQ::file(dest) == SQ::file(from));
-
-            assert((C == Color::WHITE && SQ::rank(dest) == 7) ||
-                   (C == Color::BLACK && SQ::rank(dest) == 0));
-            assert((C == Color::WHITE && SQ::rank(from) == 6) ||
-                   (C == Color::BLACK && SQ::rank(from) == 1));
 
             halfmove_counter = 0;
-
         }
     }
 
@@ -277,6 +262,13 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
         //------------------------------------------------------------------------------------
         if (Move::is_double(move))
         {
+            assert(piece == PAWN);
+            assert(captured == NO_TYPE);
+            assert(promo == NO_TYPE);
+            assert(SQ::file(dest) == SQ::file(from));
+            assert((C == Color::WHITE && SQ::rank(dest) == 3) || (C == Color::BLACK && SQ::rank(dest) == 4));
+            assert((C == Color::WHITE && SQ::rank(from) == 1) || (C == Color::BLACK && SQ::rank(from) == 6));
+
             BB::toggle_bit2(colorPiecesBB[C], from, dest);
             BB::toggle_bit2(typePiecesBB[piece], from, dest);
             
@@ -284,20 +276,13 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
             pieceOn[dest] = piece;
 
 #if defined USE_NNUE
-            nnue.update_feature<false>(C, PAWN, from);     // remove piece
-            nnue.update_feature<true>(C, PAWN, dest);    // add promoted
+            nnue.update_feature<false>(C, PAWN, from);
+            nnue.update_feature<true>(C, PAWN, dest);
 #endif
-
 #if defined USE_HASH
             hash      ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
             pawn_hash ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
 #endif
-            assert(piece == PAWN);
-            assert(captured == NO_TYPE);
-            assert(promo == NO_TYPE);
-            assert(SQ::file(dest) == SQ::file(from));
-            assert((C == Color::WHITE && SQ::rank(dest) == 3) || (C == Color::BLACK && SQ::rank(dest) == 4));
-            assert((C == Color::WHITE && SQ::rank(from) == 1) || (C == Color::BLACK && SQ::rank(from) == 6));
 
             halfmove_counter = 0;
             ep_square = (C == Color::WHITE) ? SQ::south(dest) : SQ::north(dest);
@@ -312,6 +297,14 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
         //------------------------------------------------------------------------------------
         else if (Move::is_enpassant(move))
         {
+            assert(piece == PAWN);
+            assert(captured == PAWN);
+            assert(promo == NO_TYPE);
+            assert(SQ::file(dest) == SQ::file(ep_old));
+            assert((C == Color::WHITE && SQ::rank(dest) == 5)   || (C == Color::BLACK && SQ::rank(dest) == 2));
+            assert((C == Color::WHITE && SQ::rank(from) == 4) || (C == Color::BLACK && SQ::rank(from) == 3));
+            assert(SQ::file(dest) - SQ::file(from) == 1     || SQ::file(from) - SQ::file(dest) == 1);
+
             BB::toggle_bit2(colorPiecesBB[C],   from, dest);
             BB::toggle_bit2(typePiecesBB[PAWN], from, dest);
             
@@ -319,33 +312,24 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
             pieceOn[dest] = PAWN;
 
 #if defined USE_NNUE
-            nnue.update_feature<false>(C, PAWN, from);     // remove piece
-            nnue.update_feature<true>(C, PAWN, dest);    // add promoted
+            nnue.update_feature<false>(C, PAWN, from);
+            nnue.update_feature<true>(C, PAWN, dest);
 #endif
-
 #if defined USE_HASH
             hash      ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
             pawn_hash ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
 #endif
-            assert(piece == PAWN);
-         //   assert(captured == PAWN);
-            assert(promo == NO_TYPE);
-            assert(SQ::file(dest) == SQ::file(ep_old));
-            assert((C == Color::WHITE && SQ::rank(dest) == 5)   || (C == Color::BLACK && SQ::rank(dest) == 2));
-            assert((C == Color::WHITE && SQ::rank(from) == 4) || (C == Color::BLACK && SQ::rank(from) == 3));
-            assert(SQ::file(dest) - SQ::file(from) == 1     || SQ::file(from) - SQ::file(dest) == 1);
-
             halfmove_counter = 0;
 
             // Remove the captured pawn
             if (C == Color::WHITE)
             {
-                BB::toggle_bit(typePiecesBB[PAWN], SQ::south(dest));
-                BB::toggle_bit(colorPiecesBB[Color::BLACK],   SQ::south(dest));
+                BB::toggle_bit(typePiecesBB[PAWN],          SQ::south(dest));
+                BB::toggle_bit(colorPiecesBB[Color::BLACK], SQ::south(dest));
                 pieceOn[SQ::south(dest)] = NO_TYPE;
 
 #if defined USE_NNUE
-                nnue.update_feature<false>(~C, PAWN, SQ::south(dest));     // remove piece
+                nnue.update_feature<false>(~C, PAWN, SQ::south(dest));
 #endif
 #if defined USE_HASH
                 hash      ^= piece_key[Them][PAWN][SQ::south(dest)];
@@ -354,14 +338,13 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
             }
             else
             {
-                BB::toggle_bit(typePiecesBB[PAWN], SQ::north(dest));
-                BB::toggle_bit(colorPiecesBB[Color::WHITE],   SQ::north(dest));
+                BB::toggle_bit(typePiecesBB[PAWN],          SQ::north(dest));
+                BB::toggle_bit(colorPiecesBB[Color::WHITE], SQ::north(dest));
                 pieceOn[SQ::north(dest)] = NO_TYPE;
 
 #if defined USE_NNUE
-                nnue.update_feature<false>(~C, PAWN, SQ::north(dest));     // remove piece
+                nnue.update_feature<false>(~C, PAWN, SQ::north(dest));
 #endif
-
 #if defined USE_HASH
                 hash      ^= piece_key[Them][PAWN][SQ::north(dest)];
                 pawn_hash ^= piece_key[Them][PAWN][SQ::north(dest)];
@@ -374,57 +357,73 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
         //------------------------------------------------------------------------------------
         else if (Move::is_castling(move))
         {
+            assert(piece    == KING);
+            assert(captured == NO_TYPE);
+            assert(promo    == NO_TYPE);
+            assert(pieceOn[from] == KING);
+            assert(pieceOn[dest] == NO_TYPE);
 
             //====================================================================================
             //  Petit Roque
             //------------------------------------------------------------------------------------
             if ((SQ::square_BB(dest)) & FILE_G_BB)
             {
-                assert(piece    == KING);
-                assert(captured == NO_TYPE);
-                assert(promo    == NO_TYPE);
-                assert((dest    == get_king_dest<C, CastleSide::KING_SIDE>())  );
-                assert(pieceOn[from] == KING);
-                assert(pieceOn[dest] == NO_TYPE);
+                assert((dest == get_king_dest<C, CastleSide::KING_SIDE>())  );
+                assert(piece_on(get_king_dest<C, CastleSide::KING_SIDE>()) == KING);
 
+                // Move the King
                 BB::toggle_bit2(colorPiecesBB[C], from, dest);
-                BB::toggle_bit2(typePiecesBB[piece], from, dest);
+                BB::toggle_bit2(typePiecesBB[KING], from, dest);
                 
                 pieceOn[from] = NO_TYPE;
-                pieceOn[dest] = piece;
+                pieceOn[dest] = KING;
 
 #if defined USE_NNUE
-                nnue.update_feature<false>(C, piece, from);     // remove piece
-                nnue.update_feature<true>(C, piece, dest);    // add piece
+                nnue.update_feature<false>(C, piece, from);
+                nnue.update_feature<true>(C, piece, dest);
 #endif
-#if defined USE_NNUE
-                assert(pieceOn[from] == NO_TYPE);
-                assert(pieceOn[dest] == KING);
-#endif
-
 #if defined USE_HASH
                 hash ^= piece_key[C][piece][from];
                 hash ^= piece_key[C][piece][dest];
-                hash ^= piece_key[C][ROOK][get_rook_from<C, CastleSide::KING_SIDE>()];
-                hash ^= piece_key[C][ROOK][get_rook_dest<C, CastleSide::KING_SIDE>()];
 #endif
+                // Move the Rook
+                if constexpr (C == WHITE)
+                {
+                    assert(piece_on(F1) == ROOK);
 
-                // Move the rook
-                BB::toggle_bit2(colorPiecesBB[C],   get_rook_from<C, CastleSide::KING_SIDE>(), get_rook_dest<C, CastleSide::KING_SIDE>());
-                BB::toggle_bit2(typePiecesBB[ROOK], get_rook_from<C, CastleSide::KING_SIDE>(), get_rook_dest<C, CastleSide::KING_SIDE>());
-                
-                pieceOn[get_rook_from<C, CastleSide::KING_SIDE>()] = NO_TYPE;
-                pieceOn[get_rook_dest<C, CastleSide::KING_SIDE>()] = ROOK;
+                    BB::toggle_bit2(colorPiecesBB[C],   H1, F1);
+                    BB::toggle_bit2(typePiecesBB[ROOK], H1, F1);
+
+                    pieceOn[H1] = NO_TYPE;
+                    pieceOn[F1] = ROOK;
 
 #if defined USE_NNUE
-                nnue.update_feature<false>(C, ROOK, get_rook_from<C, CastleSide::KING_SIDE>());     // remove piece
-                nnue.update_feature<true>(C, ROOK, get_rook_dest<C, CastleSide::KING_SIDE>());    // add piece
+                    nnue.update_feature<false>(C, ROOK, H1);     // remove piece
+                    nnue.update_feature<true>(C, ROOK, F1);    // add piece
 #endif
+#if defined USE_HASH
+                    hash ^= piece_key[C][ROOK][H1];
+                    hash ^= piece_key[C][ROOK][F1];
+#endif
+                }
+                else
+                {
+                    assert(piece_on(F8) == ROOK);
 
-                // Check if rook is at destination
-                assert(piece_on(get_rook_dest<C, CastleSide::KING_SIDE>()) == ROOK);
-                // Check that king is on its destination square
-                assert(piece_on(get_king_dest<C, CastleSide::KING_SIDE>()) == KING);
+                    BB::toggle_bit2(colorPiecesBB[C],   H8, F8);
+                    BB::toggle_bit2(typePiecesBB[ROOK], H8, F8);
+
+                    pieceOn[H8] = NO_TYPE;
+                    pieceOn[F8] = ROOK;
+#if defined USE_NNUE
+                    nnue.update_feature<false>(C, ROOK, H8);     // remove piece
+                    nnue.update_feature<true>(C, ROOK,  F8);    // add piece
+#endif
+#if defined USE_HASH
+                    hash ^= piece_key[C][ROOK][H8];
+                    hash ^= piece_key[C][ROOK][F8];
+#endif
+                }
             }
 
             //====================================================================================
@@ -432,48 +431,62 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
             //------------------------------------------------------------------------------------
             else if ((SQ::square_BB(dest)) & FILE_C_BB)
             {
-                assert(piece == KING);
-                assert(captured == NO_TYPE);
-                assert(promo == NO_TYPE);
                 assert((dest == get_king_dest<C, CastleSide::QUEEN_SIDE>() ));
-                assert(pieceOn[from] == KING);
-                assert(pieceOn[dest] == NO_TYPE);
+                assert(piece_on(get_king_dest<C, CastleSide::QUEEN_SIDE>()) == KING);
 
+                // Move the King
                 BB::toggle_bit2(colorPiecesBB[C], from, dest);
-                BB::toggle_bit2(typePiecesBB[piece], from, dest);
+                BB::toggle_bit2(typePiecesBB[KING], from, dest);
                 
                 pieceOn[from] = NO_TYPE;
-                pieceOn[dest] = piece;
+                pieceOn[dest] = KING;
 
 #if defined USE_NNUE
-                nnue.update_feature<false>(C, piece, from);     // remove piece
-                nnue.update_feature<true>(C, piece, dest);    // add piece
+                nnue.update_feature<false>(C, piece, from);
+                nnue.update_feature<true>(C, piece, dest);
 #endif
-                assert(pieceOn[from] == NO_TYPE);
-                assert(pieceOn[dest] == KING);
-
 #if defined USE_HASH
                 hash ^= piece_key[C][piece][from];
                 hash ^= piece_key[C][piece][dest];
-                hash ^= piece_key[C][ROOK][get_rook_from<C, CastleSide::QUEEN_SIDE>()];
-                hash ^= piece_key[C][ROOK][get_rook_dest<C, CastleSide::QUEEN_SIDE>()];
 #endif
 
-                // Move the rook
-                BB::toggle_bit2(colorPiecesBB[C],   get_rook_from<C, CastleSide::QUEEN_SIDE>(), get_rook_dest<C, CastleSide::QUEEN_SIDE>());
-                BB::toggle_bit2(typePiecesBB[ROOK], get_rook_from<C, CastleSide::QUEEN_SIDE>(), get_rook_dest<C, CastleSide::QUEEN_SIDE>());
-                pieceOn[get_rook_from<C, CastleSide::QUEEN_SIDE>()] = NO_TYPE;
-                pieceOn[get_rook_dest<C, CastleSide::QUEEN_SIDE>()] = ROOK;
+                // Move the Rook
+                if constexpr (C == WHITE)
+                {
+                    assert(piece_on(D1) == ROOK);
 
+                    BB::toggle_bit2(colorPiecesBB[C],   A1, D1);
+                    BB::toggle_bit2(typePiecesBB[ROOK], A1, D1);
+
+                    pieceOn[A1] = NO_TYPE;
+                    pieceOn[D1] = ROOK;
 #if defined USE_NNUE
-                nnue.update_feature<false>(C, ROOK, get_rook_from<C, CastleSide::QUEEN_SIDE>());     // remove piece
-                nnue.update_feature<true>(C, ROOK, get_rook_dest<C, CastleSide::QUEEN_SIDE>());    // add piece
+                    nnue.update_feature<false>(C, ROOK, A1);
+                    nnue.update_feature<true>(C, ROOK, D1);
 #endif
+#if defined USE_HASH
+                    hash ^= piece_key[C][ROOK][A1];
+                    hash ^= piece_key[C][ROOK][D1];
+#endif
+                }
+                else
+                {
+                    assert(piece_on(D8) == ROOK);
 
-                // Check if rook is at destination
-                assert(piece_on(get_rook_dest<C, CastleSide::QUEEN_SIDE>()) == ROOK);
-                // Check that king is on its destination square
-                assert(piece_on(get_king_dest<C, CastleSide::QUEEN_SIDE>()) == KING);
+                    BB::toggle_bit2(colorPiecesBB[C],   A8, D8);
+                    BB::toggle_bit2(typePiecesBB[ROOK], A8, D8);
+
+                    pieceOn[A8] = NO_TYPE;
+                    pieceOn[D8] = ROOK;
+ #if defined USE_NNUE
+                    nnue.update_feature<false>(C, ROOK, A8);
+                    nnue.update_feature<true>(C, ROOK,  D8);
+#endif
+#if defined USE_HASH
+                    hash ^= piece_key[C][ROOK][A8];
+                    hash ^= piece_key[C][ROOK][D8];
+#endif
+                }
             }
         } // Roques
     } // Special
@@ -492,7 +505,7 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
 
 #if defined DEBUG_HASH
     U64 hash_1, hash_2;
-        calculate_hash(hash_1, hash_2);
+    calculate_hash(hash_1, hash_2);
 
     if (hash_1 != hash)
     {
@@ -524,8 +537,8 @@ template <Color C> void Board::make_nullmove() noexcept
     // Sauvegarde des caractéristiques de la position
     game_history[gamemove_counter] = UndoInfo{hash, pawn_hash, Move::MOVE_NULL, ep_square, halfmove_counter, castling, checkers, pinned};
 
-    // La prise en passant n'est valable que tout de suite
-    // Il faut donc la supprimer
+// La prise en passant n'est valable que tout de suite
+// Il faut donc la supprimer
 #if defined USE_HASH
     if (ep_square != NO_SQUARE) {
         hash ^= ep_key[ep_square];

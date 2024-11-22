@@ -288,31 +288,6 @@ public:
             return (C8);
     }
 
-    template <Color C, CastleSide side>
-    constexpr inline int get_rook_from()
-    {
-        if constexpr      (C == WHITE && side == KING_SIDE)
-            return (H1);
-        else if constexpr (C == WHITE && side == QUEEN_SIDE)
-            return (A1);
-        else if constexpr (C == BLACK && side == KING_SIDE)
-            return (H8);
-        else if constexpr (C == BLACK && side == QUEEN_SIDE)
-            return (A8);
-    }
-    template <Color C, CastleSide side>
-    constexpr inline int get_rook_dest()
-    {
-        if constexpr      (C == WHITE && side == KING_SIDE)
-            return (F1);
-        else if constexpr (C == WHITE && side == QUEEN_SIDE)
-            return (D1);
-        else if constexpr (C == BLACK && side == KING_SIDE)
-            return (F8);
-        else if constexpr (C == BLACK && side == QUEEN_SIDE)
-            return (D8);
-    }
-
     /* Le roque nécessite plusieurs conditions :
 
     1) Toutes les cases qui séparent le roi de la tour doivent être vides.
@@ -554,42 +529,42 @@ public:
 
     bool test_mirror(const std::string &line);
 
-    //! \brief  Calcule la phase de la position sur 24 points.
-    //! Cette phase dépend des pièces sur l'échiquier
-    //! La phase va de 0 (EndGame) à 24 (MiddleGame), dans le cas où aucun pion n'a été promu.
-    int  get_phase24();
+//! \brief  Calcule la phase de la position sur 24 points.
+//! Cette phase dépend des pièces sur l'échiquier
+//! La phase va de 0 (EndGame) à 24 (MiddleGame), dans le cas où aucun pion n'a été promu.
+int  get_phase24();
 
-    //! \brief Calcule la phase de la position sur 256 points.
-    //! ceci pour avoir une meilleure granulométrie ?
-    //! ouverture     : phase24 = 24 : phase256 = 256,5
-    //! fin de partie :         =  0 :          = 0,5
-    int get_phase256(int phase24) { return (phase24 * 256 + 12) / 24; }
+//! \brief Calcule la phase de la position sur 256 points.
+//! ceci pour avoir une meilleure granulométrie ?
+//! ouverture     : phase24 = 24 : phase256 = 256,5
+//! fin de partie :         =  0 :          = 0,5
+int get_phase256(int phase24) { return (phase24 * 256 + 12) / 24; }
 
-    template <Color US> int get_material();
+template <Color US> int get_material();
 
-    //------------------------------------------------------------Syzygy
-    void TBScore(const unsigned wdl, const unsigned dtz, int &score, int &bound) const;
-    bool probe_wdl(int &score, int &bound, int ply) const;
-    MOVE convertPyrrhicMove(unsigned result) const;
-    bool probe_root(MOVE& move) const;
+//------------------------------------------------------------Syzygy
+void TBScore(const unsigned wdl, const unsigned dtz, int &score, int &bound) const;
+bool probe_wdl(int &score, int &bound, int ply) const;
+MOVE convertPyrrhicMove(unsigned result) const;
+bool probe_root(MOVE& move) const;
 
-    //*************************************************************************
-    //*************************************************************************
-    //*************************************************************************
+//*************************************************************************
+//*************************************************************************
+//*************************************************************************
 
-    //------------------------------------------------------- la position
-    Bitboard colorPiecesBB[2] = {0ULL};     // bitboard des pièces pour chaque couleur
-    Bitboard typePiecesBB[7]  = {0ULL};     // bitboard des pièces pour chaque type de pièce
-    std::array<PieceType, 64> pieceOn;      // donne le type de la pièce occupant la case indiquée
-    int x_king[2];                          // position des rois
-    Bitboard checkers;                      // bitboard des pièces ennemies me donnant échec
-    Bitboard pinned;                        // bitboard des pièces amies clouées
+//------------------------------------------------------- la position
+Bitboard colorPiecesBB[2] = {0ULL};     // bitboard des pièces pour chaque couleur
+Bitboard typePiecesBB[7]  = {0ULL};     // bitboard des pièces pour chaque type de pièce
+std::array<PieceType, 64> pieceOn;      // donne le type de la pièce occupant la case indiquée
+int x_king[2];                          // position des rois
+Bitboard checkers;                      // bitboard des pièces ennemies me donnant échec
+Bitboard pinned;                        // bitboard des pièces amies clouées
 
-    Color side_to_move = Color::WHITE; // camp au trait
-    int   ep_square    = NO_SQUARE;  // case en-passant : si les blancs jouent e2-e4, la case est e3
-    U32   castling     = Castle::CASTLE_NONE; // droit au roque
+Color side_to_move = Color::WHITE; // camp au trait
+int   ep_square    = NO_SQUARE;  // case en-passant : si les blancs jouent e2-e4, la case est e3
+U32   castling     = Castle::CASTLE_NONE; // droit au roque
 
-    /*
+/*
      * The Halfmove Clock inside an chess position object takes care of enforcing the fifty-move rule.
      * This counter is reset after captures or pawn moves, and incremented otherwise.
      * Also moves which lose the castling rights, that is rook- and king moves from their initial squares,
@@ -599,20 +574,20 @@ public:
      *
      */
 
-    int halfmove_counter = 0; // nombre de demi-coups depuis la dernière capture ou le dernier mouvement de pion.
-    int fullmove_counter = 1; // le nombre de coups complets. Il commence à 1 et est incrémenté de 1 après le coup des noirs.
-    int gamemove_counter = 0; // nombre de demi-coups de la partie
+int halfmove_counter = 0; // nombre de demi-coups depuis la dernière capture ou le dernier mouvement de pion.
+int fullmove_counter = 1; // le nombre de coups complets. Il commence à 1 et est incrémenté de 1 après le coup des noirs.
+int gamemove_counter = 0; // nombre de demi-coups de la partie
 
-    U64 hash           = 0ULL;  // nombre unique (?) correspondant à la position (clef Zobrist)
-    U64 pawn_hash      = 0ULL;  // hash uniquement pour les pions
+U64 hash           = 0ULL;  // nombre unique (?) correspondant à la position (clef Zobrist)
+U64 pawn_hash      = 0ULL;  // hash uniquement pour les pions
 
-    std::vector<std::string> best_moves;  // meilleur coup (pour les test tactique)
-    std::vector<std::string> avoid_moves; // coup à éviter (pour les test tactique)
+std::vector<std::string> best_moves;  // meilleur coup (pour les test tactique)
+std::vector<std::string> avoid_moves; // coup à éviter (pour les test tactique)
 
-    std::array<UndoInfo, MAX_HIST> game_history;
+std::array<UndoInfo, MAX_HIST> game_history;
 
 #if defined USE_NNUE
-    NNUE nnue;
+NNUE nnue;
 #endif
 
 };  // class Board
