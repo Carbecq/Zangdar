@@ -191,6 +191,7 @@ HEADERS += \
     src/Attacks.h \
     src/Bitboard.h \
     src/Board.h \
+    src/DataGen.h \
     src/Move.h \
     src/MoveList.h \
     src/MovePicker.h \
@@ -219,6 +220,7 @@ HEADERS += \
 SOURCES += \
     src/Attacks.cpp \
     src/Board.cpp \
+    src/DataGen.cpp \
     src/MovePicker.cpp \
     src/NNUE.cpp \
     src/OrderInfo.cpp \

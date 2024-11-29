@@ -7,20 +7,24 @@ class Timer;
 #include "defines.h"
 #include "types.h"
 
+enum TimerMode {
+    TIME,
+    NODE
+};
 
 class Timer
 {
 public:
     Timer();
-    void init(bool infinite,
-                      int wtime,
-                      int btime,
-                      int winc,
-                      int binc,
-                      int movestogo,
-                      int depth,
-                      int nodes,
-                      int movetime);
+    Timer(bool infinite,
+          int wtime,
+          int btime,
+          int winc,
+          int binc,
+          int movestogo,
+          int depth,
+          int nodes,
+          int movetime);
 
     struct Limits {
 
@@ -36,13 +40,13 @@ public:
     };
     Limits limits;
 
-    void reset();
     void show_time();
     void debug(Color color);
 
     void start();
     void setup(Color color);
-    bool finishOnThisMove() const;
+    void setup(int soft_limit, int hard_limit);
+    bool finishOnThisMove(U64 nodes) const;
     bool finishOnThisDepth(int elapsed, int depth, const PVariation pvs[], U64 total_nodes);
 
     int  getSearchDepth() const { return(searchDepth); }
@@ -53,15 +57,19 @@ public:
     void updateMoveNodes(MOVE move, U64 nodes);
     void update(int depth, const PVariation pvs[]);
 
+
 private:
 
     // gives the exact moment this search was started.
     std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
 
+    int  mode;
     int  MoveOverhead;           // temps de réserve pour l'interface
     int  timeForThisDepth;       // temps pour "iterative deepening"
     int  timeForThisMove;        // temps pour une recherche "alpha-beta" ou "quiescence"
     int  searchDepth;
+    U64  nodesForThisDepth;       // noeuds pour "iterative deepening"
+    U64  nodesForThisMove;        // noeuds pour une recherche "alpha-beta" ou "quiescence"
 
     std::array<U64, 4096>   MoveNodeCounts;
     int                     pv_stability;

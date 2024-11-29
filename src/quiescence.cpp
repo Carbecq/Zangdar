@@ -9,7 +9,7 @@
 //!         donc sans prise ou promotion.
 //-------------------------------------------------------------
 template <Color C>
-int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
+int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadData* td, SearchInfo* si)
 {
     assert(beta > alpha);
 
@@ -23,7 +23,7 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
 
 
     //  Time-out
-    if (td->stopped || check_limits(td))
+    if (td->stopped || check_limits(timer, td))
     {
         td->stopped = true;
         return 0;
@@ -124,7 +124,7 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
 
         board.make_move<C>(move);
         si->move = move;
-        score = -quiescence<~C>(-beta, -alpha, td, si+1);
+        score = -quiescence<~C>(board, timer, -beta, -alpha, td, si+1);
         board.undo_move<C>();
 
         if (td->stopped)
@@ -161,5 +161,5 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
     return best_score;
 }
 
-template int Search::quiescence<WHITE>(int alpha, int beta, ThreadData* td, SearchInfo* si);
-template int Search::quiescence<BLACK>(int alpha, int beta, ThreadData* td, SearchInfo* si);
+template int Search::quiescence<WHITE>(Board& board, Timer& timer, int alpha, int beta, ThreadData* td, SearchInfo* si);
+template int Search::quiescence<BLACK>(Board& board, Timer& timer, int alpha, int beta, ThreadData* td, SearchInfo* si);

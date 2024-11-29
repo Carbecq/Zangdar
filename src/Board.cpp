@@ -1,17 +1,6 @@
 #include <sstream>
 #include "Board.h"
 
-//===================================================
-//! \brief  Constructeur
-//---------------------------------------------------
-Board::Board() noexcept
-{
-}
-
-Board::Board(const std::string &fen) noexcept
-{
-    set_fen(fen, false);
-}
 
 //===================================================
 //! \brief  Affichage de l'échiquier

@@ -45,7 +45,7 @@ DEFS += -DUSE_HASH
 
 # DEFS += -DDEBUG_EVAL
 # DEFS += -DDEBUG_LOG
-DEFS += -DDEBUG_HASH
+# DEFS += -DDEBUG_HASH
 # DEFS += -DDEBUG_TIME
 
 #  NE PAS UTILISER PRETTY avec
@@ -58,7 +58,7 @@ DEFS += -DDEBUG_HASH
 #---------------------------------------------------
 
 NETWORK = \"networks/clarity_net005.nnue\"
-DEFS += -DUSE_NNUE
+# DEFS += -DUSE_NNUE
 CFLAGS_NNUE = -DNETWORK=$(NETWORK)
 
 #---------------------------------------------------------------------

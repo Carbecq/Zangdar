@@ -369,7 +369,6 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
             if ((SQ::square_BB(dest)) & FILE_G_BB)
             {
                 assert((dest == get_king_dest<C, CastleSide::KING_SIDE>())  );
-                assert(piece_on(get_king_dest<C, CastleSide::KING_SIDE>()) == KING);
 
                 // Move the King
                 BB::toggle_bit2(colorPiecesBB[C], from, dest);
@@ -377,6 +376,8 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
                 
                 pieceOn[from] = NO_TYPE;
                 pieceOn[dest] = KING;
+
+                assert(piece_on(get_king_dest<C, CastleSide::KING_SIDE>()) == KING);
 
 #if defined USE_NNUE
                 nnue.update_feature<false>(C, piece, from);
@@ -389,14 +390,13 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
                 // Move the Rook
                 if constexpr (C == WHITE)
                 {
-                    assert(piece_on(F1) == ROOK);
-
                     BB::toggle_bit2(colorPiecesBB[C],   H1, F1);
                     BB::toggle_bit2(typePiecesBB[ROOK], H1, F1);
 
                     pieceOn[H1] = NO_TYPE;
                     pieceOn[F1] = ROOK;
 
+                    assert(piece_on(F1) == ROOK);
 #if defined USE_NNUE
                     nnue.update_feature<false>(C, ROOK, H1);     // remove piece
                     nnue.update_feature<true>(C, ROOK, F1);    // add piece
@@ -408,13 +408,13 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
                 }
                 else
                 {
-                    assert(piece_on(F8) == ROOK);
-
                     BB::toggle_bit2(colorPiecesBB[C],   H8, F8);
                     BB::toggle_bit2(typePiecesBB[ROOK], H8, F8);
 
                     pieceOn[H8] = NO_TYPE;
                     pieceOn[F8] = ROOK;
+
+                    assert(piece_on(F8) == ROOK);
 #if defined USE_NNUE
                     nnue.update_feature<false>(C, ROOK, H8);     // remove piece
                     nnue.update_feature<true>(C, ROOK,  F8);    // add piece
@@ -432,7 +432,6 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
             else if ((SQ::square_BB(dest)) & FILE_C_BB)
             {
                 assert((dest == get_king_dest<C, CastleSide::QUEEN_SIDE>() ));
-                assert(piece_on(get_king_dest<C, CastleSide::QUEEN_SIDE>()) == KING);
 
                 // Move the King
                 BB::toggle_bit2(colorPiecesBB[C], from, dest);
@@ -440,6 +439,8 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
                 
                 pieceOn[from] = NO_TYPE;
                 pieceOn[dest] = KING;
+
+                assert(piece_on(get_king_dest<C, CastleSide::QUEEN_SIDE>()) == KING);
 
 #if defined USE_NNUE
                 nnue.update_feature<false>(C, piece, from);
@@ -453,13 +454,13 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
                 // Move the Rook
                 if constexpr (C == WHITE)
                 {
-                    assert(piece_on(D1) == ROOK);
-
                     BB::toggle_bit2(colorPiecesBB[C],   A1, D1);
                     BB::toggle_bit2(typePiecesBB[ROOK], A1, D1);
 
                     pieceOn[A1] = NO_TYPE;
                     pieceOn[D1] = ROOK;
+
+                    assert(piece_on(D1) == ROOK);
 #if defined USE_NNUE
                     nnue.update_feature<false>(C, ROOK, A1);
                     nnue.update_feature<true>(C, ROOK, D1);
@@ -471,14 +472,14 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
                 }
                 else
                 {
-                    assert(piece_on(D8) == ROOK);
-
                     BB::toggle_bit2(colorPiecesBB[C],   A8, D8);
                     BB::toggle_bit2(typePiecesBB[ROOK], A8, D8);
 
                     pieceOn[A8] = NO_TYPE;
                     pieceOn[D8] = ROOK;
- #if defined USE_NNUE
+
+                    assert(piece_on(D8) == ROOK);
+#if defined USE_NNUE
                     nnue.update_feature<false>(C, ROOK, A8);
                     nnue.update_feature<true>(C, ROOK,  D8);
 #endif

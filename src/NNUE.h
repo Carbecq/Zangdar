@@ -65,6 +65,8 @@ public:
     void reset();
     template<Color color> int  evaluate();
     template <bool add_to_square> void update_feature(Color color, PieceType piece, int square);
+    inline void reserve_nnue_capacity() { accumulator.reserve(512); }  // la capacité ne passe pas avec la copie
+
 
 private:
     std::vector<Accumulator> accumulator;   // pile des accumulateurs

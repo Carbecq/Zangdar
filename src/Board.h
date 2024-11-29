@@ -37,8 +37,8 @@ struct UndoInfo
 class Board
 {
 public:
-    [[nodiscard]] Board() noexcept;
-    [[nodiscard]] Board(const std::string &fen) noexcept;
+    Board() {}
+    Board(const std::string &fen) { set_fen(fen, false); }
 
     void clear() noexcept;
     void parse_position(std::istringstream &is);
@@ -87,6 +87,17 @@ public:
         return( (Attacks::pawn_attacks<~C>(sq)         & occupancy_cp<C, PAWN>())                                           |
                 (Attacks::knight_moves(sq)             & occupancy_cp<C, KNIGHT>())                                         |
                 (Attacks::king_moves(sq)               & occupancy_cp<C, KING>())                                           |
+                (Attacks::bishop_moves(sq, occupancy_all()) & (occupancy_cp<C, BISHOP>() | occupancy_cp<C, QUEEN>())) |
+                (Attacks::rook_moves(sq,   occupancy_all()) & (occupancy_cp<C, ROOK>()   | occupancy_cp<C, QUEEN>())) );
+    }
+
+    //! \brief Retourne le bitboard de toutes les pièces du camp "C", sauf le roi, attaquant la case "sq"
+    template <Color C>
+    [[nodiscard]] constexpr Bitboard attackersButKing(const int sq) const noexcept
+    {
+        // il faut regarder les attaques de pions depuis l'autre camp
+        return( (Attacks::pawn_attacks<~C>(sq)         & occupancy_cp<C, PAWN>())                                           |
+                (Attacks::knight_moves(sq)             & occupancy_cp<C, KNIGHT>())                                         |
                 (Attacks::bishop_moves(sq, occupancy_all()) & (occupancy_cp<C, BISHOP>() | occupancy_cp<C, QUEEN>())) |
                 (Attacks::rook_moves(sq,   occupancy_all()) & (occupancy_cp<C, ROOK>()   | occupancy_cp<C, QUEEN>())) );
     }
@@ -176,6 +187,10 @@ public:
 
     //! \brief  Détermine si le camp au trait est en échec dans la position actuelle
     [[nodiscard]] constexpr bool is_in_check() const noexcept { return checkers > 0; }
+
+    //! \brief  Détermine si le camp "C" attaque le roi ennemi
+    template<Color C>
+    [[nodiscard]] constexpr bool is_doing_check() const noexcept { return attackersButKing<C>(king_square<~C>()) > 0; }
 
     template<Color C, MoveGenType MGType> void legal_moves(MoveList &ml) noexcept;
 
@@ -588,6 +603,7 @@ std::array<UndoInfo, MAX_HIST> game_history;
 
 #if defined USE_NNUE
 NNUE nnue;
+inline void reserve_nnue_capacity() { nnue.reserve_nnue_capacity(); }  // la capacité ne passe pas avec la copie
 #endif
 
 };  // class Board

@@ -15,7 +15,6 @@
 #include "bench.h"
 
 Board       uci_board;
-Timer       uci_timer;
 
 
 //======================================
@@ -42,6 +41,7 @@ void Uci::run()
     std::string fen  = SILVER2;
     int         dmax = 4;
     int         tmax = 0;
+    int         nthreads = 1;
 
     do
     {
@@ -137,6 +137,7 @@ void Uci::run()
         else if (token == "h")
         {
             std::cout << "benchmark                     : Zangdar bench <depth> <nbr_threads> <hash_size>"     << std::endl;
+            std::cout << "datagen                       : Zangdar datagen <nbr_threads> <nbr_fens> <output>"   << std::endl;
             std::cout << "q(uit) "      << std::endl;
             std::cout << "v(ersion) "   << std::endl;
             std::cout << "s <ref/big> [dmax]            : test suite_perft "                                    << std::endl;
@@ -205,6 +206,11 @@ void Uci::run()
             std::string str;
             iss >> str;
             iss >> dmax;
+            iss >> tmax;
+            iss >> nthreads;
+
+            if (nthreads > 1)
+                threadPool.set_threads(nthreads);
 
             go_run(str, fen, dmax, tmax);
         }
@@ -350,6 +356,8 @@ void Uci::parse_go(std::istringstream& iss)
             // search x plies only.
             iss >> depth;
             depth = std::min(depth, MAX_PLY);
+
+            printf("go depth %d\n", depth);
         }
         else if (token == "nodes")
         {
@@ -362,13 +370,15 @@ void Uci::parse_go(std::istringstream& iss)
             uint64_t searchTime;
             iss >> searchTime;
             movetime = searchTime;
+            printf("go movetime %d \n", movetime);
         }
     }
 
-    // Reset the time manager
-    uci_timer.init(infinite, wtime, btime, winc, binc, movestogo, depth, nodes, movetime);
-    uci_timer.start();
-    uci_timer.setup(uci_board.side_to_move);
+    // Init the time manager
+    Timer timer(infinite, wtime, btime, winc, binc, movestogo, depth, nodes, movetime);
+    timer.setMoveOverhead(MoveOverhead);
+    timer.start();
+    timer.setup(uci_board.side_to_move);
 
 
 // La recherche est lancée dans une ou plusieurs threads séparées
@@ -382,7 +392,7 @@ void Uci::parse_go(std::istringstream& iss)
 #endif
 
     // start the search
-    threadPool.start_thinking(uci_board, uci_timer);
+    threadPool.start_thinking(uci_board, timer);
 }
 
 //=========================================================
@@ -534,11 +544,8 @@ setoption name <id> [value <x>]
 
         else if (option_name == "MoveOverhead")
         {
-            int MoveOverhead;       // Overhead on time allocation to avoid time losses
-
-            iss >> value;      // "value"
+            iss >> value;           // "value"
             iss >> MoveOverhead;
-            uci_timer.setMoveOverhead(MoveOverhead);
         }
     }
     else
@@ -553,30 +560,8 @@ setoption name <id> [value <x>]
 void Uci::go_run(const std::string& abc, const std::string& fen, int dmax, int tmax)
 {
     std::string auxi;
-    std::string bug =
-
-        // Partie Pedantic 0.3.1 - Zangdar
-        //  20230724_1747_Pedantic_0.3.1_vs_Zangdar_2.17.09.pgn
-
-        // après 30.Qe5+ : mate -5
-        //   "2rqr3/pb6/4p1p1/1P1pQ3/3P4/2N1k3/PP6/1K4R1 b - - 5 30 ";
-
-        // après 29:Qh2+ : mate -4
-        //    "2rqr3/pb6/4p1p1/1P1p4/3P1k2/2N5/PP5Q/1K4R1 b - - 3 29 ";
-
-        // après 29:...Ke3 : mate 4
-        //"2rqr3/pb6/4p1p1/1P1p4/3P4/2N1k3/PP5Q/1K4R1 w - - 4 30 ";
-
-        // après 28:Rg1+ : mate -6 (depth 22) ; mate -5 (depth 28)
-        //  "2rqr3/pb5Q/4p1p1/1P1p2k1/3P4/2N5/PP6/1K4R1 b - - 1 28 ";
-
-        // après 27:fxg5+ : mate -6 (depth 22) ; mate -5 (depth 28)
-        //"2rqr3/pb5Q/4pkp1/1P1p2P1/3P4/2N5/PP6/1K2R3 b - - 0 27 ";
-
-        // après 27:...Kxg5 : mate -6 (depth 22) ; mate -5 (depth 28)
-        "2rqr3/pb5Q/4p1p1/1P1p2k1/3P4/2N5/PP6/1K2R3 w - - 0 28 ";
-    //"2rBrb2/3k1p2/1Q4p1/4P3/3n1P1p/2P4P/P6P/1K1R4 w - - 0 39";
-
+    std::string bug = "";
+    printf("go_run : abc=%s fen=%s dmax=%d tmax=%d \n", abc.c_str(), fen.c_str(), dmax, tmax);
     transpositionTable.clear();
     threadPool.reset();
 
@@ -902,6 +887,8 @@ void Uci::bench(int argCount, char* argValue[])
     if (hash_size != HASH_SIZE)
         transpositionTable.set_hash_size(hash_size);
 
+    Timer timer(false, 0, 0, 0, 0, 0, depth, 0, 0);
+
     // Boucle sur l'ensemble des positions de test
     for (const auto& line : bench_pos)
     {
@@ -918,11 +905,10 @@ void Uci::bench(int argCount, char* argValue[])
         // Initialize a "go depth <x>" search
         Uci::stop();
 
-        uci_timer.init(false, 0, 0, 0, 0, 0, depth, 0, 0);
-        uci_timer.start();
-        uci_timer.setup(uci_board.side_to_move);
+        timer.start();
+        timer.setup(uci_board.side_to_move);
 
-        threadPool.start_thinking(uci_board, uci_timer);
+        threadPool.start_thinking(uci_board, timer);
 
         //================================================= Fin du calcul
         threadPool.wait(0);     // Attente des threads

@@ -6,11 +6,26 @@
 
 Timer::Timer()
 {
+    limits.infinite    = false;
+    limits.time[WHITE] = 0;
+    limits.time[BLACK] = 0;
+    limits.incr[WHITE] = 0;
+    limits.incr[BLACK] = 0;
+    limits.movestogo   = 0;
+    limits.depth       = 0;
+    limits.nodes       = 0;
+    limits.movetime    = 0;
+
+    mode               = TimerMode::TIME;
     MoveOverhead       = MOVE_OVERHEAD;
-    reset();
+    timeForThisDepth   = 0;
+    timeForThisMove    = 0;
+    searchDepth        = 0;
+    nodesForThisMove   = 0;
+    nodesForThisDepth  = 0;
 }
 
-void Timer::init(bool infinite,
+Timer::Timer(bool infinite,
                  int wtime,
                  int btime,
                  int winc,
@@ -20,6 +35,7 @@ void Timer::init(bool infinite,
                  int nodes,
                  int movetime)
 {
+    limits.infinite    = infinite;
     limits.time[WHITE] = wtime;
     limits.time[BLACK] = btime;
     limits.incr[WHITE] = winc;
@@ -28,29 +44,26 @@ void Timer::init(bool infinite,
     limits.depth       = depth;
     limits.nodes       = nodes;
     limits.movetime    = movetime;
-    limits.infinite    = infinite;
 
+    mode               = TimerMode::TIME;
+    MoveOverhead       = MOVE_OVERHEAD;
     timeForThisDepth   = 0;
     timeForThisMove    = 0;
     searchDepth        = 0;
+    nodesForThisMove   = 0;
+    nodesForThisDepth  = 0;
+
+    // std::cout << "------------------------------------------Timer::Timer " << std::endl;
+
+    // std::cout << "time_left   " << limits.time[WHITE] << "  " << limits.time[BLACK] << std::endl;
+    // std::cout << "increment   " << limits.incr[WHITE] << "  " << limits.incr[BLACK] << std::endl;
+    // std::cout << "moves_to_go " << limits.movestogo << std::endl;
+    // std::cout << "depth       " << limits.depth << std::endl;
+    // std::cout << "nodes       " << limits.nodes << std::endl;
+    // std::cout << "move_time   " << limits.movetime << std::endl;
+    // std::cout << "infinite    " << limits.infinite << std::endl;
 }
 
-void Timer::reset()
-{
-    limits.time[WHITE] = 0;
-    limits.time[BLACK] = 0;
-    limits.incr[WHITE] = 0;
-    limits.incr[BLACK] = 0;
-    limits.movestogo   = 0;
-    limits.depth       = 0;
-    limits.nodes       = 0;
-    limits.movetime    = 0;
-    limits.infinite    = false;
-
-    timeForThisDepth   = 0;
-    timeForThisMove    = 0;
-    searchDepth        = 0;
-}
 
 //===========================================================
 //! \brief Start the timer
@@ -68,23 +81,35 @@ void Timer::start()
 //-----------------------------------------------------------
 void Timer::setup(Color color)
 {
-    //        std::cout << "time_left   " << limits.time[WHITE] << "  " << limits.time[BLACK] << std::endl;
-    //        std::cout << "increment   " << limits.incr[WHITE] << "  " << limits.incr[BLACK] << std::endl;
-    //        std::cout << "moves_to_go " << limits.movestogo << std::endl;
-    //        std::cout << "depth       " << limits.depth << std::endl;
-    //        std::cout << "nodes       " << limits.nodes << std::endl;
-    //        std::cout << "move_time   " << limits.movetime << std::endl;
-    //        std::cout << "infinite    " << limits.infinite << std::endl;
+    // std::cout << "------------------------------------------Timer::setup " << std::endl;
+
+    // std::cout << "time_left   " << limits.time[WHITE] << "  " << limits.time[BLACK] << std::endl;
+    // std::cout << "increment   " << limits.incr[WHITE] << "  " << limits.incr[BLACK] << std::endl;
+    // std::cout << "moves_to_go " << limits.movestogo << std::endl;
+    // std::cout << "depth       " << limits.depth << std::endl;
+    // std::cout << "nodes       " << limits.nodes << std::endl;
+    // std::cout << "move_time   " << limits.movetime << std::endl;
+    // std::cout << "infinite    " << limits.infinite << std::endl;
 
     searchDepth         = MAX_PLY;
     timeForThisMove     = MAX_TIME;
     timeForThisDepth    = MAX_TIME;
+    nodesForThisMove    = 0;
+    nodesForThisDepth   = 0;
+    mode                = TimerMode::TIME;
 
     if (limits.infinite) // recherche infinie (temps et profondeur)
     {
         searchDepth         = MAX_PLY;
         timeForThisMove     = MAX_TIME;
         timeForThisDepth    = MAX_TIME;
+    }
+    else if (limits.nodes != 0) // temps de recherche imposé = nombre de noeuds
+    {
+        mode                = TimerMode::NODE;
+        searchDepth         = MAX_PLY;
+        nodesForThisMove    = limits.nodes;
+        nodesForThisDepth   = limits.nodes;
     }
     else if (limits.depth != 0) // profondeur de recherche imposée = depth
     {
@@ -134,6 +159,18 @@ void Timer::setup(Color color)
 #endif
 }
 
+
+//============================================================
+//! \brief  Impose des limites en mode "NODE"
+//------------------------------------------------------------
+void Timer::setup(const int soft_limit, const int hard_limit)
+{
+    mode = TimerMode::NODE;
+    searchDepth       = MAX_PLY;
+    nodesForThisDepth = soft_limit;
+    nodesForThisMove  = hard_limit;
+}
+
 //============================================================
 //! \brief  Mise à jour de la stabilité du meilleur coup
 //! \param[in]  depth   profondeur terminée proprement (pas de time-out)
@@ -166,31 +203,42 @@ bool Timer::finishOnThisDepth(int elapsed, int depth, const PVariation pvs[], U6
     if (depth < 4)
         return false;
 
-    // Scale time between 80% and 120%, based on stable best moves
-    // Plus le meilleur coup est stable, plus pv_factor diminue
-    const double pv_factor = 1.20 - 0.04 * pv_stability;
+    if (mode==TimerMode::TIME)
+    {
+        // Scale time between 80% and 120%, based on stable best moves
+        // Plus le meilleur coup est stable, plus pv_factor diminue
+        const double pv_factor = 1.20 - 0.04 * pv_stability;
 
-    // Scale time between 75% and 125%, based on score fluctuations
-    const double score_change = pvs[depth-3].score - pvs[depth-0].score;
-    const double score_factor = std::max(0.75, std::min(1.25, 0.05 * score_change));
+        // Scale time between 75% and 125%, based on score fluctuations
+        const double score_change = pvs[depth-3].score - pvs[depth-0].score;
+        const double score_factor = std::max(0.75, std::min(1.25, 0.05 * score_change));
 
-    // Scale time between 50% and 240%, based on where nodes have been spent
-    //   best_nodes                           = nombre de neuds calculés pour trouver le meilleur coup
-    //   pvs[depth-0].line[0]                 = meilleur coup trouvé
-    //   Move::fromdest(pvs[depth-0].line[0]) = fabrique un indice à partir des cases de départ et d'arrivée du coup
-    const U64    best_nodes   = MoveNodeCounts[Move::fromdest(pvs[depth-0].line[0])];
-    const double non_best_pct = 1.0 - (static_cast<double>(best_nodes) / static_cast<double>(total_nodes));
-    const double nodes_factor = std::max(0.50, 2.0 * non_best_pct + 0.4);
+        // Scale time between 50% and 240%, based on where nodes have been spent
+        //   best_nodes                           = nombre de neuds calculés pour trouver le meilleur coup
+        //   pvs[depth-0].line[0]                 = meilleur coup trouvé
+        //   Move::fromdest(pvs[depth-0].line[0]) = fabrique un indice à partir des cases de départ et d'arrivée du coup
+        const U64    best_nodes   = MoveNodeCounts[Move::fromdest(pvs[depth-0].line[0])];
+        const double non_best_pct = 1.0 - (static_cast<double>(best_nodes) / static_cast<double>(total_nodes));
+        const double nodes_factor = std::max(0.50, 2.0 * non_best_pct + 0.4);
 
-    return (elapsed > timeForThisDepth * pv_factor * score_factor * nodes_factor);
+        // printf("el=%d t=%d %f %f %f \n", elapsed, timeForThisDepth , pv_factor , score_factor , nodes_factor);
+        return (elapsed > timeForThisDepth * pv_factor * score_factor * nodes_factor);
+    }
+    else
+    {
+        return (total_nodes >= nodesForThisDepth);
+    }
 }
 
 //==============================================================================
 //! \brief Détermine si le temps alloué pour la recherche est dépassé.
 //------------------------------------------------------------------------------
-bool Timer::finishOnThisMove() const
+bool Timer::finishOnThisMove(U64 nodes) const
 {
-    return (elapsedTime() >= timeForThisMove);
+    if (mode==TimerMode::TIME)
+        return (elapsedTime() >= timeForThisMove);
+    else
+        return (nodes >= nodesForThisMove);
 }
 
 //==============================================================================
@@ -215,11 +263,15 @@ void Timer::show_time()
 //------------------------------------------------------------------
 void Timer::debug(Color color)
 {
-    std::cout << "color: " << side_name[color]
-              << " timeForThisDepth: " << timeForThisDepth
-              << " timeForThisMove: "  << timeForThisMove
-              << " searchDepth: "      << searchDepth
-              << " moveOverhead: "     << MoveOverhead
+    std::cout << "color: " << side_name[color] << std::endl
+              << " mode              : " << mode << std::endl
+              << " timeForThisMove   : " << timeForThisMove << std::endl
+              << " timeForThisDepth  : " << timeForThisDepth << std::endl
+              << " timeForThisMove   : " << timeForThisMove << std::endl
+              << " searchDepth       : " << searchDepth << std::endl
+              << " moveOverhead      : " << MoveOverhead << std::endl
+              << " nodesForThisDepth : " << nodesForThisDepth << std::endl
+              << " nodesForThisMove  : " << nodesForThisMove << std::endl
               << std::endl;
 }
 

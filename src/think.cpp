@@ -13,12 +13,17 @@
 //!
 //------------------------------------------------------
 template<Color C>
-void Search::think(int m_index)
+void Search::think(Board board, Timer timer, int m_index)
 {
 #if defined DEBUG_LOG
     char message[100];
     sprintf(message, "Search::think (thread=%d)", m_index);
     printlog(message);
+#endif
+
+    // capacity n'est pas conservé lors de la copie ...
+#if defined USE_NNUE
+    board.reserve_nnue_capacity();
 #endif
 
     ThreadData* td = &threadPool.threadData[m_index];
@@ -36,7 +41,7 @@ void Search::think(int m_index)
  */
 
     // iterative deepening
-    iterative_deepening<C>(td, si);
+    iterative_deepening<C>(board, timer, td, si);
 
     if (m_index == 0)
     {
@@ -70,7 +75,7 @@ void Search::think(int m_index)
 //!
 //------------------------------------------------------
 template<Color C>
-void Search::iterative_deepening(ThreadData* td, SearchInfo* si)
+void Search::iterative_deepening(Board& board, Timer& timer, ThreadData* td, SearchInfo* si)
 {
     si->pv.length = 0;
     si->pv.score = -INFINITE;
@@ -78,7 +83,7 @@ void Search::iterative_deepening(ThreadData* td, SearchInfo* si)
     for (td->depth = 1; td->depth <= timer.getSearchDepth(); td->depth++)
     {
         // Search position, using aspiration windows for higher depths
-        aspiration_window<C>(td, si);
+        aspiration_window<C>(board, timer, td, si);
 
         if (td->stopped)
             break;
@@ -112,7 +117,7 @@ void Search::iterative_deepening(ThreadData* td, SearchInfo* si)
 //!
 //------------------------------------------------------
 template<Color C>
-void Search::aspiration_window(ThreadData* td, SearchInfo* si)
+void Search::aspiration_window(Board& board, Timer& timer, ThreadData* td, SearchInfo* si)
 {
     int alpha  = -INFINITE;
     int beta   = INFINITE;
@@ -130,7 +135,7 @@ void Search::aspiration_window(ThreadData* td, SearchInfo* si)
 
     while (true)
     {
-        si->pv.score = alpha_beta<C>(alpha, beta, std::max(1, depth), td, si);
+        si->pv.score = alpha_beta<C>(board, timer, alpha, beta, std::max(1, depth), td, si);
 
         if (td->stopped)
             break;
@@ -174,10 +179,10 @@ void Search::aspiration_window(ThreadData* td, SearchInfo* si)
 //! \return Valeur du score
 //-----------------------------------------------------
 template<Color C>
-int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInfo* si)
+int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int depth, ThreadData* td, SearchInfo* si)
 {
     assert(board.valid());
-    assert(beta > alpha);
+     assert(beta > alpha);
 
     constexpr Color THEM = ~C;
 
@@ -202,7 +207,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         ceci amène à une explosion des coups recherchés */
     if (depth <= 0)
     {
-        return (quiescence<C>(alpha, beta, td, si));
+        return (quiescence<C>(board, timer, alpha, beta, td, si));
     }
 
     // Update node count and selective depth
@@ -211,7 +216,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
 
 
     //  Time-out
-    if (td->stopped || check_limits(td))
+    if (td->stopped || check_limits(timer, td))
     {
         td->stopped = true;
         return 0;
@@ -340,7 +345,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
         if (   depth <= 3
             && (static_eval + 200 * depth) <= alpha)
         {
-            score = quiescence<C>(alpha, beta, td, si);
+            score = quiescence<C>(board, timer, alpha, beta, td, si);
             if (score <= alpha)
             {
                 td->nodes--;
@@ -376,7 +381,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
 
             board.make_nullmove<C>();
             si->move = Move::MOVE_NULL;
-            int null_score = -alpha_beta<~C>(-beta, -beta + 1, depth - 1 - R, td, si+1);
+            int null_score = -alpha_beta<~C>(board, timer, -beta, -beta + 1, depth - 1 - R, td, si+1);
             board.undo_nullmove<C>();
 
             if (td->stopped)
@@ -409,11 +414,11 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
                 si->move = pbMove;
 
                 // Teste si une recherche de quiescence donne un score supérieur à betaCut
-                int pbScore = -quiescence<~C>(-betaCut, -betaCut+1, td, si+1);
+                int pbScore = -quiescence<~C>(board, timer, -betaCut, -betaCut+1, td, si+1);
 
                 // Si oui, alors on effectue une recherche normale, avec une profondeur réduite
                 if (pbScore >= betaCut)
-                    pbScore = -alpha_beta<~C>(-betaCut, -betaCut+1, depth-4, td, si+1);
+                    pbScore = -alpha_beta<~C>(board, timer, -betaCut, -betaCut+1, depth-4, td, si+1);
 
                 board.undo_move<C>();
 
@@ -510,7 +515,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
             // sing_pv.length = 0;
 
             si->excluded = move;
-            score = alpha_beta<C>(sing_beta-1, sing_beta, sing_depth, td, si); //TODO si ou si+1 ?
+            score = alpha_beta<C>(board, timer, sing_beta-1, sing_beta, sing_depth, td, si); //TODO si ou si+1 ?
             si->excluded = Move::MOVE_NONE;
 
             // Extend as this move seems forced
@@ -617,7 +622,7 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
             int lmrDepth = std::clamp(newDepth - R, 1, newDepth);
 
             // Search this move with reduced depth:
-            score = -alpha_beta<~C>(-alpha-1, -alpha, lmrDepth, td, si+1);
+            score = -alpha_beta<~C>(board, timer, -alpha-1, -alpha, lmrDepth, td, si+1);
 
             doFullDepthSearch = score > alpha && lmrDepth < newDepth;
         }
@@ -628,11 +633,11 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
 
         // Full depth zero-window search
         if (doFullDepthSearch)
-            score = -alpha_beta<~C>(-alpha-1, -alpha, newDepth, td, si+1);
+            score = -alpha_beta<~C>(board, timer, -alpha-1, -alpha, newDepth, td, si+1);
 
         // Full depth alpha-beta window search
         if (isPV && ((score > alpha && score < beta) || move_count == 1))
-            score = -alpha_beta<~C>(-beta, -alpha, newDepth, td, si+1);
+            score = -alpha_beta<~C>(board, timer, -beta, -alpha, newDepth, td, si+1);
 
 
         // retract current move
@@ -720,6 +725,8 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     return best_score;
 }
 
-template void Search::think<WHITE>(int _index);
-template void Search::think<BLACK>(int _index);
+template void Search::think<WHITE>(Board board, Timer timer, int _index);
+template void Search::think<BLACK>(Board board, Timer timer, int _index);
 
+template void Search::aspiration_window<WHITE>(Board& board, Timer& timer, ThreadData* td, SearchInfo* si);
+template void Search::aspiration_window<BLACK>(Board& board, Timer& timer, ThreadData* td, SearchInfo* si);

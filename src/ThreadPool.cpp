@@ -125,12 +125,7 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
             std::memset(threadData[i]._info, 0, sizeof(SearchInfo)*STACK_SIZE);
 
             delete threadData[i].search;
-
-            // Copie des arguments
-            Board b = board;
-            Timer t = timer;
-
-            threadData[i].search = new Search(b, t);
+            threadData[i].search = new Search();
         }
 
         // Préparation des tables de transposition
@@ -138,12 +133,13 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
 
         // Il faut mettre le lancement des threads dans une boucle séparée
         // car il faut être sur que la Search soit bien créée
+        // board et timer sont passés par valeur.
         for (int i = 0; i < nbrThreads; i++)
         {
             if (board.side_to_move == WHITE)
-                threadData[i].thread = std::thread(&Search::think<WHITE>, threadData[i].search, i);
+                threadData[i].thread = std::thread(&Search::think<WHITE>, threadData[i].search, board, timer, i);
             else
-                threadData[i].thread = std::thread(&Search::think<BLACK>, threadData[i].search, i);
+                threadData[i].thread = std::thread(&Search::think<BLACK>, threadData[i].search, board, timer, i);
         }
     }
 }

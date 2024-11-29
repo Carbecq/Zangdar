@@ -10,9 +10,7 @@
 //=============================================
 //! \brief  Constructeur
 //---------------------------------------------
-Search::Search(const Board &m_board, const Timer &m_timer) :
-    board(m_board),
-    timer(m_timer)
+Search::Search()
 {
 #if defined DEBUG_LOG
     char message[100];
@@ -25,7 +23,6 @@ Search::Search(const Board &m_board, const Timer &m_timer) :
         for (int moves = 1; moves < 32; ++moves)
             Reductions[0][depth][moves] = 0.00 + log(depth) * log(moves) / 3.25, // capture
                 Reductions[1][depth][moves] = 1.75 + log(depth) * log(moves) / 2.25; // quiet
-
 }
 
 //=============================================
@@ -153,7 +150,7 @@ void Search::show_uci_current(MOVE move, int currmove, int depth) const
 //! De façon à éviter un nombre important de calculs , on ne fera
 //! ce calcul que tous les 4096 coups.
 //---------------------------------------------------------
-bool Search::check_limits(const ThreadData* td) const
+bool Search::check_limits(const Timer& timer, const ThreadData* td) const
 {
     // Every 4096 nodes, check if our time has expired.
     // On ne teste pas si nodes=0
@@ -161,7 +158,7 @@ bool Search::check_limits(const ThreadData* td) const
     return( td->depth > 1
             && (td->nodes & 4095) == 4095
             && td->index == 0
-            && timer.finishOnThisMove());
+            && timer.finishOnThisMove(td->nodes));
 }
 
 //=========================================================
