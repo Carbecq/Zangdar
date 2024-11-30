@@ -18,21 +18,25 @@ struct fenData {
 class DataGen
 {
 public:
-    DataGen(const int _nbr=4, const int max_fens=100, const std::string &output="./fens");
+    DataGen(const int _nbr=4, const int max_games=100, const std::string &output="./fens");
     ~DataGen() {}
 
 private:
-    void datagen(int thread_id, const std::string& output,
-                 const Usize max_fens,
-                 std::atomic<Usize> &total_fens);
-    void random_game(Board &board);
+    void genfens(int thread_id, const std::string& output,
+                 const Usize max_games);
+    // std::atomic<Usize> &total_fens);
     int  set_threads(const int nbr);
-    template <Color color>
-    void data_search(Board& board, Timer& timer, MOVE& move, I32& score);
+    template <Color color> void data_search(Board& board, Timer& timer,
+                     Search* search,
+                     // std::unique_ptr<Search>& search,
+                     ThreadData* td, SearchInfo* si,
+                     MOVE &move, I32 &score);
 
-    constexpr static int MAX_RANDOM_PLIES =   14;   // nombre maximum de plies joués au hasard
-    constexpr static int MAX_RANDOM_SCORE =  160;   // score maximum accepté pour la position résultant
+    constexpr static int MAX_RANDOM_PLIES =    8;   // nombre maximum de plies joués au hasard
+    constexpr static int MAX_RANDOM_SCORE =  250;   // score maximum accepté pour la position résultant
     constexpr static int MAX_RANDOM_DEPTH =    2;   // profondeur maximum pour la recherche
+
+    constexpr static int MAX_PLY_LOOP     =  400;   // nombre maximum de plyes dans la boucle de jeu
 
     constexpr static int HIGH_SCORE       = 2500;   // score maximum pour accepter une position;
                                                     // score minimum pour compter la position comme gagnante
@@ -42,10 +46,9 @@ private:
 
     // HARD_NODE_LIMIT est juste là pour empécher une explosion de la recherche
     constexpr static int HARD_NODE_LIMIT  = 5'000'000;
-    constexpr static int SOFT_NODE_LIMIT  =    50'000;
+    constexpr static int SOFT_NODE_LIMIT  =     5'000;
 
 
-    std::vector<std::thread> threads;
 };
 
 /* 1 - 2xColor

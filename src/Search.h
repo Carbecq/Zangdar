@@ -6,10 +6,13 @@ class Search;
 
 #include <cstring>
 #include <thread>
-#include "defines.h"
 #include "Timer.h"
 #include "Board.h"
 #include "types.h"
+#if defined GENERATE
+#include "TranspositionTable.h"
+#endif
+#include "defines.h"
 
 constexpr int STACK_OFFSET = 4;
 constexpr int STACK_SIZE   = MAX_PLY + 2*STACK_OFFSET;  // taille un peu trop grande, mais multiple de 8
@@ -132,6 +135,10 @@ public:
     Search();
     ~Search();
 
+#if defined GENERATE
+    TranspositionTable  transpositionTable;
+#endif
+
     // Point de départ de la recherche
     template<Color C>
     void think(Board board, Timer timer, int _index);
@@ -155,6 +162,7 @@ private:
     MOVE get_counter_move(ThreadData *td, Color oppcolor, int ply) const;
     void update_counter_move_history(ThreadData *td, int ply, MOVE move, int bonus);
     void update_followup_move_history(ThreadData* td, int ply, MOVE move, int bonus);
+
 
     static constexpr int CONTEMPT    = 0;
 

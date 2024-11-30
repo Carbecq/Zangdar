@@ -70,6 +70,7 @@ private:
     static constexpr int   KMULT = 256;
 
 public:
+    TranspositionTable() : TranspositionTable(HASH_SIZE) {}
     TranspositionTable(int MB);
     ~TranspositionTable();
 
@@ -82,7 +83,7 @@ public:
     void store(U64 hash, MOVE move, Score score, Score eval, int bound, int depth, int ply);
     bool probe(U64 hash, int ply, MOVE &code, Score &score, Score &eval, int &bound, int &depth);
     void stats();
-    int  hash_full();
+    int  hash_full() const;
 
     //! \brief Store terminal scores as distance from the current position to mate/TB
     int ScoreToTT (const int score, const int ply)
@@ -108,8 +109,9 @@ public:
     void prefetch(const U64 hash);
 };
 
+#if !defined GENERATE
 extern TranspositionTable transpositionTable;
-
+#endif
 
 
 #endif // TRANSPOSITIONTABLE_H

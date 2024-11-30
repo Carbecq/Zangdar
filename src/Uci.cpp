@@ -105,7 +105,9 @@ void Uci::run()
         {
             // the next search (started with "position" and "go") will be from
             // a different game.
+#if !defined GENERATE
             transpositionTable.clear();
+#endif
             threadPool.reset();
         }
 
@@ -137,7 +139,7 @@ void Uci::run()
         else if (token == "h")
         {
             std::cout << "benchmark                     : Zangdar bench <depth> <nbr_threads> <hash_size>"     << std::endl;
-            std::cout << "datagen                       : Zangdar datagen <nbr_threads> <nbr_fens> <output>"   << std::endl;
+            std::cout << "datagen                       : Zangdar datagen <nbr_threads> <nbr_games> <output>"   << std::endl;
             std::cout << "q(uit) "      << std::endl;
             std::cout << "v(ersion) "   << std::endl;
             std::cout << "s <ref/big> [dmax]            : test suite_perft "                                    << std::endl;
@@ -451,7 +453,9 @@ setoption name <id> [value <x>]
             sprintf(message, "Uci::parse_options : Set Hash to %d MB", mb);
             printlog(message);
 #endif
+#if !defined GENERATE
             transpositionTable.set_hash_size(mb);
+#endif
         }
 
         else if (option_name == "Clear")
@@ -463,7 +467,9 @@ setoption name <id> [value <x>]
                 sprintf(message, "Uci::parse_options : Hash Clear");
                 printlog(message);
 #endif
+#if !defined GENERATE
                 transpositionTable.clear();
+#endif
             }
         }
 
@@ -562,7 +568,9 @@ void Uci::go_run(const std::string& abc, const std::string& fen, int dmax, int t
     std::string auxi;
     std::string bug = "";
     printf("go_run : abc=%s fen=%s dmax=%d tmax=%d \n", abc.c_str(), fen.c_str(), dmax, tmax);
+#if !defined GENERATE
     transpositionTable.clear();
+#endif
     threadPool.reset();
 
     // utiliser setoption name Clear Hash
@@ -765,7 +773,9 @@ void Uci::go_test(int dmax, int tmax)
 //-------------------------------------------------------------
 bool Uci::go_tactics(const std::string& line, int dmax, int tmax, U64& total_nodes, U64& total_time, int& total_depths, bool& found_am)
 {
+#if !defined GENERATE
     transpositionTable.clear();
+#endif
     threadPool.reset();
 
     uci_board.set_fen(line, true);
@@ -884,16 +894,19 @@ void Uci::bench(int argCount, char* argValue[])
 
     if (nbr_threads > 1)
         threadPool.set_threads(nbr_threads);
+#if !defined GENERATE
     if (hash_size != HASH_SIZE)
         transpositionTable.set_hash_size(hash_size);
-
+#endif
     Timer timer(false, 0, 0, 0, 0, 0, depth, 0, 0);
 
     // Boucle sur l'ensemble des positions de test
     for (const auto& line : bench_pos)
     {
         // Exécution du test
+#if !defined GENERATE
         transpositionTable.clear();
+#endif
         threadPool.reset();
 
         uci_board.set_fen(line, true);
@@ -943,6 +956,8 @@ void Uci::bench(int argCount, char* argValue[])
     std::cout << "nps         = " << std::fixed << std::setprecision(3) << static_cast<double>(total_nodes)/1000.0/static_cast<double>(total_time) << " Mnode/s" << std::endl;
     std::cout << "depth       = " << depth << std::endl;
     std::cout << "nbr threads = " << threadPool.get_nbrThreads() << std::endl;
+#if !defined GENERATE
     std::cout << "hash size   = " << transpositionTable.get_hash_size() << std::endl;
+#endif
     std::cout << "===============================================" << std::endl;
 }

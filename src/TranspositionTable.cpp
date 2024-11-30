@@ -312,7 +312,7 @@ void TranspositionTable::stats()
 //! On regarde combien d'entrées contiennent une valeur récente.
 //! La valeur retournée va de 0 à 1000 (1 = 0.1 %)
 //-----------------------------------------------------------------------
-int TranspositionTable::hash_full()
+int TranspositionTable::hash_full() const
 {
     int used = 0;
 

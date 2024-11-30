@@ -242,8 +242,8 @@ void Tuner::InitTunerEntry(Position& position, Board *board)
     // Evaluation should be from White POV,
     // but we still call evaluate() from stm perspective
     // to get right tempo evaluation
-    position.seval = (board->side_to_move == WHITE) ? board->evaluate()
-                                                 : -board->evaluate();
+    position.seval = (board->side_to_move == WHITE) ? board->evaluate(TranspositionTable)
+                                                 : -board->evaluate(TranspositionTable);
 
     // Initialisation des coefficients de "Trace"
     // à partir de l'évaluation

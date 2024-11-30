@@ -57,9 +57,16 @@ DEFS += -DUSE_HASH
 #  NNUE
 #---------------------------------------------------
 
-NETWORK = \"networks/clarity_net005.nnue\"
-# DEFS += -DUSE_NNUE
+#NETWORK = \"networks/clarity_net005.nnue\"
+NETWORK = \"networks/net-epoch.bin\"
+DEFS += -DUSE_NNUE
 CFLAGS_NNUE = -DNETWORK=$(NETWORK)
+
+#---------------------------------------------------
+#  Génération des fens
+#---------------------------------------------------
+
+# DEFS += -DGENERATE
 
 #---------------------------------------------------------------------
 #   Architecture

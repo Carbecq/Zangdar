@@ -9,7 +9,6 @@
 #include "Board.h"
 #include "Move.h"
 
-
 static void sort_moves(MoveList& ml);
 
 //====================================================
@@ -242,7 +241,9 @@ void test_perft(const std::string& str, const std::string& m_fen, int depth)
     else
         std::cout << "resultat        : >>>>>>>>>>>>>>>>>>>>>>>>>>>> KO : bon = " << nbr[depth] << std::endl;
 
-    std::cout << "evaluation      : " << CB.evaluate() << std::endl;
+#if !defined GENERATE
+    std::cout << "evaluation      : " << CB.evaluate(transpositionTable) << std::endl;
+#endif
 }
 
 //========================================================
@@ -332,8 +333,9 @@ bool Board::test_mirror(const std::string& line)
     set_fen(line, true);
 
 //    std::cout << display() << std::endl;
+#if !defined GENERATE
 
-    ev1 = evaluate();
+    ev1 = evaluate(transpositionTable);
 //    std::cout << "side = " << side_to_move << " : ev1 = " << ev1 << std::endl;
 
     mirror_fen(line, true);
@@ -342,7 +344,7 @@ bool Board::test_mirror(const std::string& line)
     //        soit faire "Transtable.clear();" pour chaque évaluation
 
 //    std::cout << display() << std::endl;
-    ev2 = evaluate();
+    ev2 = evaluate(transpositionTable);
 //    std::cout << "side = " << side_to_move << " : ev2 = " << ev2 <<  std::endl;
 
     if(ev1 != ev2)
@@ -355,6 +357,7 @@ bool Board::test_mirror(const std::string& line)
         std::cout << "ev1 = " << ev1 << " ; ev2 = " << ev2 << std::endl;
         r = false;
     }
+#endif
 
     return(r);
 }
@@ -371,7 +374,9 @@ void Board::test_value(const std::string& fen )
     MoveList ml;
     U32 move;
 
-    printf("side = %s : evaluation = %d \n", side_name[side_to_move].c_str(), evaluate());
+#if !defined GENERATE
+    printf("side = %s : evaluation = %d \n", side_name[side_to_move].c_str(), evaluate(transpositionTable));
+#endif
     BB::PrintBB(checkers, "checkers");
     BB::PrintBB(pinned, "pinned");
 

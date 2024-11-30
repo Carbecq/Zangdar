@@ -27,7 +27,7 @@ https://www.chessprogramming.org/Evaluation
 //! \return Evaluation statique de la position
 //! du point de vue du camp au trait.
 //------------------------------------------
-[[nodiscard]] Score Board::evaluate()
+[[nodiscard]] Score Board::evaluate(TranspositionTable& TT)
 {
 #if defined USE_NNUE
     if (side_to_move == WHITE)
@@ -45,7 +45,7 @@ https://www.chessprogramming.org/Evaluation
     //--------------------------------
     //  Evaluation des pions
     //--------------------------------
-    eval += probe_pawn_cache(ei);
+    eval += probe_pawn_cache(ei, TT);
 
     //--------------------------------
     // Evaluation des pieces
@@ -94,7 +94,7 @@ https://www.chessprogramming.org/Evaluation
 //=======================================================
 //! \brief  Calcul ou récupération de l'évaluation des pions
 //-------------------------------------------------------
-Score Board::probe_pawn_cache(EvalInfo& ei)
+Score Board::probe_pawn_cache(EvalInfo& ei, TranspositionTable& TT)
 {
     // On ne peut pas utiliser la table lors d'un tuning
 #if defined USE_TUNER
@@ -105,7 +105,7 @@ Score Board::probe_pawn_cache(EvalInfo& ei)
     Bitboard passed_pawns;
 
     // Recherche de la position des pions dans le cache
-    if (transpositionTable.probe_pawn_table(pawn_hash, eval, passed_pawns) == true)
+    if (TT.probe_pawn_table(pawn_hash, eval, passed_pawns) == true)
     {
         // La table de pions contient la position,
         // On récupère l'évaluation de la table
@@ -116,7 +116,7 @@ Score Board::probe_pawn_cache(EvalInfo& ei)
         // La table de pions ne contient pas la position,
         // on calcule l'évaluation, et on la stocke
         eval = evaluate_pawns<WHITE>(ei) - evaluate_pawns<BLACK>(ei);
-        transpositionTable.store_pawn_table(pawn_hash, eval, ei.passedPawns);
+        TT.store_pawn_table(pawn_hash, eval, ei.passedPawns);
     }
 
     return eval;
