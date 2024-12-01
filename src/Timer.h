@@ -15,19 +15,27 @@ enum TimerMode {
 class Timer
 {
 public:
-    Timer();
     Timer(bool infinite,
-          int wtime,
-          int btime,
-          int winc,
-          int binc,
-          int movestogo,
-          int depth,
-          int nodes,
-          int movetime);
+                 int wtime,
+                 int btime,
+                 int winc,
+                 int binc,
+                 int movestogo,
+                 int depth,
+                 int nodes,
+                 int movetime);
+
+    Timer() : Timer(false,
+               0,
+               0,
+               0,
+               0,
+               0,
+               0,
+               0,
+               0) {}
 
     struct Limits {
-
         int  time[2];     // time left for black and white
         int  incr[2];     // increment for black and white
         int  movestogo;   // moves
@@ -41,7 +49,7 @@ public:
     Limits limits;
 
     void show_time();
-    void debug(Color color);
+    void debug(Color color) const;
 
     void start();
     void setup(Color color);

@@ -14,8 +14,8 @@
 #include "Move.h"
 #include "bench.h"
 
-Board       uci_board;
-
+Board   uci_board;
+Timer   uci_timer;
 
 //======================================
 //! \brief  Boucle principale UCI
@@ -377,10 +377,9 @@ void Uci::parse_go(std::istringstream& iss)
     }
 
     // Init the time manager
-    Timer timer(infinite, wtime, btime, winc, binc, movestogo, depth, nodes, movetime);
-    timer.setMoveOverhead(MoveOverhead);
-    timer.start();
-    timer.setup(uci_board.side_to_move);
+    uci_timer = Timer(infinite, wtime, btime, winc, binc, movestogo, depth, nodes, movetime);
+    uci_timer.start();
+    uci_timer.setup(uci_board.side_to_move);
 
 
 // La recherche est lancée dans une ou plusieurs threads séparées
@@ -394,7 +393,7 @@ void Uci::parse_go(std::istringstream& iss)
 #endif
 
     // start the search
-    threadPool.start_thinking(uci_board, timer);
+    threadPool.start_thinking(uci_board, uci_timer);
 }
 
 //=========================================================
@@ -550,8 +549,11 @@ setoption name <id> [value <x>]
 
         else if (option_name == "MoveOverhead")
         {
-            iss >> value;           // "value"
+            int MoveOverhead;       // Overhead on time allocation to avoid time losses
+
+            iss >> value;      // "value"
             iss >> MoveOverhead;
+            uci_timer.setMoveOverhead(MoveOverhead);
         }
     }
     else
@@ -898,7 +900,6 @@ void Uci::bench(int argCount, char* argValue[])
     if (hash_size != HASH_SIZE)
         transpositionTable.set_hash_size(hash_size);
 #endif
-    Timer timer(false, 0, 0, 0, 0, 0, depth, 0, 0);
 
     // Boucle sur l'ensemble des positions de test
     for (const auto& line : bench_pos)
@@ -918,10 +919,11 @@ void Uci::bench(int argCount, char* argValue[])
         // Initialize a "go depth <x>" search
         Uci::stop();
 
-        timer.start();
-        timer.setup(uci_board.side_to_move);
+        uci_timer = Timer(false, 0, 0, 0, 0, 0, depth, 0, 0);
+        uci_timer.start();
+        uci_timer.setup(uci_board.side_to_move);
 
-        threadPool.start_thinking(uci_board, timer);
+        threadPool.start_thinking(uci_board, uci_timer);
 
         //================================================= Fin du calcul
         threadPool.wait(0);     // Attente des threads

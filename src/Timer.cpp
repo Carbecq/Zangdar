@@ -4,36 +4,15 @@
 #include "Timer.h"
 #include "Move.h"
 
-Timer::Timer()
-{
-    limits.infinite    = false;
-    limits.time[WHITE] = 0;
-    limits.time[BLACK] = 0;
-    limits.incr[WHITE] = 0;
-    limits.incr[BLACK] = 0;
-    limits.movestogo   = 0;
-    limits.depth       = 0;
-    limits.nodes       = 0;
-    limits.movetime    = 0;
-
-    mode               = TimerMode::TIME;
-    MoveOverhead       = MOVE_OVERHEAD;
-    timeForThisDepth   = 0;
-    timeForThisMove    = 0;
-    searchDepth        = 0;
-    nodesForThisMove   = 0;
-    nodesForThisDepth  = 0;
-}
-
 Timer::Timer(bool infinite,
-                 int wtime,
-                 int btime,
-                 int winc,
-                 int binc,
-                 int movestogo,
-                 int depth,
-                 int nodes,
-                 int movetime)
+             int wtime,
+             int btime,
+             int winc,
+             int binc,
+             int movestogo,
+             int depth,
+             int nodes,
+             int movetime)
 {
     limits.infinite    = infinite;
     limits.time[WHITE] = wtime;
@@ -261,11 +240,10 @@ void Timer::show_time()
 //==================================================================
 //! \brief Affiche des informations de debug
 //------------------------------------------------------------------
-void Timer::debug(Color color)
+void Timer::debug(Color color) const
 {
     std::cout << "color: " << side_name[color] << std::endl
               << " mode              : " << mode << std::endl
-              << " timeForThisMove   : " << timeForThisMove << std::endl
               << " timeForThisDepth  : " << timeForThisDepth << std::endl
               << " timeForThisMove   : " << timeForThisMove << std::endl
               << " searchDepth       : " << searchDepth << std::endl

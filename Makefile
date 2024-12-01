@@ -57,10 +57,18 @@ DEFS += -DUSE_HASH
 #  NNUE
 #---------------------------------------------------
 
-#NETWORK = \"networks/clarity_net005.nnue\"
-NETWORK = \"networks/net-epoch.bin\"
-DEFS += -DUSE_NNUE
-CFLAGS_NNUE = -DNETWORK=$(NETWORK)
+USE_NNUE = yes
+
+ifeq ($(USE_NNUE),yes)
+	NETWORK = \"networks/clarity_net005.nnue\"
+	#NETWORK = \"networks/net-epoch.bin\"
+	DEFS += -DUSE_NNUE
+	CFLAGS_NNUE = -DNETWORK=$(NETWORK)
+	EXT = NNUE
+else
+	EXT = HCE
+endif
+
 
 #---------------------------------------------------
 #  Génération des fens
@@ -77,14 +85,16 @@ ifeq ($(ARCH), )
 endif
 
 CFLAGS_ARCH =
-DEFAULT_EXE = Zangdar
+ZANGDAR = Zangdar-$(EXT)
+
+DEFAULT_EXE = $(ZANGDAR)
 
 ifeq ($(ARCH), x86-64)
-	DEFAULT_EXE = Zangdar-$(VERSION)-$(ARCH)
+	DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
 	CFLAGS_ARCH += -msse -msse2
 
 else ifeq ($(ARCH), popcnt)
-	DEFAULT_EXE = Zangdar-$(VERSION)-$(ARCH)
+	DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
     CFLAGS_ARCH += -msse -msse2
     CFLAGS_ARCH += -msse3 -mpopcnt
     CFLAGS_ARCH += -msse4.1 -msse4.2 -msse4a
@@ -93,7 +103,7 @@ else ifeq ($(ARCH), popcnt)
     CFLAGS_ARCH += -mavx
 
 else ifeq ($(ARCH), avx2)
-	DEFAULT_EXE = Zangdar-$(VERSION)-$(ARCH)
+	DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
     CFLAGS_ARCH += -msse -msse2
     CFLAGS_ARCH += -msse3 -mpopcnt
     CFLAGS_ARCH += -msse4.1 -msse4.2 -msse4a
@@ -103,7 +113,7 @@ else ifeq ($(ARCH), avx2)
     CFLAGS_ARCH += -mavx2 -mfma
 
 else ifeq ($(ARCH), bmi2-nopext)
-	DEFAULT_EXE = Zangdar-$(VERSION)-$(ARCH)
+	DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
     CFLAGS_ARCH += -msse -msse2
     CFLAGS_ARCH += -msse3 -mpopcnt
     CFLAGS_ARCH += -msse4.1 -msse4.2 -msse4a
@@ -114,7 +124,7 @@ else ifeq ($(ARCH), bmi2-nopext)
     CFLAGS_ARCH += -mbmi -mbmi2
 
 else ifeq ($(ARCH), bmi2-pext)
-	DEFAULT_EXE = Zangdar-$(VERSION)-$(ARCH)
+	DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
     CFLAGS_ARCH += -msse -msse2
     CFLAGS_ARCH += -msse3 -mpopcnt
     CFLAGS_ARCH += -msse4.1 -msse4.2 -msse4a
@@ -125,22 +135,23 @@ else ifeq ($(ARCH), bmi2-pext)
     CFLAGS_ARCH += -mbmi -mbmi2 -DUSE_PEXT
 
 else ifeq ($(ARCH), native-nopext)
-	DEFAULT_EXE = Zangdar-$(VERSION)-5950X-nopext
+	DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-5950X-nopext
 	CFLAGS_ARCH += -march=native
 
 else ifeq ($(ARCH), native-pext)
-	DEFAULT_EXE = Zangdar-$(VERSION)-5950X-pext
+	DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-5950X-pext
 	CFLAGS_ARCH += -march=native -DUSE_PEXT
 
 else
 	ARCH = native-pext
-	DEFAULT_EXE = Zangdar-$(VERSION)-5950X-nopext
+	DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-5950X-nopext
 	CFLAGS_ARCH += -march=native
 endif
 
 $(info CXX="$(CXX)")
 $(info ARCH="$(ARCH)")
 $(info Windows="$(target_windows)")
+$(info NNUE="$(EXT)")
 
 ### Executable name
 ifeq ($(target_windows),yes)
