@@ -109,9 +109,7 @@ public:
     void prefetch(const U64 hash);
 };
 
-#if !defined GENERATE
 extern TranspositionTable transpositionTable;
-#endif
 
 
 #endif // TRANSPOSITIONTABLE_H

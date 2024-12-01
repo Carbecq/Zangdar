@@ -57,7 +57,7 @@ DEFS += -DUSE_HASH
 #  NNUE
 #---------------------------------------------------
 
-USE_NNUE = yes
+USE_NNUE = no
 
 ifeq ($(USE_NNUE),yes)
 	NETWORK = \"networks/clarity_net005.nnue\"
@@ -74,7 +74,7 @@ endif
 #  Génération des fens
 #---------------------------------------------------
 
-# DEFS += -DGENERATE
+DEFS += -DGENERATE
 
 #---------------------------------------------------------------------
 #   Architecture

@@ -9,9 +9,6 @@ class Search;
 #include "Timer.h"
 #include "Board.h"
 #include "types.h"
-#if defined GENERATE
-#include "TranspositionTable.h"
-#endif
 #include "defines.h"
 
 constexpr int STACK_OFFSET = 4;
@@ -134,10 +131,6 @@ class Search
 public:
     Search();
     ~Search();
-
-#if defined GENERATE
-    TranspositionTable  transpositionTable;
-#endif
 
     // Point de départ de la recherche
     template<Color C>

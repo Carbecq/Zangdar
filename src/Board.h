@@ -469,7 +469,7 @@ public:
                               ^ occupancy_cp<C, KING>() ) );
     }
 
-    Score evaluate(TranspositionTable &TT);
+    Score evaluate();
     Score evaluate_pieces(EvalInfo& ei);
 
     template <Color C> Score evaluate_pawns(EvalInfo& ei);
@@ -484,7 +484,7 @@ public:
 
     int   scale_factor(const Score eval);
     void  init_eval_info(EvalInfo& ei);
-    Score probe_pawn_cache(EvalInfo& ei, TranspositionTable &TT);
+    Score probe_pawn_cache(EvalInfo& ei);
 
     bool fast_see(const MOVE move, const int threshold) const;
     void test_value(const std::string& fen );

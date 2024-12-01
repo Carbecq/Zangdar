@@ -105,9 +105,7 @@ void Uci::run()
         {
             // the next search (started with "position" and "go") will be from
             // a different game.
-#if !defined GENERATE
             transpositionTable.clear();
-#endif
             threadPool.reset();
         }
 
@@ -452,9 +450,7 @@ setoption name <id> [value <x>]
             sprintf(message, "Uci::parse_options : Set Hash to %d MB", mb);
             printlog(message);
 #endif
-#if !defined GENERATE
             transpositionTable.set_hash_size(mb);
-#endif
         }
 
         else if (option_name == "Clear")
@@ -466,9 +462,7 @@ setoption name <id> [value <x>]
                 sprintf(message, "Uci::parse_options : Hash Clear");
                 printlog(message);
 #endif
-#if !defined GENERATE
                 transpositionTable.clear();
-#endif
             }
         }
 
@@ -905,9 +899,7 @@ void Uci::bench(int argCount, char* argValue[])
     for (const auto& line : bench_pos)
     {
         // Exécution du test
-#if !defined GENERATE
         transpositionTable.clear();
-#endif
         threadPool.reset();
 
         uci_board.set_fen(line, true);
@@ -958,8 +950,6 @@ void Uci::bench(int argCount, char* argValue[])
     std::cout << "nps         = " << std::fixed << std::setprecision(3) << static_cast<double>(total_nodes)/1000.0/static_cast<double>(total_time) << " Mnode/s" << std::endl;
     std::cout << "depth       = " << depth << std::endl;
     std::cout << "nbr threads = " << threadPool.get_nbrThreads() << std::endl;
-#if !defined GENERATE
     std::cout << "hash size   = " << transpositionTable.get_hash_size() << std::endl;
-#endif
     std::cout << "===============================================" << std::endl;
 }

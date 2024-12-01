@@ -8,9 +8,7 @@
 #include "DataGen.h"
 
 // Globals
-#if !defined GENERATE
 TranspositionTable  transpositionTable(HASH_SIZE);
-#endif
 PolyBook            ownBook;
 ThreadPool          threadPool(1, false, true);
 

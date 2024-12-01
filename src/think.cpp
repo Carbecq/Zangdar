@@ -224,7 +224,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
     // On a atteint la limite en profondeur de recherche ?
     if (si->ply >= MAX_PLY)
-        return board.evaluate(transpositionTable);
+        return board.evaluate();
 
 
     //  Caractéristiques de la position
@@ -323,7 +323,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     }
     else
     {
-        si->eval = static_eval = (tt_eval != NOSCORE) ? tt_eval : board.evaluate(transpositionTable);
+        si->eval = static_eval = (tt_eval != NOSCORE) ? tt_eval : board.evaluate();
     }
 
 

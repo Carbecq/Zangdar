@@ -39,7 +39,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
     // prevent overflows
     bool isInCheck = board.is_in_check();
     if (si->ply >= MAX_PLY)
-        return isInCheck ? 0 : board.evaluate(transpositionTable);
+        return isInCheck ? 0 : board.evaluate();
 
 
     // Est-ce que la table de transposition est utilisable ?
@@ -70,7 +70,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
     {
         // you do not allow the side to move to stand pat if the side to move is in check.
         static_eval = si->eval = tt_eval != NOSCORE
-                               ? tt_eval : board.evaluate(transpositionTable);
+                               ? tt_eval : board.evaluate();
 
         // le score est trop mauvais pour moi, on n'a pas besoin
         // de chercher plus loin

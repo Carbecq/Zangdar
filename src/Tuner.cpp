@@ -242,8 +242,8 @@ void Tuner::InitTunerEntry(Position& position, Board *board)
     // Evaluation should be from White POV,
     // but we still call evaluate() from stm perspective
     // to get right tempo evaluation
-    position.seval = (board->side_to_move == WHITE) ? board->evaluate(TranspositionTable)
-                                                 : -board->evaluate(TranspositionTable);
+    position.seval = (board->side_to_move == WHITE) ? board->evaluate()
+                                                 : -board->evaluate();
 
     // Initialisation des coefficients de "Trace"
     // à partir de l'évaluation
@@ -527,7 +527,7 @@ double Tuner::LinearEvaluation(const Position& position, double params[NTERMS][N
     double endgame = EgScore(position.eval);
 
     // Save any modifications for MG or EG for each evaluation type
-    for (int i = 0; i < position.tuples.size(); i++)
+    for (Usize i = 0; i < position.tuples.size(); i++)
     {
         int termIndex = position.tuples[i].index;
         midgame += (double) position.tuples[i].coeff * params[termIndex][MG];
@@ -550,7 +550,7 @@ void Tuner::UpdateSingleGradient(const Position& position, double gradient[NTERM
     double mgBase = X * position.pfactors[MG];
     double egBase = X * position.pfactors[EG];
 
-    for (int i = 0; i < position.tuples.size(); i++)
+    for (Usize i = 0; i < position.tuples.size(); i++)
     {
         int    index = position.tuples[i].index;
         double coeff = position.tuples[i].coeff;

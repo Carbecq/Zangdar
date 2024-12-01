@@ -240,10 +240,7 @@ void test_perft(const std::string& str, const std::string& m_fen, int depth)
         std::cout << "resultat        : OK " << std::endl;
     else
         std::cout << "resultat        : >>>>>>>>>>>>>>>>>>>>>>>>>>>> KO : bon = " << nbr[depth] << std::endl;
-
-#if !defined GENERATE
-    std::cout << "evaluation      : " << CB.evaluate(transpositionTable) << std::endl;
-#endif
+    std::cout << "evaluation      : " << CB.evaluate() << std::endl;
 }
 
 //========================================================
@@ -335,7 +332,7 @@ bool Board::test_mirror(const std::string& line)
 //    std::cout << display() << std::endl;
 #if !defined GENERATE
 
-    ev1 = evaluate(transpositionTable);
+    ev1 = evaluate();
 //    std::cout << "side = " << side_to_move << " : ev1 = " << ev1 << std::endl;
 
     mirror_fen(line, true);
@@ -344,7 +341,7 @@ bool Board::test_mirror(const std::string& line)
     //        soit faire "Transtable.clear();" pour chaque évaluation
 
 //    std::cout << display() << std::endl;
-    ev2 = evaluate(transpositionTable);
+    ev2 = evaluate();
 //    std::cout << "side = " << side_to_move << " : ev2 = " << ev2 <<  std::endl;
 
     if(ev1 != ev2)
@@ -375,7 +372,7 @@ void Board::test_value(const std::string& fen )
     U32 move;
 
 #if !defined GENERATE
-    printf("side = %s : evaluation = %d \n", side_name[side_to_move].c_str(), evaluate(transpositionTable));
+    printf("side = %s : evaluation = %d \n", side_name[side_to_move].c_str(), evaluate());
 #endif
     BB::PrintBB(checkers, "checkers");
     BB::PrintBB(pinned, "pinned");

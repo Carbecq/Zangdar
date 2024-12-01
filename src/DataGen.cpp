@@ -138,7 +138,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
         /*  NewGame
          */
-        search->transpositionTable.clear();
+        transpositionTable.clear();
         td->reset();
 
         //====================================================
@@ -221,7 +221,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
             td->nodes = 0;
             td->stopped  = false;
             std::memset(td->_info, 0, sizeof(SearchInfo)*STACK_SIZE);
-            search->transpositionTable.update_age();
+            transpositionTable.update_age();
 
             if (board.turn() == WHITE)
                 board.legal_moves<WHITE, MoveGenType::ALL>(movelist);
