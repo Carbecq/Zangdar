@@ -181,6 +181,13 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
 
     constexpr Color THEM = ~C;
 
+    //  Time-out
+    if (td->stopped || check_limits(td))
+    {
+        td->stopped = true;
+        return 0;
+    }
+
     // Prefetch La table de transposition aussitôt que possible
     transpositionTable.prefetch(board.get_hash());
 
@@ -208,14 +215,6 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     // Update node count and selective depth
     td->nodes++;
     td->seldepth = isRoot ? 0 : std::max(td->seldepth, si->ply);
-
-
-    //  Time-out
-    if (td->stopped || check_limits(td))
-    {
-        td->stopped = true;
-        return 0;
-    }
 
     // On a atteint la limite en profondeur de recherche ?
     if (si->ply >= MAX_PLY)
@@ -275,6 +274,13 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     int tbScore, tbBound;
     if (!excluded && threadPool.get_useSyzygy() && board.probe_wdl(tbScore, tbBound, si->ply) == true)
     {
+        //  Time-out
+        if (td->stopped || check_limits(td))
+        {
+            td->stopped = true;
+            return 0;
+        }
+
         td->tbhits++;
 
         // Check to see if the WDL value would cause a cutoff
@@ -303,7 +309,6 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
             }
         }
     }
-
 
     //  Evaluation Statique
     int static_eval;

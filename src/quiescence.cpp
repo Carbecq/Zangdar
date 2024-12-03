@@ -13,6 +13,13 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
 {
     assert(beta > alpha);
 
+    //  Time-out
+    if (td->stopped || check_limits(td))
+    {
+        td->stopped = true;
+        return 0;
+    }
+
     // Prefetch La table de transposition aussitôt que possible
     transpositionTable.prefetch(board.get_hash());
 
@@ -20,14 +27,6 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
     // Update node count and selective depth
     td->nodes++;
     td->seldepth = std::max(td->seldepth, si->ply);
-
-
-    //  Time-out
-    if (td->stopped || check_limits(td))
-    {
-        td->stopped = true;
-        return 0;
-    }
 
 
     // partie nulle ?

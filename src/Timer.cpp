@@ -6,7 +6,8 @@
 
 Timer::Timer()
 {
-    MoveOverhead       = MOVE_OVERHEAD;
+    counter         = MAX_COUNTER;
+    MoveOverhead    = MOVE_OVERHEAD;
     reset();
 }
 
@@ -30,6 +31,7 @@ void Timer::init(bool infinite,
     limits.movetime    = movetime;
     limits.infinite    = infinite;
 
+    counter            = MAX_COUNTER;
     timeForThisDepth   = 0;
     timeForThisMove    = 0;
     searchDepth        = 0;
@@ -47,6 +49,7 @@ void Timer::reset()
     limits.movetime    = 0;
     limits.infinite    = false;
 
+    counter            = MAX_COUNTER;
     timeForThisDepth   = 0;
     timeForThisMove    = 0;
     searchDepth        = 0;
@@ -57,10 +60,11 @@ void Timer::reset()
 //-----------------------------------------------------------
 void Timer::start()
 {
-    startTime = std::chrono::high_resolution_clock::now();
+    startTime = TimePoint::now();
 
     std::fill(MoveNodeCounts.begin(), MoveNodeCounts.end(), 0);
     pv_stability = 0;
+    counter      = MAX_COUNTER;
 }
 
 //===========================================================
@@ -100,7 +104,7 @@ void Timer::setup(Color color)
     }
     else if (limits.time[color] != 0)
     {
-        int time      = limits.time[color];
+        I64 time      = limits.time[color];
         int increment = limits.incr[color];
         int movestogo = limits.movestogo;
 
@@ -108,25 +112,28 @@ void Timer::setup(Color color)
         // CCRL 40/15 : 40 moves in 15 minutes
         // Amateur    : 12 minutes with 8 second increments.
 
+        // Attention, on peut avoir time<0
+        I64 time_remaining = std::max(1LL, time-MoveOverhead);
+
         // Formules provenant d'Ethereal
 
         // partie : 40 coups en 15 minutes              : moves_to_go = 40 ; wtime=btime = 15*60000 ; winc=binc = 0
         if (movestogo > 0)
         {
-            timeForThisDepth =  1.80 * (time - MoveOverhead) / (movestogo +  5) + increment;     // ou movestogo + 4
-            timeForThisMove  = 10.00 * (time - MoveOverhead) / (movestogo + 10) + increment;
+            timeForThisDepth =  1.80 * time_remaining / (movestogo +  5) + increment;     // ou movestogo + 4
+            timeForThisMove  = 10.00 * time_remaining / (movestogo + 10) + increment;
         }
 
         // partie en 5 minutes, incrément de 6 secondes : moves_to_go = 0  ; wtime=btime =  5*60000 ; winc=binc = 6 >> sudden death
         else
         {
-            timeForThisDepth =  2.50 * ((time - MoveOverhead) + 25 * increment) / 50;
-            timeForThisMove  = 10.00 * ((time - MoveOverhead) + 25 * increment) / 50;
+            timeForThisDepth =  2.50 * (time_remaining + 25 * increment) / 50;
+            timeForThisMove  = 10.00 * (time_remaining + 25 * increment) / 50;
         }
 
         // Cap time allocations using the move overhead
-        timeForThisDepth = std::min(timeForThisDepth, time - MoveOverhead);
-        timeForThisMove  = std::min(timeForThisMove,  time - MoveOverhead);
+        timeForThisDepth = std::min(timeForThisDepth, time_remaining);
+        timeForThisMove  = std::min(timeForThisMove,  time_remaining);
     }
 
 #if defined DEBUG_TIME

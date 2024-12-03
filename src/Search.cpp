@@ -40,7 +40,7 @@ Search::~Search() {}
 //! \param[in] best_score   meilleur score
 //! \param[in] elapsed      temps passé pour la recherche, en millisecondes
 //---------------------------------------------------------
-void Search::show_uci_result(const ThreadData* td, U64 elapsed) const
+void Search::show_uci_result(const ThreadData* td, I64 elapsed) const
 {
     elapsed++; // évite une division par 0
     // commande envoyée à UCI
@@ -153,13 +153,12 @@ void Search::show_uci_current(MOVE move, int currmove, int depth) const
 //! De façon à éviter un nombre important de calculs , on ne fera
 //! ce calcul que tous les 4096 coups.
 //---------------------------------------------------------
-bool Search::check_limits(const ThreadData* td) const
+bool Search::check_limits(const ThreadData* td)
 {
     // Every 4096 nodes, check if our time has expired.
     // On ne teste pas si nodes=0
 
-    return( td->depth > 1
-            && (td->nodes & 4095) == 4095
+    return(    td->depth > 1
             && td->index == 0
             && timer.finishOnThisMove());
 }

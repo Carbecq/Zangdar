@@ -132,10 +132,10 @@ private:
     template <Color C> int  alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInfo* si);
     template <Color C> int  quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si);
 
-    void show_uci_result(const ThreadData *td, U64 elapsed) const;
+    void show_uci_result(const ThreadData *td, I64 elapsed) const;
     void show_uci_best(const ThreadData *td) const;
     void show_uci_current(MOVE move, int currmove, int depth) const;
-    bool check_limits(const ThreadData *td) const;
+    bool check_limits(const ThreadData *td);
 
     void update_pv(SearchInfo* si, const MOVE move) const;
     void update_killers(ThreadData *td, int ply, MOVE move);
