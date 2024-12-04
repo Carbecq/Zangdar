@@ -112,12 +112,14 @@ void Timer::setup(Color color)
         // Attention, on peut avoir time<0
         I64 time_remaining = std::max(static_cast<I64>(1), time-MoveOverhead);
 
-#if 0
         // CCRL blitz : game in 2 minutes plus 1 second increment
         // CCRL 40/15 : 40 moves in 15 minutes
         // Amateur    : 12 minutes with 8 second increments.
 
+        // partie : 40 coups en 15 minutes              : moves_to_go = 40 ; wtime=btime = 15*60000 ; winc=binc = 0
+        // partie en 5 minutes, incrément de 6 secondes : moves_to_go = 0  ; wtime=btime =  5*60000 ; winc=binc = 6 >> sudden death
 
+#if 0
         // Formules provenant d'Ethereal
 
         // partie : 40 coups en 15 minutes              : moves_to_go = 40 ; wtime=btime = 15*60000 ; winc=binc = 0
@@ -137,7 +139,7 @@ void Timer::setup(Color color)
         // Cap time allocations using the move overhead
         timeForThisDepth = std::min(timeForThisDepth, time_remaining);
         timeForThisMove  = std::min(timeForThisMove,  time_remaining);
-#endif \
+#endif
     // formules provenant de Sirius (provenant elle-mêmes de Stormphrax) \
     // m_SoftBound
         timeForThisDepth = softTimeScale / 100.0 * (time_remaining / baseTimeScale + increment * incrementScale / 100.0);
