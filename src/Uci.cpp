@@ -932,8 +932,8 @@ void Uci::bench(int argCount, char* argValue[])
         const auto end = TimePoint::now();
         const auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
-        scores[total] = threadPool.threadData[0].get_best_score();
-        moves[total]  = threadPool.threadData[0].get_best_move();
+        scores[total] = threadPool.threadData[0].best_score;
+        moves[total]  = threadPool.threadData[0].best_move;
         nodes[total]  = threadPool.get_all_nodes();
         times[total]  = ms;
 

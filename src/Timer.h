@@ -42,7 +42,7 @@ public:
     void start();
     void setup(Color color);
     bool finishOnThisMove();
-    bool finishOnThisDepth(int elapsed, int depth, const PVariation pvs[], U64 total_nodes);
+    bool finishOnThisDepth(int elapsed, MOVE best_move, U64 total_nodes);
 
     int  getSearchDepth() const { return(searchDepth); }
     I64  elapsedTime() const;
@@ -53,6 +53,17 @@ public:
     void update(int depth, const PVariation pvs[]);
 
 private:
+    static constexpr int softTimeScale = 57;
+    static constexpr int hardTimeScale = 62;
+    static constexpr int baseTimeScale = 20;
+    static constexpr int incrementScale = 83;
+    static constexpr int nodeTMBase = 145;
+    static constexpr int nodeTMScale = 167;
+
+    static constexpr std::array<double, 7> stabilityValues = {
+        2.2, 1.6, 1.4, 1.1, 1, 0.95, 0.9
+    };
+
     constexpr static U32 MAX_COUNTER = 1024;
     U32 counter {MAX_COUNTER};
 
@@ -65,7 +76,8 @@ private:
     int  searchDepth;
 
     std::array<U64, 4096>   MoveNodeCounts;
-    int                     pv_stability;
+    MOVE                    PrevBestMove;
+    U32                     pv_stability;
 
 };
 

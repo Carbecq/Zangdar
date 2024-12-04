@@ -1,5 +1,5 @@
-CXX = clang++
-#CXX = g++
+#CXX = clang++
+CXX = g++
 
 SRC1 = src
 SRC2 = src/pyrrhic
@@ -163,6 +163,7 @@ CFLAGS_WARN3 = -Wnoexcept -Woverloaded-virtual -Wredundant-decls -Wshadow
 CFLAGS_WARN4 = -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5 
 CFLAGS_WARN5 = -Wswitch-default -Wundef -Wuninitialized -Wfloat-equal -Wbidi-chars -Warray-compare -Wattributes -Waddress
 CFLAGS_WARN6 = -Weffc++ -Winline
+CFLAGS_WARN7 = -fsanitize=bounds -Warray-bounds=2
 
 PGO_GEN   = -fprofile-generate
 PGO_USE   = -fprofile-use
@@ -181,12 +182,12 @@ endif
 
 CFLAGS_COM  = -pipe -std=c++20 -DVERSION=\"$(VERSION)\" $(DEFS)
 CFLAGS_DBG  = -g -O0
-CFLAGS_WARN = $(CFLAGS_WARN1) $(CFLAGS_WARN2) $(CFLAGS_WARN3) $(CFLAGS_WARN4) $(CFLAGS_WARN5) $(CFLAGS_WARN6)
+CFLAGS_WARN = $(CFLAGS_WARN1) $(CFLAGS_WARN2) $(CFLAGS_WARN3) $(CFLAGS_WARN4) $(CFLAGS_WARN5) $(CFLAGS_WARN6) $(CFLAGS_WARN7)
 CFLAGS_PROF = -pg
 CFLAGS_TUNE = -fopenmp -DUSE_TUNER
 
 LDFLAGS_OPT  = -s -flto=auto
-LDFLAGS_DBG  = -lm
+LDFLAGS_DBG  = -lm  -fsanitize=undefined
 LDFLAGS_PROF = -pg
 LDFLAGS_TUNE = -fopenmp
 

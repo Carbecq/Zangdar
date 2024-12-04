@@ -69,7 +69,6 @@ void ThreadPool::reset()
     for (int i = 0; i < nbrThreads; i++)
     {
         std::memset(threadData[i]._info,                 0, sizeof(SearchInfo)*STACK_SIZE);
-        std::memset(threadData[i].pvs,                   0, sizeof(PVariation)*MAX_PLY);
 
         std::memset(threadData[i].killer1,               0, sizeof(KillerTable));
         std::memset(threadData[i].killer2,               0, sizeof(KillerTable));
@@ -116,6 +115,7 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
         {
             threadData[i].depth    = 0;
             threadData[i].seldepth = 0;
+            threadData[i].score    = -INFINITE;
             threadData[i].nodes    = 0;
             threadData[i].stopped  = false;
             threadData[i].tbhits   = 0;

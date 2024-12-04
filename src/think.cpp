@@ -73,12 +73,11 @@ template<Color C>
 void Search::iterative_deepening(ThreadData* td, SearchInfo* si)
 {
     si->pv.length = 0;
-    si->pv.score = -INFINITE;
 
     for (td->depth = 1; td->depth <= timer.getSearchDepth(); td->depth++)
     {
         // Search position, using aspiration windows for higher depths
-        aspiration_window<C>(td, si);
+        td->score = aspiration_window<C>(td, si);
 
         if (td->stopped)
             break;
@@ -87,18 +86,17 @@ void Search::iterative_deepening(ThreadData* td, SearchInfo* si)
         // On peut mettre à jour les infos UCI
         if (td->index == 0)
         {
-            td->best_depth     = td->depth;
-            td->pvs[td->depth] = si->pv;
+            td->best_depth = td->depth;
+            td->best_move  = si->pv.line[0];
+            td->best_score = td->score;
 
             auto elapsed = timer.elapsedTime();
 
             if (threadPool.get_logUci())
-                show_uci_result(td, elapsed);
-
-            timer.update(td->depth, td->pvs);
+                show_uci_result(td, elapsed, si->pv);
 
             // If an iteration finishes after optimal time usage, stop the search
-            if (timer.finishOnThisDepth(elapsed, td->depth, td->pvs, td->nodes))
+            if (timer.finishOnThisDepth(elapsed, td->best_move, td->nodes))
                 break;
 
             td->seldepth = 0;
@@ -112,11 +110,12 @@ void Search::iterative_deepening(ThreadData* td, SearchInfo* si)
 //!
 //------------------------------------------------------
 template<Color C>
-void Search::aspiration_window(ThreadData* td, SearchInfo* si)
+int Search::aspiration_window(ThreadData* td, SearchInfo* si)
 {
     int alpha  = -INFINITE;
     int beta   = INFINITE;
     int depth  = td->depth;
+    int score  = td->score;
 
     const int initialWindow = 12;
     int delta = 16;
@@ -124,40 +123,41 @@ void Search::aspiration_window(ThreadData* td, SearchInfo* si)
     // After a few depths use a previous result to form the window
     if (depth >= 6)
     {
-        alpha = std::max(td->pvs[td->best_depth].score - initialWindow, -INFINITE);
-        beta  = std::min(td->pvs[td->best_depth].score + initialWindow, INFINITE);
+        alpha = std::max(score - initialWindow, -INFINITE);
+        beta  = std::min(score + initialWindow, INFINITE);
     }
 
     while (true)
     {
-        si->pv.score = alpha_beta<C>(alpha, beta, std::max(1, depth), td, si);
+        score = alpha_beta<C>(alpha, beta, std::max(1, depth), td, si);
 
         if (td->stopped)
             break;
 
         // Search failed low, adjust window and reset depth
-        if (si->pv.score <= alpha)
+        if (score <= alpha)
         {
-            alpha = std::max(si->pv.score - delta, -INFINITE); // alpha/score-delta
+            alpha = std::max(score - delta, -INFINITE); // alpha/score-delta
             beta  = (alpha + beta) / 2;
             depth = td->depth;
         }
 
         // Search failed high, adjust window and reduce depth
-        else if(si->pv.score >= beta)  // Fail High
+        else if(score >= beta)  // Fail High
         {
-            beta  = std::min(si->pv.score + delta, INFINITE);   // beta/score+delta
+            beta  = std::min(score + delta, INFINITE);   // beta/score+delta
             // idée de Berserk
-            if (abs(si->pv.score) < TBWIN_IN_X)
+            if (abs(score) < TBWIN_IN_X)
                 depth--;
         }
 
         // Score within the bounds is accepted as correct
         else
-            return ;
+            return score;
 
         delta += delta*2 / 3;
     }
+    return score;
 }
 
 //=====================================================
