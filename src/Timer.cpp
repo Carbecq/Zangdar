@@ -6,7 +6,6 @@
 
 Timer::Timer()
 {
-    counter         = MAX_COUNTER;
     MoveOverhead    = MOVE_OVERHEAD;
     reset();
 }
@@ -31,7 +30,6 @@ void Timer::init(bool infinite,
     limits.movetime    = movetime;
     limits.infinite    = infinite;
 
-    counter            = MAX_COUNTER;
     timeForThisDepth   = 0;
     timeForThisMove    = 0;
     searchDepth        = 0;
@@ -49,7 +47,6 @@ void Timer::reset()
     limits.movetime    = 0;
     limits.infinite    = false;
 
-    counter            = MAX_COUNTER;
     timeForThisDepth   = 0;
     timeForThisMove    = 0;
     searchDepth        = 0;
@@ -61,7 +58,6 @@ void Timer::reset()
 void Timer::start()
 {
     startTime = TimePoint::now();
-
     std::fill(MoveNodeCounts.begin(), MoveNodeCounts.end(), 0);
     pv_stability = 0;
     counter      = MAX_COUNTER;
@@ -107,10 +103,10 @@ void Timer::setup(Color color)
     {
         I64 time      = limits.time[color];
         int increment = limits.incr[color];
-        int movestogo = limits.movestogo;
+        // int movestogo = limits.movestogo;
 
         // Attention, on peut avoir time<0
-        I64 time_remaining = std::max(static_cast<I64>(1), time-MoveOverhead);
+        I64 time_remaining = std::max(static_cast<I64>(1), time - MoveOverhead);
 
         // CCRL blitz : game in 2 minutes plus 1 second increment
         // CCRL 40/15 : 40 moves in 15 minutes
@@ -119,31 +115,9 @@ void Timer::setup(Color color)
         // partie : 40 coups en 15 minutes              : moves_to_go = 40 ; wtime=btime = 15*60000 ; winc=binc = 0
         // partie en 5 minutes, incrément de 6 secondes : moves_to_go = 0  ; wtime=btime =  5*60000 ; winc=binc = 6 >> sudden death
 
-#if 0
-        // Formules provenant d'Ethereal
-
-        // partie : 40 coups en 15 minutes              : moves_to_go = 40 ; wtime=btime = 15*60000 ; winc=binc = 0
-        if (movestogo > 0)
-        {
-            timeForThisDepth =  1.80 * time_remaining / (movestogo +  5) + increment;     // ou movestogo + 4
-            timeForThisMove  = 10.00 * time_remaining / (movestogo + 10) + increment;
-        }
-
-        // partie en 5 minutes, incrément de 6 secondes : moves_to_go = 0  ; wtime=btime =  5*60000 ; winc=binc = 6 >> sudden death
-        else
-        {
-            timeForThisDepth =  2.50 * (time_remaining + 25 * increment) / 50;
-            timeForThisMove  = 10.00 * (time_remaining + 25 * increment) / 50;
-        }
-
-        // Cap time allocations using the move overhead
-        timeForThisDepth = std::min(timeForThisDepth, time_remaining);
-        timeForThisMove  = std::min(timeForThisMove,  time_remaining);
-#endif
-    // formules provenant de Sirius (provenant elle-mêmes de Stormphrax) \
-    // m_SoftBound
+        // formules provenant de Sirius (provenant elle-mêmes de Stormphrax)
+        // m_SoftBound
         timeForThisDepth = softTimeScale / 100.0 * (time_remaining / baseTimeScale + increment * incrementScale / 100.0);
-
         // m_HardBound
         timeForThisMove = time_remaining * (hardTimeScale / 100.0);
 
@@ -159,8 +133,7 @@ void Timer::setup(Color color)
 //! \brief  Détermine si on a assez de temps pour effectuer
 //!         une nouvelle itération
 //! \param[in]  elapsed     temps en millisecondes
-//! \param[in]  depth       profondeur terminée proprement (pas de time-out)
-//! \param[in]  pvs         Variation Principale de chaque profondeur
+//! \param[in]  best_move   meilleur coup trouvé
 //! \param[in]  total_nodes nombre total de noeuds calculés pour cette profondeur
 //!
 //-----------------------------------------------------------
@@ -178,7 +151,6 @@ bool Timer::finishOnThisDepth(int elapsed, MOVE best_move, U64 total_nodes)
     //   std::cout << "elapsed=" <<elapsed <<  " total=" << total_nodes << " scale=" << scale << " time=" << timeForThisDepth << "  " << timeForThisDepth*scale << std::endl;
     scale *= stabilityValues[std::min(pv_stability, 6u)];
     return (elapsed > timeForThisDepth * scale);
-
 }
 
 //==============================================================================

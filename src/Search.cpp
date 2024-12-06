@@ -150,11 +150,11 @@ void Search::show_uci_current(MOVE move, int currmove, int depth) const
 //! \return Retourne "true" si la recherche a dépassé sa limite de temps
 //!
 //! De façon à éviter un nombre important de calculs , on ne fera
-//! ce calcul que tous les 4096 coups.
+//! ce calcul que tous les MAX_COUNTER .
 //---------------------------------------------------------
 bool Search::check_limits(const ThreadData* td)
 {
-    // Every 4096 nodes, check if our time has expired.
+    // Every MAX_COUNTER , check if our time has expired.
     // On ne teste pas si nodes=0
 
     return(    td->depth > 1

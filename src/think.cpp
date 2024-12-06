@@ -76,11 +76,18 @@ void Search::iterative_deepening(ThreadData* td, SearchInfo* si)
 
     for (td->depth = 1; td->depth <= timer.getSearchDepth(); td->depth++)
     {
+        std::cout << "d " << td->depth << std::endl;
+
         // Search position, using aspiration windows for higher depths
         td->score = aspiration_window<C>(td, si);
+        std::cout << "aspi ok " << std::endl;
 
-        if (td->stopped)
+        //  Time-out
+        if (td->stopped || check_limits(td))
+        {
+            td->stopped = true;
             break;
+        }
 
         // L'itération s'est terminée sans problème
         // On peut mettre à jour les infos UCI
@@ -129,10 +136,18 @@ int Search::aspiration_window(ThreadData* td, SearchInfo* si)
 
     while (true)
     {
+        std::cout << "aspi start : alpha " << alpha << " ; beta " << beta << " ; d " << depth << std::endl;
+
         score = alpha_beta<C>(alpha, beta, std::max(1, depth), td, si);
 
-        if (td->stopped)
-            break;
+        std::cout << "aspi 1 " << std::endl;
+        //  Time-out
+        if (td->stopped || check_limits(td))
+        {
+            td->stopped = true;
+            return 0;
+        }
+        std::cout << "aspi 2 " << std::endl;
 
         // Search failed low, adjust window and reset depth
         if (score <= alpha)
@@ -140,6 +155,7 @@ int Search::aspiration_window(ThreadData* td, SearchInfo* si)
             alpha = std::max(score - delta, -INFINITE); // alpha/score-delta
             beta  = (alpha + beta) / 2;
             depth = td->depth;
+            std::cout << "aspi 3 " << std::endl;
         }
 
         // Search failed high, adjust window and reduce depth
@@ -149,14 +165,22 @@ int Search::aspiration_window(ThreadData* td, SearchInfo* si)
             // idée de Berserk
             if (abs(score) < TBWIN_IN_X)
                 depth--;
+            std::cout << "aspi 4 " << std::endl;
         }
 
         // Score within the bounds is accepted as correct
         else
-            return score;
+        {
+            std::cout << "aspi 5 " << std::endl;
 
+            return score;
+        }
         delta += delta*2 / 3;
+        std::cout << "aspi 6 " << std::endl;
+
     }
+    std::cout << "aspi fin " << std::endl;
+
     return score;
 }
 
@@ -270,17 +294,10 @@ int Search::alpha_beta(int alpha, int beta, int depth, ThreadData* td, SearchInf
     }
 
 
-    // Probe the Syzygy     Tablebases
+    // Probe the Syzygy Tablebases
     int tbScore, tbBound;
     if (!excluded && threadPool.get_useSyzygy() && board.probe_wdl(tbScore, tbBound, si->ply) == true)
     {
-        //  Time-out
-        if (td->stopped || check_limits(td))
-        {
-            td->stopped = true;
-            return 0;
-        }
-
         td->tbhits++;
 
         // Check to see if the WDL value would cause a cutoff

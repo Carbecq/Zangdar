@@ -64,7 +64,7 @@ private:
         2.2, 1.6, 1.4, 1.1, 1, 0.95, 0.9
     };
 
-    constexpr static U32 MAX_COUNTER = 1024;
+    constexpr static U32 MAX_COUNTER = 2048;
     U32 counter {MAX_COUNTER};
 
     // gives the exact moment this search was started.

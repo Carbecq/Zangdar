@@ -120,6 +120,10 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
             threadData[i].stopped  = false;
             threadData[i].tbhits   = 0;
 
+            threadData[i].best_depth = 0;
+            threadData[i].best_move  = Move::MOVE_NONE;
+            threadData[i].best_score = -INFINITE;
+
             // on prend TOUT le tableau
             // excluded, eval, move, ply, pv
             std::memset(threadData[i]._info, 0, sizeof(SearchInfo)*STACK_SIZE);
