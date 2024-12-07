@@ -41,7 +41,7 @@ public:
 
     void start();
     void setup(Color color);
-    bool finishOnThisMove();
+    bool check_limits(const int depth, const int index);
     bool finishOnThisDepth(int elapsed, MOVE best_move, U64 total_nodes);
 
     int  getSearchDepth() const { return(searchDepth); }

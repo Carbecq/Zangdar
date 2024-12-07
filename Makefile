@@ -1,5 +1,5 @@
-CXX = clang++
-#CXX = g++
+#CXX = clang++
+CXX = g++
 
 SRC1 = src
 SRC2 = src/pyrrhic
@@ -42,11 +42,13 @@ DEFS = -DHOME=$(HOMEDEF)
 #  Désactiver USE_HASH pour la mesure de performances brutes
 DEFS += -DUSE_HASH
 
+#  Quelques defines utilisés en debug
 # DEFS += -DDEBUG_EVAL
 # DEFS += -DDEBUG_LOG
 # DEFS += -DDEBUG_HASH
 # DEFS += -DDEBUG_TIME
 
+#  Affichage "lisible"
 #  NE PAS UTILISER PRETTY avec
 #       + Arena (score mal affiché)
 #       + test STS
@@ -178,19 +180,17 @@ else
 endif
 
 # https://stackoverflow.com/questions/5088460/flags-to-enable-thorough-and-verbose-g-warnings
-#  (-fsanitize=undefined -fsanitize=memory and -fsanitize=address and maybe even -fsanitize=thread)
-
+# CFLAGS  : -fsanitize=undefined -fsanitize=memory and -fsanitize=address and maybe even -fsanitize=thread
+# LDFLAGS : -fsanitize=address -static-libsan
+ 
 CFLAGS_COM  = -pipe -std=c++20 -DVERSION=\"$(VERSION)\" $(DEFS)
-CFLAGS_DBG  = -g -O0  -fsanitize=address 
-#CFLAGS_DBG  = -g -O2
-CFLAGS_WARN = 
-#$(CFLAGS_WARN1) $(CFLAGS_WARN2) $(CFLAGS_WARN3) $(CFLAGS_WARN4) $(CFLAGS_WARN5) $(CFLAGS_WARN6)
+CFLAGS_DBG  = -g -O2
+CFLAGS_WARN = $(CFLAGS_WARN1) $(CFLAGS_WARN2) $(CFLAGS_WARN3) $(CFLAGS_WARN4) $(CFLAGS_WARN5) $(CFLAGS_WARN6)
 CFLAGS_PROF = -pg
 CFLAGS_TUNE = -fopenmp -DUSE_TUNER
 
 LDFLAGS_OPT  = -s -flto=auto
-LDFLAGS_DBG  = -lm -fsanitize=address -static-libsan
-#LDFLAGS_DBG  = -lm
+LDFLAGS_DBG  = -lm
 LDFLAGS_PROF = -pg
 LDFLAGS_TUNE = -fopenmp
 

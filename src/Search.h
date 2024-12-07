@@ -132,7 +132,6 @@ private:
     void show_uci_result(const ThreadData *td, I64 elapsed, PVariation &pv) const;
     void show_uci_best(const ThreadData *td) const;
     void show_uci_current(MOVE move, int currmove, int depth) const;
-    bool check_limits(const ThreadData *td);
 
     void update_pv(SearchInfo* si, const MOVE move) const;
     void update_killers(ThreadData *td, int ply, MOVE move);

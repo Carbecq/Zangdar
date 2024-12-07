@@ -19,34 +19,23 @@ extern void init_bitmasks();
 
 int main(int argCount, char* argValue[])
 {
-    std::cout << "main 1 " << std::endl;
-
     Attacks::init_masks();
-    std::cout << "main 2 " << std::endl;
 
     //  Benchmark
     if (argCount > 1 && strcmp(argValue[1], "bench") == 0)
     {
-        std::cout << "main 3 " << std::endl;
         Uci* uci = new Uci();
         uci->bench(argCount, argValue);
     }
     else
     {
 #if defined USE_TUNER
-        std::cout << "main 4 " << std::endl;
-
         ownTuner.runTexelTuning();
 #else
-        std::cout << "main 5 " << std::endl;
-
         Uci uci;
-        std::cout << "main 6 " << std::endl;
-
         uci.run();
 #endif
     }
-    std::cout << "main fin " << std::endl;
 
     return 0;
 }

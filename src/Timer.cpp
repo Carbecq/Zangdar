@@ -128,6 +128,25 @@ void Timer::setup(Color color)
 #endif
 }
 
+//=========================================================
+//! \brief  Controle du time-out
+//! \return Retourne "true" si la recherche a dépassé sa limite de temps
+//!
+//! De façon à éviter un nombre important de calculs , on ne fera
+//! ce calcul que tous les MAX_COUNTER .
+//---------------------------------------------------------
+bool Timer::check_limits(const int depth, const int index)
+{
+    // Every MAX_COUNTER , check if our time has expired.
+    // On ne teste pas si nodes=0
+    if (--counter > 0)
+        return false;
+    counter = MAX_COUNTER;
+
+    return(    depth > 1
+            && index == 0
+            && elapsedTime() >= timeForThisMove);
+}
 
 //===========================================================
 //! \brief  Détermine si on a assez de temps pour effectuer
@@ -151,17 +170,6 @@ bool Timer::finishOnThisDepth(int elapsed, MOVE best_move, U64 total_nodes)
     //   std::cout << "elapsed=" <<elapsed <<  " total=" << total_nodes << " scale=" << scale << " time=" << timeForThisDepth << "  " << timeForThisDepth*scale << std::endl;
     scale *= stabilityValues[std::min(pv_stability, 6u)];
     return (elapsed > timeForThisDepth * scale);
-}
-
-//==============================================================================
-//! \brief Détermine si le temps alloué pour la recherche est dépassé.
-//------------------------------------------------------------------------------
-bool Timer::finishOnThisMove()
-{
-    if (--counter > 0)
-        return false;
-    counter = MAX_COUNTER;
-    return (elapsedTime() >= timeForThisMove);
 }
 
 //==============================================================================

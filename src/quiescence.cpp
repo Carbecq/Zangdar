@@ -14,11 +14,12 @@ int Search::quiescence(int alpha, int beta, ThreadData* td, SearchInfo* si)
     assert(beta > alpha);
 
     //  Time-out
-    if (td->stopped || check_limits(td))
+    if (td->stopped || timer.check_limits(td->depth, td->index))
     {
         td->stopped = true;
         return 0;
     }
+
 
     // Prefetch La table de transposition aussitôt que possible
     transpositionTable.prefetch(board.get_hash());

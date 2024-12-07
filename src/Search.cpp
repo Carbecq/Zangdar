@@ -146,23 +146,6 @@ void Search::show_uci_current(MOVE move, int currmove, int depth) const
 }
 
 //=========================================================
-//! \brief  Controle du time-out
-//! \return Retourne "true" si la recherche a dépassé sa limite de temps
-//!
-//! De façon à éviter un nombre important de calculs , on ne fera
-//! ce calcul que tous les MAX_COUNTER .
-//---------------------------------------------------------
-bool Search::check_limits(const ThreadData* td)
-{
-    // Every MAX_COUNTER , check if our time has expired.
-    // On ne teste pas si nodes=0
-
-    return(    td->depth > 1
-            && td->index == 0
-            && timer.finishOnThisMove());
-}
-
-//=========================================================
 //! \brief  Mise à jour de la Principal variation
 //!
 //! \param[in]  name   coup en notation UCI
