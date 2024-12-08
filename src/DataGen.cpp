@@ -88,7 +88,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
     int nbr_fens;                       // nombre de positions conservées
     std::random_device rd;
     std::mt19937_64 generator(rd());
-    auto start = std::chrono::high_resolution_clock::now();
+    auto start = TimePoint::now();
 
     int total_fens= 0;
 
@@ -268,7 +268,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
                 // if (total_fens % 100 == 0)
                 // {
-                // auto elapsed = ( std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start ).count() + 1.00)/1000.0;
+                // auto elapsed = ( std::chrono::duration_cast<std::chrono::milliseconds>(TimePoint::now() - start ).count() + 1.00)/1000.0;
                 // std::cout << "id = " << thread_id
                 //           << "  total_fens_collected = " << total_fens << " ; fens / sec = "
                 //           << total_fens / elapsed << std::endl;
@@ -359,7 +359,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
         if (nbr_games % 100 == 0)
         {
-            auto elapsed = ( std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start ).count() + 1.00)/1000.0;
+            auto elapsed = ( std::chrono::duration_cast<std::chrono::milliseconds>(TimePoint::now() - start ).count() + 1.00)/1000.0;
             std::cout << "id = " << thread_id
                       << " ; game = " << nbr_games << " / " << max_games
                       << " ; total_fens_collected = " << total_fens << " ; fens / sec = "
@@ -400,7 +400,6 @@ void DataGen::data_search(Board& board, Timer& timer,
     //==================================================
 
     si->pv.length = 0;
-    si->pv.score  = -INFINITE;
 
 #if defined DEBUG_GEN
     timer.debug(WHITE);
@@ -410,15 +409,16 @@ void DataGen::data_search(Board& board, Timer& timer,
     for (td->depth = 1; td->depth <= std::max(1, timer.getSearchDepth()); td->depth++)
     {
         // Search position, using aspiration windows for higher depths
-        search->aspiration_window<C>(board, timer, td, si);
+        td->score = search->aspiration_window<C>(board, timer, td, si);
 
         if (td->stopped)
             break;
 
         // L'itération s'est terminée sans problème
         // On peut mettre à jour les infos UCI
-        td->best_depth    = td->depth;
-        td->pvs[td->depth] = si->pv;
+        td->best_depth = td->depth;
+        td->best_move  = si->pv.line[0];
+        td->best_score = td->score;
 
 #if defined DEBUG_GEN
         auto elapsed = timer.elapsedTime();
@@ -429,17 +429,15 @@ void DataGen::data_search(Board& board, Timer& timer,
         auto elapsed = 0;
 #endif
 
-        // timer.update(td->depth, td->pvs);
-
         // If an iteration finishes after optimal time usage, stop the search
-        if (timer.finishOnThisDepth(elapsed, td->depth, td->pvs, td->nodes))
+        if (timer.finishOnThisDepth(elapsed, td->depth, td->best_move, td->nodes))
             break;
 
         td->seldepth = 0;
     }
 
-    move  = td->get_best_move();
-    score = td->get_best_score();
+    move  = td->best_move;
+    score = td->best_score;
 }
 
 //===================================================

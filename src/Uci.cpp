@@ -776,7 +776,7 @@ bool Uci::go_tactics(const std::string& line, int dmax, int tmax, U64& total_nod
 
     uci_board.set_fen(line, true);
 
-    const auto start = std::chrono::high_resolution_clock::now();
+    const auto start = TimePoint::now();
 
     //============================================== Lance le calcul
     std::string strgo;
@@ -790,7 +790,7 @@ bool Uci::go_tactics(const std::string& line, int dmax, int tmax, U64& total_nod
     //================================================= Attente des threads
     threadPool.wait(0);
 
-    const auto end = std::chrono::high_resolution_clock::now();
+    const auto end = TimePoint::now();
     const auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
     total_time   += ms;
@@ -905,7 +905,7 @@ void Uci::bench(int argCount, char* argValue[])
         uci_board.set_fen(line, true);
         std::cout << "[# " << total+1 << "] " << line << std::endl;
 
-        const auto start = std::chrono::high_resolution_clock::now();
+        const auto start = TimePoint::now();
 
         //============================================== Lance le calcul
         // Initialize a "go depth <x>" search
@@ -920,11 +920,11 @@ void Uci::bench(int argCount, char* argValue[])
         //================================================= Fin du calcul
         threadPool.wait(0);     // Attente des threads
 
-        const auto end = std::chrono::high_resolution_clock::now();
+        const auto end = TimePoint::now();
         const auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
-        scores[total] = threadPool.threadData[0].get_best_score();
-        moves[total]  = threadPool.threadData[0].get_best_move();
+        scores[total] = threadPool.threadData[0].best_score;
+        moves[total]  = threadPool.threadData[0].best_move;
         nodes[total]  = threadPool.get_all_nodes();
         times[total]  = ms;
 

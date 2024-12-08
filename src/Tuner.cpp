@@ -59,7 +59,7 @@ void Tuner::runTexelTuning()
     K = ComputeOptimalK();
     std::cout << "Optimal K: " << K << std::endl;
 
-    auto start_search      = std::chrono::high_resolution_clock::now();
+    auto start_search      = TimePoint::now();
     auto start_report      = start_search;
 
     for (int epoch = 1; epoch <= MAXEPOCHS; epoch++)
@@ -94,7 +94,7 @@ void Tuner::runTexelTuning()
         {
             printf("\rEpoch [%d] Error = [%.8f], Rate = [%g]", epoch, error, rate);
             PrintParameters(params, baseParams);
-            auto end            = std::chrono::high_resolution_clock::now();
+            auto end            = TimePoint::now();
             auto delta_report   = std::chrono::duration_cast<std::chrono::milliseconds>(end - start_report);
             auto delta_search   = std::chrono::duration_cast<std::chrono::milliseconds>(end - start_search);
             std::cout << "epoch = " << epoch << " ; sec = " << delta_report.count()/1000.0 << "  " << delta_search.count()/1000.0 << std::endl;

@@ -6,6 +6,7 @@
 #include <vector>
 #include <iostream>
 #include <bitset>
+#include <chrono>
 
 /*******************************************************
  **	Généralités
@@ -27,7 +28,9 @@ using Usize = size_t;
 using Bitboard  = U64;
 using MOVE      = U32;
 
-using Score = int;  // Valeur spéciale contenant à la fois mg et eg
+using Score     = int;  // Valeur spéciale contenant à la fois mg et eg
+using TimePoint = std::chrono::high_resolution_clock;
+
 
 static constexpr int MAX_PLY    = 128;     // profondeur max de recherche (en demi-coups)
 static constexpr int MAX_HIST   = 800;     // longueur max de la partie (en demi-coups)
@@ -49,7 +52,7 @@ static constexpr int TBWIN_IN_X     = TBWIN - MAX_PLY;
 static constexpr int INFINITE       = MATE + 1;
 static constexpr int NOSCORE        = MATE + 2;     // ne peut jamais être atteint
 
-static constexpr int MOVE_OVERHEAD  = 10;
+static constexpr int MOVE_OVERHEAD  = 100;
 
 /*                                           29872          30000     30872         31000    31001  : moi
  *   -INFINITE     -MATE    -MATE_IN_X    |  TBWIN_IN_X.....TBWIN.....MATE_IN_X.....MATE.....INFINITE

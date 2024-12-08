@@ -47,8 +47,8 @@ int main(int argCount, char* argValue[])
 #if defined USE_TUNER
         ownTuner.runTexelTuning();
 #else
-        Uci* uci = new Uci();
-        uci->run();
+        Uci uci;
+        uci.run();
 #endif
     }
 

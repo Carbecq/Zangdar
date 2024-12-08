@@ -32,22 +32,18 @@ public:
     std::thread thread;
     Search*     search;     // pointeur sur la classe de recherche
     SearchInfo* info;       // pointeur décalé de STACK_OFFSET sur la tableau total _info[STACK_SIZE]
-    PVariation  pvs[MAX_PLY+1];
 
     int         index;
     int         depth;
     int         seldepth;
+    int         score;
     U64         nodes;
     bool        stopped;
     U64         tbhits;
 
+    MOVE        best_move;
+    int         best_score;
     int         best_depth;
-
-    int  get_best_depth()   const { return best_depth;              }
-    MOVE get_best_move()    const { return pvs[best_depth].line[0]; }
-    int  get_best_score()   const { return pvs[best_depth].score;   }
-    int  get_pv_length()    const { return pvs[best_depth].length;  }
-    MOVE get_pv_move(int i) const { return pvs[best_depth].line[i]; }
 
     //*********************************************************************
     //  Données initialisées une seule fois au début d'une nouvelle partie
@@ -76,8 +72,6 @@ public:
     void reset()
     {
         std::memset(_info,                 0, sizeof(SearchInfo)*STACK_SIZE);
-        std::memset(pvs,                   0, sizeof(PVariation)*MAX_PLY);
-
         std::memset(killer1,               0, sizeof(KillerTable));
         std::memset(killer2,               0, sizeof(KillerTable));
         std::memset(history,               0, sizeof(Historytable));
@@ -133,20 +127,17 @@ public:
     ~Search();
 
     // Point de départ de la recherche
-    template<Color C>
-    void think(Board board, Timer timer, int _index);
-
-    template <Color C> void aspiration_window(Board& board, Timer& timer, ThreadData* td, SearchInfo* si);
-    void show_uci_result(const ThreadData *td, U64 elapsed) const;
+    template <Color C> void think(Board board, Timer timer, int _index);
+    template <Color C> int  aspiration_window(Board& board, Timer& timer, ThreadData* td, SearchInfo* si);
 
 private:
     template <Color C> void iterative_deepening(Board& board, Timer& timer, ThreadData* td, SearchInfo* si);
     template <Color C> int  alpha_beta(Board& board, Timer& timer, int alpha, int beta, int depth, ThreadData* td, SearchInfo* si);
     template <Color C> int  quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadData* td, SearchInfo* si);
 
-   void show_uci_best(const ThreadData *td) const;
+    void show_uci_result(const ThreadData *td, I64 elapsed, const PVariation &pv) const;
+    void show_uci_best(const ThreadData *td) const;
     void show_uci_current(MOVE move, int currmove, int depth) const;
-    bool check_limits(const Timer &timer, const ThreadData *td) const;
 
     void update_pv(SearchInfo* si, const MOVE move) const;
     void update_killers(ThreadData *td, int ply, MOVE move);

@@ -59,7 +59,7 @@ void test_suite(const std::string& abc, int dmax)
     char            tag2 = ' ';
 
     Board *CB = new Board();
-    auto start = std::chrono::high_resolution_clock::now();
+    auto start = TimePoint::now();
 
     // Boucle sur l'ensemble des positions de test
     while (std::getline(file, line))
@@ -159,7 +159,7 @@ void test_suite(const std::string& abc, int dmax)
     } // boucle position
 
     // Elapsed time in milliseconds
-    auto end = std::chrono::high_resolution_clock::now();
+    auto end = TimePoint::now();
     auto sec = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()/1000.0;
 
     file.close();
@@ -220,7 +220,7 @@ void test_perft(const std::string& str, const std::string& m_fen, int depth)
     std::cout << CB.display() << std::endl;
     std::cout << std::endl;
 
-    auto start      = std::chrono::high_resolution_clock::now();
+    auto start      = TimePoint::now();
     U64  total;
 
     if (CB.turn() == WHITE)
@@ -228,7 +228,7 @@ void test_perft(const std::string& str, const std::string& m_fen, int depth)
     else
         total = CB.perft<BLACK, divide>(depth);
 
-    auto end        = std::chrono::high_resolution_clock::now();
+    auto end        = TimePoint::now();
     auto delta      = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     auto msec       = delta.count();
 

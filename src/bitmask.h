@@ -124,7 +124,7 @@ namespace SQ {
 
 [[nodiscard]] constexpr int square(const int f, const int r) noexcept { return (8*r + f); }
 
-[[nodiscard]] constexpr int square(const std::string& str) noexcept {
+[[nodiscard]] inline int square(const std::string& str) noexcept {
     const int file = str[0] - 'a';
     const int rank = str[1] - '1';
     return(rank * 8 + file);

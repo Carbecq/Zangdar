@@ -13,21 +13,19 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
 {
     assert(beta > alpha);
 
-    // Prefetch La table de transposition aussitôt que possible
-    transpositionTable.prefetch(board.get_hash());
-
-
-    // Update node count and selective depth
-    td->nodes++;
-    td->seldepth = std::max(td->seldepth, si->ply);
-
-
     //  Time-out
-    if (td->stopped || check_limits(timer, td))
+    if (td->stopped || timer.check_limits(td->depth, td->index, td->nodes))
     {
         td->stopped = true;
         return 0;
     }
+
+    // Prefetch La table de transposition aussitôt que possible
+    transpositionTable.prefetch(board.get_hash());
+
+    // Update node count and selective depth
+    td->nodes++;
+    td->seldepth = std::max(td->seldepth, si->ply);
 
 
     // partie nulle ?

@@ -78,12 +78,11 @@ template<Color C>
 void Search::iterative_deepening(Board& board, Timer& timer, ThreadData* td, SearchInfo* si)
 {
     si->pv.length = 0;
-    si->pv.score = -INFINITE;
 
     for (td->depth = 1; td->depth <= timer.getSearchDepth(); td->depth++)
     {
         // Search position, using aspiration windows for higher depths
-        aspiration_window<C>(board, timer, td, si);
+        td->score = aspiration_window<C>(board, timer, td, si);
 
         if (td->stopped)
             break;
@@ -92,18 +91,17 @@ void Search::iterative_deepening(Board& board, Timer& timer, ThreadData* td, Sea
         // On peut mettre à jour les infos UCI
         if (td->index == 0)
         {
-            td->best_depth     = td->depth;
-            td->pvs[td->depth] = si->pv;
+            td->best_depth = td->depth;
+            td->best_move  = si->pv.line[0];
+            td->best_score = td->score;
 
             auto elapsed = timer.elapsedTime();
 
             if (threadPool.get_logUci())
-                show_uci_result(td, elapsed);
-
-            timer.update(td->depth, td->pvs);
+                show_uci_result(td, elapsed, si->pv);
 
             // If an iteration finishes after optimal time usage, stop the search
-            if (timer.finishOnThisDepth(elapsed, td->depth, td->pvs, td->nodes))
+            if (timer.finishOnThisDepth(elapsed, td->depth, td->best_move, td->nodes))
                 break;
 
             td->seldepth = 0;
@@ -117,11 +115,12 @@ void Search::iterative_deepening(Board& board, Timer& timer, ThreadData* td, Sea
 //!
 //------------------------------------------------------
 template<Color C>
-void Search::aspiration_window(Board& board, Timer& timer, ThreadData* td, SearchInfo* si)
+int Search::aspiration_window(Board& board, Timer& timer, ThreadData* td, SearchInfo* si)
 {
     int alpha  = -INFINITE;
     int beta   = INFINITE;
     int depth  = td->depth;
+    int score  = td->score;
 
     const int initialWindow = 12;
     int delta = 16;
@@ -129,40 +128,44 @@ void Search::aspiration_window(Board& board, Timer& timer, ThreadData* td, Searc
     // After a few depths use a previous result to form the window
     if (depth >= 6)
     {
-        alpha = std::max(td->pvs[td->best_depth].score - initialWindow, -INFINITE);
-        beta  = std::min(td->pvs[td->best_depth].score + initialWindow, INFINITE);
+        alpha = std::max(score - initialWindow, -INFINITE);
+        beta  = std::min(score + initialWindow, INFINITE);
     }
 
     while (true)
     {
-        si->pv.score = alpha_beta<C>(board, timer, alpha, beta, std::max(1, depth), td, si);
+        score = alpha_beta<C>(board, timer, alpha, beta, std::max(1, depth), td, si);
 
         if (td->stopped)
             break;
 
         // Search failed low, adjust window and reset depth
-        if (si->pv.score <= alpha)
+        if (score <= alpha)
         {
-            alpha = std::max(si->pv.score - delta, -INFINITE); // alpha/score-delta
+            alpha = std::max(score - delta, -INFINITE); // alpha/score-delta
             beta  = (alpha + beta) / 2;
             depth = td->depth;
         }
 
         // Search failed high, adjust window and reduce depth
-        else if(si->pv.score >= beta)  // Fail High
+        else if(score >= beta)  // Fail High
         {
-            beta  = std::min(si->pv.score + delta, INFINITE);   // beta/score+delta
+            beta  = std::min(score + delta, INFINITE);   // beta/score+delta
             // idée de Berserk
-            if (abs(si->pv.score) < TBWIN_IN_X)
+            if (abs(score) < TBWIN_IN_X)
                 depth--;
         }
 
         // Score within the bounds is accepted as correct
         else
-            return ;
+        {
+            return score;
+        }
 
         delta += delta*2 / 3;
     }
+
+    return score;
 }
 
 //=====================================================
@@ -182,9 +185,17 @@ template<Color C>
 int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int depth, ThreadData* td, SearchInfo* si)
 {
     assert(board.valid());
-     assert(beta > alpha);
+    assert(beta > alpha);
 
     constexpr Color THEM = ~C;
+
+     //  Time-out
+    if (td->stopped || timer.check_limits(td->depth, td->index, td->nodes))
+     {
+         td->stopped = true;
+         return 0;
+     }
+
 
     // Prefetch La table de transposition aussitôt que possible
     transpositionTable.prefetch(board.get_hash());
@@ -214,13 +225,6 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     td->nodes++;
     td->seldepth = isRoot ? 0 : std::max(td->seldepth, si->ply);
 
-
-    //  Time-out
-    if (td->stopped || check_limits(timer, td))
-    {
-        td->stopped = true;
-        return 0;
-    }
 
     // On a atteint la limite en profondeur de recherche ?
     if (si->ply >= MAX_PLY)
@@ -728,5 +732,5 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 template void Search::think<WHITE>(Board board, Timer timer, int _index);
 template void Search::think<BLACK>(Board board, Timer timer, int _index);
 
-template void Search::aspiration_window<WHITE>(Board& board, Timer& timer, ThreadData* td, SearchInfo* si);
-template void Search::aspiration_window<BLACK>(Board& board, Timer& timer, ThreadData* td, SearchInfo* si);
+template int Search::aspiration_window<WHITE>(Board& board, Timer& timer, ThreadData* td, SearchInfo* si);
+template int Search::aspiration_window<BLACK>(Board& board, Timer& timer, ThreadData* td, SearchInfo* si);
