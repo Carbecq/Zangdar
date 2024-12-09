@@ -88,7 +88,7 @@ U64 PolyBook::calculate_hash(const Board& board)
     // enable en passant flag only if there si a pawn capable to
     // capture our pawn
 
-    int epsq = board.ep_square;
+    int epsq = board.get_ep_square();
     if (epsq != NO_SQUARE)
     {
         // Bitboard des attaques de pion ADVERSE

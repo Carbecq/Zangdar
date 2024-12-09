@@ -10,10 +10,9 @@ DEFINES += STATIC
 QMAKE_LFLAGS += -flto=auto
 
 #------------------------------------------------------
-DEFINES += USE_HASH
 # DEFINES += USE_NNUE
-DEFINES += GENERATE
 
+#------------------------------------------------------
 # ATTENTION : ne pas mettre "\" car ils sont reconnus comme caractères spéciaux
 # pour Github
 HOME_STR = "./"
@@ -22,17 +21,20 @@ HOME_STR = "./"
 DEFINES += HOME='\\"$${HOME_STR}\\"'
 
 #------------------------------------------------------
-
-DEFINES += USE_TUNER
-QMAKE_CXXFLAGS_RELEASE += -fopenmp
-LIBS += -fopenmp
+VERSION = "$$cat(VERSION.txt)"
+# message($$VERSION)
+DEFINES += VERSION='\\"$${VERSION}\\"'
 
 #------------------------------------------------------
-
 # DEFINES +=  DEBUG_EVAL
 # DEFINES +=  DEBUG_LOG
-# DEFINES +=  DEBUG_HASH
+DEFINES +=  DEBUG_HASH
 # DEFINES +=  DEBUG_TIME
+
+#------------------------------------------------------
+# DEFINES += USE_TUNER
+# QMAKE_CXXFLAGS_RELEASE += -fopenmp
+# LIBS += -fopenmp
 
 #------------------------------------------------------
 # https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html
@@ -48,9 +50,6 @@ QMAKE_CXXFLAGS_RELEASE -= -O2
 QMAKE_CXXFLAGS_RELEASE += -pipe -std=c++20 -O3 -flto=auto -DNDEBUG -fwhole-program
 QMAKE_CXXFLAGS_RELEASE += -pedantic -Wshadow -Wall -Wextra -Wcast-qual -Wuninitialized
 
-VERSION = "$$cat(VERSION.txt)"
-# message($$VERSION)
-DEFINES += VERSION='\\"$${VERSION}\\"'
 
 # message($$DEFINES)
 TARGET  = native-pext

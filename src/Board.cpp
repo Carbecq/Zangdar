@@ -1,85 +1,14 @@
 #include <sstream>
 #include "Board.h"
 
-
-//===================================================
-//! \brief  Affichage de l'échiquier
-//---------------------------------------------------
-std::string Board::display() const noexcept
+Board::Board()
 {
-    std::stringstream ss;
-
-    int i = 56;
-    U64 hh = get_hash();
-    U64 ph = get_pawn_hash();
-    ss << std::endl;
-
-    ss << "  8 " ;
-
-    while (i >= 0) {
-        const auto sq = i;
-        const auto bb = SQ::square_BB(sq);
-        
-        if (occupancy_cp<Color::WHITE, PAWN>() & bb) {
-            ss << 'P';
-        } else if (occupancy_cp<Color::WHITE, KNIGHT>() & bb) {
-            ss << 'N';
-        } else if (occupancy_cp<Color::WHITE, BISHOP>() & bb) {
-            ss << 'B';
-        } else if (occupancy_cp<Color::WHITE, ROOK>() & bb) {
-            ss << 'R';
-        } else if (occupancy_cp<Color::WHITE, QUEEN>() & bb) {
-            ss << 'Q';
-        } else if (occupancy_cp<Color::WHITE, KING>() & bb) {
-            ss << 'K';
-        } else if (occupancy_cp<Color::BLACK, PAWN>() & bb) {
-            ss << 'p';
-        } else if (occupancy_cp<Color::BLACK, KNIGHT>() & bb) {
-            ss << 'n';
-        } else if (occupancy_cp<Color::BLACK, BISHOP>() & bb) {
-            ss << 'b';
-        } else if (occupancy_cp<Color::BLACK, ROOK>() & bb) {
-            ss << 'r';
-        } else if (occupancy_cp<Color::BLACK, QUEEN>() & bb) {
-            ss << 'q';
-        } else if (occupancy_cp<Color::BLACK, KING>() & bb) {
-            ss << 'k';
-        } else {
-            ss << '.';
-        }
-        ss << ' ';
-
-        if (i % 8 == 7)
-        {
-            if (i/8 != 0)
-                ss << "\n  " << i/8 << ' ';
-            i -= 16;
-        }
-
-        i++;
-    }
-    ss << "\n    a b c d e f g h\n\n";
-
-    ss << "Castling : ";
-    ss << (can_castle<WHITE, CastleSide::KING_SIDE>()  ? "K" : "");
-    ss << (can_castle<WHITE, CastleSide::QUEEN_SIDE>() ? "Q" : "");
-    ss << (can_castle<BLACK, CastleSide::KING_SIDE>()  ? "k" : "");
-    ss << (can_castle<BLACK, CastleSide::QUEEN_SIDE>() ? "q" : "");
-    ss << '\n';
-    if (ep() == NO_SQUARE) {
-        ss << "EP       : -\n";
-    } else {
-        ss << "EP       : " << square_name[ep()] << '\n';
-    }
-    ss <<     "Turn     : " << side_name[turn()] << '\n';
-    ss <<     "InCheck  : " << bool_name[is_in_check()] << "\n";
-    ss <<     "Hash     : " << hh << "\n";
-    ss <<     "PawnHash : " << ph << "\n";
-    ss <<     "Fen      : " << get_fen() << "\n";
-
-    return(ss.str());
+    StatusHistory.reserve(MAX_HISTO);
 }
 
+//==========================================
+//! \brief  Initialisation de l'échiquier
+//------------------------------------------
 void Board::clear() noexcept
 {
     colorPiecesBB[0] = 0ULL;
@@ -92,24 +21,96 @@ void Board::clear() noexcept
     typePiecesBB[4] = 0ULL;
     typePiecesBB[5] = 0ULL;
     typePiecesBB[6] = 0ULL;
-    
+
     pieceOn.fill(NO_TYPE);
 
     x_king[WHITE] = NO_SQUARE;                      // position des rois
     x_king[BLACK] = NO_SQUARE;                      // position des rois
 
-    halfmove_counter = 0;
-    fullmove_counter = 1;
-    gamemove_counter = 0;
-    hash             = 0;
-    pawn_hash        = 0;
-
-    ep_square    = NO_SQUARE;
-    castling     = CASTLE_NONE;
+    // gamemove_counter = 0;
     side_to_move = Color::WHITE;
-    
-    game_history.fill(UndoInfo{0, 0, 0, 0, 0, 0, 0, 0});
+
+    StatusHistory.clear();
 }
+
+//===================================================
+//! \brief  Affichage de l'échiquier
+//---------------------------------------------------
+std::string Board::display() const noexcept
+{
+    std::stringstream ss;
+
+    int sq;
+    U64 hh = get_hash();
+    U64 ph = get_pawn_hash();
+    Bitboard bb;
+
+    ss << "\n\n";
+
+    for (int r=7; r>=0; r--)
+    {
+        ss << "  |---|---|---|---|---|---|---|---|-\n";
+        ss << "  |";
+
+        for (int f=0; f<8; f++)
+        {
+            sq = SQ::square(f, r);
+            bb = SQ::square_BB(sq);
+
+
+            if (occupancy_cp<Color::WHITE, PAWN>() & bb) {
+                ss << " P |";
+            } else if (occupancy_cp<Color::WHITE, KNIGHT>() & bb) {
+                ss << " N |";
+            } else if (occupancy_cp<Color::WHITE, BISHOP>() & bb) {
+                ss << " B |";
+            } else if (occupancy_cp<Color::WHITE, ROOK>() & bb) {
+                ss << " R |";
+            } else if (occupancy_cp<Color::WHITE, QUEEN>() & bb) {
+                ss << " Q |";
+            } else if (occupancy_cp<Color::WHITE, KING>() & bb) {
+                ss << " K |";
+            } else if (occupancy_cp<Color::BLACK, PAWN>() & bb) {
+                ss << " p |";
+            } else if (occupancy_cp<Color::BLACK, KNIGHT>() & bb) {
+                ss << " n |";
+            } else if (occupancy_cp<Color::BLACK, BISHOP>() & bb) {
+                ss << " b |";
+            } else if (occupancy_cp<Color::BLACK, ROOK>() & bb) {
+                ss << " r |";
+            } else if (occupancy_cp<Color::BLACK, QUEEN>() & bb) {
+                ss << " q |";
+            } else if (occupancy_cp<Color::BLACK, KING>() & bb) {
+                ss << " k |";
+            } else {
+                ss << "   |";
+            }
+        }
+        ss << " " << r+1 << "\n";
+    }
+    ss << "  |---|---|---|---|---|---|---|---|-\n";
+    ss << "    a   b   c   d   e   f   g   h\n\n";
+
+    ss << "Castling : ";
+    ss << (can_castle<WHITE, CastleSide::KING_SIDE>()  ? "K" : "");
+    ss << (can_castle<WHITE, CastleSide::QUEEN_SIDE>() ? "Q" : "");
+    ss << (can_castle<BLACK, CastleSide::KING_SIDE>()  ? "k" : "");
+    ss << (can_castle<BLACK, CastleSide::QUEEN_SIDE>() ? "q" : "");
+    ss << '\n';
+    if (get_ep_square() == NO_SQUARE) {
+        ss << "EP       : -\n";
+    } else {
+        ss << "EP       : " << square_name[get_ep_square()] << '\n';
+    }
+    ss <<     "Turn     : " << side_name[turn()] << '\n';
+    ss <<     "InCheck  : " << bool_name[is_in_check()] << "\n";
+    ss <<     "Hash     : " << hh << "\n";
+    ss <<     "PawnHash : " << ph << "\n";
+    ss <<     "Fen      : " << get_fen() << "\n";
+
+    return(ss.str());
+}
+
 
 //==========================================================
 //! \brief  Calcule la phase de la position
@@ -141,6 +142,131 @@ int Board::get_material()
         + Q_MG * BB::count_bit(occupancy_cp<US, QUEEN>())
         );
 }
+
+//=============================================================
+//! \brief  Calcule le nombre de répétitions
+//-------------------------------------------------------------
+void Board::calculate_repetitions()
+{
+    int reversible = get_status().halfmove_counter;
+        // std::min(get_status().halfmove_counter, currState().pliesFromNull);
+    for (int i = 2; i <= reversible; i += 2) {
+        Status& state = StatusHistory[StatusHistory.size() - 1 - i];
+        if (state.hash == get_status().hash)
+        {
+            // get_status().repetition_counter = state.repetition_counter + 1;
+            // get_status().lastRepetition = i;
+            return;
+        }
+    }
+    // get_status().repetition_counter = 0;
+    // currState().lastRepetition = 0;
+
+
+
+
+
+
+
+    // const int maxChecks = get_status().halfmove_counter;
+
+    // const int lim = StatusHistory.size() - 1 - maxChecks;
+    // const int end = std::max(0, lim);
+
+    // for (int i = StatusHistory.size() - 3; i >= end; i -= 2)
+    // {
+    //     if (StatusHistory.at(i).hash == get_status().hash)
+    //     {
+    //         get_status().repetition_counter = StatusHistory.at(i).repetition_counter + 1;
+    //     }
+    // }
+}
+
+void Board::calculate_hash(U64& khash, U64& phash) const
+{
+    khash = 0ULL;
+    phash = 0ULL;
+    Bitboard bb;
+
+    // Turn
+    if (turn() == Color::BLACK) {
+        khash ^= side_key;
+    }
+
+    // Pieces
+    bb = occupancy_cp<WHITE, PAWN>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        khash ^= piece_key[WHITE][PAWN][sq];
+        phash ^= piece_key[WHITE][PAWN][sq];
+    }
+    bb = occupancy_cp<WHITE, KNIGHT>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        khash ^= piece_key[WHITE][KNIGHT][sq];
+    }
+    bb = occupancy_cp<WHITE, BISHOP>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        khash ^= piece_key[WHITE][BISHOP][sq];
+    }
+    bb = occupancy_cp<WHITE, ROOK>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        khash ^= piece_key[WHITE][ROOK][sq];
+    }
+    bb = occupancy_cp<WHITE, QUEEN>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        khash ^= piece_key[WHITE][QUEEN][sq];
+    }
+    bb = occupancy_cp<WHITE, KING>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        khash ^= piece_key[WHITE][KING][sq];
+    }
+    bb = occupancy_cp<BLACK, PAWN>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        khash ^= piece_key[BLACK][PAWN][sq];
+        phash ^= piece_key[BLACK][PAWN][sq];
+    }
+    bb = occupancy_cp<BLACK, KNIGHT>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        khash ^= piece_key[BLACK][KNIGHT][sq];
+    }
+    bb = occupancy_cp<BLACK, BISHOP>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        khash ^= piece_key[BLACK][BISHOP][sq];
+    }
+    bb = occupancy_cp<BLACK, ROOK>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        khash ^= piece_key[BLACK][ROOK][sq];
+    }
+    bb = occupancy_cp<BLACK, QUEEN>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        khash ^= piece_key[BLACK][QUEEN][sq];
+    }
+    bb = occupancy_cp<BLACK, KING>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        khash ^= piece_key[BLACK][KING][sq];
+    }
+
+    // Castling
+    khash ^= castle_key[get_status().castling];
+
+    // EP
+    if (get_status().ep_square != NO_SQUARE) {
+        khash ^= ep_key[get_status().ep_square];
+    }
+
+}
+
 
 template int Board::get_material<WHITE>();
 template int Board::get_material<BLACK>();

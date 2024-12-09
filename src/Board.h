@@ -17,72 +17,61 @@
 
 // structure destinée à stocker l'historique de make_move.
 // celle-ci sera nécessaire pour effectuer un unmake_move
-struct UndoInfo
+struct Status
 {
-    U64  hash      = 0ULL;             // nombre unique (?) correspondant à la position
-    U64  pawn_hash = 0ULL;
-    MOVE move      = Move::MOVE_NONE;
-    int  ep_square;                 // case en-passant : si les blancs jouent e2-e4, la case est e3
-    int  halfmove_counter = 0;      // nombre de coups depuis une capture, ou un movement de pion
-    U32  castling;                  // droit au roque
-    Bitboard checkers = 0ULL;       // bitboard des pièces ennemies me donnant échec
-    Bitboard pinned   = 0ULL;       // bitboard des pièces amies clouées
+    U64  hash               = 0ULL;             // nombre unique (?) correspondant à la position
+    U64  pawn_hash          = 0ULL;
+    MOVE move               = Move::MOVE_NONE;
+    int  ep_square          = SquareType::NO_SQUARE;         // case en-passant : si les blancs jouent e2-e4, la case est e3
+    U32  castling           = CastleType::CASTLE_NONE;                  // droit au roque
+    int  halfmove_counter   = 0;        // nombre de coups depuis une capture, ou un movement de pion
+    int  fullmove_counter   = 1;        // le nombre de coups complets. Il commence à 1 et est incrémenté de 1 après le coup des noirs.
+    // int  repetition_counter = 0;
+    Bitboard checkers       = 0ULL;       // bitboard des pièces ennemies me donnant échec
+    Bitboard pinned         = 0ULL;       // bitboard des pièces amies clouées
 };
 
-//=================================== evaluation
-
-/*******************************************************
- ** Droit au roque
- **---------------------------------------------------*/
 
 class Board
 {
 public:
-    Board() {}
+    Board();
     Board(const std::string &fen) { set_fen(fen, false); }
 
     void clear() noexcept;
+
     void parse_position(std::istringstream &is);
 
     //! \brief  Retourne le camp à jouer
-    [[nodiscard]] constexpr inline Color turn() const noexcept { return side_to_move; }
+    [[nodiscard]] constexpr Color turn() const noexcept { return side_to_move; }
 
     //! \brief  Retourne le bitboard des pièces de la couleur indiquée
     template<Color C>
-    [[nodiscard]] constexpr inline Bitboard occupancy_c() const noexcept { return colorPiecesBB[C]; }
+    [[nodiscard]] constexpr Bitboard occupancy_c() const noexcept { return colorPiecesBB[C]; }
 
     //! \brief  Retourne le bitboard des pièces du type indiqué
     template<PieceType P>
-    [[nodiscard]] constexpr inline Bitboard occupancy_p() const noexcept { return typePiecesBB[P]; }
+    [[nodiscard]] constexpr Bitboard occupancy_p() const noexcept { return typePiecesBB[P]; }
 
     //! \brief  Retourne le bitboard des pièces de la couleur indiquée
     //! et du type indiqué
     template<Color C, PieceType P>
-    [[nodiscard]] constexpr inline Bitboard occupancy_cp() const noexcept { return colorPiecesBB[C] & typePiecesBB[P]; }
+    [[nodiscard]] constexpr Bitboard occupancy_cp() const noexcept { return colorPiecesBB[C] & typePiecesBB[P]; }
 
     //! \brief  Retourne le bitboard de toutes les pièces Blanches et Noires
-    [[nodiscard]] constexpr inline Bitboard occupancy_all() const noexcept { return colorPiecesBB[WHITE] | colorPiecesBB[BLACK]; }
+    [[nodiscard]] constexpr Bitboard occupancy_all() const noexcept { return colorPiecesBB[WHITE] | colorPiecesBB[BLACK]; }
 
     //! \brief  Retourne le bitboard de toutes les cases vides
-    [[nodiscard]] constexpr inline Bitboard occupancy_none() const noexcept { return ~occupancy_all(); }
+    [[nodiscard]] constexpr Bitboard occupancy_none() const noexcept { return ~occupancy_all(); }
 
     //! \brief  Retourne le bitboard des Fous et des Dames
-    template<Color C>
-    constexpr inline Bitboard diagonal_sliders() const
-    {
-        return occupancy_cp<C, BISHOP>() | occupancy_cp<C, QUEEN>();
-    }
+    template<Color C> constexpr Bitboard diagonal_sliders() const { return occupancy_cp<C, BISHOP>() | occupancy_cp<C, QUEEN>(); }
 
     //! \brief  Retourne le bitboard des Tours et des Dames
-    template<Color C>
-    constexpr inline Bitboard orthogonal_sliders() const
-    {
-        return occupancy_cp<C, ROOK>() | occupancy_cp<C, QUEEN>();
-    }
+    template<Color C> constexpr Bitboard orthogonal_sliders() const { return occupancy_cp<C, ROOK>() | occupancy_cp<C, QUEEN>(); }
 
     //! \brief Retourne le bitboard de toutes les pièces du camp "C" attaquant la case "sq"
-    template <Color C>
-    [[nodiscard]] constexpr Bitboard attackers(const int sq) const noexcept
+    template <Color C> [[nodiscard]] constexpr Bitboard attackers(const int sq) const noexcept
     {
         // il faut regarder les attaques de pions depuis l'autre camp
         return( (Attacks::pawn_attacks<~C>(sq)         & occupancy_cp<C, PAWN>())                                           |
@@ -93,8 +82,7 @@ public:
     }
 
     //! \brief Retourne le bitboard de toutes les pièces du camp "C", sauf le roi, attaquant la case "sq"
-    template <Color C>
-    [[nodiscard]] constexpr Bitboard attackersButKing(const int sq) const noexcept
+    template <Color C> [[nodiscard]] constexpr Bitboard attackersButKing(const int sq) const noexcept
     {
         // il faut regarder les attaques de pions depuis l'autre camp
         return( (Attacks::pawn_attacks<~C>(sq)         & occupancy_cp<C, PAWN>())                                           |
@@ -104,7 +92,9 @@ public:
     }
 
     template <Color C>
-    void checkers_pinned() noexcept;
+    void calculate_checkers_pinned() noexcept;
+    void calculate_repetitions();
+    void calculate_hash(U64 &khash, U64 &phash) const;
 
     //! \brief  Retourne le Bitboard de TOUS les attaquants (Blancs et Noirs) de la case "sq"
     [[nodiscard]] Bitboard all_attackers(const int sq, const Bitboard occ) const noexcept
@@ -120,27 +110,23 @@ public:
     //! \brief Returns an attack bitboard where sliders are allowed
     //! to xray other sliders moving the same directions
     //  code venant de Weiss
-    template<Color C>
-    [[nodiscard]] Bitboard XRayBishopAttack(const int sq)
+    template<Color C> [[nodiscard]] Bitboard XRayBishopAttack(const int sq)
     {
         Bitboard occ = occupancy_all() ^ occupancy_p<QUEEN>() ^ occupancy_cp<C, BISHOP>();
         return(Attacks::bishop_moves(sq, occ));
     }
-    template<Color C>
-    [[nodiscard]] Bitboard XRayRookAttack(const int sq)
+    template<Color C> [[nodiscard]] Bitboard XRayRookAttack(const int sq)
     {
         Bitboard occ = occupancy_all() ^ occupancy_p<QUEEN>() ^ occupancy_cp<C, ROOK>();
         return(Attacks::rook_moves(sq, occ));
     }
-    template<Color C>
-    [[nodiscard]] Bitboard XRayQueenAttack(const int sq)
+    template<Color C> [[nodiscard]] Bitboard XRayQueenAttack(const int sq)
     {
         Bitboard occ = occupancy_all() ^ occupancy_p<QUEEN>() ^ occupancy_cp<C, ROOK>() ^ occupancy_cp<C, BISHOP>();
         return(Attacks::queen_moves(sq, occ));
     }
 
-    template <Color C>
-    [[nodiscard]] Bitboard discoveredAttacks(const int sq) const noexcept;
+    template <Color C> [[nodiscard]] Bitboard discoveredAttacks(const int sq) const noexcept;
 
     //        switch (pt)
     //        {
@@ -161,33 +147,23 @@ public:
 
     //! \brief  Détermine si case 'sq' est sur une colonne semi-ouverte
     //!  du point de vue 'C'
-    template <Color C>
-    [[nodiscard]] constexpr bool is_on_semiopen_file(int sq) const {
-        return !(occupancy_cp<C, PAWN>() & FileMask64[sq]);
-    }
+    template <Color C> [[nodiscard]] constexpr bool is_on_semiopen_file(int sq) const { return !(occupancy_cp<C, PAWN>() & FileMask64[sq]); }
 
     void set_fen(const std::string &fen, bool logTactics) noexcept;
     [[nodiscard]] std::string get_fen() const noexcept;
     void mirror_fen(const std::string &fen, bool logTactics);
 
-    [[nodiscard]] constexpr int get_halfmove_counter() const noexcept { return halfmove_counter; }
-    [[nodiscard]] constexpr int get_gamemove_counter() const noexcept { return gamemove_counter;     }
-    [[nodiscard]] constexpr int get_fullmove_counter() const noexcept { return fullmove_counter; }
-
     //! \brief  Retourne la position du roi
-    template<Color C>
-    [[nodiscard]] constexpr int king_square() const noexcept { return x_king[C]; }
+    template<Color C> [[nodiscard]] constexpr int king_square() const noexcept { return x_king[C]; }
 
     //! \brief Retourne le bitboard des cases attaquées
-    template<Color C>
-    [[nodiscard]] Bitboard squares_attacked() const noexcept;
+    template<Color C> [[nodiscard]] Bitboard squares_attacked() const noexcept;
 
     //! \brief  Détermine si la case sq est attaquée par le camp C
-    template<Color C>
-    [[nodiscard]] constexpr bool square_attacked(const int sq) const noexcept { return attackers<C>(sq) > 0; }
+    template<Color C> [[nodiscard]] constexpr bool square_attacked(const int sq) const noexcept { return attackers<C>(sq) > 0; }
 
     //! \brief  Détermine si le camp au trait est en échec dans la position actuelle
-    [[nodiscard]] constexpr bool is_in_check() const noexcept { return checkers > 0; }
+    [[nodiscard]] inline bool is_in_check() const noexcept { return get_status().checkers > 0; }
 
     //! \brief  Détermine si le camp "C" attaque le roi ennemi
     template<Color C>
@@ -200,11 +176,7 @@ public:
     void verify_MvvLva();
 
     //==============================================
-
-
-
-
-
+    //  Génération des coups
 
     void add_quiet_move(MoveList &ml, int from, int dest, PieceType piece, U32 flags) const noexcept;
     void add_capture_move(
@@ -232,32 +204,30 @@ public:
     void push_pawn_quiet_moves(MoveList &ml, Bitboard attack, const int dir, U32 flags);
     void push_pawn_capture_moves(MoveList &ml, Bitboard attack, const int dir);
 
-    template<Color C, bool divide> [[nodiscard]] std::uint64_t perft(const int depth) noexcept;
+    //------------------------------------------------------------
+    //  le Roque
 
-    //=========================================================================
-
-    template<Color C> constexpr inline bool can_castle() const
+    template<Color C> constexpr bool can_castle() const
     {
         if constexpr (C == WHITE)
-            return castling & (CASTLE_WK | CASTLE_WQ);
+            return get_status().castling & (CASTLE_WK | CASTLE_WQ);
         else
-            return castling & (CASTLE_BK | CASTLE_BQ);
+            return get_status().castling & (CASTLE_BK | CASTLE_BQ);
     }
 
-    template<Color C, CastleSide side> constexpr inline bool can_castle() const
+    template<Color C, CastleSide side> constexpr bool can_castle() const
     {
         if constexpr      (C == WHITE && side == KING_SIDE)
-            return castling & CASTLE_WK;
+            return get_status().castling & CASTLE_WK;
         else if constexpr (C == WHITE && side == QUEEN_SIDE)
-            return castling & CASTLE_WQ;
+            return get_status().castling & CASTLE_WQ;
         else if constexpr (C == BLACK && side == KING_SIDE)
-            return castling & CASTLE_BK;
+            return get_status().castling & CASTLE_BK;
         else if constexpr (C == BLACK && side == QUEEN_SIDE)
-            return castling & CASTLE_BQ;
+            return get_status().castling & CASTLE_BQ;
     }
 
-    template <Color C, CastleSide side>
-    constexpr inline Bitboard get_king_path()   // cases ne devant pas être attaquées
+    template <Color C, CastleSide side> constexpr Bitboard get_king_path()   // cases ne devant pas être attaquées
     {
         if constexpr      (C == WHITE && side == KING_SIDE)
             return F1G1_BB;
@@ -269,8 +239,7 @@ public:
             return C8D8_BB;
     }
 
-    template <Color C, CastleSide side>
-    constexpr inline Bitboard get_rook_path()   // cases devant être libres
+    template <Color C, CastleSide side> constexpr Bitboard get_rook_path()   // cases devant être libres
     {
         if constexpr      (C == WHITE && side == KING_SIDE)
             return F1G1_BB;
@@ -282,8 +251,7 @@ public:
             return B8D8_BB;
     }
 
-    template <Color C>
-    constexpr inline int get_king_from()
+    template <Color C> constexpr int get_king_from()
     {
         if constexpr (C == WHITE)
             return (E1);
@@ -291,8 +259,7 @@ public:
             return (E8);
     }
 
-    template <Color C, CastleSide side>
-    constexpr inline int get_king_dest()
+    template <Color C, CastleSide side> constexpr int get_king_dest()
     {
         if constexpr      (C == WHITE && side == KING_SIDE)
             return (G1);
@@ -328,8 +295,7 @@ public:
     //=======================================================================
     //! \brief  Ajoute les coups du roque
     //-----------------------------------------------------------------------
-    template <Color C, CastleSide side>
-    constexpr inline void gen_castle(MoveList& ml)
+    template <Color C, CastleSide side> constexpr void gen_castle(MoveList& ml)
     {
         if (   can_castle<C, side>()
             && BB::empty(get_rook_path<C, side>() & occupancy_all())
@@ -345,90 +311,6 @@ public:
     template<Color C> void undo_move() noexcept;
     template<Color C> void make_nullmove() noexcept;
     template<Color C> void undo_nullmove() noexcept;
-
-    constexpr void calculate_hash(U64& khash, U64& phash) const noexcept
-    {
-        khash = 0ULL;
-        phash = 0ULL;
-        Bitboard bb;
-
-        // Turn
-        if (turn() == Color::BLACK) {
-            khash ^= side_key;
-        }
-
-        // Pieces
-        bb = occupancy_cp<WHITE, PAWN>();
-        while (bb) {
-            int sq = BB::pop_lsb(bb);
-            khash ^= piece_key[WHITE][PAWN][sq];
-            phash ^= piece_key[WHITE][PAWN][sq];
-        }
-        bb = occupancy_cp<WHITE, KNIGHT>();
-        while (bb) {
-            int sq = BB::pop_lsb(bb);
-            khash ^= piece_key[WHITE][KNIGHT][sq];
-        }
-        bb = occupancy_cp<WHITE, BISHOP>();
-        while (bb) {
-            int sq = BB::pop_lsb(bb);
-            khash ^= piece_key[WHITE][BISHOP][sq];
-        }
-        bb = occupancy_cp<WHITE, ROOK>();
-        while (bb) {
-            int sq = BB::pop_lsb(bb);
-            khash ^= piece_key[WHITE][ROOK][sq];
-        }
-        bb = occupancy_cp<WHITE, QUEEN>();
-        while (bb) {
-            int sq = BB::pop_lsb(bb);
-            khash ^= piece_key[WHITE][QUEEN][sq];
-        }
-        bb = occupancy_cp<WHITE, KING>();
-        while (bb) {
-            int sq = BB::pop_lsb(bb);
-            khash ^= piece_key[WHITE][KING][sq];
-        }
-        bb = occupancy_cp<BLACK, PAWN>();
-        while (bb) {
-            int sq = BB::pop_lsb(bb);
-            khash ^= piece_key[BLACK][PAWN][sq];
-            phash ^= piece_key[BLACK][PAWN][sq];
-        }
-        bb = occupancy_cp<BLACK, KNIGHT>();
-        while (bb) {
-            int sq = BB::pop_lsb(bb);
-            khash ^= piece_key[BLACK][KNIGHT][sq];
-        }
-        bb = occupancy_cp<BLACK, BISHOP>();
-        while (bb) {
-            int sq = BB::pop_lsb(bb);
-            khash ^= piece_key[BLACK][BISHOP][sq];
-        }
-        bb = occupancy_cp<BLACK, ROOK>();
-        while (bb) {
-            int sq = BB::pop_lsb(bb);
-            khash ^= piece_key[BLACK][ROOK][sq];
-        }
-        bb = occupancy_cp<BLACK, QUEEN>();
-        while (bb) {
-            int sq = BB::pop_lsb(bb);
-            khash ^= piece_key[BLACK][QUEEN][sq];
-        }
-        bb = occupancy_cp<BLACK, KING>();
-        while (bb) {
-            int sq = BB::pop_lsb(bb);
-            khash ^= piece_key[BLACK][KING][sq];
-        }
-
-        // Castling
-        khash ^= castle_key[castling];
-
-        // EP
-        if (ep_square != NO_SQUARE) {
-            khash ^= ep_key[ep_square];
-        }
-    }
 
     //! \brief  Retourne la couleur de la pièce située sur la case sq
     //! SUPPOSE qu'il y a une pièce sur cette case !!
@@ -448,9 +330,6 @@ public:
         return NO_TYPE;
     }
 
-    [[nodiscard]] constexpr int ep() const noexcept { return ep_square; }
-    [[nodiscard]] constexpr std::uint64_t get_hash() const noexcept { return hash; }
-    [[nodiscard]] constexpr std::uint64_t get_pawn_hash() const noexcept { return pawn_hash; }
 
     bool valid() const noexcept;
     [[nodiscard]] std::string display() const noexcept;
@@ -469,6 +348,9 @@ public:
                               ^ occupancy_cp<C, KING>() ) );
     }
 
+    //==============================================
+    //  Evaluation
+
     Score evaluate();
     Score evaluate_pieces(EvalInfo& ei);
 
@@ -485,35 +367,37 @@ public:
     int   scale_factor(const Score eval);
     void  init_eval_info(EvalInfo& ei);
     Score probe_pawn_cache(EvalInfo& ei);
-
-    bool fast_see(const MOVE move, const int threshold) const;
-    void test_value(const std::string& fen );
-
+    bool  fast_see(const MOVE move, const int threshold) const;
 
     //====================================================================
     //! \brief  Détermine s'il y a eu 50 coups sans prise ni coup de pion
     //--------------------------------------------------------------------
-    [[nodiscard]] constexpr bool fiftymoves() const noexcept { return halfmove_counter >= 100; }
+    [[nodiscard]] inline bool fiftymoves() const noexcept { return get_status().halfmove_counter >= 100; }
 
     //====================================================================
     //! \brief  Détermine s'il y a eu répétition de la même position
     //! Pour cela, on compare le hash code de la position.
     //! Voir Ethereal
+    //! + lors du calcul de répétitions, il faut distinguer les posItions de recherche,
+    //!   et les positions de la partie.
     //--------------------------------------------------------------------
-    [[nodiscard]] bool is_repetition(int ply) const noexcept
+    [[nodiscard]] inline bool is_repetition(int ply) const noexcept
     {
         int reps = 0;
+        U64 current_hash     = get_status().hash;
+        int gamemove_counter = StatusHistory.size() - 1;
+        int halfmove_counter = get_status().halfmove_counter;
 
         // Look through hash histories for our moves
-        for (int i = gamemove_counter - 2; i >= 0; i -= 2) {
-
+        for (int i = gamemove_counter - 2; i >= 0; i -= 2)
+        {
             // No draw can occur before a zeroing move
             if (i < gamemove_counter - halfmove_counter)
                 break;
 
             // Check for matching hash with a two fold after the root,
             // or a three fold which occurs in part before the root move
-            if (    game_history[i].hash == hash
+            if (    StatusHistory[i].hash == current_hash
                 && (i > gamemove_counter - ply || ++reps == 2))
                 return true;
         }
@@ -524,10 +408,7 @@ public:
     //=============================================================================
     //! \brief  Détermine si la position est nulle
     //-----------------------------------------------------------------------------
-    [[nodiscard]] bool is_draw(int ply) const noexcept
-    {
-        return ((is_repetition(ply) || fiftymoves()));
-    }
+    [[nodiscard]] inline bool is_draw(int ply) const noexcept { return ((is_repetition(ply) || fiftymoves())); }
 
     //=============================================================================
     //! \brief  Met une pièce à la case indiquée
@@ -544,43 +425,50 @@ public:
     }
 
     bool test_mirror(const std::string &line);
+    template<Color C, bool divide> [[nodiscard]] std::uint64_t perft(const int depth) noexcept;
+    void test_value(const std::string& fen );
 
-//! \brief  Calcule la phase de la position sur 24 points.
-//! Cette phase dépend des pièces sur l'échiquier
-//! La phase va de 0 (EndGame) à 24 (MiddleGame), dans le cas où aucun pion n'a été promu.
-int  get_phase24();
 
-//! \brief Calcule la phase de la position sur 256 points.
-//! ceci pour avoir une meilleure granulométrie ?
-//! ouverture     : phase24 = 24 : phase256 = 256,5
-//! fin de partie :         =  0 :          = 0,5
-int get_phase256(int phase24) { return (phase24 * 256 + 12) / 24; }
+    //! \brief  Calcule la phase de la position sur 24 points.
+    //! Cette phase dépend des pièces sur l'échiquier
+    //! La phase va de 0 (EndGame) à 24 (MiddleGame), dans le cas où aucun pion n'a été promu.
+    int  get_phase24();
 
-template <Color US> int get_material();
+    //! \brief Calcule la phase de la position sur 256 points.
+    //! ceci pour avoir une meilleure granulométrie ?
+    //! ouverture     : phase24 = 24 : phase256 = 256,5
+    //! fin de partie :         =  0 :          = 0,5
+    int get_phase256(int phase24) { return (phase24 * 256 + 12) / 24; }
 
-//------------------------------------------------------------Syzygy
-void TBScore(const unsigned wdl, const unsigned dtz, int &score, int &bound) const;
-bool probe_wdl(int &score, int &bound, int ply) const;
-MOVE convertPyrrhicMove(unsigned result) const;
-bool probe_root(MOVE& move) const;
+    template <Color US> int get_material();
 
-//*************************************************************************
-//*************************************************************************
-//*************************************************************************
+    //===========================================================================
+    //  Syzygy
 
-//------------------------------------------------------- la position
-Bitboard colorPiecesBB[2] = {0ULL};     // bitboard des pièces pour chaque couleur
-Bitboard typePiecesBB[7]  = {0ULL};     // bitboard des pièces pour chaque type de pièce
-std::array<PieceType, 64> pieceOn;      // donne le type de la pièce occupant la case indiquée
-int x_king[2];                          // position des rois
-Bitboard checkers;                      // bitboard des pièces ennemies me donnant échec
-Bitboard pinned;                        // bitboard des pièces amies clouées
+    void TBScore(const unsigned wdl, const unsigned dtz, int &score, int &bound) const;
+    bool probe_wdl(int &score, int &bound, int ply) const;
+    MOVE convertPyrrhicMove(unsigned result) const;
+    bool probe_root(MOVE& move) const;
 
-Color side_to_move = Color::WHITE; // camp au trait
-int   ep_square    = NO_SQUARE;  // case en-passant : si les blancs jouent e2-e4, la case est e3
-U32   castling     = Castle::CASTLE_NONE; // droit au roque
+    //*************************************************************************
+    //*************************************************************************
+    //*************************************************************************
 
-/*
+    //===========================================================================
+    //  la position
+
+    Bitboard colorPiecesBB[2] = {0ULL};     // bitboard des pièces pour chaque couleur
+    Bitboard typePiecesBB[7]  = {0ULL};     // bitboard des pièces pour chaque type de pièce
+    std::array<PieceType, 64> pieceOn;      // donne le type de la pièce occupant la case indiquée
+    int x_king[2];                          // position des rois
+    // Bitboard checkers;                      // bitboard des pièces ennemies me donnant échec
+    // Bitboard pinned;                        // bitboard des pièces amies clouées
+
+    Color side_to_move = Color::WHITE; // camp au trait
+    // int   ep_square    = NO_SQUARE;  // case en-passant : si les blancs jouent e2-e4, la case est e3
+    // U32   castling     = Castle::CASTLE_NONE; // droit au roque
+
+    /*
      * The Halfmove Clock inside an chess position object takes care of enforcing the fifty-move rule.
      * This counter is reset after captures or pawn moves, and incremented otherwise.
      * Also moves which lose the castling rights, that is rook- and king moves from their initial squares,
@@ -590,95 +478,41 @@ U32   castling     = Castle::CASTLE_NONE; // droit au roque
      *
      */
 
-int halfmove_counter = 0; // nombre de demi-coups depuis la dernière capture ou le dernier mouvement de pion.
-int fullmove_counter = 1; // le nombre de coups complets. Il commence à 1 et est incrémenté de 1 après le coup des noirs.
-int gamemove_counter = 0; // nombre de demi-coups de la partie
+    // int halfmove_counter = 0; // nombre de demi-coups depuis la dernière capture ou le dernier mouvement de pion.
+    // int fullmove_counter = 1; // le nombre de coups complets. Il commence à 1 et est incrémenté de 1 après le coup des noirs.
+    // int gamemove_counter = 0; // nombre de demi-coups de la partie
 
-U64 hash           = 0ULL;  // nombre unique (?) correspondant à la position (clef Zobrist)
-U64 pawn_hash      = 0ULL;  // hash uniquement pour les pions
+    // U64 hash           = 0ULL;  // nombre unique (?) correspondant à la position (clef Zobrist)
+    // U64 pawn_hash      = 0ULL;  // hash uniquement pour les pions
 
-std::vector<std::string> best_moves;  // meilleur coup (pour les test tactique)
-std::vector<std::string> avoid_moves; // coup à éviter (pour les test tactique)
+    std::vector<std::string> best_moves;  // meilleur coup (pour les test tactique)
+    std::vector<std::string> avoid_moves; // coup à éviter (pour les test tactique)
 
-std::array<UndoInfo, MAX_HIST> game_history;
+
+    std::vector<Status> StatusHistory;
+
+    inline const Status& get_status() const { return StatusHistory.back(); }
+    inline Status& get_status() { return StatusHistory.back(); }
+
+    //==============================================
+    //  Status
+
+    [[nodiscard]] inline int get_halfmove_counter() const noexcept { return get_status().halfmove_counter; }
+    [[nodiscard]] inline int get_fullmove_counter() const noexcept { return get_status().fullmove_counter; }
+    [[nodiscard]] inline int get_ep_square()        const noexcept { return get_status().ep_square; }
+    [[nodiscard]] inline U64 get_hash()             const noexcept { return get_status().hash; }
+    [[nodiscard]] inline U64 get_pawn_hash()        const noexcept { return get_status().pawn_hash; }
+    [[nodiscard]] inline Bitboard get_checkers()    const noexcept { return get_status().checkers; }
+    [[nodiscard]] inline Bitboard get_pinned()      const noexcept { return get_status().pinned; }
 
 #if defined USE_NNUE
-NNUE nnue;
-inline void reserve_nnue_capacity() { nnue.reserve_nnue_capacity(); }  // la capacité ne passe pas avec la copie
+    NNUE nnue;
+    inline void reserve_nnue_capacity() { nnue.reserve_nnue_capacity(); }  // la capacité ne passe pas avec la copie
 #endif
 
 };  // class Board
 
 
-//================================================================================
-//! \brief  Affichage de l'échiquier
-//--------------------------------------------------------------------------------
-inline std::ostream &operator << (std::ostream &os, const Board &pos) noexcept
-{
-    int i = 56;
-    os << std::endl;
-
-    os << "  8 ";
-
-    while (i >= 0) {
-        const auto sq = i;
-        const auto bb = SQ::square_BB(sq);
-
-        if (pos.occupancy_cp<Color::WHITE, PAWN>() & bb) {
-            os << 'P';
-        } else if (pos.occupancy_cp<Color::WHITE, KNIGHT>() & bb) {
-            os << 'N';
-        } else if (pos.occupancy_cp<Color::WHITE, BISHOP>() & bb) {
-            os << 'B';
-        } else if (pos.occupancy_cp<Color::WHITE, ROOK>() & bb) {
-            os << 'R';
-        } else if (pos.occupancy_cp<Color::WHITE, QUEEN>() & bb) {
-            os << 'Q';
-        } else if (pos.occupancy_cp<Color::WHITE, KING>() & bb) {
-            os << 'K';
-        } else if (pos.occupancy_cp<Color::BLACK, PAWN>() & bb) {
-            os << 'p';
-        } else if (pos.occupancy_cp<Color::BLACK, KNIGHT>() & bb) {
-            os << 'n';
-        } else if (pos.occupancy_cp<Color::BLACK, BISHOP>() & bb) {
-            os << 'b';
-        } else if (pos.occupancy_cp<Color::BLACK, ROOK>() & bb) {
-            os << 'r';
-        } else if (pos.occupancy_cp<Color::BLACK, QUEEN>() & bb) {
-            os << 'q';
-        } else if (pos.occupancy_cp<Color::BLACK, KING>() & bb) {
-            os << 'k';
-        } else {
-            os << '.';
-        }
-        os << ' ';
-
-        if (i % 8 == 7) {
-            if (i / 8 != 0)
-                os << "\n  " << i / 8 << ' ';
-            i -= 16;
-        }
-
-        i++;
-    }
-    os << "\n    a b c d e f g h\n\n";
-
-    os << "Castling : ";
-    os << (pos.can_castle<WHITE, CastleSide::KING_SIDE>()  ? "K" : "");
-    os << (pos.can_castle<WHITE, CastleSide::QUEEN_SIDE>() ? "Q" : "");
-    os << (pos.can_castle<BLACK, CastleSide::KING_SIDE>()  ? "k" : "");
-    os << (pos.can_castle<BLACK, CastleSide::QUEEN_SIDE>() ? "q" : "");
-    os << '\n';
-    if (pos.ep() == NO_SQUARE) {
-        os << "EP       : -\n";
-    } else {
-        os << "EP       : " << pos.ep() << '\n';
-    }
-    os << "Turn     : " << (pos.turn() == Color::WHITE ? 'w' : 'b');
-
-    return os;
-
-}
 
 
 

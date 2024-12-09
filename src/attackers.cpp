@@ -5,7 +5,7 @@
 //! \brief  Calcule les pièces donnant échec, et les pièces clouées
 //---------------------------------------------------------------------------
 template <Color US>
-void Board::checkers_pinned() noexcept
+void Board::calculate_checkers_pinned() noexcept
 {
     constexpr Color THEM    = ~US;
     const int      K        = king_square<US>();
@@ -24,7 +24,7 @@ void Board::checkers_pinned() noexcept
     //Checkers of each piece type are identified by:
     //1. Projecting attacks FROM the king square
     //2. Intersecting this bitboard with the enemy bitboard of that piece type
-    checkers = (Attacks::knight_moves(K)     & occupancy_cp<THEM, KNIGHT>())
+    get_status().checkers = (Attacks::knight_moves(K)     & occupancy_cp<THEM, KNIGHT>())
              | (Attacks::pawn_attacks<US>(K) & occupancy_cp<THEM, PAWN>());
 
     //Here, we identify slider checkers and pinners simultaneously, and candidates for such pinners
@@ -32,7 +32,7 @@ void Board::checkers_pinned() noexcept
     Bitboard candidates = (Attacks::rook_moves(K, enemyBB)   & their_orth_sliders) |
                           (Attacks::bishop_moves(K, enemyBB) & their_diag_sliders);
 
-    pinned = 0ULL;
+    get_status().pinned = 0ULL;
     while (candidates)
     {
         s  = BB::pop_lsb(candidates);
@@ -41,11 +41,11 @@ void Board::checkers_pinned() noexcept
         //Do the squares in between the enemy slider and our king contain any of our pieces?
         //If not, add the slider to the checker bitboard
         if (b1 == 0)
-            checkers |= SQ::square_BB(s);
+            get_status().checkers |= SQ::square_BB(s);
 
         //If there is only one of our pieces between them, add our piece to the pinned bitboard
         else if ((b1 & (b1 - 1)) == 0)
-            pinned |= b1;
+            get_status().pinned |= b1;
     }
 }
 
@@ -123,8 +123,8 @@ template <Color C>
 template Bitboard Board::squares_attacked<WHITE>() const noexcept ;
 template Bitboard Board::squares_attacked<BLACK>() const noexcept ;
 
-template void Board::checkers_pinned<WHITE>() noexcept;
-template void Board::checkers_pinned<BLACK>() noexcept;
+template void Board::calculate_checkers_pinned<WHITE>() noexcept;
+template void Board::calculate_checkers_pinned<BLACK>() noexcept;
 
 template Bitboard Board::discoveredAttacks<WHITE>(const int sq) const noexcept;
 template Bitboard Board::discoveredAttacks<BLACK>(const int sq) const noexcept;

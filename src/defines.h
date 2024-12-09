@@ -32,9 +32,9 @@ using Score     = int;  // Valeur spéciale contenant à la fois mg et eg
 using TimePoint = std::chrono::high_resolution_clock;
 
 
-static constexpr int MAX_PLY    = 128;     // profondeur max de recherche (en demi-coups)
-static constexpr int MAX_HIST   = 800;     // longueur max de la partie (en demi-coups)
-static constexpr int MAX_MOVES  = 400;     // Number of moves in the candidate move array.
+static constexpr int MAX_PLY    =  128;     // profondeur max de recherche (en demi-coups)
+static constexpr int MAX_HISTO  = 1024;     // longueur max de l'historique (partie + recherche) (en demi-coups)
+static constexpr int MAX_MOVES  =  400;     // Number of moves in the candidate move array.
 static constexpr int MAX_TIME   = 60*60*1000;   // 1 heure en ms
 
 static constexpr int HASH_SIZE      = 128;      // en Mo , 128 ?

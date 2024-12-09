@@ -4,8 +4,6 @@
 
 // #define DEBUG_GEN
 
-#if defined GENERATE
-
 #include <string>
 #include "DataGen.h"
 #include "defines.h"
@@ -134,6 +132,9 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
         // search->reset();
         // clear history
         // board.nnue.reset();
+
+        //TODO clear StatusHistory ??
+
         board.set_fen(START_FEN, false); // sans NNUE
 
         /*  NewGame
@@ -472,4 +473,3 @@ template void DataGen::data_search<BLACK>(Board& board, Timer& timer,
                                           ThreadData* td,
                                           SearchInfo* si,
                                           MOVE& move, I32& score);
-#endif

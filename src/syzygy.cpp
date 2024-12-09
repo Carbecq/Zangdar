@@ -51,8 +51,8 @@ bool Board::probe_wdl(int& score, int& bound, int ply) const
     // if there are more pieces than we have TBs for.
 
     if (   ply == 0
-        || castling
-        || halfmove_counter
+        || get_status().castling
+        || get_status().halfmove_counter
         || BB::count_bit(occupancy_all()) > TB_LARGEST)
         return false;
 
@@ -69,7 +69,7 @@ bool Board::probe_wdl(int& score, int& bound, int ply) const
         occupancy_p<KING>(),   occupancy_p<QUEEN>(),
         occupancy_p<ROOK>(),   occupancy_p<BISHOP>(),
         occupancy_p<KNIGHT>(), occupancy_p<PAWN>(),
-        ep_square == NO_SQUARE ? 0 : ep_square,
+        get_status().ep_square == NO_SQUARE ? 0 : get_status().ep_square,
         turn() == WHITE ? 1 : 0);
 
     // Probe failed
@@ -93,7 +93,7 @@ bool Board::probe_root(MOVE& move) const
 {
     // We cannot probe when there are castling rights, or when
     // we have more pieces than our largest Tablebase has pieces
-    if (castling || BB::count_bit(occupancy_all()) > TB_LARGEST)
+    if (get_status().castling || BB::count_bit(occupancy_all()) > TB_LARGEST)
         return false;
 
     // Call Pyrrhic
@@ -102,8 +102,8 @@ bool Board::probe_root(MOVE& move) const
         occupancy_p<KING>(),   occupancy_p<QUEEN>(),
         occupancy_p<ROOK>(),   occupancy_p<BISHOP>(),
         occupancy_p<KNIGHT>(), occupancy_p<PAWN>(),
-        halfmove_counter,
-        ep_square == NO_SQUARE ? 0 : ep_square,
+        get_status().halfmove_counter,
+        get_status().ep_square == NO_SQUARE ? 0 : get_status().ep_square,
         turn() == WHITE ? 1 : 0,
         nullptr);
 
@@ -153,7 +153,7 @@ MOVE Board::convertPyrrhicMove(unsigned result) const
     if (ep == 0u && promo == 0u)
         return Move::CODE(from, to, pieceOn[from], pieceOn[to], NO_TYPE, Move::FLAG_NONE); // MoveMake(from, to, NORMAL_MOVE);
     else if (ep != 0u)
-        return Move::CODE(from, ep_square, PAWN, PAWN, NO_TYPE, Move::FLAG_ENPASSANT_MASK);
+        return Move::CODE(from, get_status().ep_square, PAWN, PAWN, NO_TYPE, Move::FLAG_ENPASSANT_MASK);
     else /* if (promo != 0u) */
     {
         PieceType p = static_cast<PieceType>(6-promo);

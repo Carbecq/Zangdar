@@ -31,8 +31,8 @@ void Board::legal_moves(MoveList& ml) noexcept
     //  algorithme de Surge
     //-----------------------------------------------------------------------------------------
 
-    const Bitboard checkersBB = checkers;
-    const Bitboard pinnedBB   = pinned;
+    const Bitboard checkersBB = get_status().checkers;
+    const Bitboard pinnedBB   = get_status().pinned;
     const Bitboard unpinnedBB = colorPiecesBB[C] & ~pinnedBB;
 
     //-----------------------------------------------------------------------------------------
@@ -200,11 +200,11 @@ void Board::legal_moves(MoveList& ml) noexcept
      */
     if constexpr (MGType & MoveGenType::NOISY)
     {
-        if (ep_square!=NO_SQUARE && (!checkersBB || x_checker == ep_square - pawn_push))
+        if (get_status().ep_square!=NO_SQUARE && (!checkersBB || x_checker == get_status().ep_square - pawn_push))
         {
             // file : a...h
 
-            to = ep_square;             // e3 = 20
+            to = get_status().ep_square;             // e3 = 20
             ep = to - pawn_push;        // 20 - (-8)  noirs = 28 = e4
             from = ep - 1;              // 28 - 1 = 27 = d4
 

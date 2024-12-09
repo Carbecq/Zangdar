@@ -161,6 +161,8 @@ bool Timer::check_limits(const int depth, const int index, const U64 total_nodes
             return(elapsedTime() >= timeForThisMove);
         }
     }
+
+    return false;
 }
 
 //===========================================================

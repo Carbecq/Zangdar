@@ -129,7 +129,7 @@ template <typename T>
 
 //==================================================
 
-enum Castle { CASTLE_NONE = 0, CASTLE_WK = 1, CASTLE_WQ = 2, CASTLE_BK = 4, CASTLE_BQ = 8 };
+enum CastleType { CASTLE_NONE = 0, CASTLE_WK = 1, CASTLE_WQ = 2, CASTLE_BK = 4, CASTLE_BQ = 8 };
 
 enum CastleSide {
     KING_SIDE,

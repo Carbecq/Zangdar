@@ -20,13 +20,14 @@ constexpr U32 castle_mask[64] = {
     15, 15, 15, 15, 15, 15, 15, 15,
     15, 15, 15, 15, 15, 15, 15, 15,
     15, 15, 15, 15, 15, 15, 15, 15,
-    7, 15, 15, 15,  3, 15, 15, 11
+     7, 15, 15, 15,  3, 15, 15, 11
 };
 
 
 template <Color C> void Board::make_move(const MOVE move) noexcept
 {
     constexpr Color Them     = ~C;
+
     const auto dest     = Move::dest(move);
     const auto from     = Move::from(move);
     const auto piece    = Move::piece(move);
@@ -34,11 +35,12 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
     const auto promo    = Move::promotion(move);
 #ifndef NDEBUG
     // on ne passe ici qu'en debug
-    const auto ep_old   = ep_square;
+    const auto ep_old   = get_ep_square();
 #endif
 
+    // std::cout << display() << std::endl << std::endl;
     //    printf("move  = (%s) \n", Move::name(move).c_str());
-    //    binary_print(move);
+    //    // binary_print(move);
     //    printf("side  = %s \n", side_name[C].c_str());
     //    printf("from  = %s \n", square_name[from].c_str());
     //    printf("dest  = %s \n", square_name[dest].c_str());
@@ -59,42 +61,39 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
     nnue.push();    // nouveau accumulateur
 #endif
 
-    // Sauvegarde des caractéristiques de la position
-    game_history[gamemove_counter] = UndoInfo{hash, pawn_hash, move, ep_square, halfmove_counter, castling, checkers, pinned} ;
+    Status& previousStatus = get_status();
 
-// La prise en passant n'est valable que tout de suite
-// Il faut donc la supprimer
-#if defined USE_HASH
-    if (ep_square != NO_SQUARE) {
-        hash ^= ep_key[ep_square];
-    }
-#endif
+    StatusHistory.template emplace_back(Status{
+                                               previousStatus.hash,                                     // zobrist will be changed later
+                                               previousStatus.pawn_hash,
+                                               move,
+                                               NO_SQUARE,                                                  // reset en passant. might be set later
+                                               previousStatus.castling,                                    // copy meta. might be changed
+                                               previousStatus.halfmove_counter + 1,                        // increment fifty move counter. might be reset
+                                               previousStatus.fullmove_counter + (C == Color::BLACK),      // increment move counter
+                                               // 0,                                                          // set rep to 1 (no rep)
+                                               0ULL,
+                                               0ULL });
 
-    // Remove ep
-    ep_square = NO_SQUARE;
+    Status& newStatus = StatusHistory.back();
+
+    // La prise en passant n'est valable que tout de suite
+    // Il faut donc la supprimer
+    if (previousStatus.ep_square != NO_SQUARE)
+        newStatus.hash ^= ep_key[previousStatus.ep_square];
 
     // Déplacement du roi
     if (piece == KING)
         x_king[C] = dest;
 
-// Droit au roque, remove ancient value
-#if defined USE_HASH
-    hash ^= castle_key[castling];
-#endif
+    // Droit au roque, remove ancient value
+    newStatus.hash ^= castle_key[previousStatus.castling];
 
     // Castling permissions
-    castling = castling & castle_mask[from] & castle_mask[dest];
+    newStatus.castling = previousStatus.castling & castle_mask[from] & castle_mask[dest];
 
-// Droit au roque; add new value
-#if defined USE_HASH
-    hash ^= castle_key[castling];
-#endif
-
-    // Increment halfmove clock
-    halfmove_counter++;
-
-    // Fullmoves
-    fullmove_counter += (C == Color::BLACK);
+    // Droit au roque; add new value
+    newStatus.hash ^= castle_key[newStatus.castling];
 
     //====================================================================================
     //  Coup normal (pas spécial)
@@ -119,16 +118,12 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
             nnue.update_feature<false>(C, piece, from);     // remove piece
             nnue.update_feature<true>(C, piece, dest);      // add piece
 #endif
-#if defined USE_HASH
-            hash ^= piece_key[C][piece][from] ^ piece_key[C][piece][dest];
-#endif
+            newStatus.hash ^= piece_key[C][piece][from] ^ piece_key[C][piece][dest];
 
             if (piece == PAWN)
             {
-                halfmove_counter = 0;
-#if defined USE_HASH
-                pawn_hash ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
-#endif
+                newStatus.halfmove_counter = 0;
+                newStatus.pawn_hash ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
             }
         }
 
@@ -168,15 +163,12 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
                 nnue.update_feature<false>(~C, captured, dest);     // remove captured
                 nnue.update_feature<true>(C, promo, dest);          // add promoted
 #endif
-#if defined USE_HASH
-                hash ^= piece_key[C][piece][from];
-                hash ^= piece_key[C][promo][dest];
-                hash ^= piece_key[Them][captured][dest];
+                newStatus.hash ^= piece_key[C][piece][from];
+                newStatus.hash ^= piece_key[C][promo][dest];
+                newStatus.hash ^= piece_key[Them][captured][dest];
 
-                pawn_hash ^= piece_key[C][PAWN][from];
-#endif
-
-                halfmove_counter = 0;
+                newStatus.pawn_hash ^= piece_key[C][PAWN][from];
+                newStatus.halfmove_counter = 0;
             }
 
             //====================================================================================
@@ -201,17 +193,15 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
                 nnue.update_feature<true>(C, piece, dest);
                 nnue.update_feature<false>(~C, captured, dest);
 #endif
-#if defined USE_HASH
-                hash ^= piece_key[C][piece][from] ^ piece_key[C][piece][dest];
-                hash ^= piece_key[Them][captured][dest];
+                newStatus.hash ^= piece_key[C][piece][from] ^ piece_key[C][piece][dest];
+                newStatus.hash ^= piece_key[Them][captured][dest];
 
                 if (piece == PAWN)
-                    pawn_hash ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
+                    newStatus.pawn_hash ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
                 if (captured == PAWN)
-                    pawn_hash ^= piece_key[Them][PAWN][dest];
-#endif
-                halfmove_counter = 0;
-             }
+                    newStatus.pawn_hash ^= piece_key[Them][PAWN][dest];
+                newStatus.halfmove_counter = 0;
+            }
         }
 
         //====================================================================================
@@ -241,14 +231,10 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
             nnue.update_feature<false>(C, PAWN, from);
             nnue.update_feature<true>(C, promo, dest);
 #endif
-#if defined USE_HASH
-            hash ^= piece_key[C][piece][from];
-            hash ^= piece_key[C][promo][dest];
-
-            pawn_hash ^= piece_key[C][PAWN][from];
-#endif
-
-            halfmove_counter = 0;
+            newStatus.hash ^= piece_key[C][piece][from];
+            newStatus.hash ^= piece_key[C][promo][dest];
+            newStatus.pawn_hash ^= piece_key[C][PAWN][from];
+            newStatus.halfmove_counter = 0;
         }
     }
 
@@ -279,17 +265,11 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
             nnue.update_feature<false>(C, PAWN, from);
             nnue.update_feature<true>(C, PAWN, dest);
 #endif
-#if defined USE_HASH
-            hash      ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
-            pawn_hash ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
-#endif
-
-            halfmove_counter = 0;
-            ep_square = (C == Color::WHITE) ? SQ::south(dest) : SQ::north(dest);
-
-#if defined USE_HASH
-            hash ^= ep_key[ep_square];
-#endif
+            newStatus.hash      ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
+            newStatus.pawn_hash ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
+            newStatus.halfmove_counter = 0;
+            newStatus.ep_square = (C == Color::WHITE) ? SQ::south(dest) : SQ::north(dest);
+            newStatus.hash ^= ep_key[newStatus.ep_square];
         }
 
         //====================================================================================
@@ -315,11 +295,9 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
             nnue.update_feature<false>(C, PAWN, from);
             nnue.update_feature<true>(C, PAWN, dest);
 #endif
-#if defined USE_HASH
-            hash      ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
-            pawn_hash ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
-#endif
-            halfmove_counter = 0;
+            newStatus.hash      ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
+            newStatus.pawn_hash ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
+            newStatus.halfmove_counter = 0;
 
             // Remove the captured pawn
             if (C == Color::WHITE)
@@ -331,10 +309,8 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
 #if defined USE_NNUE
                 nnue.update_feature<false>(~C, PAWN, SQ::south(dest));
 #endif
-#if defined USE_HASH
-                hash      ^= piece_key[Them][PAWN][SQ::south(dest)];
-                pawn_hash ^= piece_key[Them][PAWN][SQ::south(dest)];
-#endif
+                newStatus.hash      ^= piece_key[Them][PAWN][SQ::south(dest)];
+                newStatus.pawn_hash ^= piece_key[Them][PAWN][SQ::south(dest)];
             }
             else
             {
@@ -345,10 +321,8 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
 #if defined USE_NNUE
                 nnue.update_feature<false>(~C, PAWN, SQ::north(dest));
 #endif
-#if defined USE_HASH
-                hash      ^= piece_key[Them][PAWN][SQ::north(dest)];
-                pawn_hash ^= piece_key[Them][PAWN][SQ::north(dest)];
-#endif
+                newStatus.hash      ^= piece_key[Them][PAWN][SQ::north(dest)];
+                newStatus.pawn_hash ^= piece_key[Them][PAWN][SQ::north(dest)];
             }
         }
 
@@ -383,10 +357,9 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
                 nnue.update_feature<false>(C, piece, from);
                 nnue.update_feature<true>(C, piece, dest);
 #endif
-#if defined USE_HASH
-                hash ^= piece_key[C][piece][from];
-                hash ^= piece_key[C][piece][dest];
-#endif
+                newStatus.hash ^= piece_key[C][piece][from];
+                newStatus.hash ^= piece_key[C][piece][dest];
+
                 // Move the Rook
                 if constexpr (C == WHITE)
                 {
@@ -401,10 +374,8 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
                     nnue.update_feature<false>(C, ROOK, H1);     // remove piece
                     nnue.update_feature<true>(C, ROOK, F1);    // add piece
 #endif
-#if defined USE_HASH
-                    hash ^= piece_key[C][ROOK][H1];
-                    hash ^= piece_key[C][ROOK][F1];
-#endif
+                    newStatus.hash ^= piece_key[C][ROOK][H1];
+                    newStatus.hash ^= piece_key[C][ROOK][F1];
                 }
                 else
                 {
@@ -419,10 +390,8 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
                     nnue.update_feature<false>(C, ROOK, H8);     // remove piece
                     nnue.update_feature<true>(C, ROOK,  F8);    // add piece
 #endif
-#if defined USE_HASH
-                    hash ^= piece_key[C][ROOK][H8];
-                    hash ^= piece_key[C][ROOK][F8];
-#endif
+                    newStatus.hash ^= piece_key[C][ROOK][H8];
+                    newStatus.hash ^= piece_key[C][ROOK][F8];
                 }
             }
 
@@ -446,10 +415,8 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
                 nnue.update_feature<false>(C, piece, from);
                 nnue.update_feature<true>(C, piece, dest);
 #endif
-#if defined USE_HASH
-                hash ^= piece_key[C][piece][from];
-                hash ^= piece_key[C][piece][dest];
-#endif
+                newStatus.hash ^= piece_key[C][piece][from];
+                newStatus.hash ^= piece_key[C][piece][dest];
 
                 // Move the Rook
                 if constexpr (C == WHITE)
@@ -465,10 +432,8 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
                     nnue.update_feature<false>(C, ROOK, A1);
                     nnue.update_feature<true>(C, ROOK, D1);
 #endif
-#if defined USE_HASH
-                    hash ^= piece_key[C][ROOK][A1];
-                    hash ^= piece_key[C][ROOK][D1];
-#endif
+                    newStatus.hash ^= piece_key[C][ROOK][A1];
+                    newStatus.hash ^= piece_key[C][ROOK][D1];
                 }
                 else
                 {
@@ -483,10 +448,8 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
                     nnue.update_feature<false>(C, ROOK, A8);
                     nnue.update_feature<true>(C, ROOK,  D8);
 #endif
-#if defined USE_HASH
-                    hash ^= piece_key[C][ROOK][A8];
-                    hash ^= piece_key[C][ROOK][D8];
-#endif
+                    newStatus.hash ^= piece_key[C][ROOK][A8];
+                    newStatus.hash ^= piece_key[C][ROOK][D8];
                 }
             }
         } // Roques
@@ -495,30 +458,29 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
     // Swap sides
     side_to_move = ~side_to_move;
 
-    gamemove_counter++;
+    // Calcul du nombre de répétitions
+     // calculate_repetitions();
 
     // pièces donnant échec, pièces clouées
-    // attention : on a chabgé de camp !!!
-    checkers_pinned<~C>();
+    // attention : on a changé de camp !!!
+    calculate_checkers_pinned<~C>();
 
-#if defined USE_HASH
-    hash ^= side_key;
+    newStatus.hash ^= side_key;
 
 #if defined DEBUG_HASH
     U64 hash_1, hash_2;
     calculate_hash(hash_1, hash_2);
 
-    if (hash_1 != hash)
+    if (hash_1 != get_status().hash)
     {
-        std::cout << Move::name(move) << "  : hash pb : hash = " << hash << " ; calc = " << hash_1 << std::endl;
+        std::cout << Move::name(move) << "  : hash pb : hash = " << get_status().hash << " ; calc = " << hash_1 << std::endl;
         std::cout << display() << std::endl << std::endl;
     }
-    if (hash_2 != pawn_hash)
+    if (hash_2 != get_status().pawn_hash)
     {
-        std::cout << Move::name(move) << "  : pawn_hash pb : pawn_hash = " << pawn_hash << " ; calc = " << hash_2 << std::endl;
+        std::cout << Move::name(move) << "  : pawn_hash pb : pawn_hash = " << get_status().pawn_hash << " ; calc = " << hash_2 << std::endl;
         std::cout << display() << std::endl << std::endl;
     }
-#endif
 #endif
 
 
@@ -535,41 +497,38 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
 //-----------------------------------------------------------------------
 template <Color C> void Board::make_nullmove() noexcept
 {
-    // Sauvegarde des caractéristiques de la position
-    game_history[gamemove_counter] = UndoInfo{hash, pawn_hash, Move::MOVE_NULL, ep_square, halfmove_counter, castling, checkers, pinned};
-
-// La prise en passant n'est valable que tout de suite
-// Il faut donc la supprimer
-#if defined USE_HASH
-    if (ep_square != NO_SQUARE) {
-        hash ^= ep_key[ep_square];
-    }
+#if defined USE_NNUE
+    nnue.push();    // nouveau accumulateur TODO : à faire ?
 #endif
 
-    // Remove ep
-    ep_square = NO_SQUARE;
+    Status& previousStatus = get_status();
 
-    // Increment halfmove clock
-    halfmove_counter++;
+    StatusHistory.template emplace_back(Status{
+                                               previousStatus.hash ^ side_key,                             // zobrist will be changed later
+                                               previousStatus.pawn_hash,
+                                               Move::MOVE_NULL,
+                                               NO_SQUARE,                                                  // reset en passant. might be set later
+                                               previousStatus.castling,                                    // copy meta. might be changed
+                                               previousStatus.halfmove_counter + 1,                        // increment fifty move counter. might be reset
+                                               previousStatus.fullmove_counter + (C == Color::BLACK),      // increment move counter
+                                               // 0,                                                          // set rep to 1 (no rep)
+                                               0ULL,
+                                               0ULL });
 
-    // Fullmoves
-    fullmove_counter += (C == Color::BLACK);
+    Status& newStatus = StatusHistory.back();
+
+    // La prise en passant n'est valable que tout de suite
+    // Il faut donc la supprimer
+    if (previousStatus.ep_square != NO_SQUARE)
+        newStatus.hash ^= ep_key[previousStatus.ep_square];
 
     // Swap sides
     side_to_move = ~side_to_move;
 
-    gamemove_counter++;
+    //TODO : repetitions ???
 
-    // Null move cannot gives check
-    //TODO à améliorer
-    // attention : on a chabgé de camp !!!
-    checkers_pinned<~C>();
-    // checkers = 0ULL;
-    // pinned = ??
-
-#if defined USE_HASH
-    hash ^= side_key;
-#endif
+    // attention : on a changé de camp !!!
+    calculate_checkers_pinned<~C>();
 
 #ifndef NDEBUG
     // on ne passe ici qu'en debug

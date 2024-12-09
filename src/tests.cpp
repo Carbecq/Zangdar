@@ -97,7 +97,6 @@ void test_suite(const std::string& abc, int dmax)
 
         fen    = liste1.at(0);                  // position fen
 
-        CB->set_fen(fen, false);
         // int sc = CB->evaluate();
         // printf("%d\n", sc);
 
@@ -107,6 +106,7 @@ void test_suite(const std::string& abc, int dmax)
         // boucle sur les profondeurs de test
         for (int i=1; i<=nbr_prof; i++)
         {
+            CB->clear();
             CB->set_fen(fen, false);
 
             aux     = liste1.at(i);                     // "D1 20"
@@ -151,7 +151,7 @@ void test_suite(const std::string& abc, int dmax)
                     std::cout << line << std::endl;
                     Board board(fen);
                     failed_tests++;
-                    std::cout << board << std::endl;
+                    std::cout << board.display() << std::endl;
                     return;
                 }
             }
@@ -327,10 +327,10 @@ bool Board::test_mirror(const std::string& line)
 //    std::cout << "********************************************************" << std::endl;
 //    std::cout << line << std::endl;
 
+    clear();
     set_fen(line, true);
 
 //    std::cout << display() << std::endl;
-#if !defined GENERATE
 
     ev1 = evaluate();
 //    std::cout << "side = " << side_to_move << " : ev1 = " << ev1 << std::endl;
@@ -354,7 +354,6 @@ bool Board::test_mirror(const std::string& line)
         std::cout << "ev1 = " << ev1 << " ; ev2 = " << ev2 << std::endl;
         r = false;
     }
-#endif
 
     return(r);
 }
@@ -365,19 +364,19 @@ bool Board::test_mirror(const std::string& line)
 //------------------------------------------------------
 void Board::test_value(const std::string& fen )
 {
+    clear();
     set_fen(fen, false);
     std::cout << display() << std::endl;
 
     MoveList ml;
-    U32 move;
 
-#if !defined GENERATE
     printf("side = %s : evaluation = %d \n", side_name[side_to_move].c_str(), evaluate());
-#endif
-    BB::PrintBB(checkers, "checkers");
-    BB::PrintBB(pinned, "pinned");
+    BB::PrintBB(get_status().checkers, "checkers");
+    BB::PrintBB(get_status().pinned, "pinned");
 
 #if 0
+    U32 move;
+
     // generate successor moves
    legal_moves<WHITE>(ml);
    sort_moves(ml);
@@ -530,6 +529,7 @@ void test_see()
         strm  = aux.substr(1, aux.size());
         score = std::stoi(liste1[2]);
 
+        board.clear();
         board.set_fen(fen, false);
 
         if (board.turn() == WHITE)

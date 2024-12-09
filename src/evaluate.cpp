@@ -105,7 +105,7 @@ Score Board::probe_pawn_cache(EvalInfo& ei)
     Bitboard passed_pawns;
 
     // Recherche de la position des pions dans le cache
-    if (transpositionTable.probe_pawn_table(pawn_hash, eval, passed_pawns) == true)
+    if (transpositionTable.probe_pawn_table(get_pawn_hash(), eval, passed_pawns) == true)
     {
         // La table de pions contient la position,
         // On récupère l'évaluation de la table
@@ -116,7 +116,7 @@ Score Board::probe_pawn_cache(EvalInfo& ei)
         // La table de pions ne contient pas la position,
         // on calcule l'évaluation, et on la stocke
         eval = evaluate_pawns<WHITE>(ei) - evaluate_pawns<BLACK>(ei);
-        transpositionTable.store_pawn_table(pawn_hash, eval, ei.passedPawns);
+        transpositionTable.store_pawn_table(get_pawn_hash(), eval, ei.passedPawns);
     }
 
     return eval;
@@ -1015,12 +1015,12 @@ Score Board::evaluate_threats(const EvalInfo& ei)
     pawnPushAttacks         &= nonPawnEnemies;
 
     eval += BB::count_bit(pawnPushAttacks)          * PawnPushThreat
-            + BB::count_bit(pawnPushAttacks & pinned) * PawnPushPinnedThreat;
+            + BB::count_bit(pawnPushAttacks & get_pinned()) * PawnPushPinnedThreat;
 
 #if defined USE_TUNER
     ownTuner.Trace.PawnThreat[US]            += BB::count_bit(pawnThreats);
     ownTuner.Trace.PawnPushThreat[US]        += BB::count_bit(pawnPushAttacks) ;
-    ownTuner.Trace.PawnPushPinnedThreat[US]  += BB::count_bit(pawnPushAttacks & pinned);
+    ownTuner.Trace.PawnPushPinnedThreat[US]  += BB::count_bit(pawnPushAttacks & get_pinned());
 #endif
 
     // Attaque de la dame ennemie

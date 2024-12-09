@@ -13,43 +13,21 @@ template <Color C> void Board::undo_move() noexcept
     nnue.pop(); // retourne a l'accumulateur précédent
 #endif
 
+    const MOVE move = get_status().move;
+
     // Swap sides
     side_to_move = ~side_to_move;
 
-    gamemove_counter--;
-    
-    const auto &move    = game_history[gamemove_counter].move;
+    // const auto &move    = BoardStatusHistory[gamemove_counter].move;
     const auto dest     = Move::dest(move);
     const auto from     = Move::from(move);
     const auto piece    = Move::piece(move);
     const auto captured = Move::captured(move);
     const auto promo    = Move::promotion(move);
 
-    // En passant
-    // back : Returns a reference to the last element in the vector.
-    ep_square = game_history[gamemove_counter].ep_square;
-
-    // Halfmoves
-    halfmove_counter = game_history[gamemove_counter].halfmove_counter;
-
-    // Fullmoves
-    fullmove_counter -= (C == Color::BLACK);
-
     // Déplacement du roi
     if (piece == KING)
         x_king[C] = from;
-
-    // Pièces donnant échec
-    checkers = game_history[gamemove_counter].checkers;
-    pinned   = game_history[gamemove_counter].pinned;
-
-    // Castling
-    castling = game_history[gamemove_counter].castling;
-
-#if defined USE_HASH
-    hash      = game_history[gamemove_counter].hash;
-    pawn_hash = game_history[gamemove_counter].pawn_hash;
-#endif
 
     // Remove piece
     BB::toggle_bit(colorPiecesBB[C],    dest);
@@ -64,7 +42,6 @@ template <Color C> void Board::undo_move() noexcept
     //------------------------------------------------------------------------------------
     if (Move::flags(move) == Move::FLAG_NONE)
     {
-
         //====================================================================================
         //  Déplacement simple
         //------------------------------------------------------------------------------------
@@ -223,54 +200,34 @@ template <Color C> void Board::undo_move() noexcept
         }
     }
 
-#ifndef NDEBUG
-        // on ne passe ici qu'en debug
-        valid();
-#endif
-    }
-
-    //===================================================================
-    //! \brief  Enlève un NullMove
-    //-------------------------------------------------------------------
-    template <Color C> void Board::undo_nullmove() noexcept
-    {
-        // Swap sides
-        side_to_move = ~side_to_move;
-
-        gamemove_counter--;
-
-        // En passant
-        ep_square = game_history[gamemove_counter].ep_square;
-
-        // Halfmoves
-        halfmove_counter = game_history[gamemove_counter].halfmove_counter;
-
-        // Fullmoves
-        fullmove_counter -= (C == Color::BLACK);
-
-        // Castling
-        castling = game_history[gamemove_counter].castling;
-
-#if defined USE_HASH
-        hash      = game_history[gamemove_counter].hash;
-        pawn_hash = game_history[gamemove_counter].pawn_hash;
-#endif
-
-        checkers = game_history[gamemove_counter].checkers;
-        pinned   = game_history[gamemove_counter].pinned;
+    StatusHistory.pop_back();
 
 #ifndef NDEBUG
-        // on ne passe ici qu'en debug
-        valid();
+    // on ne passe ici qu'en debug
+    valid();
 #endif
-    }
+}
+
+//===================================================================
+//! \brief  Enlève un NullMove
+//-------------------------------------------------------------------
+template <Color C> void Board::undo_nullmove() noexcept
+{
+    StatusHistory.pop_back();       // supprime le dernier status
+    side_to_move = ~side_to_move;   // Change de camp
+
+#ifndef NDEBUG
+    // on ne passe ici qu'en debug
+    valid();
+#endif
+}
 
 
 
-    // Explicit instantiations.
+// Explicit instantiations.
 
-    template void Board::undo_move<WHITE>() noexcept ;
-    template void Board::undo_move<BLACK>() noexcept ;
+template void Board::undo_move<WHITE>() noexcept ;
+template void Board::undo_move<BLACK>() noexcept ;
 
-    template void Board::undo_nullmove<WHITE>() noexcept ;
-    template void Board::undo_nullmove<BLACK>() noexcept ;
+template void Board::undo_nullmove<WHITE>() noexcept ;
+template void Board::undo_nullmove<BLACK>() noexcept ;

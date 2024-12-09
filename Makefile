@@ -9,9 +9,6 @@ SRC = src/*.cpp src/pyrrhic/*.cpp
 CPP_FILES=$(shell find $(SRC1) -name "*.cpp") $(shell find $(SRC2) -name "*.cpp")
 OBJ = $(patsubst %.cpp, %.o, $(CPP_FILES))
 
-FILE    := VERSION.txt
-VERSION := $(file < $(FILE))
-
 ### ==========================================================================
 ### Section 1. General Configuration (Stockfish)
 ### ==========================================================================
@@ -34,14 +31,14 @@ endif
 #   Defines divers
 #---------------------------------------------------------------------
 
+FILE    := VERSION.txt
+VERSION := $(file < $(FILE))
+
 # needed only for tests
 # just comment it if you want
 HOME = \"/mnt/Datas/Echecs/Programmation/Zangdar/\"
 #HOME = \"./\"
 DEFS = -DHOME=$(HOME)
-
-#  Désactiver USE_HASH pour la mesure de performances brutes
-DEFS += -DUSE_HASH
 
 #  Quelques defines utilisés en debug
 # DEFS += -DDEBUG_EVAL
@@ -70,13 +67,6 @@ ifeq ($(USE_NNUE),yes)
 else
     EXT = HCE
 endif
-
-
-#---------------------------------------------------
-#  Génération des fens
-#---------------------------------------------------
-
-#DEFS += -DGENERATE
 
 #---------------------------------------------------------------------
 #   Architecture
@@ -191,7 +181,7 @@ CFLAGS_WARN2 = -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmiss
 CFLAGS_WARN3 = -Wnoexcept -Woverloaded-virtual -Wredundant-decls -Wshadow 
 CFLAGS_WARN4 = -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5 
 CFLAGS_WARN5 = -Wswitch-default -Wundef -Wuninitialized -Wfloat-equal -Wbidi-chars -Warray-compare -Wattributes -Waddress
-CFLAGS_WARN6 = -Weffc++ -Winline -Warray-bounds=2
+CFLAGS_WARN6 = -Weffc++ -Warray-bounds=2
 
 PGO_GEN   = -fprofile-generate
 PGO_USE   = -fprofile-use

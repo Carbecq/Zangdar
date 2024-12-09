@@ -6,26 +6,25 @@ bool Board::valid() const noexcept
 {
 //    std::cout << "valid debut" << std::endl;
 
-#if defined USE_HASH
     U64 hash_1, hash_2;
     calculate_hash(hash_1, hash_2);
-    if (hash != hash_1)
+    if (get_status().hash != hash_1)
     {
         std::cout << "erreur hash 1" << std::endl;
         return false;
     }
-    if (pawn_hash != hash_2)
+    if (get_status().pawn_hash != hash_2)
     {
-        std::cout << "erreur hash 2 : " << pawn_hash << "  " << hash_2 << std::endl;
+        std::cout << "erreur hash 2 : " << get_status().pawn_hash << "  " << hash_2 << std::endl;
         return false;
     }
-#endif
-    if (ep() != NO_SQUARE) {
-        if (turn() == Color::WHITE && SQ::rank(ep()) != 5) {
+
+    if (get_ep_square() != NO_SQUARE) {
+        if (turn() == Color::WHITE && SQ::rank(get_ep_square()) != 5) {
             std::cout << "erreur 1" << std::endl;
             return false;
         }
-        if (turn() == Color::BLACK && SQ::rank(ep()) != 2) {
+        if (turn() == Color::BLACK && SQ::rank(get_ep_square()) != 2) {
             std::cout << "erreur 2" << std::endl;
             return false;
         }

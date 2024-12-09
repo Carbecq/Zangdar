@@ -56,9 +56,13 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
     //-------------------------------------
 
     // Reset the board
-    clear();
     avoid_moves.clear();
     best_moves.clear();
+
+    // ajout d'un élément
+    // il ne faut pas re-initialiser StatusHistory
+    // car il contient les coups provenant de "uci position"
+    StatusHistory.push_back(Status{});
 
     //-------------------------------------
     std::stringstream ss{fen};
@@ -154,16 +158,16 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
         switch(*it)
         {
         case 'K':
-            castling |= CASTLE_WK;
+            get_status().castling |= CASTLE_WK;
             break;
         case 'Q':
-            castling |= CASTLE_WQ;
+            get_status().castling |= CASTLE_WQ;
             break;
         case 'k':
-            castling |= CASTLE_BK;
+            get_status().castling |= CASTLE_BK;
             break;
         case 'q':
-            castling |= CASTLE_BQ;
+            get_status().castling |= CASTLE_BQ;
             break;
         case '-':
             break;
@@ -183,7 +187,7 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
         char rank = ep.at(1);
         int s = (rank - '1') * 8 + file - 'a';
         assert(s>=A1 && s<=H8);
-        ep_square = s;
+        get_status().ep_square = s;
     }
 
     //-----------------------------------------
@@ -283,28 +287,27 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
         // Halfmove clock
         // The halfmove clock specifies a decimal number of half moves with respect to the 50 move draw rule.
         // It is reset to zero after a capture or a pawn move and incremented otherwise.
-        ss >> halfmove_counter;
+        ss >> get_status().halfmove_counter;
 
         // Fullmove clock
         // The number of the full moves in a game. It starts at 1, and is incremented after each Black's move.
-        ss >> fullmove_counter;
+        ss >> get_status().fullmove_counter;
 
         // Move count: ignore and use zero, as we count since root
-        gamemove_counter = 0;
     }
 
 //-----------------------------------------
 
     // pièces attaquant le roi
-    (side_to_move == WHITE) ? checkers_pinned<WHITE>() : checkers_pinned<BLACK>();
+    (side_to_move == WHITE) ? calculate_checkers_pinned<WHITE>() : calculate_checkers_pinned<BLACK>();
 
-// Calculate hash
-#if defined USE_HASH
-    calculate_hash(hash, pawn_hash);
-#endif
+    // Calculate hash
+    U64 khash, phash;
+    calculate_hash(khash, phash);
+    get_status().hash = khash;
+    get_status().pawn_hash = phash;
 
     //   std::cout << display() << std::endl;
-
     assert(valid());
 }
 
@@ -316,6 +319,16 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
 {
     assert(fen.length() > 0);
 
+    if (fen == "startpos")
+    {
+        mirror_fen(START_FEN, logTactics);
+        return;
+    }
+
+#if defined USE_NNUE
+    nnue.reset();
+#endif
+
     // est-ce une notation FEN ou EPD ?
     bool epd = false;
     std::size_t found = fen.find(';');
@@ -325,9 +338,11 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     //-------------------------------------
 
     // Reset the board
-    clear();
     avoid_moves.clear();
     best_moves.clear();
+
+    // ajout d'un élément
+    StatusHistory.push_back(Status{});
 
     //-------------------------------------
 
@@ -426,16 +441,16 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
         switch(*it)
         {
         case 'K':
-            castling |= CASTLE_BK;
+            get_status().castling |= CASTLE_BK;
             break;
         case 'Q':
-            castling |= CASTLE_BQ;
+            get_status().castling |= CASTLE_BQ;
             break;
         case 'k':
-            castling |= CASTLE_WK;
+            get_status().castling |= CASTLE_WK;
             break;
         case 'q':
-            castling |= CASTLE_WQ;
+            get_status().castling |= CASTLE_WQ;
             break;
         case '-':
             break;
@@ -455,7 +470,7 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
         char rank = ep.at(1);
         int s = (rank - '1') * 8 + file - 'a';
         assert(s>=A1 && s<=H8);
-        ep_square = SQ::flip_square(s);
+        get_status().ep_square = SQ::flip_square(s);
     }
 
     //-----------------------------------------
@@ -527,28 +542,28 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
         // Halfmove clock
         // The halfmove clock specifies a decimal number of half moves with respect to the 50 move draw rule.
         // It is reset to zero after a capture or a pawn move and incremented otherwise.
-        ss >> halfmove_counter;
+        ss >> get_status().halfmove_counter;
 
         // Fullmove clock
         // The number of the full moves in a game. It starts at 1, and is incremented after each Black's move.
-        ss >> fullmove_counter;
+        ss >> get_status().fullmove_counter;
 
         // Move count: ignore and use zero, as we count since root
-        gamemove_counter = 0;
+        // get_status().gamemove_counter = 0;
     }
 
 //-----------------------------------------
 
     // pièces attaquant le roi
-    (side_to_move == WHITE) ? checkers_pinned<WHITE>() : checkers_pinned<BLACK>();
+    (side_to_move == WHITE) ? calculate_checkers_pinned<WHITE>() : calculate_checkers_pinned<BLACK>();
 
-// Calculate hash
-#if defined USE_HASH
-    calculate_hash(hash, pawn_hash);
-#endif
+    // Calculate hash
+    U64 khash, phash;
+    calculate_hash(khash, phash);
+    get_status().hash = khash;
+    get_status().pawn_hash = phash;
 
     //   std::cout << display() << std::endl;
-
     assert(valid());
 }
 
@@ -615,10 +630,10 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     //------------------------------------------------------- en-passant
 
     fen += " ";
-    if (ep_square == NO_SQUARE)
+    if (get_status().ep_square == NO_SQUARE)
         fen += "-";
     else
-        fen += square_name[ep_square];
+        fen += square_name[get_status().ep_square];
 
     //------------------------------------------------------- half-move
 
@@ -670,13 +685,6 @@ void Board::parse_position(std::istringstream &is)
             apply_token<WHITE>(token);
         else
             apply_token<BLACK>(token);
-
-        // Reset move history whenever we reset the fifty move rule. This way
-        // we can track all positions that are candidates for repetitions, and
-        // are still able to use a fixed size for the history array (512)
-        if (halfmove_counter == 0)
-            gamemove_counter = 0;
-
     }
 
 }
