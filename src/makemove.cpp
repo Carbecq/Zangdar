@@ -64,14 +64,13 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
     Status& previousStatus = get_status();
 
     StatusHistory.template emplace_back(Status{
-                                               previousStatus.hash,                                     // zobrist will be changed later
+                                               previousStatus.hash ^ side_key,                                     // zobrist will be changed later
                                                previousStatus.pawn_hash,
                                                move,
                                                NO_SQUARE,                                                  // reset en passant. might be set later
                                                previousStatus.castling,                                    // copy meta. might be changed
                                                previousStatus.halfmove_counter + 1,                        // increment fifty move counter. might be reset
                                                previousStatus.fullmove_counter + (C == Color::BLACK),      // increment move counter
-                                               // 0,                                                          // set rep to 1 (no rep)
                                                0ULL,
                                                0ULL });
 
@@ -458,14 +457,9 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
     // Swap sides
     side_to_move = ~side_to_move;
 
-    // Calcul du nombre de répétitions
-     // calculate_repetitions();
-
     // pièces donnant échec, pièces clouées
     // attention : on a changé de camp !!!
     calculate_checkers_pinned<~C>();
-
-    newStatus.hash ^= side_key;
 
 #if defined DEBUG_HASH
     U64 hash_1, hash_2;
@@ -507,11 +501,10 @@ template <Color C> void Board::make_nullmove() noexcept
                                                previousStatus.hash ^ side_key,                             // zobrist will be changed later
                                                previousStatus.pawn_hash,
                                                Move::MOVE_NULL,
-                                               NO_SQUARE,                                                  // reset en passant. might be set later
-                                               previousStatus.castling,                                    // copy meta. might be changed
-                                               previousStatus.halfmove_counter + 1,                        // increment fifty move counter. might be reset
-                                               previousStatus.fullmove_counter + (C == Color::BLACK),      // increment move counter
-                                               // 0,                                                          // set rep to 1 (no rep)
+                                               NO_SQUARE,                                               // reset en passant. might be set later
+                                               previousStatus.castling,                                 // copy meta. might be changed
+                                               previousStatus.halfmove_counter + 1,                     // increment fifty move counter. might be reset
+                                               previousStatus.fullmove_counter + (C == Color::BLACK),   // increment move counter
                                                0ULL,
                                                0ULL });
 
@@ -524,8 +517,6 @@ template <Color C> void Board::make_nullmove() noexcept
 
     // Swap sides
     side_to_move = ~side_to_move;
-
-    //TODO : repetitions ???
 
     // attention : on a changé de camp !!!
     calculate_checkers_pinned<~C>();

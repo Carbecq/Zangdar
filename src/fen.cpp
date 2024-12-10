@@ -355,53 +355,53 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     for (const auto &c : word) {
         switch (c) {
         case 'P':
-            set_piece(SQ::flip_square(i), ~Color::WHITE, PAWN);
+            set_piece(SQ::mirrorVertically(i), ~Color::WHITE, PAWN);
             i++;
             break;
         case 'p':
-            set_piece(SQ::flip_square(i), ~Color::BLACK, PAWN);
+            set_piece(SQ::mirrorVertically(i), ~Color::BLACK, PAWN);
             i++;
             break;
         case 'N':
-            set_piece(SQ::flip_square(i), ~Color::WHITE, KNIGHT);
+            set_piece(SQ::mirrorVertically(i), ~Color::WHITE, KNIGHT);
             i++;
             break;
         case 'n':
-            set_piece(SQ::flip_square(i), ~Color::BLACK, KNIGHT);
+            set_piece(SQ::mirrorVertically(i), ~Color::BLACK, KNIGHT);
             i++;
             break;
         case 'B':
-            set_piece(SQ::flip_square(i), ~Color::WHITE, BISHOP);
+            set_piece(SQ::mirrorVertically(i), ~Color::WHITE, BISHOP);
             i++;
             break;
         case 'b':
-            set_piece(SQ::flip_square(i), ~Color::BLACK, BISHOP);
+            set_piece(SQ::mirrorVertically(i), ~Color::BLACK, BISHOP);
             i++;
             break;
         case 'R':
-            set_piece(SQ::flip_square(i), ~Color::WHITE, ROOK);
+            set_piece(SQ::mirrorVertically(i), ~Color::WHITE, ROOK);
             i++;
             break;
         case 'r':
-            set_piece(SQ::flip_square(i), ~Color::BLACK, ROOK);
+            set_piece(SQ::mirrorVertically(i), ~Color::BLACK, ROOK);
             i++;
             break;
         case 'Q':
-            set_piece(SQ::flip_square(i), ~Color::WHITE, QUEEN);
+            set_piece(SQ::mirrorVertically(i), ~Color::WHITE, QUEEN);
             i++;
             break;
         case 'q':
-            set_piece(SQ::flip_square(i), ~Color::BLACK, QUEEN);
+            set_piece(SQ::mirrorVertically(i), ~Color::BLACK, QUEEN);
             i++;
             break;
         case 'K':
-            set_piece(SQ::flip_square(i), ~Color::WHITE, KING);
-            x_king[~Color::WHITE] = SQ::flip_square(i);
+            set_piece(SQ::mirrorVertically(i), ~Color::WHITE, KING);
+            x_king[~Color::WHITE] = SQ::mirrorVertically(i);
             i++;
             break;
         case 'k':
-            set_piece(SQ::flip_square(i), ~Color::BLACK, KING);
-            x_king[~Color::BLACK] = SQ::flip_square(i);
+            set_piece(SQ::mirrorVertically(i), ~Color::BLACK, KING);
+            x_king[~Color::BLACK] = SQ::mirrorVertically(i);
             i++;
             break;
         case '1':
@@ -470,7 +470,7 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
         char rank = ep.at(1);
         int s = (rank - '1') * 8 + file - 'a';
         assert(s>=A1 && s<=H8);
-        get_status().ep_square = SQ::flip_square(s);
+        get_status().ep_square = SQ::mirrorVertically(s);
     }
 
     //-----------------------------------------

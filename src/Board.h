@@ -19,17 +19,26 @@
 // celle-ci sera nécessaire pour effectuer un unmake_move
 struct Status
 {
-    U64  hash               = 0ULL;             // nombre unique (?) correspondant à la position
-    U64  pawn_hash          = 0ULL;
+    U64  hash               = 0ULL;                     // nombre unique (?) correspondant à la position
+    U64  pawn_hash          = 0ULL;                     // hash uniquement pour les pions
     MOVE move               = Move::MOVE_NONE;
-    int  ep_square          = SquareType::NO_SQUARE;         // case en-passant : si les blancs jouent e2-e4, la case est e3
-    U32  castling           = CastleType::CASTLE_NONE;                  // droit au roque
-    int  halfmove_counter   = 0;        // nombre de coups depuis une capture, ou un movement de pion
-    int  fullmove_counter   = 1;        // le nombre de coups complets. Il commence à 1 et est incrémenté de 1 après le coup des noirs.
-    // int  repetition_counter = 0;
-    Bitboard checkers       = 0ULL;       // bitboard des pièces ennemies me donnant échec
-    Bitboard pinned         = 0ULL;       // bitboard des pièces amies clouées
+    int  ep_square          = SquareType::NO_SQUARE;    // case en-passant : si les blancs jouent e2-e4, la case est e3
+    U32  castling           = CastleType::CASTLE_NONE;  // droit au roque
+    int  halfmove_counter   = 0;                        // nombre de demi-coups depuis la dernière capture ou le dernier mouvement de pion.
+    int  fullmove_counter   = 1;                        // le nombre de coups complets. Il commence à 1 et est incrémenté de 1 après le coup des noirs.
+    Bitboard checkers       = 0ULL;                     // bitboard des pièces ennemies me donnant échec
+    Bitboard pinned         = 0ULL;                     // bitboard des pièces amies clouées
 };
+
+/*
+     * The Halfmove Clock inside an chess position object takes care of enforcing the fifty-move rule.
+     * This counter is reset after captures or pawn moves, and incremented otherwise.
+     * Also moves which lose the castling rights, that is rook- and king moves from their initial squares,
+     * including castling itself, increment the Halfmove Clock.
+     * However, those moves are irreversible in the sense to reverse the same rights -
+     * since once a castling right is lost, it is lost forever, as considered in detecting repetitions.
+     *
+     */
 
 
 class Board
@@ -93,7 +102,6 @@ public:
 
     template <Color C>
     void calculate_checkers_pinned() noexcept;
-    void calculate_repetitions();
     void calculate_hash(U64 &khash, U64 &phash) const;
 
     //! \brief  Retourne le Bitboard de TOUS les attaquants (Blancs et Noirs) de la case "sq"
@@ -383,7 +391,7 @@ public:
     //--------------------------------------------------------------------
     [[nodiscard]] inline bool is_repetition(int ply) const noexcept
     {
-        int reps = 0;
+        int reps             = 0;
         U64 current_hash     = get_status().hash;
         int gamemove_counter = StatusHistory.size() - 1;
         int halfmove_counter = get_status().halfmove_counter;
@@ -398,7 +406,8 @@ public:
             // Check for matching hash with a two fold after the root,
             // or a three fold which occurs in part before the root move
             if (    StatusHistory[i].hash == current_hash
-                && (i > gamemove_counter - ply || ++reps == 2))
+                && (   i > gamemove_counter - ply   // 2-fold : on considère des positions dans l'arbre de recherche
+                    || ++reps == 2) )               // 3-fold : on considère toutes les positions de la partie
                 return true;
         }
 
@@ -461,41 +470,15 @@ public:
     Bitboard typePiecesBB[7]  = {0ULL};     // bitboard des pièces pour chaque type de pièce
     std::array<PieceType, 64> pieceOn;      // donne le type de la pièce occupant la case indiquée
     int x_king[2];                          // position des rois
-    // Bitboard checkers;                      // bitboard des pièces ennemies me donnant échec
-    // Bitboard pinned;                        // bitboard des pièces amies clouées
-
-    Color side_to_move = Color::WHITE; // camp au trait
-    // int   ep_square    = NO_SQUARE;  // case en-passant : si les blancs jouent e2-e4, la case est e3
-    // U32   castling     = Castle::CASTLE_NONE; // droit au roque
-
-    /*
-     * The Halfmove Clock inside an chess position object takes care of enforcing the fifty-move rule.
-     * This counter is reset after captures or pawn moves, and incremented otherwise.
-     * Also moves which lose the castling rights, that is rook- and king moves from their initial squares,
-     * including castling itself, increment the Halfmove Clock.
-     * However, those moves are irreversible in the sense to reverse the same rights -
-     * since once a castling right is lost, it is lost forever, as considered in detecting repetitions.
-     *
-     */
-
-    // int halfmove_counter = 0; // nombre de demi-coups depuis la dernière capture ou le dernier mouvement de pion.
-    // int fullmove_counter = 1; // le nombre de coups complets. Il commence à 1 et est incrémenté de 1 après le coup des noirs.
-    // int gamemove_counter = 0; // nombre de demi-coups de la partie
-
-    // U64 hash           = 0ULL;  // nombre unique (?) correspondant à la position (clef Zobrist)
-    // U64 pawn_hash      = 0ULL;  // hash uniquement pour les pions
-
-    std::vector<std::string> best_moves;  // meilleur coup (pour les test tactique)
-    std::vector<std::string> avoid_moves; // coup à éviter (pour les test tactique)
-
-
-    std::vector<Status> StatusHistory;
-
-    inline const Status& get_status() const { return StatusHistory.back(); }
-    inline Status& get_status() { return StatusHistory.back(); }
+    Color side_to_move = Color::WHITE;      // camp au trait
+    std::vector<std::string> best_moves;    // meilleur coup (pour les tests tactiques)
+    std::vector<std::string> avoid_moves;   // coup à éviter (pour les tests tactiques)
 
     //==============================================
     //  Status
+    std::vector<Status> StatusHistory;      // historique de la partie (coups déjà joués ET coups de la recherche)
+    inline const Status& get_status() const { return StatusHistory.back(); }
+    inline Status& get_status()             { return StatusHistory.back(); }
 
     [[nodiscard]] inline int get_halfmove_counter() const noexcept { return get_status().halfmove_counter; }
     [[nodiscard]] inline int get_fullmove_counter() const noexcept { return get_status().fullmove_counter; }

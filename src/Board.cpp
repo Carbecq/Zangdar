@@ -144,44 +144,8 @@ int Board::get_material()
 }
 
 //=============================================================
-//! \brief  Calcule le nombre de répétitions
+//! \brief  Calcule la valeur du hash
 //-------------------------------------------------------------
-void Board::calculate_repetitions()
-{
-    int reversible = get_status().halfmove_counter;
-        // std::min(get_status().halfmove_counter, currState().pliesFromNull);
-    for (int i = 2; i <= reversible; i += 2) {
-        Status& state = StatusHistory[StatusHistory.size() - 1 - i];
-        if (state.hash == get_status().hash)
-        {
-            // get_status().repetition_counter = state.repetition_counter + 1;
-            // get_status().lastRepetition = i;
-            return;
-        }
-    }
-    // get_status().repetition_counter = 0;
-    // currState().lastRepetition = 0;
-
-
-
-
-
-
-
-    // const int maxChecks = get_status().halfmove_counter;
-
-    // const int lim = StatusHistory.size() - 1 - maxChecks;
-    // const int end = std::max(0, lim);
-
-    // for (int i = StatusHistory.size() - 3; i >= end; i -= 2)
-    // {
-    //     if (StatusHistory.at(i).hash == get_status().hash)
-    //     {
-    //         get_status().repetition_counter = StatusHistory.at(i).repetition_counter + 1;
-    //     }
-    // }
-}
-
 void Board::calculate_hash(U64& khash, U64& phash) const
 {
     khash = 0ULL;
