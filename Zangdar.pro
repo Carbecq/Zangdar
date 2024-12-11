@@ -10,7 +10,9 @@ DEFINES += STATIC
 QMAKE_LFLAGS += -flto=auto
 
 #------------------------------------------------------
-# DEFINES += USE_NNUE
+DEFINES += USE_NNUE
+NETWORK = "networks/net-epoch.bin"
+QMAKE_CXXFLAGS_RELEASE += -DNETWORK='\\"$${NETWORK}\\"'
 
 #------------------------------------------------------
 # ATTENTION : ne pas mettre "\" car ils sont reconnus comme caractères spéciaux
@@ -28,7 +30,7 @@ DEFINES += VERSION='\\"$${VERSION}\\"'
 #------------------------------------------------------
 # DEFINES +=  DEBUG_EVAL
 # DEFINES +=  DEBUG_LOG
-DEFINES +=  DEBUG_HASH
+# DEFINES +=  DEBUG_HASH
 # DEFINES +=  DEBUG_TIME
 
 #------------------------------------------------------

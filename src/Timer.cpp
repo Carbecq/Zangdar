@@ -176,8 +176,8 @@ bool Timer::check_limits(const int depth, const int index, const U64 total_nodes
 bool Timer::finishOnThisDepth(int elapsed, int depth, MOVE best_move, U64 total_nodes)
 {
     // Don't terminate early at very low depths
-    if (depth < 4)
-        return false;
+    // if (depth < 4)
+    //     return false;    //TODO avec Datagen, limite trop forte
 
     if (mode == TimerMode::TIME)
     {

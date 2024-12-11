@@ -136,7 +136,7 @@ std::pair<Usize, Usize> NNUE::get_indices(Color color, PieceType piece, int squa
     const Usize piece_nnue = static_cast<Usize>(piece - 1);
 
     const auto white_indice =  color * color_stride + piece_nnue * piece_stride + static_cast<Usize>(square);
-    const auto black_indice = !color * color_stride + piece_nnue * piece_stride + static_cast<Usize>(SQ::flip_square(square));
+    const auto black_indice = !color * color_stride + piece_nnue * piece_stride + static_cast<Usize>(SQ::mirrorVertically(square));
 
     return {white_indice, black_indice};
 }

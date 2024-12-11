@@ -133,8 +133,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
         // clear history
         // board.nnue.reset();
 
-        //TODO clear StatusHistory ??
-
+        board.clear();
         board.set_fen(START_FEN, false); // sans NNUE
 
         /*  NewGame
@@ -145,11 +144,12 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
         //====================================================
         //  Initalisation random de l'échiquier
         //----------------------------------------------------
+
         // printf("-------------------------------------------init random  \n");
-        move  = Move::MOVE_NONE;
-        score = -INFINITE;
+
         board_generated = false;
         timer.setup(Color::WHITE);
+        board.clear();
         board.set_fen(START_FEN, false);
         movelist.clear();
 
@@ -185,10 +185,14 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
         if(board_generated == false)
         {
             nbr_games++;    // évite une boucle infinie
+            // printf("-------------------------------------------generated false  \n");
             continue;
         }
+        // printf("-------------------------------------------generated OK  \n");
 
         // printf("-------------------------------------------eval random  \n");
+        move  = Move::MOVE_NONE;
+        score = -INFINITE;
 
         // Evaluation de la position, en fin des MAX_RANDOM_MOVES moves
         // Si elle est trop déséquilibrée, on recommence
@@ -198,9 +202,11 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
             data_search<BLACK>(board, timer, search, td, si, move, score);
         if (std::abs(score) > MAX_RANDOM_SCORE)
         {
+            // printf("-------------------------------------------score false  %d\n", score);
             nbr_games++;    // évite une boucle infinie
             continue;
         }
+        // printf("-------------------------------------------score OK  %d\n", score);
 
 
         // printf("----------------------------random ok : id=%d \n", thread_id);
@@ -371,7 +377,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
     } // fin des parties
 
-    std::cout << "id = " << thread_id << "  nombre de parties = " << nbr_games << std::endl;
+    // std::cout << "id = " << thread_id << "  nombre de parties = " << nbr_games << std::endl;
 
     // dernière étape : on ferme le fichier
     file.close();
@@ -401,11 +407,20 @@ void DataGen::data_search(Board& board, Timer& timer,
     //==================================================
 
     si->pv.length = 0;
+    td->score     = -INFINITE;
+    td->stopped   = false;
+    td->nodes    = 0;
+
+    td->best_depth = 0;
+    td->best_move  = Move::MOVE_NONE;
+    td->best_score = -INFINITE;
+
 
 #if defined DEBUG_GEN
     timer.debug(WHITE);
     timer.start();
 #endif
+    // printf("max depth = %d ;  \n", timer.getSearchDepth());
 
     for (td->depth = 1; td->depth <= std::max(1, timer.getSearchDepth()); td->depth++)
     {
@@ -414,7 +429,7 @@ void DataGen::data_search(Board& board, Timer& timer,
 
         if (td->stopped)
             break;
-
+        // printf("depth = %d ; tdscore = %d \n", td->depth, td->score);
         // L'itération s'est terminée sans problème
         // On peut mettre à jour les infos UCI
         td->best_depth = td->depth;

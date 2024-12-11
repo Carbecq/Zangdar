@@ -56,7 +56,7 @@ DEFS = -DHOME=$(HOME)
 #  NNUE
 #---------------------------------------------------
 
-USE_NNUE = no
+USE_NNUE = yes
 
 ifeq ($(USE_NNUE),yes)
     NETWORK = \"networks/clarity_net005.nnue\"
