@@ -491,10 +491,6 @@ template <Color C> void Board::make_move(const MOVE move) noexcept
 //-----------------------------------------------------------------------
 template <Color C> void Board::make_nullmove() noexcept
 {
-#if defined USE_NNUE
-    // nnue.push();    // nouveau accumulateur TODO : à faire ?
-#endif
-
     Status& previousStatus = get_status();
 
     StatusHistory.template emplace_back(Status{

@@ -27,13 +27,17 @@ https://www.chessprogramming.org/Evaluation
 //! \return Evaluation statique de la position
 //! du point de vue du camp au trait.
 //------------------------------------------
-[[nodiscard]] Score Board::evaluate()
+[[nodiscard]] int Board::evaluate()
 {
 #if defined USE_NNUE
     if (side_to_move == WHITE)
         return nnue.evaluate<WHITE>();
     else
         return nnue.evaluate<BLACK>();
+
+    //note : certains codes modifient la valeur retournée par nnue
+    //       soit avec une "phase", soit avec une valeur "random".
+
 #endif
 
     Score eval = 0;

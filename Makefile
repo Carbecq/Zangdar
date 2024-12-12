@@ -59,8 +59,8 @@ DEFS = -DHOME=$(HOME)
 USE_NNUE = yes
 
 ifeq ($(USE_NNUE),yes)
-    NETWORK = \"networks/clarity_net005.nnue\"
-    #NETWORK = \"networks/net-epoch.bin\"
+    #NETWORK = \"networks/clarity_net005.nnue\"
+    NETWORK = \"networks/net-1.bin\"
     DEFS += -DUSE_NNUE
     CFLAGS_NNUE = -DNETWORK=$(NETWORK)
     EXT = NNUE

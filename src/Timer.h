@@ -9,6 +9,7 @@ class Timer;
 
 enum TimerMode {
     TIME,
+    DEPTH,
     NODE
 };
 

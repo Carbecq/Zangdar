@@ -359,7 +359,7 @@ public:
     //==============================================
     //  Evaluation
 
-    Score evaluate();
+    int evaluate();
     Score evaluate_pieces(EvalInfo& ei);
 
     template <Color C> Score evaluate_pawns(EvalInfo& ei);

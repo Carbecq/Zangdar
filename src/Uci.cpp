@@ -138,7 +138,7 @@ void Uci::run()
         else if (token == "h")
         {
             std::cout << "benchmark                     : Zangdar bench <depth> <nbr_threads> <hash_size>"     << std::endl;
-            std::cout << "datagen                       : Zangdar datagen <nbr_threads> <nbr_games> <output>"   << std::endl;
+            std::cout << "datagen                       : Zangdar datagen <nbr_threads> <nbr_fens> <output>"   << std::endl;
             std::cout << "q(uit) "      << std::endl;
             std::cout << "v(ersion) "   << std::endl;
             std::cout << "s <ref/big> [dmax]            : test suite_perft "                                    << std::endl;
@@ -158,7 +158,7 @@ void Uci::run()
 
         else if (token == "v")
         {
-            std::cout << "Zangdar " << VERSION << std::endl;
+            std::cout << "Zangdar " << VERSION << " NNUE " << NETWORK << std::endl;
         }
         else if (token == "s")
         {

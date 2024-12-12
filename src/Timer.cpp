@@ -89,6 +89,7 @@ void Timer::setup(Color color)
     }
     else if (limits.depth != 0) // profondeur de recherche imposée = depth
     {
+        mode                = TimerMode::DEPTH;
         searchDepth         = limits.depth;
     }
     else if (limits.movetime != 0) // temps de recherche imposé = move_time
@@ -145,20 +146,24 @@ void Timer::setup(const int soft_limit, const int hard_limit)
 //---------------------------------------------------------
 bool Timer::check_limits(const int depth, const int index, const U64 total_nodes)
 {
-    if (index == 0 && depth > 4)
+    if (index == 0)
     {
-        if (mode == TimerMode::NODE)
-        {
-            return (total_nodes >= nodesForThisDepth);
-        }
-        else
+        if (mode == TimerMode::TIME && depth >= 4)
         {
             // Every MAX_COUNTER , check if our time has expired.
             if (--counter > 0)
                 return false;
             counter = MAX_COUNTER;
 
-            return(elapsedTime() >= timeForThisMove);
+            return(elapsedTime() > timeForThisMove);
+        }
+        else if (mode == TimerMode::NODE)
+        {
+            return (total_nodes > nodesForThisDepth);
+        }
+        else
+        {
+            return (depth > searchDepth);
         }
     }
 
@@ -175,11 +180,8 @@ bool Timer::check_limits(const int depth, const int index, const U64 total_nodes
 //-----------------------------------------------------------
 bool Timer::finishOnThisDepth(int elapsed, int depth, MOVE best_move, U64 total_nodes)
 {
-    // Don't terminate early at very low depths
-    // if (depth < 4)
-    //     return false;    //TODO avec Datagen, limite trop forte
-
-    if (mode == TimerMode::TIME)
+     // Don't terminate early at very low depths
+    if (mode == TimerMode::TIME && depth >= 4)
     {
         if (best_move == PrevBestMove)
             pv_stability++;
@@ -189,14 +191,16 @@ bool Timer::finishOnThisDepth(int elapsed, int depth, MOVE best_move, U64 total_
 
         double bmNodes = static_cast<double>(MoveNodeCounts[Move::fromdest(best_move)]) / static_cast<double>(total_nodes);
         double scale = ((nodeTMBase / 100.0) - bmNodes) * (nodeTMScale / 100.0);
-        //                  (1.45 - bnm ) * 1.67
-        //   std::cout << "elapsed=" <<elapsed <<  " total=" << total_nodes << " scale=" << scale << " time=" << timeForThisDepth << "  " << timeForThisDepth*scale << std::endl;
         scale *= stabilityValues[std::min(pv_stability, 6u)];
         return (elapsed > timeForThisDepth * scale);
     }
+    else if (mode == TimerMode::NODE)
+    {
+        return (total_nodes > nodesForThisDepth);
+    }
     else
     {
-        return (total_nodes >= nodesForThisDepth);
+        return (depth > searchDepth);   // on va de 1 à max_depth inclus
     }
 }
 
