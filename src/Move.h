@@ -186,12 +186,11 @@ constexpr U32 MOVE_NULL           = 0b00000001000000000000000000000000;
 [[nodiscard]] inline std::string name(U32 move) noexcept
 {
     std::string str;
-    str += square_name[move & 0x3F];
-    str += square_name[(move >> 6) & 0x3F];
-    if (Move::promotion(move) >= KNIGHT)
+    str += square_name[Move::from(move)];
+    str += square_name[Move::dest(move)];
+    if (Move::is_promoting(move))
     {
-        const char asd[] = {'?', 'p', 'n', 'b', 'r', 'q'};
-        str += asd[Move::promotion(move)];
+        str += nom_piece_min[Move::promotion(move)];
     }
 
     return str;

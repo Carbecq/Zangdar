@@ -37,7 +37,7 @@ constexpr int N_PIECES = 7;
 
 enum PieceType : int
 {
-    NO_TYPE  = 0,
+    NO_PIECE = 0,
     PAWN     = 1,
     KNIGHT   = 2,
     BISHOP   = 3,
@@ -58,6 +58,11 @@ const std::string piece_symbol[N_COLORS][N_PIECES] {
 static const std::array<std::string, N_PIECES> nom_piece_max = { "?", "", "N", "B", "R", "Q", "K"};
 static const std::array<std::string, N_PIECES> nom_piece_min = { "?", "", "n", "b", "r", "q", "k"};
 
+//  Valeur des pièces
+
+constexpr int EGPieceValue[N_PIECES] = {
+    0, 221, 676, 701, 1192, 2101, 0
+};
 
 /*******************************************************
  ** Les cases
@@ -153,6 +158,7 @@ constexpr static Bitboard B8D8_BB = 0xE00000000000000;
 
 constexpr static Bitboard C1D1_BB = 0xC;                    // grand roque ; cases qui ne doivent pas être attaquées
 constexpr static Bitboard C8D8_BB = 0xC00000000000000;
+
 
 
 

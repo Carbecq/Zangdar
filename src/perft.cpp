@@ -48,15 +48,15 @@ template <Color C, bool divide=false>
 
         if constexpr (divide == false)
         {
-            make_move<C>(move);
+            make_move<C, false>(move);
             nodes += perft<~C, false>(depth - 1);
-            undo_move<C>();
+            undo_move<C, false>();
         }
         else
         {
-            make_move<C>(move);
+            make_move<C, false>(move);
             auto child = perft<~C, false>(depth - 1);
-            undo_move<C>();
+            undo_move<C, false>();
             std::cout << Move::name(move) << " : " << child << std::endl;
             nodes += child;
         }

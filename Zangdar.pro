@@ -10,7 +10,6 @@ DEFINES += STATIC
 QMAKE_LFLAGS += -flto=auto
 
 #------------------------------------------------------
-DEFINES += USE_NNUE
 NETWORK = "networks/net-epoch.bin"
 QMAKE_CXXFLAGS_RELEASE += -DNETWORK='\\"$${NETWORK}\\"'
 
@@ -204,12 +203,10 @@ HEADERS += \
     src/ThreadPool.h \
     src/Timer.h \
     src/TranspositionTable.h \
-    src/Tuner.h \
     src/Uci.h \
     src/bench.h \
     src/bitmask.h \
     src/defines.h \
-    src/evaluate.h \
     src/incbin/incbin.h \
     src/pyrrhic/api.h \
     src/pyrrhic/stdendian.h \
@@ -231,11 +228,9 @@ SOURCES += \
     src/ThreadPool.cpp \
     src/Timer.cpp \
     src/TranspositionTable.cpp \
-    src/Tuner.cpp \
     src/Uci.cpp \
     src/add_moves.cpp \
     src/attackers.cpp \
-    src/evaluate.cpp \
     src/fen.cpp \
     src/legal_moves.cpp \
     src/main.cpp \

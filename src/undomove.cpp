@@ -5,13 +5,13 @@
 //=============================================================
 //! \brief  Enlève un coup
 //-------------------------------------------------------------
-template <Color C> void Board::undo_move() noexcept
+template <Color C, bool Update_NNUE>
+void Board::undo_move() noexcept
 {
     constexpr Color Them     = ~C;
 
-#if defined USE_NNUE
-    nnue.pop(); // retourne a l'accumulateur précédent
-#endif
+    if constexpr (Update_NNUE == true)
+        nnue.pop(); // retourne a l'accumulateur précédent
 
     const MOVE move = get_status().move;
 
@@ -48,7 +48,7 @@ template <Color C> void Board::undo_move() noexcept
         if (Move::is_depl(move))
         {
             pieceOn[from] = piece;
-            pieceOn[dest] = NO_TYPE;
+            pieceOn[dest] = NO_PIECE;
         }
 
         //====================================================================================
@@ -95,7 +95,7 @@ template <Color C> void Board::undo_move() noexcept
             BB::toggle_bit(typePiecesBB[promo], dest);
             
             pieceOn[from] = PAWN;
-            pieceOn[dest] = NO_TYPE;
+            pieceOn[dest] = NO_PIECE;
         }
     }
 
@@ -110,7 +110,7 @@ template <Color C> void Board::undo_move() noexcept
         if (Move::is_double(move))
         {
             pieceOn[from] = piece;
-            pieceOn[dest] = NO_TYPE;
+            pieceOn[dest] = NO_PIECE;
         }
 
         //====================================================================================
@@ -125,7 +125,7 @@ template <Color C> void Board::undo_move() noexcept
                 BB::toggle_bit(colorPiecesBB[Color::BLACK], SQ::south(dest));
                 
                 pieceOn[from] = PAWN;
-                pieceOn[dest] = NO_TYPE;
+                pieceOn[dest] = NO_PIECE;
                 pieceOn[SQ::south(dest)] = PAWN;
             }
             else
@@ -134,7 +134,7 @@ template <Color C> void Board::undo_move() noexcept
                 BB::toggle_bit(colorPiecesBB[Color::WHITE], SQ::north(dest));
                 
                 pieceOn[from] = PAWN;
-                pieceOn[dest] = NO_TYPE;
+                pieceOn[dest] = NO_PIECE;
                 pieceOn[SQ::north(dest)] = PAWN;
             }
         }
@@ -150,7 +150,7 @@ template <Color C> void Board::undo_move() noexcept
             if ((SQ::square_BB(dest)) & FILE_G_BB)
             {
                 pieceOn[from] = KING;
-                pieceOn[dest] = NO_TYPE;
+                pieceOn[dest] = NO_PIECE;
 
                 // Move the rook
                 if constexpr (C == WHITE)
@@ -159,7 +159,7 @@ template <Color C> void Board::undo_move() noexcept
                     BB::toggle_bit2(typePiecesBB[ROOK], H1, F1);
 
                     pieceOn[H1] = ROOK;
-                    pieceOn[F1] = NO_TYPE;
+                    pieceOn[F1] = NO_PIECE;
                 }
                 else
                 {
@@ -167,7 +167,7 @@ template <Color C> void Board::undo_move() noexcept
                     BB::toggle_bit2(typePiecesBB[ROOK], H8, F8);
 
                     pieceOn[H8] = ROOK;
-                    pieceOn[F8] = NO_TYPE;
+                    pieceOn[F8] = NO_PIECE;
                 }
             }
 
@@ -177,7 +177,7 @@ template <Color C> void Board::undo_move() noexcept
             else if ((SQ::square_BB(dest)) & FILE_C_BB)
             {
                 pieceOn[from] = KING;
-                pieceOn[dest] = NO_TYPE;
+                pieceOn[dest] = NO_PIECE;
 
                 // Move the rook
                 if constexpr (C == WHITE)
@@ -186,7 +186,7 @@ template <Color C> void Board::undo_move() noexcept
                     BB::toggle_bit2(typePiecesBB[ROOK], A1, D1);
 
                     pieceOn[A1] = ROOK;
-                    pieceOn[D1] = NO_TYPE;
+                    pieceOn[D1] = NO_PIECE;
                 }
                 else
                 {
@@ -194,7 +194,7 @@ template <Color C> void Board::undo_move() noexcept
                     BB::toggle_bit2(typePiecesBB[ROOK], A8, D8);
 
                     pieceOn[A8] = ROOK;
-                    pieceOn[D8] = NO_TYPE;
+                    pieceOn[D8] = NO_PIECE;
                 }
             }
         }
@@ -226,8 +226,10 @@ template <Color C> void Board::undo_nullmove() noexcept
 
 // Explicit instantiations.
 
-template void Board::undo_move<WHITE>() noexcept ;
-template void Board::undo_move<BLACK>() noexcept ;
+template void Board::undo_move<WHITE, true>() noexcept ;
+template void Board::undo_move<BLACK, true>() noexcept ;
+template void Board::undo_move<WHITE, false>() noexcept ;
+template void Board::undo_move<BLACK, false>() noexcept ;
 
 template void Board::undo_nullmove<WHITE>() noexcept ;
 template void Board::undo_nullmove<BLACK>() noexcept ;

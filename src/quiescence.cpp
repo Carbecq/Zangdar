@@ -103,11 +103,11 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
 
         // Delta Pruning
         /*****************************************************************
-    *  Delta cutoff - a move guarentees the score well below alpha,  *
-    *  so  there's no point in searching it. This heuristic is  not  *
-    *  used  in the endgame, because of the  insufficient  material  *
-    *  issues and special endgame evaluation heuristics.             *
-    *****************************************************************/
+        *  Delta cutoff - a move guarentees the score well below alpha,  *
+        *  so  there's no point in searching it. This heuristic is  not  *
+        *  used  in the endgame, because of the  insufficient  material  *
+        *  issues and special endgame evaluation heuristics.             *
+        *****************************************************************/
 
         if (!isInCheck)
         {
@@ -120,10 +120,10 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
             }
         }
 
-        board.make_move<C>(move);
+        board.make_move<C, true>(move);
         si->move = move;
         score = -quiescence<~C>(board, timer, -beta, -alpha, td, si+1);
-        board.undo_move<C>();
+        board.undo_move<C, true>();
 
         if (td->stopped)
             return 0;

@@ -36,7 +36,7 @@ private:
 
     constexpr static int MAX_RANDOM_PLIES =     8;   // nombre maximum de plies joués au hasard
     constexpr static int MAX_RANDOM_SCORE =  1000;   // score maximum accepté pour la position résultant
-    constexpr static int MAX_RANDOM_DEPTH =    10;   // profondeur maximum pour la recherche
+    constexpr static int MAX_RANDOM_DEPTH =     5;   // profondeur maximum pour la recherche
 
     constexpr static int HIGH_SCORE       = 2500;   // score maximum pour accepter une position;
                                                     // score minimum pour compter la position comme gagnante

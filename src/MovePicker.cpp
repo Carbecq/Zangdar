@@ -2,7 +2,6 @@
 #include "MovePicker.h"
 #include "types.h"
 #include "Move.h"
-#include "evaluate.h"
 
 //=====================================================
 //! \brief  Constructeur
@@ -450,7 +449,7 @@ bool MovePicker::is_legal(MOVE move)
 }
 
 
-std::string pchar[7] = {"NoPiece", "Pion", "Cavalier", "Fou", "Tour", "Dame", "Roi"};
+std::string pchar[N_PIECES] = {"NoPiece", "Pion", "Cavalier", "Fou", "Tour", "Dame", "Roi"};
 void MovePicker::verify_MvvLva()
 {
    for(int Victim = PAWN; Victim <= KING; ++Victim)

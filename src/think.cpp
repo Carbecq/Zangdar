@@ -22,9 +22,7 @@ void Search::think(Board board, Timer timer, int m_index)
 #endif
 
     // capacity n'est pas conservé lors de la copie ...
-#if defined USE_NNUE
     board.reserve_nnue_capacity();
-#endif
 
     ThreadData* td = &threadPool.threadData[m_index];
     SearchInfo* si = &td->info[0];
@@ -414,7 +412,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
             while ( (pbMove = movePicker.next_move(true).move ) != Move::MOVE_NONE )
             {
-                board.make_move<C>(pbMove);
+                board.make_move<C, true>(pbMove);
                 si->move = pbMove;
 
                 // Teste si une recherche de quiescence donne un score supérieur à betaCut
@@ -424,7 +422,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 if (pbScore >= betaCut)
                     pbScore = -alpha_beta<~C>(board, timer, -betaCut, -betaCut+1, depth-4, td, si+1);
 
-                board.undo_move<C>();
+                board.undo_move<C, true>();
 
                 // Coupure si cette dernière recherche bat betaCut
                 if (pbScore >= betaCut)
@@ -590,7 +588,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         }
 
         // execute current move
-        board.make_move<C>(move);
+        board.make_move<C, true>(move);
         si->move = move;
 
         // Update counter of moves actually played
@@ -645,7 +643,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
 
         // retract current move
-        board.undo_move<C>();
+        board.undo_move<C, true>();
 
         // Track where nodes were spent in the Main thread at the Root
         if (isRoot && td->index==0)

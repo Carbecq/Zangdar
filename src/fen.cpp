@@ -33,36 +33,36 @@
 //-----------------------------------------------------
 //! \brief Initialisation depuis une position FEN
 //-----------------------------------------------------
+template <bool Update_NNUE>
 void Board::set_fen(const std::string &fen, bool logTactics) noexcept
 {
     assert(fen.length() > 0);
 
     if (fen == "startpos")
     {
-        set_fen(START_FEN, logTactics);
+        set_fen<Update_NNUE>(START_FEN, logTactics);
         return;
     }
 
-#if defined USE_NNUE
-    nnue.reset();
-#endif
+    //-------------------------------------
+    // Reset the board
+    // >>> doit être fait en dehors de set_fen
+
+    // La re-initialisation de nnue et StatusHistory
+    // dépend de la situation
+
+    //-------------------------------------
+
+    // ajout d'un élément
+    // il ne faut pas re-initialiser StatusHistory
+    // car il contient les coups provenant de "uci position"
+    StatusHistory.push_back(Status{});
 
     // est-ce une notation FEN ou EPD ?
     bool epd = false;
     int count = std::count(fen.begin(), fen.end(), ';');
     if (count > 0)
         epd = true;
-
-    //-------------------------------------
-
-    // Reset the board
-    avoid_moves.clear();
-    best_moves.clear();
-
-    // ajout d'un élément
-    // il ne faut pas re-initialiser StatusHistory
-    // car il contient les coups provenant de "uci position"
-    StatusHistory.push_back(Status{});
 
     //-------------------------------------
     std::stringstream ss{fen};
@@ -73,52 +73,52 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
     for (const auto &c : word) {
         switch (c) {
         case 'P':
-            set_piece(i, Color::WHITE, PAWN);
+            set_piece<Update_NNUE>(i, Color::WHITE, PAWN);
             i++;
             break;
         case 'p':
-            set_piece(i, Color::BLACK, PAWN);
+            set_piece<Update_NNUE>(i, Color::BLACK, PAWN);
             i++;
             break;
         case 'N':
-            set_piece(i, Color::WHITE, KNIGHT);
+            set_piece<Update_NNUE>(i, Color::WHITE, KNIGHT);
             i++;
             break;
         case 'n':
-            set_piece(i, Color::BLACK, KNIGHT);
+            set_piece<Update_NNUE>(i, Color::BLACK, KNIGHT);
             i++;
             break;
         case 'B':
-            set_piece(i, Color::WHITE, BISHOP);
+            set_piece<Update_NNUE>(i, Color::WHITE, BISHOP);
             i++;
             break;
         case 'b':
-            set_piece(i, Color::BLACK, BISHOP);
+            set_piece<Update_NNUE>(i, Color::BLACK, BISHOP);
             i++;
             break;
         case 'R':
-            set_piece(i, Color::WHITE, ROOK);
+            set_piece<Update_NNUE>(i, Color::WHITE, ROOK);
             i++;
             break;
         case 'r':
-            set_piece(i, Color::BLACK, ROOK);
+            set_piece<Update_NNUE>(i, Color::BLACK, ROOK);
             i++;
             break;
         case 'Q':
-            set_piece(i, Color::WHITE, QUEEN);
+            set_piece<Update_NNUE>(i, Color::WHITE, QUEEN);
             i++;
             break;
         case 'q':
-            set_piece(i, Color::BLACK, QUEEN);
+            set_piece<Update_NNUE>(i, Color::BLACK, QUEEN);
             i++;
             break;
         case 'K':
-            set_piece(i, Color::WHITE, KING);
+            set_piece<Update_NNUE>(i, Color::WHITE, KING);
             x_king[Color::WHITE] = i;
             i++;
             break;
         case 'k':
-            set_piece(i, Color::BLACK, KING);
+            set_piece<Update_NNUE>(i, Color::BLACK, KING);
             x_king[Color::BLACK] = i;
             i++;
             break;
@@ -325,9 +325,7 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
         return;
     }
 
-#if defined USE_NNUE
-    nnue.reset();
-#endif
+    // nnue.reset();
 
     // est-ce une notation FEN ou EPD ?
     bool epd = false;
@@ -355,52 +353,52 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     for (const auto &c : word) {
         switch (c) {
         case 'P':
-            set_piece(SQ::mirrorVertically(i), ~Color::WHITE, PAWN);
+            set_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, PAWN);
             i++;
             break;
         case 'p':
-            set_piece(SQ::mirrorVertically(i), ~Color::BLACK, PAWN);
+            set_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, PAWN);
             i++;
             break;
         case 'N':
-            set_piece(SQ::mirrorVertically(i), ~Color::WHITE, KNIGHT);
+            set_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, KNIGHT);
             i++;
             break;
         case 'n':
-            set_piece(SQ::mirrorVertically(i), ~Color::BLACK, KNIGHT);
+            set_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, KNIGHT);
             i++;
             break;
         case 'B':
-            set_piece(SQ::mirrorVertically(i), ~Color::WHITE, BISHOP);
+            set_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, BISHOP);
             i++;
             break;
         case 'b':
-            set_piece(SQ::mirrorVertically(i), ~Color::BLACK, BISHOP);
+            set_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, BISHOP);
             i++;
             break;
         case 'R':
-            set_piece(SQ::mirrorVertically(i), ~Color::WHITE, ROOK);
+            set_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, ROOK);
             i++;
             break;
         case 'r':
-            set_piece(SQ::mirrorVertically(i), ~Color::BLACK, ROOK);
+            set_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, ROOK);
             i++;
             break;
         case 'Q':
-            set_piece(SQ::mirrorVertically(i), ~Color::WHITE, QUEEN);
+            set_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, QUEEN);
             i++;
             break;
         case 'q':
-            set_piece(SQ::mirrorVertically(i), ~Color::BLACK, QUEEN);
+            set_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, QUEEN);
             i++;
             break;
         case 'K':
-            set_piece(SQ::mirrorVertically(i), ~Color::WHITE, KING);
+            set_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, KING);
             x_king[~Color::WHITE] = SQ::mirrorVertically(i);
             i++;
             break;
         case 'k':
-            set_piece(SQ::mirrorVertically(i), ~Color::BLACK, KING);
+            set_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, KING);
             x_king[~Color::BLACK] = SQ::mirrorVertically(i);
             i++;
             break;
@@ -583,7 +581,7 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
         {
             const auto sq = SQ::square(x, y);
             const PieceType piece = piece_on(sq);
-            if (piece == NO_TYPE) {
+            if (piece == NO_PIECE) {
                 num_empty++;
             } else {
                 // Add the number of empty squares so far
@@ -664,7 +662,7 @@ void Board::parse_position(std::istringstream &is)
 
     if (token == "startpos")
     {
-        set_fen(START_FEN, logTactics);
+        set_fen<true>(START_FEN, logTactics);
     }
     else
     {
@@ -674,7 +672,7 @@ void Board::parse_position(std::istringstream &is)
         {
             fen += token + " ";
         }
-        set_fen(fen, logTactics);
+        set_fen<true>(fen, logTactics);
     }
 
     while (is >> token)
@@ -704,8 +702,11 @@ void Board::apply_token(const std::string& token) noexcept
     {
         if (Move::name(mlmove.move) == token)
         {
-            make_move<C>(mlmove.move);
+            make_move<C, true>(mlmove.move);
             break;
         }
     }
 }
+
+template void Board::set_fen<true>(const std::string &fen, bool logTactics) noexcept;
+template void Board::set_fen<false>(const std::string &fen, bool logTactics) noexcept;

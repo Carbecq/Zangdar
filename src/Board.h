@@ -10,7 +10,6 @@
 #include <string>
 #include <vector>
 #include "Move.h"
-#include "evaluate.h"
 #include "Attacks.h"
 #include "NNUE.h"
 #include "TranspositionTable.h"
@@ -45,10 +44,9 @@ class Board
 {
 public:
     Board();
-    Board(const std::string &fen) { set_fen(fen, false); }
+    Board(const std::string& fen);
 
-    void clear() noexcept;
-
+    void reset() noexcept;
     void parse_position(std::istringstream &is);
 
     //! \brief  Retourne le camp à jouer
@@ -157,7 +155,7 @@ public:
     //!  du point de vue 'C'
     template <Color C> [[nodiscard]] constexpr bool is_on_semiopen_file(int sq) const { return !(occupancy_cp<C, PAWN>() & FileMask64[sq]); }
 
-    void set_fen(const std::string &fen, bool logTactics) noexcept;
+    template <bool Update_NNUE> void set_fen(const std::string &fen, bool logTactics) noexcept;
     [[nodiscard]] std::string get_fen() const noexcept;
     void mirror_fen(const std::string &fen, bool logTactics);
 
@@ -177,6 +175,13 @@ public:
     template<Color C>
     [[nodiscard]] constexpr bool is_doing_check() const noexcept { return attackersButKing<C>(king_square<~C>()) > 0; }
 
+    template<MoveGenType MGType> void legal_moves(MoveList &ml) noexcept
+    {
+        if (turn() == WHITE)
+            legal_moves<WHITE, MGType>(ml);
+        else
+            legal_moves<BLACK, MGType>(ml);
+    }
     template<Color C, MoveGenType MGType> void legal_moves(MoveList &ml) noexcept;
 
     template<Color C> void apply_token(const std::string &token) noexcept;
@@ -315,8 +320,8 @@ public:
 
     //=========================================================================
 
-    template<Color C> void make_move(const MOVE move) noexcept;
-    template<Color C> void undo_move() noexcept;
+    template<Color C, bool Update_NNUE> void make_move(const MOVE move) noexcept;
+    template<Color C, bool Update_NNUE> void undo_move() noexcept;
     template<Color C> void make_nullmove() noexcept;
     template<Color C> void undo_nullmove() noexcept;
 
@@ -335,7 +340,7 @@ public:
                 return PieceType(i);
             }
         }
-        return NO_TYPE;
+        return NO_PIECE;
     }
 
 
@@ -358,24 +363,8 @@ public:
 
     //==============================================
     //  Evaluation
-
-    int evaluate();
-    Score evaluate_pieces(EvalInfo& ei);
-
-    template <Color C> Score evaluate_pawns(EvalInfo& ei);
-    template <Color C> Score evaluate_knights(EvalInfo& ei);
-    template <Color C> Score evaluate_bishops(EvalInfo& ei);
-    template <Color C> Score evaluate_rooks(EvalInfo& ei);
-    template <Color C> Score evaluate_queens(EvalInfo& ei);
-    template <Color C> Score evaluate_king(EvalInfo& ei);
-    template <Color C> Score evaluate_threats(const EvalInfo& ei);
-    template <Color C> Score evaluate_passed(EvalInfo& ei);
-    template <Color C> Score evaluate_king_attacks(const EvalInfo& ei) const;
-
-    int   scale_factor(const Score eval);
-    void  init_eval_info(EvalInfo& ei);
-    Score probe_pawn_cache(EvalInfo& ei);
-    bool  fast_see(const MOVE move, const int threshold) const;
+    int  evaluate();
+    bool fast_see(const MOVE move, const int threshold) const;
 
     //====================================================================
     //! \brief  Détermine s'il y a eu 50 coups sans prise ni coup de pion
@@ -422,34 +411,13 @@ public:
     //=============================================================================
     //! \brief  Met une pièce à la case indiquée
     //-----------------------------------------------------------------------------
-    void set_piece(const int square, const Color color, const PieceType piece) noexcept
-    {
-        colorPiecesBB[color] |= SQ::square_BB(square);
-        typePiecesBB[piece]  |= SQ::square_BB(square);
-        pieceOn[square]       = piece;
-
-#if defined USE_NNUE
-        nnue.update_feature<true>(color, piece, square);
-#endif
-    }
+    template <bool Update_NNUE>
+    void set_piece(const int square, const Color color, const PieceType piece) noexcept;
 
     bool test_mirror(const std::string &line);
     template<Color C, bool divide> [[nodiscard]] std::uint64_t perft(const int depth) noexcept;
     void test_value(const std::string& fen );
 
-
-    //! \brief  Calcule la phase de la position sur 24 points.
-    //! Cette phase dépend des pièces sur l'échiquier
-    //! La phase va de 0 (EndGame) à 24 (MiddleGame), dans le cas où aucun pion n'a été promu.
-    int  get_phase24();
-
-    //! \brief Calcule la phase de la position sur 256 points.
-    //! ceci pour avoir une meilleure granulométrie ?
-    //! ouverture     : phase24 = 24 : phase256 = 256,5
-    //! fin de partie :         =  0 :          = 0,5
-    int get_phase256(int phase24) { return (phase24 * 256 + 12) / 24; }
-
-    template <Color US> int get_material();
 
     //===========================================================================
     //  Syzygy
@@ -464,19 +432,20 @@ public:
     //*************************************************************************
 
     //===========================================================================
-    //  la position
+    //  Données
 
-    Bitboard colorPiecesBB[2] = {0ULL};     // bitboard des pièces pour chaque couleur
-    Bitboard typePiecesBB[7]  = {0ULL};     // bitboard des pièces pour chaque type de pièce
-    std::array<PieceType, 64> pieceOn;      // donne le type de la pièce occupant la case indiquée
-    int x_king[2];                          // position des rois
-    Color side_to_move = Color::WHITE;      // camp au trait
-    std::vector<std::string> best_moves;    // meilleur coup (pour les tests tactiques)
-    std::vector<std::string> avoid_moves;   // coup à éviter (pour les tests tactiques)
+    std::array<Bitboard, N_COLORS> colorPiecesBB;   // bitboard des pièces pour chaque couleur
+    std::array<Bitboard, N_PIECES> typePiecesBB;    // bitboard des pièces pour chaque type de pièce
+    std::array<PieceType, N_SQUARES> pieceOn;       // donne le type de la pièce occupant la case indiquée
+    std::array<int, N_COLORS> x_king;               // position des rois
+    Color side_to_move;                         // camp au trait
+    std::vector<std::string> best_moves;        // meilleur coup (pour les tests tactiques)
+    std::vector<std::string> avoid_moves;       // coup à éviter (pour les tests tactiques)
+    std::vector<Status> StatusHistory;          // historique de la partie (coups déjà joués ET coups de la recherche)
+    NNUE nnue;                                  // réseau NNUE
 
     //==============================================
     //  Status
-    std::vector<Status> StatusHistory;      // historique de la partie (coups déjà joués ET coups de la recherche)
     inline const Status& get_status() const { return StatusHistory.back(); }
     inline Status& get_status()             { return StatusHistory.back(); }
 
@@ -488,10 +457,7 @@ public:
     [[nodiscard]] inline Bitboard get_checkers()    const noexcept { return get_status().checkers; }
     [[nodiscard]] inline Bitboard get_pinned()      const noexcept { return get_status().pinned; }
 
-#if defined USE_NNUE
-    NNUE nnue;
     inline void reserve_nnue_capacity() { nnue.reserve_nnue_capacity(); }  // la capacité ne passe pas avec la copie
-#endif
 
 };  // class Board
 

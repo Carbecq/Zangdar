@@ -79,11 +79,7 @@ private:
                                const std::array<I16, INPUT_LAYER_SIZE * HIDDEN_LAYER_SIZE> &weights,
                                Usize offset);
 
-    //====================================
-    //! \brief Calcule la valeur clampée
-    //------------------------------------
     constexpr inline I32 crelu(I16 x) { return std::clamp(static_cast<I32>(x), 0, QA); }
-
     constexpr inline I32 screlu(I16 x) {
         auto clamped = std::clamp(static_cast<I32>(x), 0, QA);
         return clamped * clamped;

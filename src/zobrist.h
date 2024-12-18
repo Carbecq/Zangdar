@@ -2,6 +2,7 @@
 #define LIBCHESS_ZOBRIST_HPP
 
 #include "defines.h"
+#include "types.h"
 
 // valeurs calculées à l'aide du programme rng
 
@@ -30,7 +31,7 @@ constexpr U64 ep_key[64] = {
     0x29059916e6b0821ULL ,  0x9fba2e848e6a4de6ULL ,  0x81bc1c4d11ac6b2dULL ,  0x76b14a0dc2eddfb8ULL ,
 };
 
-constexpr U64 piece_key[2][7][64] =
+constexpr U64 piece_key[N_COLORS][N_PIECES][N_SQUARES] =
     {
         {
             {

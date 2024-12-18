@@ -50,23 +50,15 @@ DEFS = -DHOME=$(HOME)
 #  NE PAS UTILISER PRETTY avec
 #       + Arena (score mal affiché)
 #       + test STS
-# DEFS += -DUSE_PRETTY
+#DEFS += -DUSE_PRETTY
 
 #---------------------------------------------------
 #  NNUE
 #---------------------------------------------------
 
-USE_NNUE = yes
-
-ifeq ($(USE_NNUE),yes)
-    #NETWORK = \"networks/clarity_net005.nnue\"
-    NETWORK = \"networks/net-2.bin\"
-    DEFS += -DUSE_NNUE
-    CFLAGS_NNUE = -DNETWORK=$(NETWORK)
-    EXT = NNUE
-else
-    EXT = HCE
-endif
+#NETWORK = \"networks/clarity_net005.nnue\"
+NETWORK = \"networks/net-2.bin\"
+CFLAGS_NNUE = -DNETWORK=$(NETWORK)
 
 #---------------------------------------------------------------------
 #   Architecture
@@ -77,7 +69,7 @@ ifeq ($(ARCH), )
 endif
 
 CFLAGS_ARCH =
-ZANGDAR = Zangdar-$(EXT)
+ZANGDAR     = Zangdar
 
 DEFAULT_EXE = $(ZANGDAR)
 
@@ -140,10 +132,11 @@ else
 	CFLAGS_ARCH += -march=native
 endif
 
-$(info CXX="$(CXX)")
-$(info ARCH="$(ARCH)")
-$(info Windows="$(target_windows)")
-$(info NNUE="$(EXT)")
+$(info CXX     = $(CXX))
+$(info ARCH    = $(ARCH))
+$(info OS      = $(OS))
+$(info Network = $(NETWORK))
+$(info Version = $(VERSION))
 
 ### Executable name
 ifeq ($(target_windows),yes)

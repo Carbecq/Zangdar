@@ -107,8 +107,8 @@ DataGen::DataGen(const int _nbr_threads, const int _max_fens, const std::string&
 //! \param[in]  run         indique que l'on veut arrêter
 //--------------------------------------------------------------------
 void DataGen::genfens(int thread_id, const std::string& str_file,
-                        std::atomic<Usize>& total_fens,
-                        std::atomic<bool>& run)
+                      std::atomic<Usize>& total_fens,
+                      std::atomic<bool>& run)
 {
     printf("thread id = %d : out = %s \n", thread_id, str_file.c_str());
 
@@ -146,29 +146,26 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
     MoveList movelist;
     Usize    nbr_moves;
-    Board    board(START_FEN);
+    Board    board;
     int      drawCount = 0;
     int      winCount = 0;
-    bool     board_generated;
 
     std::string  result;  // 0.5 for draw, 1.0 for white win, 0.0 for black win. = ~Color = 1 - Color
     MOVE    move;
     I32     score;
 
+    //====================================================
     // Boucle infinie sur une simulation de parties
+    //----------------------------------------------------
+
     while (run.load())
     {
-        // printf("-----nouvelle partie : id=%d  game %zu \n", thread_id, nbr_games);
+        // printf("-----nouvelle partie : id=%d  \n", thread_id);
 
-        board.clear();
-        board.set_fen(START_FEN, false);
+        board.reset();
+        board.set_fen<true>(START_FEN, false);
         transpositionTable.clear();
         td->reset();
-        timer.setup(Color::WHITE);
-        movelist.clear();
-        drawCount   = 0;
-        winCount    = 0;
-        nbr_fens    = 0;
 
         //====================================================
         //  Initalisation random de l'échiquier
@@ -176,49 +173,72 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
         // printf("-------------------------------------------init random  \n");
 
-        board_generated = false;
-        for (Usize idx = 0; idx < MAX_RANDOM_PLIES; idx++)
+        Usize current_ply = 0;
+        while (current_ply < MAX_RANDOM_PLIES)
         {
-            board_generated = true;
             if (board.turn() == WHITE)
             {
                 board.legal_moves<WHITE, MoveGenType::ALL>(movelist);
+                // On exécute la boucle jusqu'à trouver un coup
                 if (movelist.size() == 0)
                 {
-                    board_generated = false;
+                    current_ply = 0;
+                    board.reset();
+                    board.set_fen<true>(START_FEN, false);
                     continue;
                 }
                 std::uniform_int_distribution<> distribution{0, int(movelist.size() - 1)};
                 const auto index = distribution(generator);
-                board.make_move<WHITE>(movelist.mlmoves[index].move);
+                board.make_move<WHITE, true>(movelist.mlmoves[index].move);
+
+                // Prevent the last ply being checkmate/stalemate
+                if (++current_ply == MAX_RANDOM_PLIES)
+                {
+                    board.legal_moves<WHITE, MoveGenType::ALL>(movelist);
+                    if (movelist.size() == 0)
+                    {
+                        current_ply = 0;
+                        board.reset();
+                        board.set_fen<true>(START_FEN, false);
+                    }
+                }
             }
             else
             {
                 board.legal_moves<BLACK, MoveGenType::ALL>(movelist);
                 if (movelist.size() == 0)
                 {
-                    board_generated = false;
+                    current_ply = 0;
+                    board.reset();
+                    board.set_fen<true>(START_FEN, false);
                     continue;
                 }
                 std::uniform_int_distribution<> distribution{0, int(movelist.size() - 1)};
                 const auto index = distribution(generator);
-                board.make_move<BLACK>(movelist.mlmoves[index].move);
+                board.make_move<BLACK, true>(movelist.mlmoves[index].move);
+
+                if (++current_ply == MAX_RANDOM_PLIES)
+                {
+                    board.legal_moves<BLACK, MoveGenType::ALL>(movelist);
+                    if (movelist.size() == 0)
+                    {
+                        current_ply = 0;
+                        board.reset();
+                        board.set_fen<true>(START_FEN, false);
+                    }
+                }
             }
         }
-        // impossible de générer un échiquier, on passe à une nouvelle partie
-        if(board_generated == false)
-        {
-            // nbr_games++;    // évite une boucle infinie
-            // printf("-------------------------------------------generated false  \n");
-            continue;
-        }
+
         // printf("-------------------------------------------generated OK  \n");
+
+        // Evaluation de la position, en fin des MAX_RANDOM_PLIES moves
+        // Si elle est trop déséquilibrée, on passe à une nouvelle partie
 
         move  = Move::MOVE_NONE;
         score = -INFINITE;
+        timer.setup(Color::WHITE);
 
-        // Evaluation de la position, en fin des MAX_RANDOM_MOVES moves
-        // Si elle est trop déséquilibrée, on passe à une nouvelle partie
         if (board.turn() == WHITE)
             data_search<WHITE>(board, timer, search, td, si, move, score);
         else
@@ -226,21 +246,23 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
         if (std::abs(score) > MAX_RANDOM_SCORE)
         {
             // printf("-------------------------------------------score false  %d\n", score);
-            // nbr_games++;    // évite une boucle infinie
             continue;
         }
-        // printf("-------------------------------------------score OK  %d\n", score);
 
+        // printf("-------------------------------------------score OK  %d\n", score);
 
         //====================================================
         //  Boucle de jeu
         //----------------------------------------------------
 
+        drawCount   = 0;
+        winCount    = 0;
+        nbr_fens    = 0;
         timer.setup(SOFT_NODE_LIMIT, HARD_NODE_LIMIT);
+
         while (true)
         {
             // printf("----------------------------nouveau coup \n");
-            movelist.clear();
             td->nodes = 0;
             td->stopped  = false;
             std::memset(td->_info, 0, sizeof(SearchInfo)*STACK_SIZE);
@@ -332,9 +354,9 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
             // Exécution du coup trouvé lors de la recherche
             if (board.turn() == WHITE)
-                board.make_move<WHITE>(move);
+                board.make_move<WHITE, true>(move);
             else
-                board.make_move<BLACK>(move);
+                board.make_move<BLACK, true>(move);
 
         } // fin de la partie
 
@@ -418,7 +440,7 @@ void DataGen::data_search(Board& board, Timer& timer,
         auto elapsed = timer.elapsedTime();
 
         std::cout << "time " << elapsed
-            << "  depth " << td->depth
+                  << "  depth " << td->depth
                   << "   nodes " << td->nodes
                   << " score " << td->score
                   << " move " << Move::name(td->best_move)

@@ -1,10 +1,9 @@
 #include "Board.h"
 #include "Move.h"
 #include "Attacks.h"
-#include "evaluate.h"
 
 
-constexpr int SEE_VALUE[7] = {0, 100, 300, 300, 500, 900, 9999};
+constexpr int SEE_VALUE[N_PIECES] = {0, 100, 300, 300, 500, 900, 9999};
 
 //==========================================================================
 //! \brief  Détermine si le coup est avantageux :

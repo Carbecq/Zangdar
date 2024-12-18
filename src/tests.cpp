@@ -58,7 +58,7 @@ void test_suite(const std::string& abc, int dmax)
     char            tag = ';';
     char            tag2 = ' ';
 
-    Board *CB = new Board();
+    Board CB;
     auto start = TimePoint::now();
 
     // Boucle sur l'ensemble des positions de test
@@ -106,8 +106,8 @@ void test_suite(const std::string& abc, int dmax)
         // boucle sur les profondeurs de test
         for (int i=1; i<=nbr_prof; i++)
         {
-            CB->clear();
-            CB->set_fen(fen, false);
+            CB.reset();
+            CB.set_fen<false>(fen, false);
 
             aux     = liste1.at(i);                     // "D1 20"
             liste2  = split(aux, tag2);                  // 0= "D1"; 1= "20"
@@ -132,10 +132,10 @@ void test_suite(const std::string& abc, int dmax)
                 expected = std::stoull(aux);
 
                 // Exécution du test perft pour cette position et cette profondeur
-                if (CB->turn() == WHITE)
-                    actual = CB->perft<WHITE, false>(depth);
+                if (CB.turn() == WHITE)
+                    actual = CB.perft<WHITE, false>(depth);
                 else
-                    actual = CB->perft<BLACK, false>(depth);
+                    actual = CB.perft<BLACK, false>(depth);
 
                 total_expected += expected;
                 total_actual   += actual;
@@ -149,7 +149,9 @@ void test_suite(const std::string& abc, int dmax)
                 {
                     std::cout << "ligne=" << numero << " ; depth=" << depth << "  FAILED : attendus=" << expected << " ; trouves=" << actual << std::endl;
                     std::cout << line << std::endl;
-                    Board board(fen);
+                    Board board;
+
+                    board.set_fen<false>(fen, false);
                     failed_tests++;
                     std::cout << board.display() << std::endl;
                     return;
@@ -175,7 +177,6 @@ void test_suite(const std::string& abc, int dmax)
 
     std::cout << "********************" << std::endl;
 
-    delete CB;
 }
 
 //========================================================
@@ -215,8 +216,8 @@ void test_perft(const std::string& str, const std::string& m_fen, int depth)
     /* https://www.chessprogramming.org/Perft_Results
      * http://www.rocechess.ch/perft.html
      */
-    Board CB = Board(fen);
-
+    Board CB;
+    CB.set_fen<false>(fen, false);
     std::cout << CB.display() << std::endl;
     std::cout << std::endl;
 
@@ -240,7 +241,6 @@ void test_perft(const std::string& str, const std::string& m_fen, int depth)
         std::cout << "resultat        : OK " << std::endl;
     else
         std::cout << "resultat        : >>>>>>>>>>>>>>>>>>>>>>>>>>>> KO : bon = " << nbr[depth] << std::endl;
-    std::cout << "evaluation      : " << CB.evaluate() << std::endl;
 }
 
 //========================================================
@@ -266,6 +266,7 @@ void test_eval(const std::string& fen)
 "2rBrb2/3k1p2/1Q4p1/4P3/3n1P1p/2P4P/P6P/1K1R4 w - - 0 39 ";
 
     Board b;
+    b.reset();
 
     b.test_value(fen);
 }
@@ -327,8 +328,8 @@ bool Board::test_mirror(const std::string& line)
 //    std::cout << "********************************************************" << std::endl;
 //    std::cout << line << std::endl;
 
-    clear();
-    set_fen(line, true);
+    reset();
+    set_fen<false>(line, true);
 
 //    std::cout << display() << std::endl;
 
@@ -347,7 +348,8 @@ bool Board::test_mirror(const std::string& line)
     if(ev1 != ev2)
     {
         std::cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> " << std::endl;
-        set_fen(line, true);
+        reset();
+        set_fen<false>(line, true);
         std::cout << display() << std::endl;
         mirror_fen(line, true);
         std::cout << display() << std::endl;
@@ -364,8 +366,8 @@ bool Board::test_mirror(const std::string& line)
 //------------------------------------------------------
 void Board::test_value(const std::string& fen )
 {
-    clear();
-    set_fen(fen, false);
+    reset();
+    set_fen<false>(fen, false);
     std::cout << display() << std::endl;
 
     MoveList ml;
@@ -529,8 +531,8 @@ void test_see()
         strm  = aux.substr(1, aux.size());
         score = std::stoi(liste1[2]);
 
-        board.clear();
-        board.set_fen(fen, false);
+        board.reset();
+        board.set_fen<false>(fen, false);
 
         if (board.turn() == WHITE)
             board.legal_moves<WHITE, MoveGenType::QUIET>(ml);

@@ -98,7 +98,7 @@ void Uci::run()
         else if (token == "position")
         {
             // set up the position described in fenstring
-            uci_board.clear();
+            uci_board.reset();
             uci_board.parse_position(iss);
         }
 
@@ -224,7 +224,8 @@ void Uci::run()
         else if (token == "fen")
         {
             std::getline(iss, fen);
-            uci_board.set_fen(fen, false);
+            uci_board.reset();
+            uci_board.set_fen<false>(fen, false);
             std::cout << uci_board.display() << std::endl;;
         }
         else if (token == "display")
@@ -603,8 +604,8 @@ void Uci::go_run(const std::string& abc, const std::string& fen, int dmax, int t
         auxi = fen;
 
     //    Options.log_uci = true;
-    uci_board.clear();
-    uci_board.set_fen(auxi, false);
+    uci_board.reset();
+    uci_board.set_fen<true>(auxi, false);
     std::cout << uci_board.display() << std::endl;
     std::string strgo;
 
@@ -772,8 +773,8 @@ bool Uci::go_tactics(const std::string& line, int dmax, int tmax, U64& total_nod
     transpositionTable.clear();
     threadPool.reset();
 
-    uci_board.clear();
-    uci_board.set_fen(line, true);
+    uci_board.reset();
+    uci_board.set_fen<true>(line, true);
 
     const auto start = TimePoint::now();
 
@@ -899,8 +900,8 @@ void Uci::bench(int argCount, char* argValue[])
         transpositionTable.clear();
         threadPool.reset();
 
-        uci_board.clear();
-        uci_board.set_fen(line, true);
+        uci_board.reset();
+        uci_board.set_fen<true>(line, true);
         std::cout << "[# " << total+1 << "] " << line << std::endl;
 
         const auto start = TimePoint::now();

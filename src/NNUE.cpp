@@ -7,8 +7,6 @@
 #include "types.h"
 #include "bitmask.h"
 
-#if defined USE_NNUE
-
 namespace {
 
 #include "incbin/incbin.h"
@@ -124,7 +122,7 @@ std::pair<Usize, Usize> NNUE::get_indices(Color color, PieceType piece, int squa
     //  Lorsque une entrée est modifiée par un coup, il faut retrouver
     //  son indice.
 
-    assert(piece != PieceType::NO_TYPE);
+    assert(piece  != PieceType::NO_PIECE);
     assert(square != SquareType::NO_SQUARE);
 
     constexpr Usize color_stride = N_SQUARES * 6;
@@ -166,5 +164,4 @@ template void NNUE::update_feature<false>(Color color, PieceType piece, int squa
 template int NNUE::evaluate<WHITE>();
 template int NNUE::evaluate<BLACK>();
 
-#endif
 

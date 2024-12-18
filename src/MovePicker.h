@@ -21,7 +21,7 @@ enum {
 };
 
 constexpr int MvvLvaScores[N_PIECES][N_PIECES] = {
-    {0,  0,  0,  0,  0,  0,  0}, // victim No_Type
+    {0,  0,  0,  0,  0,  0,  0}, // victim No_Piece
     {0, 16, 15, 14, 13, 12, 11}, // victim Pawn
     {0, 26, 25, 24, 23, 22, 21}, // victim Knight
     {0, 36, 35, 34, 33, 32, 31}, // victim Bishop

@@ -1,36 +1,57 @@
 #include <sstream>
 #include "Board.h"
 
+//=======================================
+//! \brief  Constructeur
+//---------------------------------------
 Board::Board()
 {
     StatusHistory.reserve(MAX_HISTO);
+    reset();
+}
+
+//=======================================
+//! \brief  Constructeur
+//---------------------------------------
+Board::Board(const std::string& fen)
+{
+    StatusHistory.reserve(MAX_HISTO);
+    reset();
+
+    set_fen<false>(fen, false);
 }
 
 //==========================================
 //! \brief  Initialisation de l'échiquier
 //------------------------------------------
-void Board::clear() noexcept
+void Board::reset() noexcept
 {
-    colorPiecesBB[0] = 0ULL;
-    colorPiecesBB[1] = 0ULL;
-
-    typePiecesBB[0] = 0ULL;
-    typePiecesBB[1] = 0ULL;
-    typePiecesBB[2] = 0ULL;
-    typePiecesBB[3] = 0ULL;
-    typePiecesBB[4] = 0ULL;
-    typePiecesBB[5] = 0ULL;
-    typePiecesBB[6] = 0ULL;
-
-    pieceOn.fill(NO_TYPE);
-
-    x_king[WHITE] = NO_SQUARE;                      // position des rois
-    x_king[BLACK] = NO_SQUARE;                      // position des rois
-
-    // gamemove_counter = 0;
+    colorPiecesBB.fill(0ULL);
+    typePiecesBB.fill(0ULL);
+    pieceOn.fill(NO_PIECE);
+    x_king.fill(NO_SQUARE);
     side_to_move = Color::WHITE;
-
+    avoid_moves.clear();
+    best_moves.clear();
     StatusHistory.clear();
+    nnue.reset();
+}
+
+//==========================================
+//! \brief  Evaluation de la position
+//! \return Evaluation statique de la position
+//! du point de vue du camp au trait.
+//------------------------------------------
+[[nodiscard]] int Board::evaluate()
+{
+    if (side_to_move == WHITE)
+        return nnue.evaluate<WHITE>();
+    else
+        return nnue.evaluate<BLACK>();
+
+    //note : certains codes modifient la valeur retournée par nnue
+    //       soit avec une "phase", soit avec une valeur "random".
+
 }
 
 //===================================================
@@ -111,37 +132,6 @@ std::string Board::display() const noexcept
     return(ss.str());
 }
 
-
-//==========================================================
-//! \brief  Calcule la phase de la position
-//! Cette phase dépend des pièces sur l'échiquier
-//! La phase va de 0 à 24, dans le cas où aucun pion n'a été promu.
-//!     phase =  0 : endgame
-//!     phase = 24 : opening
-//! Remarque : le code Fruit va à l'envers.
-//----------------------------------------------------------
-int Board::get_phase24()
-{
-    return(  4 * BB::count_bit(typePiecesBB[QUEEN])
-           + 2 * BB::count_bit(typePiecesBB[ROOK])
-           +     BB::count_bit(typePiecesBB[BISHOP] | typePiecesBB[KNIGHT]) );
-}
-
-
-//=============================================================
-//! \brief  Calcule la valeur du matériel restant
-//-------------------------------------------------------------
-template <Color US>
-int Board::get_material()
-{
-    return(
-          P_MG * BB::count_bit(occupancy_cp<US, PAWN>())
-        + N_MG * BB::count_bit(occupancy_cp<US, KNIGHT>())
-        + B_MG * BB::count_bit(occupancy_cp<US, BISHOP>())
-        + R_MG * BB::count_bit(occupancy_cp<US, ROOK>())
-        + Q_MG * BB::count_bit(occupancy_cp<US, QUEEN>())
-        );
-}
 
 //=============================================================
 //! \brief  Calcule la valeur du hash
@@ -232,5 +222,3 @@ void Board::calculate_hash(U64& khash, U64& phash) const
 }
 
 
-template int Board::get_material<WHITE>();
-template int Board::get_material<BLACK>();
