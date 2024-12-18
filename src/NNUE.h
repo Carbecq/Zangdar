@@ -8,7 +8,7 @@
 #include <vector>
 #include "types.h"
 
-//  Description du réseau : (768->128)x2->1, ClippedReLU
+//  Description du réseau : (768->S56)x2->1, SquaredClippedReLU
 //
 //      entrées     : 2 (couleurs) * 6 (pièces) * 64 (cases)  = 768
 //      neurones    : 128 ; 1 seule couche
@@ -16,19 +16,15 @@
 //      ClippedRelu : l'activation se fait en "clippant" la valeur entre 0 et QA (ici 255)
 //                      int activated = std::clamp(static_cast<int>(us[i]), 0, 255);
 
-//  Voir aussi les codes de
-//      Clarity     (768->256)x2->1  crelu, perspective
-//      Leorik      (768->256)x2->1  crelu, perspective
-//      Pedantic    (768->384)x2->1  screlu, perspective
 
 
 constexpr Usize INPUT_LAYER_SIZE  = N_COLORS * 6 * N_SQUARES;      // = 768 : entrées (note : il n'y a que 6 pièces
-constexpr Usize HIDDEN_LAYER_SIZE = 128;     // Hidden Layer : nombre de neuron(es) ; va de 16 à ... 1024 (plus ?)
+constexpr Usize HIDDEN_LAYER_SIZE = 256;     // Hidden Layer : nombre de neuron(es) ; va de 16 à ... 1024 (plus ?)
 
 constexpr I32 SCALE = 400;
-constexpr I32 QA  = 255;        // constante de clamp (crelu)
-constexpr I32 QB  =  64;
-constexpr I32 QAB = QA * QB;
+constexpr I32 QA    = 181;        // constante de clamp (crelu)
+constexpr I32 QB    =  64;
+constexpr I32 QAB   = QA * QB;
 
 //  Architecture du réseau
 //  alignement sur 32 octets pour AVX2 (??)
@@ -87,6 +83,13 @@ private:
     //! \brief Calcule la valeur clampée
     //------------------------------------
     constexpr inline I32 crelu(I16 x) { return std::clamp(static_cast<I32>(x), 0, QA); }
+
+    constexpr inline I32 screlu(I16 x) {
+        auto clamped = std::clamp(static_cast<I32>(x), 0, QA);
+        return clamped * clamped;
+    }
+
+
 };
 
 #endif // NNUE_H

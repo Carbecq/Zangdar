@@ -153,11 +153,11 @@ I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
 
     for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
     {
-        sum += crelu(us[i])   * weights[i];
-        sum += crelu(them[i]) * weights[HIDDEN_LAYER_SIZE + i];
+        sum += screlu(us[i])   * weights[i];
+        sum += screlu(them[i]) * weights[HIDDEN_LAYER_SIZE + i];
     }
 
-    return sum;
+    return sum / QA;
 }
 
 template void NNUE::update_feature<true>(Color color, PieceType piece, int square);
