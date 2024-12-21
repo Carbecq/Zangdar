@@ -358,8 +358,6 @@ void Uci::parse_go(std::istringstream& iss)
             // search x plies only.
             iss >> depth;
             depth = std::min(depth, MAX_PLY);
-
-            printf("go depth %d\n", depth);
         }
         else if (token == "nodes")
         {
@@ -372,7 +370,6 @@ void Uci::parse_go(std::istringstream& iss)
             uint64_t searchTime;
             iss >> searchTime;
             movetime = searchTime;
-            printf("go movetime %d \n", movetime);
         }
     }
 

@@ -94,8 +94,9 @@ void Timer::setup(Color color)
     }
     else if (limits.movetime != 0) // temps de recherche imposé = move_time
     {
-        timeForThisMove     = limits.movetime - MoveOverhead;
-        timeForThisDepth    = limits.movetime - MoveOverhead;
+        // Dans ce cas, on n'utilise pas MoveOverhead
+        timeForThisMove     = limits.movetime;
+        timeForThisDepth    = limits.movetime;
     }
     else if (limits.time[color] != 0)
     {

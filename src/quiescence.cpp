@@ -94,7 +94,8 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
                           Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, 0);
 
     // Boucle sur tous les coups
-    while ((move = movePicker.next_move(true).move ) != Move::MOVE_NONE)
+    // Si on est en échec, on génère aussi les coups "quiet"
+    while ((move = movePicker.next_move(!isInCheck).move ) != Move::MOVE_NONE)
     {
         // Prune des prises inintéressantes
         if (!isInCheck && movePicker.get_stage() > STAGE_GOOD_NOISY)

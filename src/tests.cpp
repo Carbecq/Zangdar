@@ -376,20 +376,20 @@ void Board::test_value(const std::string& fen )
     BB::PrintBB(get_status().checkers, "checkers");
     BB::PrintBB(get_status().pinned, "pinned");
 
-#if 0
+
     U32 move;
 
     // generate successor moves
-   legal_moves<WHITE>(ml);
+   legal_moves<WHITE, MoveGenType::ALL>(ml);
    sort_moves(ml);
 
     // look over all moves
-   for (int index=0; index<ml.count; index++)
+   for (Usize index=0; index<ml.count; index++)
    {
        move = ml.mlmoves[index].move;
 
        // execute current move
-       make_move<WHITE>(move);
+       make_move<WHITE, false>(move);
 
        bool doCheck    = is_in_check();
 
@@ -408,9 +408,9 @@ void Board::test_value(const std::string& fen )
            printf("blanc ne fait pas échec \n");
 
        // retract current move
-       undo_move<WHITE>();
+       undo_move<WHITE, false>();
    }
-#endif
+
 }
 
 #include "MovePicker.h"
