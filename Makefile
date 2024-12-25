@@ -57,7 +57,7 @@ DEFS = -DHOME=$(HOME)
 #---------------------------------------------------
 
 #NETWORK = \"networks/clarity_net005.nnue\"
-NETWORK = \"networks/net-2.bin\"
+NETWORK = \"networks/net-2-255.bin\"
 CFLAGS_NNUE = -DNETWORK=$(NETWORK)
 
 #---------------------------------------------------------------------
@@ -65,7 +65,7 @@ CFLAGS_NNUE = -DNETWORK=$(NETWORK)
 #---------------------------------------------------------------------
 
 ifeq ($(ARCH), )
-   ARCH = native-pext
+   ARCH = native
 endif
 
 CFLAGS_ARCH =
@@ -75,7 +75,7 @@ DEFAULT_EXE = $(ZANGDAR)
 
 ifeq ($(ARCH), x86-64)
     DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
-	CFLAGS_ARCH += -msse -msse2
+    CFLAGS_ARCH += -msse -msse2
 
 else ifeq ($(ARCH), popcnt)
     DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
@@ -95,8 +95,9 @@ else ifeq ($(ARCH), avx2)
     CFLAGS_ARCH += -mmmx
     CFLAGS_ARCH += -mavx
     CFLAGS_ARCH += -mavx2 -mfma
+    CFLAGS_ARCH += -DUSE_SIMD
 
-else ifeq ($(ARCH), bmi2-nopext)
+else ifeq ($(ARCH), bmi2)
     DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
     CFLAGS_ARCH += -msse -msse2
     CFLAGS_ARCH += -msse3 -mpopcnt
@@ -106,30 +107,19 @@ else ifeq ($(ARCH), bmi2-nopext)
     CFLAGS_ARCH += -mavx
     CFLAGS_ARCH += -mavx2 -mfma
     CFLAGS_ARCH += -mbmi -mbmi2
+    CFLAGS_ARCH += -DUSE_PEXT -DUSE_SIMD
 
-else ifeq ($(ARCH), bmi2-pext)
-    DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
-    CFLAGS_ARCH += -msse -msse2
-    CFLAGS_ARCH += -msse3 -mpopcnt
-    CFLAGS_ARCH += -msse4.1 -msse4.2 -msse4a
-    CFLAGS_ARCH += -mssse3
-    CFLAGS_ARCH += -mmmx
-    CFLAGS_ARCH += -mavx
-    CFLAGS_ARCH += -mavx2 -mfma
-    CFLAGS_ARCH += -mbmi -mbmi2 -DUSE_PEXT
-
-else ifeq ($(ARCH), native-nopext)
-    DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-5950X-nopext
-	CFLAGS_ARCH += -march=native
-
-else ifeq ($(ARCH), native-pext)
-    DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-5950X-pext
-	CFLAGS_ARCH += -march=native -DUSE_PEXT
+else ifeq ($(ARCH), native)
+    DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-5950X
+    CFLAGS_ARCH += -march=native
+    CFLAGS_ARCH += -DUSE_PEXT -DUSE_SIMD
 
 else
-	ARCH = native-pext
-    DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-5950X-nopext
-	CFLAGS_ARCH += -march=native
+    ARCH = native
+    DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-5950X
+    CFLAGS_ARCH += -march=native
+    CFLAGS_ARCH += -DUSE_PEXT -DUSE_SIMD
+
 endif
 
 $(info CXX     = $(CXX))
@@ -153,9 +143,9 @@ endif
 
 ifeq ($(findstring clang, $(CXX)), clang)
 
-CFLAGS_OPT  = -O3 -flto=auto -DNDEBUG -pthread -Wdisabled-optimization
+CFLAGS_REL   = -O3 -flto=auto -DNDEBUG -pthread -Wdisabled-optimization -Wall -Wextra
 
-CFLAGS_WARN1 = -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy
+CFLAGS_WARN1 = -pedantic -Wcast-align -Wcast-qual -Wctor-dtor-privacy
 CFLAGS_WARN2 = -Wformat=2 -Winit-self -Wmissing-declarations
 CFLAGS_WARN3 = -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-promo
 CFLAGS_WARN4 = -Wstrict-overflow=5 -Wswitch-default -Wundef -Wno-unused
@@ -167,7 +157,7 @@ PGO_USE   = -fprofile-instr-use=zangdar.profdata
 
 else
 
-CFLAGS_OPT  = -O3 -flto=auto -DNDEBUG -pthread -fwhole-program -Wdisabled-optimization
+CFLAGS_REL   = -O3 -flto=auto -DNDEBUG -pthread -fwhole-program -Wdisabled-optimization -Wall -Wextra
 
 CFLAGS_WARN1 = -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy 
 CFLAGS_WARN2 = -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs 
@@ -197,12 +187,10 @@ CFLAGS_COM  = -pipe -std=c++20 -DVERSION=\"$(VERSION)\" $(DEFS) $(CFLAGS_NNUE)
 CFLAGS_DBG  = -g -O2
 CFLAGS_WARN = $(CFLAGS_WARN1) $(CFLAGS_WARN2) $(CFLAGS_WARN3) $(CFLAGS_WARN4) $(CFLAGS_WARN5) $(CFLAGS_WARN6)
 CFLAGS_PROF = -pg
-CFLAGS_TUNE = -fopenmp -DUSE_TUNER
 
-LDFLAGS_OPT  = -s -flto=auto
+LDFLAGS_REL  = -s -flto=auto
 LDFLAGS_DBG  = -lm
 LDFLAGS_PROF = -pg
-LDFLAGS_TUNE = -fopenmp
 
 PGO_FLAGS = -fno-asynchronous-unwind-tables
 
@@ -216,20 +204,17 @@ endif
 #   Targets
 #---------------------------------------------------------------------
 
-release: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_WARN) $(CFLAGS_OPT)
-release: LDFLAGS = $(LDFLAGS_OPT) $(LDFLAGS_WIN)
+release: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL)
+release: LDFLAGS = $(LDFLAGS_REL) $(LDFLAGS_WIN)
 
 debug: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_WARN) $(CFLAGS_DBG)
 debug: LDFLAGS = $(LDFLAGS_DBG) $(LDFLAGS_WIN)
 
-prof: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_WARN) $(CFLAGS_PROF)
+prof: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_PROF)
 prof: LDFLAGS = $(LDFLAGS_PROF) $(LDFLAGS_WIN)
 
-tune: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_WARN) $(CFLAGS_OPT) $(CFLAGS_TUNE)
-tune: LDFLAGS = $(LDFLAGS_OPT) $(LDFLAGS_TUNE) $(LDFLAGS_WIN)
-
-pgo: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_WARN) $(CFLAGS_OPT)
-pgo: LDFLAGS = $(LDFLAGS_OPT) $(LDFLAGS_WIN)
+pgo: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL)
+pgo: LDFLAGS = $(LDFLAGS_REL) $(LDFLAGS_WIN)
 
 #---------------------------------------------------------------------
 #	Dépendances
@@ -239,8 +224,6 @@ release: $(EXE)
 	$(info Génération en mode release)
 prof: $(EXE)
 	$(info Génération en mode profile)
-tune: $(EXE)
-	$(info Génération en mode tuning)
 debug: $(EXE)
 	$(info Génération en mode debug)
 

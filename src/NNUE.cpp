@@ -6,6 +6,7 @@
 #include <iostream>
 #include "types.h"
 #include "bitmask.h"
+#include "simd.h"
 
 namespace {
 
@@ -29,7 +30,7 @@ int NNUE::evaluate()
     else
         output = activation(current.black, current.white, network->output_weights);
 
-    return (output + network->output_bias) * SCALE / QAB;
+    return output;
 }
 
 //====================================================
@@ -143,20 +144,111 @@ std::pair<Usize, Usize> NNUE::get_indices(Color color, PieceType piece, int squa
 //! \brief  Calcul de la valeur résultante des 2 accumulateurs
 //! et de leur poids
 //-----------------------------------------
+#if defined USE_SIMD
+
+constexpr int kChunkSize = sizeof(simd::Vepi16) / sizeof(I16);
+
+
 I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
                      const std::array<I16, HIDDEN_LAYER_SIZE>& them,
                      const std::array<I16, HIDDEN_LAYER_SIZE * 2>& weights)
 {
-    I32 sum = 0;
+    // Routine provenant de Integral
+    // Merci pour les commentaires )
+
+    // Doc : https://cosmo.tardis.ac/files/2024-06-01-nnue.html
+    // On va utiliser l'algorithme "Lizard"
+
+    auto sum = simd::ZeroEpi32();
+
+    // Compute evaluation from our perspective
+    for (Usize i = 0; i < HIDDEN_LAYER_SIZE; i += kChunkSize)
+    {
+        const auto input  = simd::LoadEpi16(&us[i]);
+        const auto weight = simd::LoadEpi16(&weights[i]);
+
+        // Clip the accumulator values
+        const auto clipped = simd::Clip(input, QA);
+
+        // compute t = v * w in 16-bit
+        // this step relies on v being less than 256 and abs(w) being less than 127,
+        // so abs(v * w) is at most 255*126=32130, less than i16::MAX, which is 32767,
+        // so the output still fits in i16.
+
+        // Multiply weights by clipped values (still in i16, no overflow)
+        const auto product = simd::MultiplyEpi16(clipped, weight);
+
+        // Perform the second multiplication with widening to i32,
+        // accumulating the result
+        const auto result = simd::MultiplyAddEpi16(product, clipped);
+
+        // Accumulate the results in 32-bit integers
+        sum = simd::AddEpi32(sum, result);
+    }
+
+    // Compute evaluation from their perspective
+    for (Usize i = 0; i < HIDDEN_LAYER_SIZE; i += kChunkSize)
+    {
+        const auto input  = simd::LoadEpi16(&them[i]);
+        const auto weight = simd::LoadEpi16(&weights[i + HIDDEN_LAYER_SIZE]);
+
+        // Clip the accumulator values
+        const auto clipped = simd::Clip(input, QA);
+
+        // Multiply weights by clipped values (still in i16, no overflow)
+        const auto product = simd::MultiplyEpi16(clipped, weight);
+
+        // Perform the second multiplication with widening to i32,
+        // accumulating the result
+        const auto result = simd::MultiplyAddEpi16(product, clipped);
+
+        // Accumulate the results in 32-bit integers
+        sum = simd::AddEpi32(sum, result);
+    }
+
+    // Perform a horizontal sum to get the final result
+    I32 eval = simd::ReduceAddEpi32(sum);
+
+    // De-quantize the evaluation because of our squared activation function
+    eval /= QA;
+
+    // Add final output bias
+    eval += network->output_bias;
+
+    // Scale the evaluation
+    eval *= SCALE;
+
+    // De-quantize again
+    eval /= QAB;
+
+    return eval;
+
+}
+
+#else
+
+I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
+                     const std::array<I16, HIDDEN_LAYER_SIZE>& them,
+                     const std::array<I16, HIDDEN_LAYER_SIZE * 2>& weights)
+{
+    I32 eval = 0;
 
     for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
     {
-        sum += screlu(us[i])   * weights[i];
-        sum += screlu(them[i]) * weights[HIDDEN_LAYER_SIZE + i];
+        eval += screlu(us[i])   * weights[i];
+        eval += screlu(them[i]) * weights[HIDDEN_LAYER_SIZE + i];
     }
 
-    return sum / QA;
+    eval /= QA;
+    eval += network->output_bias;
+    eval *= SCALE;
+    eval /= QAB;
+
+    return eval;
 }
+
+#endif
+
 
 template void NNUE::update_feature<true>(Color color, PieceType piece, int square);
 template void NNUE::update_feature<false>(Color color, PieceType piece, int square);

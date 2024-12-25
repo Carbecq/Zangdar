@@ -12,6 +12,7 @@ QMAKE_LFLAGS += -flto=auto
 #------------------------------------------------------
 NETWORK = "networks/net-epoch.bin"
 QMAKE_CXXFLAGS_RELEASE += -DNETWORK='\\"$${NETWORK}\\"'
+DEFINES += USE_SIMD
 
 #------------------------------------------------------
 # ATTENTION : ne pas mettre "\" car ils sont reconnus comme caractères spéciaux
@@ -31,11 +32,6 @@ DEFINES += VERSION='\\"$${VERSION}\\"'
 # DEFINES +=  DEBUG_LOG
 # DEFINES +=  DEBUG_HASH
 # DEFINES +=  DEBUG_TIME
-
-#------------------------------------------------------
-# DEFINES += USE_TUNER
-# QMAKE_CXXFLAGS_RELEASE += -fopenmp
-# LIBS += -fopenmp
 
 #------------------------------------------------------
 # https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html
@@ -212,6 +208,7 @@ HEADERS += \
     src/pyrrhic/stdendian.h \
     src/pyrrhic/tbconfig.h \
     src/pyrrhic/tbprobe.h \
+    src/simd.h \
     src/types.h \
     src/zobrist.h
 
@@ -239,6 +236,7 @@ SOURCES += \
     src/pyrrhic/tbprobe.cpp \
     src/quiescence.cpp \
     src/see.cpp \
+    src/simd.cpp \
     src/syzygy.cpp \
     src/tests.cpp \
     src/think.cpp \

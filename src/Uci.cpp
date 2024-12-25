@@ -275,6 +275,23 @@ void Uci::run()
 #if defined(__llvm__)
             printf("compilateur Clang \n");
 #endif
+
+#if defined(__AVX512F__)
+            std::cout << "__AVX512F__ OK " << std::endl;
+#endif
+#if defined (__AVX512BW__)
+            std::cout << "__AVX512BW__ OK " << std::endl;
+#endif
+#if defined(__AVX2__)
+            std::cout << "__AVX2__ OK " << std::endl;
+#endif
+#if defined(__SSE2__)
+            std::cout << "__SSE2__ OK " << std::endl;
+#endif
+#if defined(__ARM_NEON)
+            std::cout << "__ARM_NEON OK " << std::endl;
+#endif
+
         }
     } while (token != "quit");
 

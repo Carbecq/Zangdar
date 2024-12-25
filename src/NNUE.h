@@ -6,6 +6,22 @@
 #include <cstdint>
 #include <span>
 #include <vector>
+
+#if defined(__AVX512F__)
+#define ALIGN   64
+#elif defined(__AVX2__)
+#define ALIGN   32
+#elif defined(__SSE2__) || defined(__AVX__)
+#define ALIGN   16
+#elif defined(__ARM_NEON)
+#define ALIGN   16
+#endif
+
+
+#if defined __AVX2__
+#include <immintrin.h>
+#endif
+
 #include "types.h"
 
 //  Description du réseau : (768->S56)x2->1, SquaredClippedReLU
@@ -22,24 +38,23 @@ constexpr Usize INPUT_LAYER_SIZE  = N_COLORS * 6 * N_SQUARES;      // = 768 : en
 constexpr Usize HIDDEN_LAYER_SIZE = 256;     // Hidden Layer : nombre de neuron(es) ; va de 16 à ... 1024 (plus ?)
 
 constexpr I32 SCALE = 400;
-constexpr I32 QA    = 181;        // constante de clamp (crelu)
-constexpr I32 QB    =  64;
+constexpr I32 QA    = 255;      /// Hidden Layer Quantisation Factor
+constexpr I32 QB    =  64;      /// Output Layer Quantisation Factor
 constexpr I32 QAB   = QA * QB;
 
 //  Architecture du réseau
-//  alignement sur 32 octets pour AVX2 (??)
 struct Network {
-    alignas(32) std::array<I16, INPUT_LAYER_SIZE * HIDDEN_LAYER_SIZE> feature_weights;
-    alignas(32) std::array<I16, HIDDEN_LAYER_SIZE> feature_biases;
-    alignas(32) std::array<I16, HIDDEN_LAYER_SIZE * 2> output_weights;
+    alignas(ALIGN) std::array<I16, INPUT_LAYER_SIZE * HIDDEN_LAYER_SIZE> feature_weights;
+    alignas(ALIGN) std::array<I16, HIDDEN_LAYER_SIZE> feature_biases;
+    alignas(ALIGN) std::array<I16, HIDDEN_LAYER_SIZE * 2> output_weights;
     I16 output_bias;
 };
 
 
 // Du fait de la perspective, il y a 2 accumulateurs
 struct Accumulator {
-    alignas(32) std::array<I16, HIDDEN_LAYER_SIZE> white;
-    alignas(32) std::array<I16, HIDDEN_LAYER_SIZE> black;
+    alignas(ALIGN) std::array<I16, HIDDEN_LAYER_SIZE> white;
+    alignas(ALIGN) std::array<I16, HIDDEN_LAYER_SIZE> black;
 
     void init_biases(std::span<const I16, HIDDEN_LAYER_SIZE> biases)
     {
@@ -68,8 +83,8 @@ private:
     std::vector<Accumulator> accumulator;   // pile des accumulateurs
 
     I32 activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
-                   const std::array<I16, HIDDEN_LAYER_SIZE>& them,
-                   const std::array<I16, HIDDEN_LAYER_SIZE * 2>& weights);
+                       const std::array<I16, HIDDEN_LAYER_SIZE>& them,
+                       const std::array<I16, HIDDEN_LAYER_SIZE * 2>& weights);
 
     std::pair<Usize, Usize> get_indices(Color color, PieceType piece, int square);
     inline void add_feature(std::array<I16, HIDDEN_LAYER_SIZE> &input,
@@ -85,6 +100,8 @@ private:
         return clamped * clamped;
     }
 
+#if defined __AVX2__
+#endif
 
 };
 

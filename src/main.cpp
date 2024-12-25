@@ -12,11 +12,6 @@ TranspositionTable  transpositionTable(HASH_SIZE);
 PolyBook            ownBook;
 ThreadPool          threadPool(1, false, true);
 
-#if defined USE_TUNER
-#include "Tuner.h"
-Tuner               ownTuner;
-#endif
-
 extern void init_bitmasks();
 
 int main(int argCount, char* argValue[])
@@ -42,12 +37,8 @@ int main(int argCount, char* argValue[])
     //  UCI
     else
     {
-#if defined USE_TUNER
-        ownTuner.runTexelTuning();
-#else
         Uci uci;
         uci.run();
-#endif
     }
 
     return 0;
