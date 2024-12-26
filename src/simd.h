@@ -85,6 +85,7 @@ using Vepi32 = __m256i;
 inline Vepi16 ZeroEpi16() {
     return _mm256_setzero_si256();
 }
+
 inline Vepi32 ZeroEpi32() {
     return _mm256_setzero_si256();
 }
@@ -97,9 +98,14 @@ inline Vepi32 LoadEpi32(const int32_t* memory_address) {
     return _mm256_load_si256(reinterpret_cast<const __m256i*>(memory_address));
 }
 
+inline void StoreEpi16(void* memory_address, Vepi16 vector) {
+    _mm256_store_si256(reinterpret_cast<__m256i*>(memory_address), vector);
+}
+
 inline Vepi16 SetEpi16(int num) {
     return _mm256_set1_epi16(num);
 }
+
 inline Vepi32 SetEpi32(int num) {
     return _mm256_set1_epi32(num);
 }
@@ -110,6 +116,10 @@ inline Vepi16 AddEpi16(Vepi32 v1, Vepi32 v2) {
 
 inline Vepi32 AddEpi32(Vepi32 v1, Vepi32 v2) {
     return _mm256_add_epi32(v1, v2);
+}
+
+inline Vepi16 SubEpi16(Vepi16 v1, Vepi16 v2) {
+    return _mm256_sub_epi16(v1, v2);
 }
 
 inline Vepi16 MultiplyEpi16(Vepi16 v1, Vepi16 v2) {
@@ -124,9 +134,6 @@ inline Vepi16 Clip(Vepi16 vector, int l1q) {
     return _mm256_min_epi16(_mm256_max_epi16(vector, ZeroEpi16()), SetEpi16(l1q));
 }
 
-inline void StoreEpi16(void* memory_address, Vepi16 vector) {
-    _mm256_store_si256(reinterpret_cast<__m256i*>(memory_address), vector);
-}
 
 // Implementation from Alexandria
 inline int ReduceAddEpi32(Vepi32 vector) {

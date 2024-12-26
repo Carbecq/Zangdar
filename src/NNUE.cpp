@@ -91,8 +91,20 @@ inline void NNUE::add_feature(std::array<I16, HIDDEN_LAYER_SIZE> &input,
                               const std::array<I16, INPUT_LAYER_SIZE * HIDDEN_LAYER_SIZE> &weights,
                               Usize offset)
 {
-    for (Usize i = 0; i < input.size(); ++i)
+#if defined USE_SIMD
+    constexpr int simd_width = sizeof(simd::Vepi16) / sizeof(I16);
+
+    for (Usize i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
+    {
+        auto current = simd::LoadEpi16(&input[i]);
+        auto value   = simd::LoadEpi16(&weights[i+offset]);
+        current      = simd::AddEpi16(current, value);
+        simd::StoreEpi16(&input[i], current);
+    }
+#else
+    for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
         input[i] += weights[offset + i];
+#endif
 }
 
 //========================================================================
@@ -102,8 +114,20 @@ inline void NNUE::remove_feature(std::array<I16, HIDDEN_LAYER_SIZE> &input,
                                  const std::array<I16, INPUT_LAYER_SIZE * HIDDEN_LAYER_SIZE> &weights,
                                  Usize offset)
 {
-    for (Usize i = 0; i < input.size(); ++i)
+#if defined USE_SIMD
+    constexpr int simd_width = sizeof(simd::Vepi16) / sizeof(I16);
+
+    for (Usize i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
+    {
+        auto current = simd::LoadEpi16(&input[i]);
+        auto value   = simd::LoadEpi16(&weights[i+offset]);
+        current      = simd::SubEpi16(current, value);
+        simd::StoreEpi16(&input[i], current);
+    }
+#else
+    for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
         input[i] -= weights[offset + i];
+#endif
 }
 
 //========================================================================
