@@ -73,20 +73,7 @@ ZANGDAR     = Zangdar
 
 DEFAULT_EXE = $(ZANGDAR)
 
-ifeq ($(ARCH), x86-64)
-    DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
-    CFLAGS_ARCH += -msse -msse2
-
-else ifeq ($(ARCH), popcnt)
-    DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
-    CFLAGS_ARCH += -msse -msse2
-    CFLAGS_ARCH += -msse3 -mpopcnt
-    CFLAGS_ARCH += -msse4.1 -msse4.2 -msse4a
-    CFLAGS_ARCH += -mssse3
-    CFLAGS_ARCH += -mmmx
-    CFLAGS_ARCH += -mavx
-
-else ifeq ($(ARCH), avx2)
+ifeq ($(ARCH), avx2)
     DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
     CFLAGS_ARCH += -msse -msse2
     CFLAGS_ARCH += -msse3 -mpopcnt

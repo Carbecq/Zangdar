@@ -27,10 +27,9 @@
 //  Description du réseau : (768->S56)x2->1, SquaredClippedReLU
 //
 //      entrées     : 2 (couleurs) * 6 (pièces) * 64 (cases)  = 768
-//      neurones    : 128 ; 1 seule couche
+//      neurones    : 256 ; 1 seule couche
 //      perspective : sorties : 2 * HIDDEN_LAYER_SIZE
-//      ClippedRelu : l'activation se fait en "clippant" la valeur entre 0 et QA (ici 255)
-//                      int activated = std::clamp(static_cast<int>(us[i]), 0, 255);
+//      SquareClippedRelu : l'activation se fait en "clippant" la valeur entre 0 et QA (ici 255)
 
 
 
