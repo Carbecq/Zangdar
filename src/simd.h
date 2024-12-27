@@ -41,6 +41,10 @@ inline Vepi32 LoadEpi32(const int32_t* memory_address) {
     return _mm512_load_si512(reinterpret_cast<const __m512i*>(memory_address));
 }
 
+inline void StoreEpi16(void* memory_address, Vepi16 vector) {
+    _mm512_store_si512(memory_address, vector);
+}
+
 inline Vepi16 SetEpi16(int num) {
     return _mm512_set1_epi16(num);
 }
@@ -48,12 +52,12 @@ inline Vepi32 SetEpi32(int num) {
     return _mm512_set1_epi32(num);
 }
 
-inline void StoreEpi16(void* memory_address, Vepi16 vector) {
-    _mm512_store_si512(memory_address, vector);
+inline Vepi16 AddEpi16(Vepi16 v1, Vepi16 v2) {
+    return _mm512_add_epi16(v1, v2);
 }
 
-inline Vepi16 AddEpi16(Vepi32 v1, Vepi32 v2) {
-    return _mm512_add_epi16(v1, v2);
+inline Vepi16 SubEpi16(Vepi16 v1, Vepi16 v2) {
+    return _mm512_sub_epi16(v1, v2);
 }
 
 inline Vepi32 AddEpi32(Vepi32 v1, Vepi32 v2) {
@@ -110,7 +114,7 @@ inline Vepi32 SetEpi32(int num) {
     return _mm256_set1_epi32(num);
 }
 
-inline Vepi16 AddEpi16(Vepi32 v1, Vepi32 v2) {
+inline Vepi16 AddEpi16(Vepi16 v1, Vepi16 v2) {
     return _mm256_add_epi16(v1, v2);
 }
 

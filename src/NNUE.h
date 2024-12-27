@@ -75,9 +75,12 @@ public:
     void pop();
     void reset();
     template<Color color> int  evaluate();
-    template <bool add_to_square> void update_feature(Color color, PieceType piece, int square);
     inline void reserve_nnue_capacity() { accumulator.reserve(512); }  // la capacité ne passe pas avec la copie
 
+    void add(Color color, PieceType piece, int from);
+    void sub_add(Color color, PieceType from_piece, int from, PieceType to_piece, int dest);
+    void sub_sub_add(Color color, PieceType sub_piece_1, int from, PieceType sub_piece_2, PieceType add_piece, int dest);
+    void sub_sub_add(Color color, PieceType sub_piece_1, int from, PieceType sub_piece_2, int sub, PieceType add_piece, int dest);
 
 private:
     std::vector<Accumulator> accumulator;   // pile des accumulateurs
@@ -87,12 +90,7 @@ private:
                        const std::array<I16, HIDDEN_LAYER_SIZE * 2>& weights);
 
     std::pair<Usize, Usize> get_indices(Color color, PieceType piece, int square);
-    inline void add_feature(std::array<I16, HIDDEN_LAYER_SIZE> &input,
-                            const std::array<I16, INPUT_LAYER_SIZE * HIDDEN_LAYER_SIZE> &weights,
-                            Usize offset);
-    inline void remove_feature(std::array<I16, HIDDEN_LAYER_SIZE> &input,
-                               const std::array<I16, INPUT_LAYER_SIZE * HIDDEN_LAYER_SIZE> &weights,
-                               Usize offset);
+
 
     constexpr inline I32 crelu(I16 x) { return std::clamp(static_cast<I32>(x), 0, QA); }
     constexpr inline I32 screlu(I16 x) {

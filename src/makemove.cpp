@@ -115,10 +115,7 @@ void Board::make_move(const MOVE move) noexcept
             pieceOn[dest] = piece;
 
             if constexpr (Update_NNUE == true)
-            {
-                nnue.update_feature<false>(C, piece, from);     // remove piece
-                nnue.update_feature<true>(C, piece, dest);      // add piece
-            }
+                nnue.sub_add(C, piece, from, piece, dest);
             newStatus.hash ^= piece_key[C][piece][from] ^ piece_key[C][piece][dest];
 
             if (piece == PAWN)
@@ -160,11 +157,7 @@ void Board::make_move(const MOVE move) noexcept
                 pieceOn[dest] = promo;
 
                 if constexpr (Update_NNUE == true)
-                {
-                    nnue.update_feature<false>(C, PAWN, from);          // remove pawn
-                    nnue.update_feature<false>(~C, captured, dest);     // remove captured
-                    nnue.update_feature<true>(C, promo, dest);          // add promoted
-                }
+                    nnue.sub_sub_add(C, PAWN, from, captured, promo, dest);
                 newStatus.hash ^= piece_key[C][piece][from];
                 newStatus.hash ^= piece_key[C][promo][dest];
                 newStatus.hash ^= piece_key[Them][captured][dest];
@@ -191,12 +184,7 @@ void Board::make_move(const MOVE move) noexcept
                 pieceOn[dest] = piece;
 
                 if constexpr (Update_NNUE == true)
-                {
-                    nnue.update_feature<false>(C, piece, from);
-                    nnue.update_feature<true>(C, piece, dest);
-                    nnue.update_feature<false>(~C, captured, dest);
-                }
-
+                    nnue.sub_sub_add(C, piece, from, captured, piece, dest);
                 newStatus.hash ^= piece_key[C][piece][from] ^ piece_key[C][piece][dest];
                 newStatus.hash ^= piece_key[Them][captured][dest];
 
@@ -232,11 +220,7 @@ void Board::make_move(const MOVE move) noexcept
             pieceOn[dest] = promo;
 
             if constexpr (Update_NNUE == true)
-            {
-                nnue.update_feature<false>(C, PAWN, from);
-                nnue.update_feature<true>(C, promo, dest);
-            }
-
+                nnue.sub_add(C, PAWN, from, promo, dest);
             newStatus.hash ^= piece_key[C][piece][from];
             newStatus.hash ^= piece_key[C][promo][dest];
             newStatus.pawn_hash ^= piece_key[C][PAWN][from];
@@ -268,11 +252,7 @@ void Board::make_move(const MOVE move) noexcept
             pieceOn[dest] = piece;
 
             if constexpr (Update_NNUE == true)
-            {
-                nnue.update_feature<false>(C, PAWN, from);
-                nnue.update_feature<true>(C, PAWN, dest);
-            }
-
+                nnue.sub_add(C, PAWN, from, PAWN, dest);
             newStatus.hash      ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
             newStatus.pawn_hash ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
             newStatus.halfmove_counter = 0;
@@ -299,12 +279,6 @@ void Board::make_move(const MOVE move) noexcept
             pieceOn[from] = NO_PIECE;
             pieceOn[dest] = PAWN;
 
-            if constexpr (Update_NNUE == true)
-            {
-                nnue.update_feature<false>(C, PAWN, from);
-                nnue.update_feature<true>(C, PAWN, dest);
-            }
-
             newStatus.hash      ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
             newStatus.pawn_hash ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
             newStatus.halfmove_counter = 0;
@@ -317,10 +291,7 @@ void Board::make_move(const MOVE move) noexcept
                 pieceOn[SQ::south(dest)] = NO_PIECE;
 
                 if constexpr (Update_NNUE == true)
-                {
-                    nnue.update_feature<false>(~C, PAWN, SQ::south(dest));
-                }
-
+                    nnue.sub_sub_add(C, PAWN, from, PAWN, SQ::south(dest), PAWN, dest);
                 newStatus.hash      ^= piece_key[Them][PAWN][SQ::south(dest)];
                 newStatus.pawn_hash ^= piece_key[Them][PAWN][SQ::south(dest)];
             }
@@ -331,10 +302,7 @@ void Board::make_move(const MOVE move) noexcept
                 pieceOn[SQ::north(dest)] = NO_PIECE;
 
                 if constexpr (Update_NNUE == true)
-                {
-                    nnue.update_feature<false>(~C, PAWN, SQ::north(dest));
-                }
-
+                    nnue.sub_sub_add(C, PAWN, from, PAWN, SQ::north(dest), PAWN, dest);
                 newStatus.hash      ^= piece_key[Them][PAWN][SQ::north(dest)];
                 newStatus.pawn_hash ^= piece_key[Them][PAWN][SQ::north(dest)];
             }
@@ -368,11 +336,7 @@ void Board::make_move(const MOVE move) noexcept
                 assert(piece_on(get_king_dest<C, CastleSide::KING_SIDE>()) == KING);
 
                 if constexpr (Update_NNUE == true)
-                {
-                    nnue.update_feature<false>(C, piece, from);
-                    nnue.update_feature<true>(C, piece, dest);
-                }
-
+                    nnue.sub_add(C, piece, from, piece, dest);
                 newStatus.hash ^= piece_key[C][piece][from];
                 newStatus.hash ^= piece_key[C][piece][dest];
 
@@ -388,11 +352,7 @@ void Board::make_move(const MOVE move) noexcept
                     assert(piece_on(F1) == ROOK);
 
                     if constexpr (Update_NNUE == true)
-                    {
-                        nnue.update_feature<false>(C, ROOK, H1);     // remove piece
-                        nnue.update_feature<true>(C, ROOK, F1);    // add piece
-                    }
-
+                        nnue.sub_add(C, ROOK, H1, ROOK, F1);
                     newStatus.hash ^= piece_key[C][ROOK][H1];
                     newStatus.hash ^= piece_key[C][ROOK][F1];
                 }
@@ -407,11 +367,7 @@ void Board::make_move(const MOVE move) noexcept
                     assert(piece_on(F8) == ROOK);
 
                     if constexpr (Update_NNUE == true)
-                    {
-                        nnue.update_feature<false>(C, ROOK, H8);     // remove piece
-                        nnue.update_feature<true>(C, ROOK,  F8);    // add piece
-                    }
-
+                        nnue.sub_add(C, ROOK, H8, ROOK, F8);
                     newStatus.hash ^= piece_key[C][ROOK][H8];
                     newStatus.hash ^= piece_key[C][ROOK][F8];
                 }
@@ -434,11 +390,7 @@ void Board::make_move(const MOVE move) noexcept
                 assert(piece_on(get_king_dest<C, CastleSide::QUEEN_SIDE>()) == KING);
 
                 if constexpr (Update_NNUE == true)
-                {
-                    nnue.update_feature<false>(C, piece, from);
-                    nnue.update_feature<true>(C, piece, dest);
-                }
-
+                    nnue.sub_add(C, piece, from, piece, dest);
                 newStatus.hash ^= piece_key[C][piece][from];
                 newStatus.hash ^= piece_key[C][piece][dest];
 
@@ -454,11 +406,7 @@ void Board::make_move(const MOVE move) noexcept
                     assert(piece_on(D1) == ROOK);
 
                     if constexpr (Update_NNUE == true)
-                    {
-                        nnue.update_feature<false>(C, ROOK, A1);
-                        nnue.update_feature<true>(C, ROOK, D1);
-                    }
-
+                        nnue.sub_add(C, ROOK, A1, ROOK, D1);
                     newStatus.hash ^= piece_key[C][ROOK][A1];
                     newStatus.hash ^= piece_key[C][ROOK][D1];
                 }
@@ -473,11 +421,7 @@ void Board::make_move(const MOVE move) noexcept
                     assert(piece_on(D8) == ROOK);
 
                     if constexpr (Update_NNUE == true)
-                    {
-                        nnue.update_feature<false>(C, ROOK, A8);
-                        nnue.update_feature<true>(C, ROOK,  D8);
-                    }
-
+                        nnue.sub_add(C, ROOK, A8, ROOK, D8);
                     newStatus.hash ^= piece_key[C][ROOK][A8];
                     newStatus.hash ^= piece_key[C][ROOK][D8];
                 }
@@ -565,7 +509,7 @@ void Board::set_piece(const int square, const Color color, const PieceType piece
     pieceOn[square]       = piece;
 
     if constexpr (Update_NNUE == true)
-        nnue.update_feature<true>(color, piece, square);
+        nnue.add(color, piece, square);
 }
 
 

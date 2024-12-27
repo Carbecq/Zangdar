@@ -64,72 +64,171 @@ void NNUE::pop()
 
 
 //========================================================================
-//! \brief  Modification d'une feature
-//------------------------------------------------------------------------
-template <bool add_to_square>
-void NNUE::update_feature(Color color, PieceType piece, int square)
-{
-    const auto [white_idx, black_idx] = get_indices(color, piece, square);
-
-    auto& current = accumulator.back();
-    if constexpr (add_to_square)
-    {
-        add_feature(current.white, network->feature_weights, white_idx * HIDDEN_LAYER_SIZE);
-        add_feature(current.black, network->feature_weights, black_idx * HIDDEN_LAYER_SIZE);
-    }
-    else
-    {
-        remove_feature(current.white, network->feature_weights, white_idx * HIDDEN_LAYER_SIZE);
-        remove_feature(current.black, network->feature_weights, black_idx * HIDDEN_LAYER_SIZE);
-    }
-}
-
-//========================================================================
 //! \brief  Ajout d'une feature
 //------------------------------------------------------------------------
-inline void NNUE::add_feature(std::array<I16, HIDDEN_LAYER_SIZE> &input,
-                              const std::array<I16, INPUT_LAYER_SIZE * HIDDEN_LAYER_SIZE> &weights,
-                              Usize offset)
+void NNUE::add(Color color, PieceType piece, int from)
 {
+    const auto [white_idx, black_idx] = get_indices(color, piece, from);
+
+    auto& accu = accumulator.back();
+
+    // SIMD fait perdre "un peu" de perf
+
+// #if defined USE_SIMD
+//     constexpr int simd_width = sizeof(simd::Vepi16) / sizeof(I16);
+
+//     for (Usize i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
+//     {
+//         auto current = simd::LoadEpi16(&accu.white[i]);
+//         auto value   = simd::LoadEpi16(&network->feature_weights[i+offset_w]);
+//         current      = simd::AddEpi16(current, value);
+//         simd::StoreEpi16(&accu.white[i], current);
+
+//         current = simd::LoadEpi16(&accu.black[i]);
+//         value   = simd::LoadEpi16(&network->feature_weights[i+offset_b]);
+//         current = simd::AddEpi16(current, value);
+//         simd::StoreEpi16(&accu.black[i], current);
+//     }
+// #else
+    for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
+    {
+        accu.white[i] += network->feature_weights[white_idx * HIDDEN_LAYER_SIZE + i];
+        accu.black[i] += network->feature_weights[black_idx * HIDDEN_LAYER_SIZE + i];
+    }
+// #endif
+}
+
+//=================================================================================
+//! \brief  Update combiné : Ajout + Suppression
+//! \param[in]  sub_piece       pièce supprimée de from
+//! \param[in]  add_piece       pièce ajoutée en dest
+//---------------------------------------------------------------------------------
+void NNUE::sub_add(Color color, PieceType sub_piece, int from, PieceType add_piece, int dest)
+{
+    // Optimisations de : https://cosmo.tardis.ac/files/2024-06-01-nnue.html
+
+    const auto [white_sub_idx, black_sub_idx] = get_indices(color, sub_piece, from);
+    const auto [white_add_idx, black_add_idx] = get_indices(color, add_piece, dest);
+
+    auto& accu = accumulator.back();
+
 #if defined USE_SIMD
     constexpr int simd_width = sizeof(simd::Vepi16) / sizeof(I16);
 
     for (Usize i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
     {
-        auto current = simd::LoadEpi16(&input[i]);
-        auto value   = simd::LoadEpi16(&weights[i+offset]);
-        current      = simd::AddEpi16(current, value);
-        simd::StoreEpi16(&input[i], current);
+        auto cur_w   = simd::LoadEpi16(&accu.white[i]);
+        cur_w        = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_add_idx * HIDDEN_LAYER_SIZE + i]));
+        cur_w        = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_sub_idx * HIDDEN_LAYER_SIZE + i]));
+        simd::StoreEpi16(&accu.white[i], cur_w);
+
+        auto cur_b = simd::LoadEpi16(&accu.black[i]);
+        cur_b      = simd::AddEpi16(cur_b, simd::LoadEpi16(&network->feature_weights[black_add_idx * HIDDEN_LAYER_SIZE + i]));
+        cur_b      = simd::SubEpi16(cur_b, simd::LoadEpi16(&network->feature_weights[black_sub_idx * HIDDEN_LAYER_SIZE + i]));
+        simd::StoreEpi16(&accu.black[i], cur_b);
     }
 #else
     for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
-        input[i] += weights[offset + i];
+    {
+        accu.white[i] += network->feature_weights[white_add_idx * HIDDEN_LAYER_SIZE + i]
+                       - network->feature_weights[white_sub_idx * HIDDEN_LAYER_SIZE + i];
+        accu.black[i] += network->feature_weights[black_add_idx * HIDDEN_LAYER_SIZE + i]
+                       - network->feature_weights[black_sub_idx * HIDDEN_LAYER_SIZE + i];
+    }
 #endif
 }
 
-//========================================================================
-//! \brief  Suppression d'une feature
-//------------------------------------------------------------------------
-inline void NNUE::remove_feature(std::array<I16, HIDDEN_LAYER_SIZE> &input,
-                                 const std::array<I16, INPUT_LAYER_SIZE * HIDDEN_LAYER_SIZE> &weights,
-                                 Usize offset)
+//=================================================================================
+//! \brief  Update combiné : Ajout + Suppression + Suppression
+//! La pièce supprimée en dest appartient au camp ennemi
+//! \param[in]  sub_piece_1     pièce supprimée de from
+//! \param[in]  sub_piece_2     pièce ennemie supprimée de dest
+//! \param[in]  add_piece       pièce ajoutée en dest
+//---------------------------------------------------------------------------------
+void NNUE::sub_sub_add(Color color, PieceType sub_piece_1, int from, PieceType sub_piece_2, PieceType add_piece, int dest)
 {
+    const auto [white_sub1_idx, black_sub1_idx] = get_indices(color, sub_piece_1, from);
+    const auto [white_sub2_idx, black_sub2_idx] = get_indices(~color, sub_piece_2, dest);   // <<< ~color
+    const auto [white_add_idx, black_add_idx]   = get_indices(color, add_piece, dest);
+
+    auto& accu = accumulator.back();
+
 #if defined USE_SIMD
     constexpr int simd_width = sizeof(simd::Vepi16) / sizeof(I16);
 
     for (Usize i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
     {
-        auto current = simd::LoadEpi16(&input[i]);
-        auto value   = simd::LoadEpi16(&weights[i+offset]);
-        current      = simd::SubEpi16(current, value);
-        simd::StoreEpi16(&input[i], current);
+        auto cur_w   = simd::LoadEpi16(&accu.white[i]);
+        cur_w        = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_add_idx * HIDDEN_LAYER_SIZE + i]));
+        cur_w        = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_sub1_idx * HIDDEN_LAYER_SIZE + i]));
+        cur_w        = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_sub2_idx * HIDDEN_LAYER_SIZE + i]));
+        simd::StoreEpi16(&accu.white[i], cur_w);
+
+        auto cur_b = simd::LoadEpi16(&accu.black[i]);
+        cur_b      = simd::AddEpi16(cur_b, simd::LoadEpi16(&network->feature_weights[black_add_idx * HIDDEN_LAYER_SIZE + i]));
+        cur_b      = simd::SubEpi16(cur_b, simd::LoadEpi16(&network->feature_weights[black_sub1_idx * HIDDEN_LAYER_SIZE + i]));
+        cur_b      = simd::SubEpi16(cur_b, simd::LoadEpi16(&network->feature_weights[black_sub2_idx * HIDDEN_LAYER_SIZE + i]));
+        simd::StoreEpi16(&accu.black[i], cur_b);
     }
 #else
     for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
-        input[i] -= weights[offset + i];
+    {
+        accu.white[i] += network->feature_weights[white_add_idx * HIDDEN_LAYER_SIZE + i]
+                       - network->feature_weights[white_sub1_idx * HIDDEN_LAYER_SIZE + i]
+                       - network->feature_weights[white_sub2_idx * HIDDEN_LAYER_SIZE + i];
+        accu.black[i] += network->feature_weights[black_add_idx * HIDDEN_LAYER_SIZE + i]
+                       - network->feature_weights[black_sub1_idx * HIDDEN_LAYER_SIZE + i]
+                       - network->feature_weights[black_sub2_idx * HIDDEN_LAYER_SIZE + i];
+    }
 #endif
 }
 
+//=================================================================================
+//! \brief  Update combiné : Ajout + Suppression + Suppression
+//! La pièce supprimée en dest appartient au camp ennemi
+//! Cette routine est utilisée pour la prise en passant
+//! \param[in]  sub_piece_1     pièce supprimée de from
+//! \param[in]  sub_piece_2     pièce ennemie supprimée de sub
+//! \param[in]  add_piece       pièce ajoutée en dest
+//!
+//---------------------------------------------------------------------------------
+void NNUE::sub_sub_add(Color color, PieceType sub_piece_1, int from, PieceType sub_piece_2, int sub, PieceType add_piece, int dest)
+{
+    const auto [white_sub1_idx, black_sub1_idx] = get_indices(color, sub_piece_1, from);
+    const auto [white_sub2_idx, black_sub2_idx] = get_indices(~color, sub_piece_2, sub);   // <<< ~color
+    const auto [white_add_idx, black_add_idx]   = get_indices(color, add_piece, dest);
+
+    auto& accu = accumulator.back();
+
+#if defined USE_SIMD
+    constexpr int simd_width = sizeof(simd::Vepi16) / sizeof(I16);
+
+    for (Usize i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
+    {
+        auto cur_w   = simd::LoadEpi16(&accu.white[i]);
+        cur_w        = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_add_idx * HIDDEN_LAYER_SIZE + i]));
+        cur_w        = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_sub1_idx * HIDDEN_LAYER_SIZE + i]));
+        cur_w        = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_sub2_idx * HIDDEN_LAYER_SIZE + i]));
+        simd::StoreEpi16(&accu.white[i], cur_w);
+
+        auto cur_b = simd::LoadEpi16(&accu.black[i]);
+        cur_b      = simd::AddEpi16(cur_b, simd::LoadEpi16(&network->feature_weights[black_add_idx * HIDDEN_LAYER_SIZE + i]));
+        cur_b      = simd::SubEpi16(cur_b, simd::LoadEpi16(&network->feature_weights[black_sub1_idx * HIDDEN_LAYER_SIZE + i]));
+        cur_b      = simd::SubEpi16(cur_b, simd::LoadEpi16(&network->feature_weights[black_sub2_idx * HIDDEN_LAYER_SIZE + i]));
+        simd::StoreEpi16(&accu.black[i], cur_b);
+    }
+#else
+    for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
+    {
+        accu.white[i] += network->feature_weights[white_add_idx * HIDDEN_LAYER_SIZE + i]
+                       - network->feature_weights[white_sub1_idx * HIDDEN_LAYER_SIZE + i]
+                       - network->feature_weights[white_sub2_idx * HIDDEN_LAYER_SIZE + i];
+        accu.black[i] += network->feature_weights[black_add_idx * HIDDEN_LAYER_SIZE + i]
+                       - network->feature_weights[black_sub1_idx * HIDDEN_LAYER_SIZE + i]
+                       - network->feature_weights[black_sub2_idx * HIDDEN_LAYER_SIZE + i];
+    }
+#endif
+}
 //========================================================================
 //! \brief  Calcule l'indece du triplet (couleur, piece, case)
 //! dans l'Input Layer
@@ -273,9 +372,6 @@ I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
 
 #endif
 
-
-template void NNUE::update_feature<true>(Color color, PieceType piece, int square);
-template void NNUE::update_feature<false>(Color color, PieceType piece, int square);
 
 template int NNUE::evaluate<WHITE>();
 template int NNUE::evaluate<BLACK>();
