@@ -488,14 +488,6 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             hist   = td->get_history(C, move) + cmhist + fuhist;
         }
 
-#ifdef ACC
-        // Affichage du coup courant
-        if (ply==0 && PVNode && !td->index && my_timer.elapsedTime() > CurrmoveTimerMS)
-        {
-            show_uci_current(move, legalMoves, depth);
-        }
-#endif
-
         int extension = 0;
 
         //-------------------------------------------------

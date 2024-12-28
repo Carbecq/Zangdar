@@ -214,15 +214,6 @@ I64 Timer::elapsedTime() const
 }
 
 //==================================================================
-//! \brief Affiche le temps passé en millisecondes
-//------------------------------------------------------------------
-void Timer::show_time()
-{
-    // Elapsed time in seconds
-    std::cout << "Time           " << elapsedTime() / 1000.0 << " s" << std::endl;
-}
-
-//==================================================================
 //! \brief Affiche des informations de debug
 //------------------------------------------------------------------
 void Timer::debug(Color color) const

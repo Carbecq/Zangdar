@@ -24,7 +24,7 @@
 
 #include "types.h"
 
-//  Description du réseau : (768->S56)x2->1, SquaredClippedReLU
+//  Description du réseau : (768->256)x2->1, SquaredClippedReLU
 //
 //      entrées     : 2 (couleurs) * 6 (pièces) * 64 (cases)  = 768
 //      neurones    : 256 ; 1 seule couche
@@ -91,7 +91,6 @@ private:
     std::pair<Usize, Usize> get_indices(Color color, PieceType piece, int square);
 
 
-    constexpr inline I32 crelu(I16 x) { return std::clamp(static_cast<I32>(x), 0, QA); }
     constexpr inline I32 screlu(I16 x) {
         auto clamped = std::clamp(static_cast<I32>(x), 0, QA);
         return clamped * clamped;

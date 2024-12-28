@@ -45,7 +45,7 @@ constexpr void unset_lsb(Bitboard& b) noexcept { b &= b-1; }
     return index;
 }
 
-[[nodiscard]] constexpr int PYRRHIC_pop_lsb(Bitboard* b) noexcept {
+constexpr int PYRRHIC_pop_lsb(Bitboard* b) noexcept {
     auto index = std::countr_zero(*b);
     *b &= *b - 1;
     return index;

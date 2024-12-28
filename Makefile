@@ -130,13 +130,14 @@ endif
 
 ifeq ($(findstring clang, $(CXX)), clang)
 
-CFLAGS_REL   = -O3 -flto=auto -DNDEBUG -pthread -Wdisabled-optimization -Wall -Wextra
+CFLAGS_REL1  = -O3 -flto=auto -DNDEBUG -pthread -Wdisabled-optimization -Wall -Wextra
+CFLAGS_WARN1 = -Wmissing-declarations -Wredundant-decls -Wshadow -Wundef -Wuninitialized -pedantic
 
-CFLAGS_WARN1 = -pedantic -Wcast-align -Wcast-qual -Wctor-dtor-privacy
-CFLAGS_WARN2 = -Wformat=2 -Winit-self -Wmissing-declarations
-CFLAGS_WARN3 = -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-promo
-CFLAGS_WARN4 = -Wstrict-overflow=5 -Wswitch-default -Wundef -Wno-unused
-CFLAGS_WARN5 = -Wuninitialized -Wattributes -Waddress -Wmissing-prototypes -Wconditional-uninitialized
+CFLAGS_WARN2 = -Wcast-align=strict -Wcast-qual -Wctor-dtor-privacy
+CFLAGS_WARN3 = -Wformat=2 -Winit-self
+CFLAGS_WARN4 = -Woverloaded-virtual -Wsign-promo
+CFLAGS_WARN5 = -Wstrict-overflow=5 -Wswitch-default -Wno-unused
+CFLAGS_WARN6 = -Wattributes -Waddress -Wmissing-prototypes -Wconditional-uninitialized
 
 PGO_MERGE = llvm-profdata merge -output=zangdar.profdata *.profraw
 PGO_GEN   = -fprofile-instr-generate
@@ -144,14 +145,14 @@ PGO_USE   = -fprofile-instr-use=zangdar.profdata
 
 else
 
-CFLAGS_REL   = -O3 -flto=auto -DNDEBUG -pthread -fwhole-program -Wdisabled-optimization -Wall -Wextra
+CFLAGS_REL1  = -O3 -flto=auto -DNDEBUG -pthread -fwhole-program -Wdisabled-optimization -Wall -Wextra
+CFLAGS_WARN1 = -Wmissing-declarations -Wredundant-decls -Wshadow -Wundef -Wuninitialized -pedantic
 
-CFLAGS_WARN1 = -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy 
-CFLAGS_WARN2 = -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs 
-CFLAGS_WARN3 = -Wnoexcept -Woverloaded-virtual -Wredundant-decls -Wshadow 
-CFLAGS_WARN4 = -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5 
-CFLAGS_WARN5 = -Wswitch-default -Wundef -Wuninitialized -Wfloat-equal -Wbidi-chars -Warray-compare -Wattributes -Waddress
-CFLAGS_WARN6 = -Weffc++ -Warray-bounds=2
+CFLAGS_WARN2 = -Wcast-align=strict -Wcast-qual -Wctor-dtor-privacy
+CFLAGS_WARN3 = -Wformat=2 -Winit-self -Wlogical-op -Wmissing-include-dirs
+CFLAGS_WARN4 = -Wnoexcept -Woverloaded-virtual -Warray-bounds=2
+CFLAGS_WARN5 = -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5
+CFLAGS_WARN6 = -Wswitch-default -Wfloat-equal -Wbidi-chars -Warray-compare -Wattributes -Waddress
 
 PGO_GEN   = -fprofile-generate
 PGO_USE   = -fprofile-use
@@ -172,6 +173,7 @@ endif
  
 CFLAGS_COM  = -pipe -std=c++20 -DVERSION=\"$(VERSION)\" $(DEFS) $(CFLAGS_NNUE)
 CFLAGS_DBG  = -g -O2
+CFLAGS_REL  = $(CFLAGS_REL1) $(CFLAGS_WARN1)
 CFLAGS_WARN = $(CFLAGS_WARN1) $(CFLAGS_WARN2) $(CFLAGS_WARN3) $(CFLAGS_WARN4) $(CFLAGS_WARN5) $(CFLAGS_WARN6)
 CFLAGS_PROF = -pg
 

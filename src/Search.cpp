@@ -130,18 +130,6 @@ void Search::show_uci_best(const ThreadData* td) const
 }
 
 //=========================================================
-//! \brief  Affichage UCI du coup en cours d'étude
-//!
-//---------------------------------------------------------
-void Search::show_uci_current(MOVE move, int currmove, int depth) const
-{
-    std::cout << "info depth "      << depth
-              << " currmove "       << Move::show(move, 4)
-              << " currmovenumber " << currmove
-              << std::endl;
-}
-
-//=========================================================
 //! \brief  Mise à jour de la Principal variation
 //!
 //! \param[in]  name   coup en notation UCI

@@ -10,7 +10,7 @@ DEFINES += STATIC
 QMAKE_LFLAGS += -flto=auto
 
 #------------------------------------------------------
-NETWORK = "networks/net-epoch.bin"
+NETWORK = "/mnt/Datas/Echecs/Programmation/Zangdar/APP/networks/net-2-255.bin"
 QMAKE_CXXFLAGS_RELEASE += -DNETWORK='\\"$${NETWORK}\\"'
 DEFINES += USE_SIMD
 
@@ -45,7 +45,7 @@ QMAKE_CXXFLAGS_RELEASE -= -O2
 # si NDEBUG est défini, alors assert ne fait rien
 
 QMAKE_CXXFLAGS_RELEASE += -pipe -std=c++20 -O3 -flto=auto -DNDEBUG -fwhole-program
-QMAKE_CXXFLAGS_RELEASE += -pedantic -Wshadow -Wall -Wextra -Wcast-qual -Wuninitialized
+QMAKE_CXXFLAGS_RELEASE += -pedantic -Wshadow -Wall -Wextra -Wcast-qual -Wuninitialized -Weffc++
 
 
 # message($$DEFINES)
@@ -172,9 +172,10 @@ QMAKE_CXXFLAGS_DEBUG -= -O1
 QMAKE_CXXFLAGS_DEBUG -= -O2
 QMAKE_CXXFLAGS_DEBUG -= -O3
 
-QMAKE_CXXFLAGS_DEBUG += -pipe -std=c++20 -pedantic -Wshadow -Wall -Wextra -Wcast-qual -Wuninitialized
+QMAKE_CXXFLAGS_DEBUG += -pipe -std=c++20 -Wshadow -Wall -Wextra -Wcast-qual -Wuninitialized -Wcast-align=strict
 QMAKE_CXXFLAGS_DEBUG += -march=native
 QMAKE_CXXFLAGS_DEBUG += -DUSE_PEXT
+QMAKE_CXXFLAGS_DEBUG += -DNETWORK='\\"$${NETWORK}\\"'
 
 
 DISTFILES += \
@@ -236,7 +237,6 @@ SOURCES += \
     src/pyrrhic/tbprobe.cpp \
     src/quiescence.cpp \
     src/see.cpp \
-    src/simd.cpp \
     src/syzygy.cpp \
     src/tests.cpp \
     src/think.cpp \

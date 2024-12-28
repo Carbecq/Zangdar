@@ -62,11 +62,6 @@ private:
     int         tt_buckets;
     HashEntry*  tt_entries = nullptr;
 
-    // Table de transposition pour les pions
-    PawnHashEntry   pawn_entries[PAWN_HASH_SIZE*1024];
-    int             pawn_size;
-    int             pawn_mask;
-
     static constexpr int   KMULT = 256;
 
 public:
@@ -102,9 +97,6 @@ public:
     }
 
     //------------------------------------------------
-
-    bool probe_pawn_table(U64 hash, Score &eval, Bitboard &passed);
-    void store_pawn_table(U64 hash, Score eval, Bitboard passed);
 
     void prefetch(const U64 hash);
 };

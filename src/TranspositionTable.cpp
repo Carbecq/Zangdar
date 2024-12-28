@@ -18,9 +18,7 @@
 //========================================================
 //! \brief  Constructeur avec argument
 //--------------------------------------------------------
-TranspositionTable::TranspositionTable(int MB) :
-    pawn_size(PAWN_HASH_SIZE*1024),
-    pawn_mask(PAWN_HASH_SIZE*1024 - 1)
+TranspositionTable::TranspositionTable(int MB)
 {
 #if defined DEBUG_LOG
     char message[100];
@@ -118,7 +116,6 @@ void TranspositionTable::clear(void)
     tt_date = 0;
 
     std::memset(tt_entries, 0, sizeof(HashEntry) * tt_size);
-    std::memset(pawn_entries, 0, sizeof(PawnHashEntry) * pawn_size);
 }
 
 //========================================================
@@ -139,7 +136,6 @@ void TranspositionTable::store(U64 hash, MOVE move, Score score, Score eval, int
     assert(abs(eval) <= MATE || eval == NOSCORE);
     assert(0 <= depth && depth < MAX_PLY);
     assert(bound == BOUND_LOWER || bound == BOUND_UPPER || bound == BOUND_EXACT);
-
 
     // extract the 32-bit key from the 64-bit zobrist hash
     U32 hash32 = hash >> 32;
@@ -250,43 +246,6 @@ bool TranspositionTable::probe(U64 hash, int ply, MOVE& move, Score& score, Scor
 
     return false;
 }
-
-//===============================================================
-//! \brief  Recherche d'une donnée dans la table des pions
-//! \param[in]  hash    code hash des pions
-//! \param{out] score   score de cette position
-//! \param[out] passed  bitboard des pions passés
-//---------------------------------------------------------------
-bool TranspositionTable::probe_pawn_table(U64 hash, Score &eval, Bitboard& passed)
-{
-    PawnHashEntry* entry = pawn_entries + (hash & pawn_mask);
-
-    if (entry->hash == hash)
-    {
-        eval   = entry->eval;
-        passed = entry->passed;
-        return true;
-    }
-
-    return false;
-}
-
-//=============================================================
-//! \brief Stocke une évaluation dans la table des pions
-//!
-//! \param[in]  hash    hash des pions
-//! \param[in]  score   évaluation
-//! \param[in]  passed  bitboard des pions passés
-//-------------------------------------------------------------
-void TranspositionTable::store_pawn_table(U64 hash, Score eval, Bitboard passed)
-{
-    PawnHashEntry* entry = pawn_entries + (hash & pawn_mask);
-
-    entry->hash   = hash;
-    entry->eval   = eval;
-    entry->passed = passed;
-}
-
 
 void TranspositionTable::stats()
 {

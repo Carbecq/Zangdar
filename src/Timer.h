@@ -48,7 +48,6 @@ public:
                0,
                0) {}
 
-    void show_time();
     void debug(Color color) const;
 
     void start();
