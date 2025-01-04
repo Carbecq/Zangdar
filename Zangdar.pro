@@ -1,5 +1,5 @@
 TEMPLATE = app
-CONFIG += console c++20
+CONFIG += console c++23
 CONFIG -= app_bundle
 CONFIG -= qt
 
@@ -44,7 +44,7 @@ QMAKE_CXXFLAGS_RELEASE -= -O2
 
 # si NDEBUG est défini, alors assert ne fait rien
 
-QMAKE_CXXFLAGS_RELEASE += -pipe -std=c++20 -O3 -flto=auto -DNDEBUG -fwhole-program
+QMAKE_CXXFLAGS_RELEASE += -pipe -std=c++23 -O3 -flto=auto -DNDEBUG -fwhole-program
 QMAKE_CXXFLAGS_RELEASE += -pedantic -Wshadow -Wall -Wextra -Wcast-qual -Wuninitialized -Weffc++
 
 

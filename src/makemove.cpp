@@ -64,7 +64,7 @@ void Board::make_move(const MOVE move) noexcept
 
     Status& previousStatus = get_status();
 
-    StatusHistory.template emplace_back(Status{
+    StatusHistory.emplace_back(
                                                previousStatus.hash ^ side_key,                                     // zobrist will be changed later
                                                previousStatus.pawn_hash,
                                                move,
@@ -73,7 +73,7 @@ void Board::make_move(const MOVE move) noexcept
                                                previousStatus.halfmove_counter + 1,                        // increment fifty move counter. might be reset
                                                previousStatus.fullmove_counter + (C == Color::BLACK),      // increment move counter
                                                0ULL,
-                                               0ULL });
+                                               0ULL );
 
     Status& newStatus = StatusHistory.back();
 
@@ -468,7 +468,7 @@ template <Color C> void Board::make_nullmove() noexcept
 {
     Status& previousStatus = get_status();
 
-    StatusHistory.template emplace_back(Status{
+    StatusHistory.emplace_back(
                                                previousStatus.hash ^ side_key,                             // zobrist will be changed later
                                                previousStatus.pawn_hash,
                                                Move::MOVE_NULL,
@@ -477,7 +477,7 @@ template <Color C> void Board::make_nullmove() noexcept
                                                previousStatus.halfmove_counter + 1,                     // increment fifty move counter. might be reset
                                                previousStatus.fullmove_counter + (C == Color::BLACK),   // increment move counter
                                                0ULL,
-                                               0ULL });
+                                               0ULL );
 
     Status& newStatus = StatusHistory.back();
 
