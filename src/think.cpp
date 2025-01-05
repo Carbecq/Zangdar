@@ -235,7 +235,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     int  best_score = -INFINITE;        // initially assume the worst case
     MOVE best_move  = Move::MOVE_NONE;  // meilleur coup local
     int  max_score  = INFINITE;         // best possible
-    MOVE excluded   = si->excluded;
+    bool isSingular = si->excluded != Move::MOVE_NONE;
 
     //  Check Extension
     if (isInCheck == true && depth + 1 < MAX_PLY)
@@ -261,7 +261,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     MOVE  tt_move  = Move::MOVE_NONE;
     int   tt_bound = BOUND_NONE;
     int   tt_depth = -1;
-    bool  tt_hit   = excluded ? false : transpositionTable.probe(board.get_hash(), si->ply, tt_move, tt_score, tt_eval, tt_bound, tt_depth);
+    bool  tt_hit   = isSingular ? false : transpositionTable.probe(board.get_hash(), si->ply, tt_move, tt_score, tt_eval, tt_bound, tt_depth);
 
     // Trust TT if not a pvnode and the entry depth is sufficiently high
     // At non-PV nodes we check for an early TT cutoff
@@ -280,7 +280,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
     // Probe the Syzygy     Tablebases
     int tbScore, tbBound;
-    if (!excluded && threadPool.get_useSyzygy() && board.probe_wdl(tbScore, tbBound, si->ply) == true)
+    if (!isSingular && threadPool.get_useSyzygy() && board.probe_wdl(tbScore, tbBound, si->ply) == true)
     {
         td->tbhits++;
 
@@ -319,7 +319,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     {
         si->eval = static_eval = -MATE + si->ply;
     }
-    else if (excluded)
+    else if (isSingular)
     {
         static_eval = si->eval;
     }
@@ -338,8 +338,17 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         Si on ne s'est pas amélioré dans cette ligne, on va pouvoir couper un peu plus */
     bool improving = (si->ply >= 2) && !isInCheck && (static_eval > (si-2)->eval);
 
+    // Amélioration de static-eval, en cas de TT
+    if(!isInCheck && !isSingular && tt_hit
+        && (    tbBound == BOUND_EXACT
+            || (tbBound == BOUND_LOWER && tt_score >= static_eval)
+            || (tbBound == BOUND_UPPER && tt_score <= static_eval) ))
+    {
+        static_eval = tt_score;
+    }
 
-    if (!isInCheck && !isRoot && !isPV && !excluded)
+
+    if (!isInCheck && !isRoot && !isPV && !isSingular)
     {
         //---------------------------------------------------------------------
         //  RAZORING
@@ -473,7 +482,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     // Boucle sur tous les coups
     while ( (move = movePicker.next_move(skipQuiets).move ) != Move::MOVE_NONE )
     {
-        if (move == excluded)
+        if (move == si->excluded)
             continue;
 
         const U64 starting_nodes = td->nodes;
@@ -495,7 +504,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         //-------------------------------------------------
         if (   depth > 8
             && si->ply < 2 * depth
-            && excluded == Move::MOVE_NONE
+            && !isSingular
             && !isRoot
             && move == tt_move
             && tt_depth > depth - 3
@@ -505,8 +514,6 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             // Search to reduced depth with a zero window a bit lower than ttScore
             int sing_beta  = tt_score - depth*2;
             int sing_depth = (depth-1)/2;
-            // PVariation sing_pv;
-            // sing_pv.length = 0;
 
             si->excluded = move;
             score = alpha_beta<C>(board, timer, sing_beta-1, sing_beta, sing_depth, td, si); //TODO si ou si+1 ?
@@ -706,7 +713,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     // don't let our score inflate too high (tb)
     best_score = std::min(best_score, max_score);
 
-    if (!td->stopped && !excluded)
+    if (!td->stopped && !isSingular)
     {
         //  si on est ici, c'est que l'on a trouvé au moins 1 coup
         //  et de plus : score < beta
