@@ -27,15 +27,6 @@ struct HashEntry {
 };
 
 //----------------------------------------------------------
-// Code provenant de Ethereal
-
-struct PawnHashEntry {
-    U64      hash;      // 64 bits
-    Bitboard passed;    // 64 bits
-    Score    eval;      // 32 bits
-};
-
-//----------------------------------------------------------
 
 /* Remarques
  *  1) le "hash_code" est mis dans "move" comme score

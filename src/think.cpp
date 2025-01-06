@@ -237,6 +237,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     int  max_score  = INFINITE;         // best possible
     bool isSingular = si->excluded != Move::MOVE_NONE;
 
+
     //  Check Extension
     if (isInCheck == true && depth + 1 < MAX_PLY)
         depth++;
@@ -278,7 +279,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     }
 
 
-    // Probe the Syzygy     Tablebases
+    // Probe the Syzygy Tablebases
     int tbScore, tbBound;
     if (!isSingular && threadPool.get_useSyzygy() && board.probe_wdl(tbScore, tbBound, si->ply) == true)
     {
@@ -328,14 +329,12 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         si->eval = static_eval = (tt_eval != NOSCORE) ? tt_eval : board.evaluate();
     }
 
-
-
     // Re-initialise les killer des enfants
     td->killer1[si->ply+1] = Move::MOVE_NULL;
     td->killer2[si->ply+1] = Move::MOVE_NULL;
 
-    /*  Avons-nous amélioré la position ?
-        Si on ne s'est pas amélioré dans cette ligne, on va pouvoir couper un peu plus */
+    //  Avons-nous amélioré la position ?
+    //  Si on ne s'est pas amélioré dans cette ligne, on va pouvoir couper un peu plus
     bool improving = (si->ply >= 2) && !isInCheck && (static_eval > (si-2)->eval);
 
     // Amélioration de static-eval, en cas de TT
@@ -453,6 +452,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         depth--;
     }
 
+    si->doubleExtensions = (si-1)->doubleExtensions;
+
     //====================================================================================
     //  Génération des coups
     //------------------------------------------------------------------------------------
@@ -497,14 +498,14 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             hist   = td->get_history(C, move) + cmhist + fuhist;
         }
 
-        int extension = 0;
-
         //-------------------------------------------------
         //  SINGULAR EXTENSION
         //-------------------------------------------------
+        int extension = 0;
+
         if (   depth > 8
             && si->ply < 2 * depth
-            && !isSingular
+            && !isSingular  // Avoid recursive singular search
             && !isRoot
             && move == tt_move
             && tt_depth > depth - 3
@@ -512,16 +513,37 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             && abs(tt_score) < TBWIN_IN_X)
         {
             // Search to reduced depth with a zero window a bit lower than ttScore
-            int sing_beta  = tt_score - depth*2;
+            int sing_beta  = tt_score - depth*2;    //TODO essai -depth*3
             int sing_depth = (depth-1)/2;
 
             si->excluded = move;
             score = alpha_beta<C>(board, timer, sing_beta-1, sing_beta, sing_depth, td, si); //TODO si ou si+1 ?
             si->excluded = Move::MOVE_NONE;
 
-            // Extend as this move seems forced
             if (score < sing_beta)
-                extension = 1;
+            {
+                if (   !isPV
+                    && score < sing_beta - 50
+                    && si->doubleExtensions <= 20)  // Avoid search explosion by limiting the number of double extensions
+                {
+                    extension = 2;
+                    si->doubleExtensions++;
+                }
+                else
+                {
+                    extension = 1;
+                }
+            }
+            else if (sing_beta >= beta)
+            {
+                // multicut!
+                return sing_beta;
+            }
+            else if (tt_score >= beta)
+            {
+                // negative extension!
+                extension = -2;
+            }
         }
 
         //-------------------------------------------------

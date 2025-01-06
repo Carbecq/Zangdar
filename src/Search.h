@@ -21,6 +21,7 @@ struct SearchInfo {
     MOVE        move;       // coup cherché
     int         ply;        // profondeur de recherche
     PVariation  pv;         // Principale Variation
+    int         doubleExtensions;
 }__attribute__((aligned(64)));
 
 //! \brief  Données d'une thread
