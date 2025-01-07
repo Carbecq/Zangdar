@@ -130,7 +130,7 @@ void TranspositionTable::update_age(void)
 //========================================================
 //! \brief  Ecriture dans la hashtable d'une nouvelle donnée
 //--------------------------------------------------------
-void TranspositionTable::store(U64 hash, MOVE move, Score score, Score eval, int bound, int depth, int ply)
+void TranspositionTable::store(U64 hash, MOVE move, int score, int eval, int bound, int depth, int ply)
 {
     assert(abs(score) <= MATE);
     assert(abs(eval) <= MATE || eval == NOSCORE);
@@ -214,7 +214,7 @@ void TranspositionTable::store(U64 hash, MOVE move, Score score, Score eval, int
 //! \param{in]  depth
 //! \param{in]  ply
 //--------------------------------------------------------
-bool TranspositionTable::probe(U64 hash, int ply, MOVE& move, Score& score, Score& eval, int &bound, int& depth)
+bool TranspositionTable::probe(U64 hash, int ply, MOVE& move, int &score, int &eval, int &bound, int& depth)
 {
     move  = Move::MOVE_NONE;
     score = NOSCORE;

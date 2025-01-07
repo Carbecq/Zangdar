@@ -28,7 +28,6 @@ using Usize = size_t;
 using Bitboard  = U64;
 using MOVE      = U32;
 
-using Score     = int;  // Valeur spéciale contenant à la fois mg et eg
 using TimePoint = std::chrono::high_resolution_clock;
 
 

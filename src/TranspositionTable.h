@@ -66,8 +66,8 @@ public:
 
     void clear(void);
     void update_age(void);
-    void store(U64 hash, MOVE move, Score score, Score eval, int bound, int depth, int ply);
-    bool probe(U64 hash, int ply, MOVE &code, Score &score, Score &eval, int &bound, int &depth);
+    void store(U64 hash, MOVE move, int score, int eval, int bound, int depth, int ply);
+    bool probe(U64 hash, int ply, MOVE &code, int &score, int &eval, int &bound, int &depth);
     void stats();
     int  hash_full() const;
 

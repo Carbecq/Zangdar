@@ -257,8 +257,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     }
 
     //  Recherche de la position actuelle dans la table de transposition
-    Score tt_score = NOSCORE;
-    Score tt_eval  = NOSCORE;
+    int   tt_score = NOSCORE;
+    int   tt_eval  = NOSCORE;
     MOVE  tt_move  = Move::MOVE_NONE;
     int   tt_bound = BOUND_NONE;
     int   tt_depth = -1;
@@ -280,34 +280,35 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
 
     // Probe the Syzygy Tablebases
-    int tbScore, tbBound;
-    if (!isSingular && threadPool.get_useSyzygy() && board.probe_wdl(tbScore, tbBound, si->ply) == true)
+    int tb_score = NOSCORE;
+    int tb_bound = BOUND_NONE;
+    if (!isSingular && threadPool.get_useSyzygy() && board.probe_wdl(tb_score, tb_bound, si->ply) == true)
     {
         td->tbhits++;
 
         // Check to see if the WDL value would cause a cutoff
-        if (    tbBound == BOUND_EXACT
-            || (tbBound == BOUND_LOWER && tbScore >= beta)
-            || (tbBound == BOUND_UPPER && tbScore <= alpha))
+        if (    tb_bound == BOUND_EXACT
+            || (tb_bound == BOUND_LOWER && tb_score >= beta)
+            || (tb_bound == BOUND_UPPER && tb_score <= alpha))
         {
-            transpositionTable.store(board.get_hash(), Move::MOVE_NONE, tbScore, NOSCORE, tbBound, MAX_PLY, si->ply);
-            return tbScore;
+            transpositionTable.store(board.get_hash(), Move::MOVE_NONE, tb_score, NOSCORE, tb_bound, MAX_PLY, si->ply);
+            return tb_score;
         }
 
         // Limit the score of this node based on the tb result
         if (isPV)
         {
             // Never score something worse than the known Syzygy value
-            if (tbBound == BOUND_LOWER)
+            if (tb_bound == BOUND_LOWER)
             {
-                best_score = tbScore;
-                alpha = std::max(alpha, tbScore);
+                best_score = tb_score;
+                alpha = std::max(alpha, tb_score);
             }
 
             // Never score something better than the known Syzygy value
-            if (tbBound == BOUND_UPPER)
+            if (tb_bound == BOUND_UPPER)
             {
-                max_score = tbScore;
+                max_score = tb_score;
             }
         }
     }
@@ -326,7 +327,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     }
     else
     {
-        si->eval = static_eval = (tt_eval != NOSCORE) ? tt_eval : board.evaluate();
+        si->eval = static_eval = board.evaluate();
+            // (tt_eval != NOSCORE) ? tt_eval : board.evaluate();
     }
 
     // Re-initialise les killer des enfants
@@ -337,11 +339,13 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     //  Si on ne s'est pas amélioré dans cette ligne, on va pouvoir couper un peu plus
     bool improving = (si->ply >= 2) && !isInCheck && (static_eval > (si-2)->eval);
 
-    // Amélioration de static-eval, en cas de TT
-    if(!isInCheck && !isSingular && tt_hit
-        && (    tbBound == BOUND_EXACT
-            || (tbBound == BOUND_LOWER && tt_score >= static_eval)
-            || (tbBound == BOUND_UPPER && tt_score <= static_eval) ))
+    // Amélioration de static-eval, au cas où tt_score est assez bon
+    if(    !isInCheck
+        && !isSingular
+        && tt_hit
+        && (    tt_bound == BOUND_EXACT
+            || (tt_bound == BOUND_LOWER && tt_score >= static_eval)
+            || (tt_bound == BOUND_UPPER && tt_score <= static_eval) ))
     {
         static_eval = tt_score;
     }

@@ -41,9 +41,9 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
 
 
     // Est-ce que la table de transposition est utilisable ?
-    int old_alpha = alpha;
-    Score tt_score;
-    Score tt_eval;
+    int   old_alpha = alpha;
+    int   tt_score;
+    int   tt_eval;
     MOVE  tt_move  = Move::MOVE_NONE;
     int   tt_bound;
     int   tt_depth;
