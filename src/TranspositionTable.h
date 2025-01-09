@@ -24,13 +24,16 @@ struct HashEntry {
     U08   depth;    //  8 bits
     U08   date;     //  8 bits
     U08   bound;    //  8 bits  (2 bits nécessaires seulement)
+
+    // total = 120 bits = 15 octets
+    // le compilateur ajoute un padding de 8 bits pour avoir un alignement mémoire de 32 bits : 128 = 16*8
+    // donc sizeof(HashEntry) = 16
 };
 
 //----------------------------------------------------------
 
 /* Remarques
- *  1) le "hash_code" est mis dans "move" comme score
- *  2) dans Koivisto, la date (ou age) est mise dans move (8 bits) comme score
+ *  > dans Koivisto, la date (ou age) est mise dans move (8 bits) comme score
  */
 
 // 134 217 728 = 2 ^ 27 = 128 Mo
@@ -63,6 +66,7 @@ public:
     void init_size(int mbsize);
     void set_hash_size(int mbsize);
     int  get_hash_size(void) const { return tt_size; }
+    void info();
 
     void clear(void);
     void update_age(void);

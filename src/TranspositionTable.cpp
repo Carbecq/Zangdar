@@ -291,3 +291,13 @@ void TranspositionTable::prefetch(const U64 hash)
     __builtin_prefetch(tt_entries + (hash & tt_mask));
 }
 
+void TranspositionTable::info()
+{
+    std::cout << "TranspositionTable complete with " << tt_size
+              << " entries of " << sizeof(HashEntry)
+              << " bytes for a total of " << tt_size*sizeof(HashEntry)
+              << " bytes ("
+              << tt_size*sizeof(HashEntry)/1024.0/1024.0
+              << " MB)"
+              << std::endl;
+}

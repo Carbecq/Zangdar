@@ -36,7 +36,7 @@ static constexpr int MAX_HISTO  = 1024;     // longueur max de l'historique (par
 static constexpr int MAX_MOVES  =  400;     // Number of moves in the candidate move array.
 static constexpr int MAX_TIME   = 60*60*1000;   // 1 heure en ms
 
-static constexpr int HASH_SIZE      = 128;      // en Mo , 128 ?
+static constexpr int HASH_SIZE      = 128;      // en Mo
 static constexpr int MIN_HASH_SIZE  = 1;
 static constexpr int MAX_HASH_SIZE  = 1024;
 

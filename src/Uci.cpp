@@ -159,6 +159,7 @@ void Uci::run()
         else if (token == "v")
         {
             std::cout << "Zangdar " << VERSION << " NNUE " << NETWORK << std::endl;
+            transpositionTable.info();
         }
         else if (token == "s")
         {

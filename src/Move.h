@@ -42,39 +42,49 @@ constexpr int     SHIFT_FLAGS = 21;
 constexpr U32 MOVE_NONE = 0;
 
 // Fields
-//                                           dest  from
-//                                    FFFPPPCCCMMMDDDDDDFFFFFF
+//                                                dest  from
+//                                    fffPPPCCCMMMDDDDDDFFFFFF
 constexpr U32 MOVE_FROM_MASK      = 0b000000000000000000111111;
 
-//                                    FFFPPPCCCMMMDDDDDDFFFFFF
+//                                    fffPPPCCCMMMDDDDDDFFFFFF
 constexpr U32 MOVE_DEST_MASK      = 0b000000000000111111000000;
 
-//                                    FFFPPPCCCMMMDDDDDDFFFFFF
+//                                    fffPPPCCCMMMDDDDDDFFFFFF
 constexpr U32 MOVE_FROMDEST_MASK  = 0b000000000000111111111111;
 
-//                                    FFFPPPCCCMMMDDDDDDFFFFFF
+//                                    fffPPPCCCMMMDDDDDDFFFFFF
 constexpr U32 MOVE_PIECE_MASK     = 0b000000000111000000000000;
 
-//                                    FFFPPPCCCMMMDDDDDDFFFFFF
+//                                    fffPPPCCCMMMDDDDDDFFFFFF
 constexpr U32 MOVE_CAPT_MASK      = 0b000000111000000000000000;
 
-//                                    FFFPPPCCCMMMDDDDDDFFFFFF
+//                                    fffPPPCCCMMMDDDDDDFFFFFF
 constexpr U32 MOVE_PROMO_MASK     = 0b000111000000000000000000;
 
-//                                    FFFPPPCCCMMMDDDDDDFFFFFF
+//                                    fffPPPCCCMMMDDDDDDFFFFFF
 constexpr U32 MOVE_FLAGS_MASK     = 0b111000000000000000000000;
 
 // Special move flags
 constexpr U32 FLAG_NONE           = 0;
-//                                        FFFPPPCCCMMMDDDDDDFFFFFF
+//                                        fffPPPCCCMMMDDDDDDFFFFFF
 constexpr U32 FLAG_DOUBLE_MASK    = 0b0000001000000000000000000000;
 constexpr U32 FLAG_ENPASSANT_MASK = 0b0000010000000000000000000000;
 constexpr U32 FLAG_CASTLE_MASK    = 0b0000100000000000000000000000;
 
+//                                            fffPPPCCCMMMDDDDDDFFFFFF
 constexpr U32 MOVE_DEPL_MASK      = 0b00000000111111111000000000000000;
 
-// NULL_MOVE                                 NFFFPPPCCCMMMDDDDDDFFFFFF
-constexpr U32 MOVE_NULL           = 0b00000001000000000000000000000000;
+// NULL_MOVE
+
+// move  = (b1b1)
+// from  = b1
+// dest  = b1
+// piece = NONE
+// capt  = NONE
+// promo = NONE
+// flags = 0
+
+constexpr U32 MOVE_NULL           = 65; // 1000001
 
 /* X Y  X&Y  X|Y  X^Y
  * 0 0  0    0    0
