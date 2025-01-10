@@ -130,10 +130,9 @@ void TranspositionTable::update_age(void)
 //========================================================
 //! \brief  Ecriture dans la hashtable d'une nouvelle donnée
 //--------------------------------------------------------
-void TranspositionTable::store(U64 hash, MOVE move, int score, int eval, int bound, int depth, int ply)
+void TranspositionTable::store(U64 hash, MOVE move, int score, int bound, int depth, int ply)
 {
     assert(abs(score) <= MATE);
-    assert(abs(eval) <= MATE || eval == NOSCORE);
     assert(0 <= depth && depth < MAX_PLY);
     assert(bound == BOUND_LOWER || bound == BOUND_UPPER || bound == BOUND_EXACT);
 
@@ -197,7 +196,6 @@ void TranspositionTable::store(U64 hash, MOVE move, int score, int eval, int bou
     replace->hash32 = hash32;
     replace->move   = (MOVE)move;
     replace->score  = (I16)ScoreToTT(score, ply);
-    replace->eval   = (I16)eval;
     replace->depth  = (U08)depth;
     replace->date   = (U08)tt_date;
     replace->bound  = (U08)bound;
@@ -214,11 +212,10 @@ void TranspositionTable::store(U64 hash, MOVE move, int score, int eval, int bou
 //! \param{in]  depth
 //! \param{in]  ply
 //--------------------------------------------------------
-bool TranspositionTable::probe(U64 hash, int ply, MOVE& move, int &score, int &eval, int &bound, int& depth)
+bool TranspositionTable::probe(U64 hash, int ply, MOVE& move, int &score, int &bound, int& depth)
 {
     move  = Move::MOVE_NONE;
     score = NOSCORE;
-    eval  = NOSCORE;
     bound = BOUND_NONE;
 
     // extract the 32-bit key from the 64-bit zobrist hash
@@ -237,7 +234,6 @@ bool TranspositionTable::probe(U64 hash, int ply, MOVE& move, int &score, int &e
             bound = entry->bound;
             depth = entry->depth;
             score = ScoreFromTT(entry->score, ply);
-            eval  = entry->eval;
 
             return true;
         }

@@ -258,11 +258,10 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
     //  Recherche de la position actuelle dans la table de transposition
     int   tt_score = NOSCORE;
-    int   tt_eval  = NOSCORE;
     MOVE  tt_move  = Move::MOVE_NONE;
     int   tt_bound = BOUND_NONE;
     int   tt_depth = -1;
-    bool  tt_hit   = isSingular ? false : transpositionTable.probe(board.get_hash(), si->ply, tt_move, tt_score, tt_eval, tt_bound, tt_depth);
+    bool  tt_hit   = isSingular ? false : transpositionTable.probe(board.get_hash(), si->ply, tt_move, tt_score, tt_bound, tt_depth);
 
     // Trust TT if not a pvnode and the entry depth is sufficiently high
     // At non-PV nodes we check for an early TT cutoff
@@ -291,7 +290,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             || (tb_bound == BOUND_LOWER && tb_score >= beta)
             || (tb_bound == BOUND_UPPER && tb_score <= alpha))
         {
-            transpositionTable.store(board.get_hash(), Move::MOVE_NONE, tb_score, NOSCORE, tb_bound, MAX_PLY, si->ply);
+            transpositionTable.store(board.get_hash(), Move::MOVE_NONE, tb_score, tb_bound, MAX_PLY, si->ply);
             return tb_score;
         }
 
@@ -328,7 +327,6 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     else
     {
         si->eval = static_eval = board.evaluate();
-            // (tt_eval != NOSCORE) ? tt_eval : board.evaluate();
     }
 
     // Re-initialise les killer des enfants
@@ -439,7 +437,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 // Coupure si cette dernière recherche bat betaCut
                 if (pbScore >= betaCut)
                 {
-                    transpositionTable.store(board.get_hash(), pbMove, pbScore, static_eval, BOUND_LOWER, depth-3, si->ply);
+                    transpositionTable.store(board.get_hash(), pbMove, pbScore, BOUND_LOWER, depth-3, si->ply);
                     return pbScore;
                 }
             }
@@ -719,7 +717,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                         // Met à jour le Counter-Move
                         update_counter_move(td, THEM, si->ply, move);
                     }
-                    transpositionTable.store(board.get_hash(), move, score, static_eval, BOUND_LOWER, depth, si->ply);
+                    transpositionTable.store(board.get_hash(), move, score, BOUND_LOWER, depth, si->ply);
                     return score;
                 }
 
@@ -746,7 +744,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         //  si score >  alpha    : c'est un bon coup : HASH_EXACT
         //  si score <= alpha    : c'est un coup qui n'améliore pas alpha : HASH_ALPHA
         int flag = (alpha != old_alpha) ? BOUND_EXACT : BOUND_UPPER;
-        transpositionTable.store(board.get_hash(), best_move, best_score, static_eval, flag, depth, si->ply);
+        transpositionTable.store(board.get_hash(), best_move, best_score, flag, depth, si->ply);
     }
 
     return best_score;

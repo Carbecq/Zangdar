@@ -20,13 +20,12 @@ struct HashEntry {
     U32   hash32;   // 32 bits
     MOVE  move;     // 32 bits  (seuls 24 bits sont utilisés)
     I16   score;    // 16 bits
-    I16   eval;     // 16 bits
     U08   depth;    //  8 bits
     U08   date;     //  8 bits
     U08   bound;    //  8 bits  (2 bits nécessaires seulement)
 
-    // total = 120 bits = 15 octets
-    // le compilateur ajoute un padding de 8 bits pour avoir un alignement mémoire de 32 bits : 128 = 16*8
+    // total = 104 bits = 13 octets
+    // le compilateur ajoute un padding de 24 bits pour avoir un alignement mémoire de 32 bits : 128 = 32*4
     // donc sizeof(HashEntry) = 16
 };
 
@@ -70,8 +69,8 @@ public:
 
     void clear(void);
     void update_age(void);
-    void store(U64 hash, MOVE move, int score, int eval, int bound, int depth, int ply);
-    bool probe(U64 hash, int ply, MOVE &code, int &score, int &eval, int &bound, int &depth);
+    void store(U64 hash, MOVE move, int score, int bound, int depth, int ply);
+    bool probe(U64 hash, int ply, MOVE &code, int &score, int &bound, int &depth);
     void stats();
     int  hash_full() const;
 
