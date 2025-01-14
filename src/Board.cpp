@@ -62,8 +62,6 @@ std::string Board::display() const noexcept
     std::stringstream ss;
 
     int sq;
-    U64 hh = get_hash();
-    U64 ph = get_pawn_hash();
     Bitboard bb;
 
     ss << "\n\n";
@@ -125,8 +123,7 @@ std::string Board::display() const noexcept
     }
     ss <<     "Turn     : " << side_name[turn()] << '\n';
     ss <<     "InCheck  : " << bool_name[is_in_check()] << "\n";
-    ss <<     "Hash     : " << hh << "\n";
-    ss <<     "PawnHash : " << ph << "\n";
+    ss <<     "Key      : " << std::hex << get_key() << "\n";
     ss <<     "Fen      : " << get_fen() << "\n";
 
     return(ss.str());
@@ -136,10 +133,9 @@ std::string Board::display() const noexcept
 //=============================================================
 //! \brief  Calcule la valeur du hash
 //-------------------------------------------------------------
-void Board::calculate_hash(U64& khash, U64& phash) const
+void Board::calculate_hash(U64& khash) const
 {
     khash = 0ULL;
-    phash = 0ULL;
     Bitboard bb;
 
     // Turn
@@ -152,7 +148,6 @@ void Board::calculate_hash(U64& khash, U64& phash) const
     while (bb) {
         int sq = BB::pop_lsb(bb);
         khash ^= piece_key[WHITE][PAWN][sq];
-        phash ^= piece_key[WHITE][PAWN][sq];
     }
     bb = occupancy_cp<WHITE, KNIGHT>();
     while (bb) {
@@ -183,7 +178,6 @@ void Board::calculate_hash(U64& khash, U64& phash) const
     while (bb) {
         int sq = BB::pop_lsb(bb);
         khash ^= piece_key[BLACK][PAWN][sq];
-        phash ^= piece_key[BLACK][PAWN][sq];
     }
     bb = occupancy_cp<BLACK, KNIGHT>();
     while (bb) {

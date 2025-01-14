@@ -18,8 +18,7 @@
 // celle-ci sera nécessaire pour effectuer un unmake_move
 struct Status
 {
-    U64  hash               = 0ULL;                     // nombre unique (?) correspondant à la position
-    U64  pawn_hash          = 0ULL;                     // hash uniquement pour les pions
+    U64  key                = 0ULL;                     // nombre unique (?) correspondant à la position
     MOVE move               = Move::MOVE_NONE;
     int  ep_square          = SquareType::NO_SQUARE;    // case en-passant : si les blancs jouent e2-e4, la case est e3
     U32  castling           = CastleType::CASTLE_NONE;  // droit au roque
@@ -100,7 +99,7 @@ public:
 
     template <Color C>
     void calculate_checkers_pinned() noexcept;
-    void calculate_hash(U64 &khash, U64 &phash) const;
+    void calculate_hash(U64 &khash) const;
 
     //! \brief  Retourne le Bitboard de TOUS les attaquants (Blancs et Noirs) de la case "sq"
     [[nodiscard]] Bitboard all_attackers(const int sq, const Bitboard occ) const noexcept
@@ -381,7 +380,7 @@ public:
     [[nodiscard]] inline bool is_repetition(int ply) const noexcept
     {
         int reps             = 0;
-        U64 current_hash     = get_status().hash;
+        U64 current_hash     = get_status().key;
         int gamemove_counter = StatusHistory.size() - 1;
         int halfmove_counter = get_status().halfmove_counter;
 
@@ -394,7 +393,7 @@ public:
 
             // Check for matching hash with a two fold after the root,
             // or a three fold which occurs in part before the root move
-            if (    StatusHistory[i].hash == current_hash
+            if (    StatusHistory[i].key == current_hash
                 && (   i > gamemove_counter - ply   // 2-fold : on considère des positions dans l'arbre de recherche
                     || ++reps == 2) )               // 3-fold : on considère toutes les positions de la partie
                 return true;
@@ -441,23 +440,26 @@ public:
     Color side_to_move;                         // camp au trait
     std::vector<std::string> best_moves;        // meilleur coup (pour les tests tactiques)
     std::vector<std::string> avoid_moves;       // coup à éviter (pour les tests tactiques)
-    std::vector<Status> StatusHistory;          // historique de la partie (coups déjà joués ET coups de la recherche)
     NNUE nnue;                                  // réseau NNUE
+    std::vector<Status> StatusHistory;          // historique de la partie (coups déjà joués ET coups de la recherche)
+
 
     //==============================================
     //  Status
     inline const Status& get_status() const { return StatusHistory.back(); }
     inline Status& get_status()             { return StatusHistory.back(); }
 
-    [[nodiscard]] inline int get_halfmove_counter() const noexcept { return get_status().halfmove_counter; }
-    [[nodiscard]] inline int get_fullmove_counter() const noexcept { return get_status().fullmove_counter; }
-    [[nodiscard]] inline int get_ep_square()        const noexcept { return get_status().ep_square; }
-    [[nodiscard]] inline U64 get_hash()             const noexcept { return get_status().hash; }
-    [[nodiscard]] inline U64 get_pawn_hash()        const noexcept { return get_status().pawn_hash; }
-    [[nodiscard]] inline Bitboard get_checkers()    const noexcept { return get_status().checkers; }
-    [[nodiscard]] inline Bitboard get_pinned()      const noexcept { return get_status().pinned; }
+    [[nodiscard]] inline int get_halfmove_counter() const noexcept { return get_status().halfmove_counter;  }
+    [[nodiscard]] inline int get_fullmove_counter() const noexcept { return get_status().fullmove_counter;  }
+    [[nodiscard]] inline int get_ep_square()        const noexcept { return get_status().ep_square;         }
+    [[nodiscard]] inline U64 get_key()              const noexcept { return get_status().key;               }
+    [[nodiscard]] inline Bitboard get_checkers()    const noexcept { return get_status().checkers;          }
+    [[nodiscard]] inline Bitboard get_pinned()      const noexcept { return get_status().pinned;            }
 
-    inline void reserve_nnue_capacity() { nnue.reserve_nnue_capacity(); }  // la capacité ne passe pas avec la copie
+    inline void reserve_capacity() {    // la capacité ne passe pas avec la copie
+        nnue.reserve_capacity();
+        StatusHistory.reserve(MAX_HISTO);
+    }
 
 };  // class Board
 

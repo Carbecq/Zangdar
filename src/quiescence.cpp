@@ -21,7 +21,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
     }
 
     // Prefetch La table de transposition aussitôt que possible
-    transpositionTable.prefetch(board.get_hash());
+    transpositionTable.prefetch(board.get_key());
 
     // Update node count and selective depth
     td->nodes++;
@@ -46,7 +46,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
     MOVE  tt_move  = Move::MOVE_NONE;
     int   tt_bound;
     int   tt_depth;
-    bool  tt_hit   = transpositionTable.probe(board.get_hash(), si->ply, tt_move, tt_score, tt_bound, tt_depth);
+    bool  tt_hit   = transpositionTable.probe(board.get_key(), si->ply, tt_move, tt_score, tt_bound, tt_depth);
 
     // note : on ne teste pas la profondeur, car dans la Quiescence, elle est à 0
     //        dans la cas de la Quiescence, on cut tous les coups, y compris la PV
@@ -141,7 +141,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
                 if(score >= beta)
                 {
 
-                    transpositionTable.store(board.get_hash(), move, score, BOUND_LOWER, 0, si->ply);
+                    transpositionTable.store(board.get_key(), move, score, BOUND_LOWER, 0, si->ply);
                     return score;
                 }
             }
@@ -151,7 +151,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
     if (!td->stopped)
     {
         int flag = (alpha != old_alpha) ? BOUND_EXACT : BOUND_UPPER;
-        transpositionTable.store(board.get_hash(), best_move, best_score, flag, 0, si->ply);
+        transpositionTable.store(board.get_key(), best_move, best_score, flag, 0, si->ply);
     }
 
     return best_score;

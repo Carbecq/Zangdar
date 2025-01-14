@@ -74,7 +74,7 @@ public:
     void pop();
     void reset();
     template<Color color> int  evaluate();
-    inline void reserve_nnue_capacity() { accumulator.reserve(512); }  // la capacité ne passe pas avec la copie
+    inline void reserve_capacity() { accumulator.reserve(512); }  // la capacité ne passe pas avec la copie
 
     void add(Color color, PieceType piece, int from);
     void sub_add(Color color, PieceType from_piece, int from, PieceType to_piece, int dest);

@@ -35,11 +35,6 @@ void Board::make_move(const MOVE move) noexcept
     const auto captured = Move::captured(move);
     const auto promo    = Move::promotion(move);
 
-#ifndef NDEBUG
-    // on ne passe ici qu'en debug
-    const auto ep_old   = get_ep_square();
-#endif
-
     // std::cout << display() << std::endl << std::endl;
     //    printf("move  = (%s) \n", Move::name(move).c_str());
     //    // binary_print(move);
@@ -51,49 +46,50 @@ void Board::make_move(const MOVE move) noexcept
     //    printf("promo = %s \n", piece_name[promo].c_str());
     //    printf("flags = %u \n", Move::flags(move));
 
-    // assert(pieceOn[king_square<C>()] == KING);
-    // assert(dest != from);
-    // assert(piece != NO_PIECE);
-    // assert(captured != KING);
-    // assert(promo != PAWN);
-    // assert(promo != KING);
-    // assert(pieceOn[from] == piece);
+    assert(pieceOn[king_square<C>()] == KING);
+    assert(dest != from);
+    assert(piece != NO_PIECE);
+    assert(captured != KING);
+    assert(promo != PAWN);
+    assert(promo != KING);
+    assert(pieceOn[from] == piece);
+    assert(!StatusHistory.empty());
 
     if constexpr (Update_NNUE == true)
-        nnue.push();    // nouveau accumulateur
+        nnue.push();    // nouvel accumulateur
 
-    Status& previousStatus = get_status();
+    const Status& previousStatus = StatusHistory.back(); // référence
 
-    StatusHistory.emplace_back(
-                                               previousStatus.hash ^ side_key,                                     // zobrist will be changed later
-                                               previousStatus.pawn_hash,
-                                               move,
-                                               NO_SQUARE,                                                  // reset en passant. might be set later
-                                               previousStatus.castling,                                    // copy meta. might be changed
-                                               previousStatus.halfmove_counter + 1,                        // increment fifty move counter. might be reset
-                                               previousStatus.fullmove_counter + (C == Color::BLACK),      // increment move counter
-                                               0ULL,
-                                               0ULL );
+    StatusHistory.emplace_back( // ajoute un nouvel élément à la fin
+                                previousStatus.key ^ side_key,                              // zobrist will be changed later
+                                move,
+                                NO_SQUARE,                                                  // reset en passant. might be set later
+                                previousStatus.castling,                                    // copy meta. might be changed
+                                previousStatus.halfmove_counter + 1,                        // increment fifty move counter. might be reset
+                                previousStatus.fullmove_counter + (C == Color::BLACK),      // increment move counter
+                                0ULL,
+                                0ULL
+        );
 
     Status& newStatus = StatusHistory.back();
 
     // La prise en passant n'est valable que tout de suite
     // Il faut donc la supprimer
     if (previousStatus.ep_square != NO_SQUARE)
-        newStatus.hash ^= ep_key[previousStatus.ep_square];
+        newStatus.key ^= ep_key[previousStatus.ep_square];
 
     // Déplacement du roi
     if (piece == KING)
         x_king[C] = dest;
 
     // Droit au roque, remove ancient value
-    newStatus.hash ^= castle_key[previousStatus.castling];
+    newStatus.key ^= castle_key[previousStatus.castling];
 
     // Castling permissions
     newStatus.castling = previousStatus.castling & castle_mask[from] & castle_mask[dest];
 
     // Droit au roque; add new value
-    newStatus.hash ^= castle_key[newStatus.castling];
+    newStatus.key ^= castle_key[newStatus.castling];
 
     //====================================================================================
     //  Coup normal (pas spécial)
@@ -116,12 +112,11 @@ void Board::make_move(const MOVE move) noexcept
 
             if constexpr (Update_NNUE == true)
                 nnue.sub_add(C, piece, from, piece, dest);
-            newStatus.hash ^= piece_key[C][piece][from] ^ piece_key[C][piece][dest];
+            newStatus.key ^= piece_key[C][piece][from] ^ piece_key[C][piece][dest];
 
             if (piece == PAWN)
             {
                 newStatus.halfmove_counter = 0;
-                newStatus.pawn_hash ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
             }
         }
 
@@ -158,11 +153,10 @@ void Board::make_move(const MOVE move) noexcept
 
                 if constexpr (Update_NNUE == true)
                     nnue.sub_sub_add(C, PAWN, from, captured, promo, dest);
-                newStatus.hash ^= piece_key[C][piece][from];
-                newStatus.hash ^= piece_key[C][promo][dest];
-                newStatus.hash ^= piece_key[Them][captured][dest];
+                newStatus.key ^= piece_key[C][piece][from];
+                newStatus.key ^= piece_key[C][promo][dest];
+                newStatus.key ^= piece_key[Them][captured][dest];
 
-                newStatus.pawn_hash ^= piece_key[C][PAWN][from];
                 newStatus.halfmove_counter = 0;
             }
 
@@ -185,13 +179,9 @@ void Board::make_move(const MOVE move) noexcept
 
                 if constexpr (Update_NNUE == true)
                     nnue.sub_sub_add(C, piece, from, captured, piece, dest);
-                newStatus.hash ^= piece_key[C][piece][from] ^ piece_key[C][piece][dest];
-                newStatus.hash ^= piece_key[Them][captured][dest];
+                newStatus.key ^= piece_key[C][piece][from] ^ piece_key[C][piece][dest];
+                newStatus.key ^= piece_key[Them][captured][dest];
 
-                if (piece == PAWN)
-                    newStatus.pawn_hash ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
-                if (captured == PAWN)
-                    newStatus.pawn_hash ^= piece_key[Them][PAWN][dest];
                 newStatus.halfmove_counter = 0;
             }
         }
@@ -221,9 +211,8 @@ void Board::make_move(const MOVE move) noexcept
 
             if constexpr (Update_NNUE == true)
                 nnue.sub_add(C, PAWN, from, promo, dest);
-            newStatus.hash ^= piece_key[C][piece][from];
-            newStatus.hash ^= piece_key[C][promo][dest];
-            newStatus.pawn_hash ^= piece_key[C][PAWN][from];
+            newStatus.key ^= piece_key[C][piece][from];
+            newStatus.key ^= piece_key[C][promo][dest];
             newStatus.halfmove_counter = 0;
         }
     }
@@ -253,11 +242,10 @@ void Board::make_move(const MOVE move) noexcept
 
             if constexpr (Update_NNUE == true)
                 nnue.sub_add(C, PAWN, from, PAWN, dest);
-            newStatus.hash      ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
-            newStatus.pawn_hash ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
+            newStatus.key      ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
             newStatus.halfmove_counter = 0;
             newStatus.ep_square = (C == Color::WHITE) ? SQ::south(dest) : SQ::north(dest);
-            newStatus.hash ^= ep_key[newStatus.ep_square];
+            newStatus.key ^= ep_key[newStatus.ep_square];
         }
 
         //====================================================================================
@@ -268,7 +256,7 @@ void Board::make_move(const MOVE move) noexcept
             assert(piece == PAWN);
             assert(captured == PAWN);
             assert(promo == NO_PIECE);
-            assert(SQ::file(dest) == SQ::file(ep_old));
+            //TODO assert(SQ::file(dest) == SQ::file(ep_old));
             assert((C == Color::WHITE && SQ::rank(dest) == 5)   || (C == Color::BLACK && SQ::rank(dest) == 2));
             assert((C == Color::WHITE && SQ::rank(from) == 4) || (C == Color::BLACK && SQ::rank(from) == 3));
             assert(SQ::file(dest) - SQ::file(from) == 1     || SQ::file(from) - SQ::file(dest) == 1);
@@ -279,8 +267,7 @@ void Board::make_move(const MOVE move) noexcept
             pieceOn[from] = NO_PIECE;
             pieceOn[dest] = PAWN;
 
-            newStatus.hash      ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
-            newStatus.pawn_hash ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
+            newStatus.key      ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
             newStatus.halfmove_counter = 0;
 
             // Remove the captured pawn
@@ -292,8 +279,7 @@ void Board::make_move(const MOVE move) noexcept
 
                 if constexpr (Update_NNUE == true)
                     nnue.sub_sub_add(C, PAWN, from, PAWN, SQ::south(dest), PAWN, dest);
-                newStatus.hash      ^= piece_key[Them][PAWN][SQ::south(dest)];
-                newStatus.pawn_hash ^= piece_key[Them][PAWN][SQ::south(dest)];
+                newStatus.key      ^= piece_key[Them][PAWN][SQ::south(dest)];
             }
             else
             {
@@ -303,8 +289,7 @@ void Board::make_move(const MOVE move) noexcept
 
                 if constexpr (Update_NNUE == true)
                     nnue.sub_sub_add(C, PAWN, from, PAWN, SQ::north(dest), PAWN, dest);
-                newStatus.hash      ^= piece_key[Them][PAWN][SQ::north(dest)];
-                newStatus.pawn_hash ^= piece_key[Them][PAWN][SQ::north(dest)];
+                newStatus.key      ^= piece_key[Them][PAWN][SQ::north(dest)];
             }
         }
 
@@ -337,8 +322,8 @@ void Board::make_move(const MOVE move) noexcept
 
                 if constexpr (Update_NNUE == true)
                     nnue.sub_add(C, piece, from, piece, dest);
-                newStatus.hash ^= piece_key[C][piece][from];
-                newStatus.hash ^= piece_key[C][piece][dest];
+                newStatus.key ^= piece_key[C][piece][from];
+                newStatus.key ^= piece_key[C][piece][dest];
 
                 // Move the Rook
                 if constexpr (C == WHITE)
@@ -353,8 +338,8 @@ void Board::make_move(const MOVE move) noexcept
 
                     if constexpr (Update_NNUE == true)
                         nnue.sub_add(C, ROOK, H1, ROOK, F1);
-                    newStatus.hash ^= piece_key[C][ROOK][H1];
-                    newStatus.hash ^= piece_key[C][ROOK][F1];
+                    newStatus.key ^= piece_key[C][ROOK][H1];
+                    newStatus.key ^= piece_key[C][ROOK][F1];
                 }
                 else
                 {
@@ -368,8 +353,8 @@ void Board::make_move(const MOVE move) noexcept
 
                     if constexpr (Update_NNUE == true)
                         nnue.sub_add(C, ROOK, H8, ROOK, F8);
-                    newStatus.hash ^= piece_key[C][ROOK][H8];
-                    newStatus.hash ^= piece_key[C][ROOK][F8];
+                    newStatus.key ^= piece_key[C][ROOK][H8];
+                    newStatus.key ^= piece_key[C][ROOK][F8];
                 }
             }
 
@@ -391,8 +376,8 @@ void Board::make_move(const MOVE move) noexcept
 
                 if constexpr (Update_NNUE == true)
                     nnue.sub_add(C, piece, from, piece, dest);
-                newStatus.hash ^= piece_key[C][piece][from];
-                newStatus.hash ^= piece_key[C][piece][dest];
+                newStatus.key ^= piece_key[C][piece][from];
+                newStatus.key ^= piece_key[C][piece][dest];
 
                 // Move the Rook
                 if constexpr (C == WHITE)
@@ -407,8 +392,8 @@ void Board::make_move(const MOVE move) noexcept
 
                     if constexpr (Update_NNUE == true)
                         nnue.sub_add(C, ROOK, A1, ROOK, D1);
-                    newStatus.hash ^= piece_key[C][ROOK][A1];
-                    newStatus.hash ^= piece_key[C][ROOK][D1];
+                    newStatus.key ^= piece_key[C][ROOK][A1];
+                    newStatus.key ^= piece_key[C][ROOK][D1];
                 }
                 else
                 {
@@ -422,8 +407,8 @@ void Board::make_move(const MOVE move) noexcept
 
                     if constexpr (Update_NNUE == true)
                         nnue.sub_add(C, ROOK, A8, ROOK, D8);
-                    newStatus.hash ^= piece_key[C][ROOK][A8];
-                    newStatus.hash ^= piece_key[C][ROOK][D8];
+                    newStatus.key ^= piece_key[C][ROOK][A8];
+                    newStatus.key ^= piece_key[C][ROOK][D8];
                 }
             }
         } // Roques
@@ -445,13 +430,7 @@ void Board::make_move(const MOVE move) noexcept
         std::cout << Move::name(move) << "  : hash pb : hash = " << get_status().hash << " ; calc = " << hash_1 << std::endl;
         std::cout << display() << std::endl << std::endl;
     }
-    if (hash_2 != get_status().pawn_hash)
-    {
-        std::cout << Move::name(move) << "  : pawn_hash pb : pawn_hash = " << get_status().pawn_hash << " ; calc = " << hash_2 << std::endl;
-        std::cout << display() << std::endl << std::endl;
-    }
 #endif
-
 
 #ifndef NDEBUG
     // on ne passe ici qu'en debug
@@ -466,25 +445,24 @@ void Board::make_move(const MOVE move) noexcept
 //-----------------------------------------------------------------------
 template <Color C> void Board::make_nullmove() noexcept
 {
-    Status& previousStatus = get_status();
+    const Status& previousStatus = StatusHistory.back();
 
     StatusHistory.emplace_back(
-                                               previousStatus.hash ^ side_key,                             // zobrist will be changed later
-                                               previousStatus.pawn_hash,
-                                               Move::MOVE_NULL,
-                                               NO_SQUARE,                                               // reset en passant. might be set later
-                                               previousStatus.castling,                                 // copy meta. might be changed
-                                               previousStatus.halfmove_counter + 1,                     // increment fifty move counter. might be reset
-                                               previousStatus.fullmove_counter + (C == Color::BLACK),   // increment move counter
-                                               0ULL,
-                                               0ULL );
+                                previousStatus.key ^ side_key,  // zobrist will be changed later
+                                Move::MOVE_NULL,
+                                NO_SQUARE,                                               // reset en passant. might be set later
+                                previousStatus.castling,                                 // copy meta. might be changed
+                                previousStatus.halfmove_counter + 1,                     // increment fifty move counter. might be reset
+                                previousStatus.fullmove_counter + (C == Color::BLACK),   // increment move counter
+                                0ULL,
+                                0ULL);
 
     Status& newStatus = StatusHistory.back();
 
     // La prise en passant n'est valable que tout de suite
     // Il faut donc la supprimer
     if (previousStatus.ep_square != NO_SQUARE)
-        newStatus.hash ^= ep_key[previousStatus.ep_square];
+        newStatus.key ^= ep_key[previousStatus.ep_square];
 
     // Swap sides
     side_to_move = ~side_to_move;

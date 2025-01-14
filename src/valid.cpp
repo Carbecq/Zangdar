@@ -6,16 +6,11 @@ bool Board::valid() const noexcept
 {
 //    std::cout << "valid debut" << std::endl;
 
-    U64 hash_1, hash_2;
-    calculate_hash(hash_1, hash_2);
-    if (get_status().hash != hash_1)
+    U64 hash_1;
+    calculate_hash(hash_1);
+    if (get_status().key != hash_1)
     {
         std::cout << "erreur hash 1" << std::endl;
-        return false;
-    }
-    if (get_status().pawn_hash != hash_2)
-    {
-        std::cout << "erreur hash 2 : " << get_status().pawn_hash << "  " << hash_2 << std::endl;
         return false;
     }
 

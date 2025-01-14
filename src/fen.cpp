@@ -53,7 +53,7 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
 
     //-------------------------------------
 
-    // ajout d'un élément
+    // ajout d'un élément, il en faut au moins 1
     // il ne faut pas re-initialiser StatusHistory
     // car il contient les coups provenant de "uci position"
     StatusHistory.push_back(Status{});
@@ -302,10 +302,9 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
     (side_to_move == WHITE) ? calculate_checkers_pinned<WHITE>() : calculate_checkers_pinned<BLACK>();
 
     // Calculate hash
-    U64 khash, phash;
-    calculate_hash(khash, phash);
-    get_status().hash = khash;
-    get_status().pawn_hash = phash;
+    U64 khash;
+    calculate_hash(khash);
+    get_status().key = khash;
 
     //   std::cout << display() << std::endl;
     assert(valid());
@@ -339,7 +338,7 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     avoid_moves.clear();
     best_moves.clear();
 
-    // ajout d'un élément
+    // Il faut avoir au moins un élément
     StatusHistory.push_back(Status{});
 
     //-------------------------------------
@@ -556,10 +555,9 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     (side_to_move == WHITE) ? calculate_checkers_pinned<WHITE>() : calculate_checkers_pinned<BLACK>();
 
     // Calculate hash
-    U64 khash, phash;
-    calculate_hash(khash, phash);
-    get_status().hash = khash;
-    get_status().pawn_hash = phash;
+    U64 khash;
+    calculate_hash(khash);
+    get_status().key = khash;
 
     //   std::cout << display() << std::endl;
     assert(valid());
