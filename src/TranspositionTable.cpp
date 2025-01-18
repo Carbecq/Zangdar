@@ -1,9 +1,10 @@
 #include <cassert>
-#include "TranspositionTable.h"
+#include <cmath>
 #include "defines.h"
 #include <iostream>
 #include <cstring>
 #include "Move.h"
+#include "TranspositionTable.h"
 
 
 // Code inspiré de Sungorus
@@ -27,7 +28,6 @@ TranspositionTable::TranspositionTable(int MB)
 #endif
 
     tt_entries = nullptr;
-    tt_size    = 0;
     tt_date    = 0;
 
     init_size(MB);
@@ -52,28 +52,37 @@ void TranspositionTable::init_size(int mbsize)
     printlog(message);
 #endif
 
-    int bytes    = mbsize * 1024 * 1024;
-    int nbr_elem = bytes / sizeof(HashEntry);
+    Usize size  = (mbsize * 1024 * 1024) / sizeof(HashCluster);
+
+    // if (nbr_elem == clusterCount)
+    //     return;
+
+    // size must be a power of 2!
+    // clusterCount = 1;
+
+    // while (clusterCount <= nbr_elem)
+    //     clusterCount *= 2;
+    // clusterCount /= 2;
+
+    // printf("cc = %d \n", clusterCount);
+
+    // assert(clusterCount!=0 && (clusterCount&(clusterCount-1))==0); // power of 2
+
+    // tt_buckets = 4;
+
+
+    // L'index est calculé par : key & tt_mask
+    // if faut que le nombre de clusters soit un multiple de 2
+    int keySize = static_cast<int>(std::log2(size));    // puissance de 2
+    tt_mask = (ONE << keySize) - ONE;                   // tt_mask = nbr_clusters - 1
 
     if (tt_entries != nullptr)
     {
         delete [] tt_entries;
         tt_entries = nullptr;
-        tt_size = 0;
     }
 
-    // size must be a power of 2!
-    tt_size = 1;
-
-    while (tt_size <= nbr_elem)
-        tt_size *= 2;
-    tt_size /= 2;
-
-    assert(tt_size!=0 && (tt_size&(tt_size-1))==0); // power of 2
-
-    tt_buckets = 4;
-    tt_mask    = tt_size - tt_buckets;
-    tt_entries = new HashEntry[tt_size];
+    tt_entries = new HashCluster[(ONE << keySize)];
 
     clear();
 
@@ -98,7 +107,6 @@ void TranspositionTable::set_hash_size(int mbsize)
 
     delete [] tt_entries;
     tt_entries = nullptr;
-    tt_size = 0;
     init_size(mbsize);
 }
 
@@ -115,7 +123,7 @@ void TranspositionTable::clear(void)
 
     tt_date = 0;
 
-    std::memset(tt_entries, 0, sizeof(HashEntry) * tt_size);
+    std::memset(tt_entries, 0, sizeof(HashCluster) * (tt_mask+1));
 }
 
 //========================================================
@@ -130,37 +138,58 @@ void TranspositionTable::update_age(void)
 //========================================================
 //! \brief  Ecriture dans la hashtable d'une nouvelle donnée
 //--------------------------------------------------------
-void TranspositionTable::store(U64 hash, MOVE move, int score, int bound, int depth, int ply)
+void TranspositionTable::store(U64 key, MOVE move, int score, int bound, int depth, int ply)
 {
     assert(abs(score) <= MATE);
     assert(0 <= depth && depth < MAX_PLY);
     assert(bound == BOUND_LOWER || bound == BOUND_UPPER || bound == BOUND_EXACT);
 
     // extract the 32-bit key from the 64-bit zobrist hash
-    U32 hash32 = hash >> 32;
+    U32 key32 = (key >> 32);
+        //  static_cast<U16>(key);
+        // key & 0xFFFF;
+        // static_cast<U16>(key);  //TODO autre moyen ??
 
-    HashEntry *entry   = tt_entries + (hash & tt_mask);
-    HashEntry *replace = nullptr;
+    HashCluster& cluster = tt_entries[index(key)];
+
+    // tt_entries + (key & tt_mask);
+
+    //     tt_mask    = tt_size - tt_buckets;
+
+    //  U64 i1 = key & (tt_size-1);
+    //  U64 i2 = key % tt_size;
+    //  U64 i3 = mul_hi(key, tt_size);
+    // if (i2 != i3 )
+    //  {
+    //      std::cout << "ereur index " << i1 << "  " << "  " << i2 << "  " << i3 << std::endl;
+    //  }
+
+    // HashEntry *replace = nullptr;
+    HashEntry *entry = nullptr;
     int oldest = -1;
     int age;
 
-    for (int i = 0; i < tt_buckets; i++)
+    entry = &(cluster.entries[0]);
+
+    for (auto & elem : cluster.entries)
     {
-        assert (tt_date >= entry->date);
+        // entry = &c;
+
+        assert (tt_date >= elem.date);
 
         // Found a matching hash or an unused entry
-        if (entry->hash32 == hash32 || entry->bound == 0)
+        if (elem.key32 == key32 || elem.bound == Move::FLAG_NONE)
         {
-            replace = entry;
+            entry = &elem;
             break;
         }
 
         // Take the first entry as a starting point
-        if (i == 0)
-        {
-            replace = entry;
-            continue;
-        }
+        // if (i == 0)
+        // {
+        //     replace = entry;
+        //     continue;
+        // }
 
         /* 1) tt_date >= entry->date
          * 2) le "+255" sert à compenser "-entry->depth",
@@ -174,32 +203,33 @@ void TranspositionTable::store(U64 hash, MOVE move, int score, int bound, int de
          */
 
         // age = ((tt_date - entry->date) & 255) * 256 + 255 - entry->depth;    // version Sungorus
-        age = (tt_date - entry->date) * KMULT + 255 - entry->depth;             // version simplifiée
+        age = (tt_date - elem.date) * KMULT + 255 - elem.depth;             // version simplifiée
 
         // if (   replace->depth - (tt_date - replace->date) * KMULT            // version comme Ethereal, Berserk
         //     >= entry->depth   - (tt_date - entry->date) * KMULT )
         if (age > oldest)
         {
             oldest  = age;
-            replace = entry;
+            entry = &elem;
         }
-        entry++;
+        // entry++;
     }
+
+    assert(entry != nullptr);
 
     // Don't overwrite an entry from the same position, unless we have
     // an exact bound or depth that is nearly as good as the old one
     if (    bound != BOUND_EXACT
-        &&  hash32 == replace->hash32
-        &&  depth < replace->depth - 3)
+        &&  key32 == entry->key32
+        &&  depth < entry->depth - 3)
         return;
 
-    replace->hash32 = hash32;
-    replace->move   = (MOVE)move;
-    replace->score  = (I16)ScoreToTT(score, ply);
-    replace->depth  = (U08)depth;
-    replace->date   = (U08)tt_date;
-    replace->bound  = (U08)bound;
-
+    entry->key32  = key32;
+    entry->move   = (MOVE)move;
+    entry->score  = static_cast<I16>(ScoreToTT(score, ply));
+    entry->depth  = static_cast<I08>(depth);
+    entry->date   = static_cast<I08>(tt_date);
+    entry->bound  = static_cast<I08>(bound);
 }
 
 //========================================================
@@ -212,32 +242,35 @@ void TranspositionTable::store(U64 hash, MOVE move, int score, int bound, int de
 //! \param{in]  depth
 //! \param{in]  ply
 //--------------------------------------------------------
-bool TranspositionTable::probe(U64 hash, int ply, MOVE& move, int &score, int &bound, int& depth)
+bool TranspositionTable::probe(U64 key, int ply, MOVE& move, int &score, int &bound, int& depth)
 {
     move  = Move::MOVE_NONE;
     score = NOSCORE;
     bound = BOUND_NONE;
 
     // extract the 32-bit key from the 64-bit zobrist hash
-    U32 hash32 = hash >> 32;
+    // U16 key16 = static_cast<U16>(key);
+    U32 key32 = (key >> 32);
+        // key & 0xFFFF;
+    // static_cast<U16>(key);  //TODO autre moyen ??
 
-    HashEntry* entry = tt_entries + (hash & tt_mask);
+    HashCluster& cluster = tt_entries[index(key)];
 
-    for (int i = 0; i < tt_buckets; i++)
+    for (HashEntry& entry : cluster.entries)
     {
-        assert (tt_date >= entry->date);
-        if (entry->hash32 == hash32)
-        {
-            entry->date = tt_date;
+        assert (tt_date >= entry.date);
 
-            move  = entry->move;
-            bound = entry->bound;
-            depth = entry->depth;
-            score = ScoreFromTT(entry->score, ply);
+        if (entry.key32 == key32)
+        {
+            entry.date = tt_date;
+
+            move  = entry.move;
+            bound = entry.bound;
+            depth = entry.depth;
+            score = ScoreFromTT(entry.score, ply);
 
             return true;
         }
-        entry++;
     }
 
     return false;
@@ -245,21 +278,21 @@ bool TranspositionTable::probe(U64 hash, int ply, MOVE& move, int &score, int &b
 
 void TranspositionTable::stats()
 {
-    std::cout << "TT size = " << tt_size << std::endl;
-//    for (int i=0; i<tt_buckets; i++)
-//    {
-//        std::cout << "store[" << i+1 << "] = " << nbr_store[i] << std::endl;
-//    }
-//    for (int i=0; i<tt_buckets; i++)
-//    {
-//        std::cout << "probe[" << i+1 << "] = " << nbr_probe[i] << std::endl;
-//    }
+    // std::cout << "TT size = " << clusterCount << std::endl;
+    //    for (int i=0; i<tt_buckets; i++)
+    //    {
+    //        std::cout << "store[" << i+1 << "] = " << nbr_store[i] << std::endl;
+    //    }
+    //    for (int i=0; i<tt_buckets; i++)
+    //    {
+    //        std::cout << "probe[" << i+1 << "] = " << nbr_probe[i] << std::endl;
+    //    }
 
-//    std::cout << "PawnCacheSize = " << PAWN_CACHE_SIZE << std::endl;
-//    std::cout << "store  = " << pcachestore << std::endl;
-//    std::cout << "hit    = " << pcachehit << std::endl;
-//    std::cout << "no hit = " << pcachenohit << std::endl;
-//    std::cout << "usage  = " << (double)pcachenohit / (double)pcachehit << std::endl;
+    //    std::cout << "PawnCacheSize = " << PAWN_CACHE_SIZE << std::endl;
+    //    std::cout << "store  = " << pcachestore << std::endl;
+    //    std::cout << "hit    = " << pcachehit << std::endl;
+    //    std::cout << "no hit = " << pcachenohit << std::endl;
+    //    std::cout << "usage  = " << (double)pcachenohit / (double)pcachehit << std::endl;
 }
 
 //=======================================================================
@@ -271,29 +304,39 @@ int TranspositionTable::hash_full() const
 {
     int used = 0;
 
-    for (int i = 0; i < tt_buckets*1000; i++)
-        if (   tt_entries[i].move != Move::MOVE_NONE
-            && tt_entries[i].date == tt_date)
-            used++;
+    for (int i = 0; i < 1000; i++)
+    {
+        for (Usize j=0; j<CLUSTER_SIZE; j++)
+        {
+            if (   tt_entries[i].entries[j].move != Move::MOVE_NONE
+                && tt_entries[i].entries[j].date == tt_date
+                )
+                used++;
+        }
+    }
 
-    return used/tt_buckets;
+    return used/CLUSTER_SIZE;
 }
 
 /// prefetch() preloads the given address in L1/L2 cache. This is a non-blocking
 /// function that doesn't stall the CPU waiting for data to be loaded from memory,
 /// which can be quite slow.
-void TranspositionTable::prefetch(const U64 hash)
+void TranspositionTable::prefetch(const U64 key)
 {
-    __builtin_prefetch(tt_entries + (hash & tt_mask));
+    // __builtin_prefetch(&tt_entries[hash & tt_mask]);
+    __builtin_prefetch(&tt_entries[index(key)]);
+
 }
 
 void TranspositionTable::info()
 {
-    std::cout << "TranspositionTable complete with " << tt_size
-              << " entries of " << sizeof(HashEntry)
-              << " bytes for a total of " << tt_size*sizeof(HashEntry)
-              << " bytes ("
-              << tt_size*sizeof(HashEntry)/1024.0/1024.0
-              << " MB)"
+    std::cout << "Nombre de clusters  : " << (tt_mask+1) << std::endl
+              << "Taille d'un cluster : " << sizeof(HashCluster) << " octets" << std::endl
+              << "Entrées par cluster : " << CLUSTER_SIZE << std::endl
+              << "Taille d'une entrée : " << sizeof(HashEntry) << " octets" << std::endl
+              << "Total entrées       : " << (tt_mask+1) * CLUSTER_SIZE << std::endl
+              << "Taille totale       : " << (tt_mask+1)*sizeof(HashCluster) << "  " << (tt_mask+1) * CLUSTER_SIZE*sizeof(HashEntry)
+              << " (" << (tt_mask+1)*sizeof(HashCluster)/1024.0/1024.0 << ") Mo"
               << std::endl;
+
 }

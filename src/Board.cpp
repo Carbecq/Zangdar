@@ -126,6 +126,13 @@ std::string Board::display() const noexcept
     ss <<     "Key      : " << std::hex << get_key() << "\n";
     ss <<     "Fen      : " << get_fen() << "\n";
 
+    std::cout << std::hex << (get_key())
+              << "  shift32= " << (get_key() >> 32)
+              << "  cast32= " << (static_cast<U32>(get_key()))
+              << "  autre= " << ((get_key()>>32) ^ (get_key()&0xffffffff))
+              << std::endl;
+
+
     return(ss.str());
 }
 

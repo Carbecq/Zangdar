@@ -170,10 +170,10 @@ endif
 ### Executable statique avec Windows
 ifeq ($(target_windows),yes)
 	LDFLAGS_WIN = -static
-	PGO_BENCH = ./$(EXE) bench 16 > nul 2>&1
+    PGO_BENCH = ./$(EXE) bench 20 > nul 2>&1
 	PGO_CLEAN = rmdir /s /q $(PGO_DIR)
 else
-	PGO_BENCH = ./$(EXE) bench 16 > /dev/null 2>&1
+    PGO_BENCH = ./$(EXE) bench 20 > /dev/null 2>&1
 	PGO_CLEAN = $(RM) -rf $(PGO_DIR)
 endif
 

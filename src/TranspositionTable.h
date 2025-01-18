@@ -17,17 +17,69 @@ class TranspositionTable;
 #include "defines.h"
 
 struct HashEntry {
-    U32   hash32;   // 32 bits
+    U32   key32;    // 32 bits
     MOVE  move;     // 32 bits  (seuls 24 bits sont utilisés)
     I16   score;    // 16 bits
     U08   depth;    //  8 bits
     U08   date;     //  8 bits
     U08   bound;    //  8 bits  (2 bits nécessaires seulement)
 
-    // total = 104 bits = 13 octets
-    // le compilateur ajoute un padding de 24 bits pour avoir un alignement mémoire de 32 bits : 128 = 32*4
-    // donc sizeof(HashEntry) = 16
+    /* hash32 :
+     *
+     * total = 104 bits = 13 octets
+     * le compilateur ajoute un padding de 24 bits pour avoir un alignement mémoire de 32 bits : 128 = 32*4
+     *  donc sizeof(HashEntry) = 16
+
+avec la date :
+Nombre de clusters  : 2097152
+Taille d'un cluster : 64 octets
+Entrées par cluster : 4
+Taille d'une entrée : 16 octets
+Total entrées       : 8.388.608
+Taille totale       : 134217728  134217728 (128) Mo
+
+sans la date : 96 bits
+Nombre de clusters  : 2097152
+Taille d'un cluster : 48 octets
+Entrées par cluster : 4
+Taille d'une entrée : 12 octets
+Total entrées       : 8388608
+Taille totale       : 100663296  100663296 (96) Mo
+
+ */
+
+
+/* key16 :
+ *
+ * 88 bits = 11 octets --> alignement sur 12 octets (12*8 = 96 = 3*32)
+ * le compilateur ajoute 8 octets
+ *
+Nombre de clusters  : 2796202
+Taille d'un cluster : 48 octets
+Entrées par cluster : 4
+Taille d'une entrée : 12 octets
+Total entrées       : 11.184.808
+Taille totale       : 134217696  134217696 (128) Mo
+ */
+
 };
+
+static constexpr Usize CLUSTER_SIZE = 4;
+
+struct HashCluster {
+    std::array<HashEntry, CLUSTER_SIZE> entries;
+};
+
+/*
+
+hash64  = 8020241708cd0710 ;
+shift32 = 80202417 ;
+cast32  =          8cd0710 ;
+autre   = 88ed2307
+
+
+*/
+
 
 //----------------------------------------------------------
 
@@ -49,13 +101,34 @@ struct HashEntry {
 class TranspositionTable
 {
 private:
-    int         tt_size;
-    int         tt_mask;
-    U08         tt_date;
-    int         tt_buckets;
-    HashEntry*  tt_entries = nullptr;
+    static constexpr int KMULT = 256;
+    static constexpr U64 ONE = 1ULL;
 
-    static constexpr int   KMULT = 256;
+    // int         tt_size;
+    U64            tt_mask;
+    U08            tt_date;
+    // int         tt_buckets;
+    // HashEntry*  tt_entries = nullptr;
+    // Usize clusterCount = 0;
+    HashCluster* tt_entries = nullptr;
+
+
+
+
+    // https://lemire.me/blog/2016/06/27/a-fast-alternative-to-the-modulo-reduction/
+    // inline U64 mul_hi(const U64 a, const U64 b) {
+    //      return (static_cast<U128>(a) * static_cast<U128>(b)) >> 64;
+    // }
+
+    // inline HashEntry* GetEntry(U64 key) {
+    //      return &tt_entries[ mul_hi(key, tt_size) ];
+    // }
+
+    inline U64 index(U64 key) {
+        // return static_cast<U64>((static_cast<U128>(key) * static_cast<U128>(clusterCount)) >> 64);
+        return key & tt_mask;
+    }
+
 
 public:
     TranspositionTable() : TranspositionTable(HASH_SIZE) {}
@@ -64,7 +137,7 @@ public:
 
     void init_size(int mbsize);
     void set_hash_size(int mbsize);
-    int  get_hash_size(void) const { return tt_size; }
+    int  get_hash_size(void) const { return tt_mask+1; }
     void info();
 
     void clear(void);
