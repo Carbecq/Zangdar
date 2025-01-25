@@ -5,16 +5,15 @@
 // #define DEBUG_GEN
 
 #include <string>
-#include "DataGen.h"
-#include "defines.h"
 #include <cstring>
 #include <fstream>
 #include <random>
 
 #include "Board.h"
 #include "Search.h"
-#include "ThreadPool.h"
-#include "pyrrhic/tbprobe.h"
+#include "DataGen.h"
+#include "defines.h"
+#include "TranspositionTable.h"
 
 //===========================================================================
 //! \brief  Constructeur

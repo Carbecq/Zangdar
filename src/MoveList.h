@@ -5,10 +5,6 @@ class MoveList;
 
 #include <array>
 #include "defines.h"
-#include "types.h"
-#include "Move.h"
-#include "Bitboard.h"
-#include "Board.h"
 
 struct MLMove {
     MOVE move;

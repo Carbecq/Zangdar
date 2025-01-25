@@ -5,14 +5,11 @@
 #include "Bitboard.h"
 #include "types.h"
 #include "defines.h"
-#include "zobrist.h"
-#include <ostream>
 #include <string>
 #include <vector>
 #include "Move.h"
 #include "Attacks.h"
 #include "NNUE.h"
-#include "TranspositionTable.h"
 
 // structure destinée à stocker l'historique de make_move.
 // celle-ci sera nécessaire pour effectuer un unmake_move
@@ -22,7 +19,7 @@ struct Status
     MOVE move               = Move::MOVE_NONE;
     int  ep_square          = SquareType::NO_SQUARE;    // case en-passant : si les blancs jouent e2-e4, la case est e3
     U32  castling           = CastleType::CASTLE_NONE;  // droit au roque
-    int  halfmove_counter   = 0;                        // nombre de demi-coups depuis la dernière capture ou le dernier mouvement de pion.
+    int  fiftymove_counter  = 0;                        // nombre de demi-coups depuis la dernière capture ou le dernier mouvement de pion.
     int  fullmove_counter   = 1;                        // le nombre de coups complets. Il commence à 1 et est incrémenté de 1 après le coup des noirs.
     Bitboard checkers       = 0ULL;                     // bitboard des pièces ennemies me donnant échec
     Bitboard pinned         = 0ULL;                     // bitboard des pièces amies clouées
@@ -91,11 +88,19 @@ public:
     template <Color C> [[nodiscard]] constexpr Bitboard attackersButKing(const int sq) const noexcept
     {
         // il faut regarder les attaques de pions depuis l'autre camp
-        return( (Attacks::pawn_attacks<~C>(sq)         & occupancy_cp<C, PAWN>())                                           |
-                (Attacks::knight_moves(sq)             & occupancy_cp<C, KNIGHT>())                                         |
+        return( (Attacks::pawn_attacks<~C>(sq)         & occupancy_cp<C, PAWN>())                                     |
+                (Attacks::knight_moves(sq)             & occupancy_cp<C, KNIGHT>())                                   |
                 (Attacks::bishop_moves(sq, occupancy_all()) & (occupancy_cp<C, BISHOP>() | occupancy_cp<C, QUEEN>())) |
                 (Attacks::rook_moves(sq,   occupancy_all()) & (occupancy_cp<C, ROOK>()   | occupancy_cp<C, QUEEN>())) );
     }
+
+    //! \brief Retourne le bitboard de tous les pions du camp "C" attaquant la case "sq"
+    template <Color C> [[nodiscard]] constexpr Bitboard pawn_attackers(const int sq) const noexcept
+    {
+        // il faut regarder les attaques de pions depuis l'autre camp
+        return( Attacks::pawn_attacks<~C>(sq) & occupancy_cp<C, PAWN>() );
+    }
+
 
     template <Color C>
     void calculate_checkers_pinned() noexcept;
@@ -368,13 +373,13 @@ public:
     //====================================================================
     //! \brief  Détermine s'il y a eu 50 coups sans prise ni coup de pion
     //--------------------------------------------------------------------
-    [[nodiscard]] inline bool fiftymoves() const noexcept { return get_status().halfmove_counter >= 100; }
+    [[nodiscard]] inline bool fiftymoves() const noexcept { return get_status().fiftymove_counter >= 100; }
 
     //====================================================================
     //! \brief  Détermine s'il y a eu répétition de la même position
     //! Pour cela, on compare le hash code de la position.
     //! Voir Ethereal
-    //! + lors du calcul de répétitions, il faut distinguer les posItions de recherche,
+    //! + lors du calcul de répétitions, il faut distinguer les positions de recherche,
     //!   et les positions de la partie.
     //--------------------------------------------------------------------
     [[nodiscard]] inline bool is_repetition(int ply) const noexcept
@@ -382,7 +387,7 @@ public:
         int reps             = 0;
         U64 current_hash     = get_status().key;
         int gamemove_counter = StatusHistory.size() - 1;
-        int halfmove_counter = get_status().halfmove_counter;
+        int halfmove_counter = get_status().fiftymove_counter;
 
         // Look through hash histories for our moves
         for (int i = gamemove_counter - 2; i >= 0; i -= 2)
@@ -449,7 +454,7 @@ public:
     inline const Status& get_status() const { return StatusHistory.back(); }
     inline Status& get_status()             { return StatusHistory.back(); }
 
-    [[nodiscard]] inline int get_halfmove_counter() const noexcept { return get_status().halfmove_counter;  }
+    [[nodiscard]] inline int get_halfmove_counter() const noexcept { return get_status().fiftymove_counter;  }
     [[nodiscard]] inline int get_fullmove_counter() const noexcept { return get_status().fullmove_counter;  }
     [[nodiscard]] inline int get_ep_square()        const noexcept { return get_status().ep_square;         }
     [[nodiscard]] inline U64 get_key()              const noexcept { return get_status().key;               }

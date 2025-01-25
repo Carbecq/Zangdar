@@ -115,7 +115,7 @@ $(info Version = $(VERSION))
 
 ### Executable name
 ifeq ($(target_windows),yes)
-	EXE = $(DEFAULT_EXE)-$(CXX).exe
+	EXE = $(DEFAULT_EXE)-$(CXX)$(PGO).exe
 else
 	EXE = $(DEFAULT_EXE)-$(CXX)
 endif
@@ -182,10 +182,10 @@ endif
 # LDFLAGS : -fsanitize=address -static-libsan
 
 CFLAGS_COM  = -pipe -std=c++23 -DVERSION=\"$(VERSION)\" $(DEFS) $(CFLAGS_NNUE)
-CFLAGS_REL  = $(CFLAGS_REL1) $(CFLAGS_WARN1)
+CFLAGS_REL  = $(CFLAGS_REL1) $(CFLAGS_WARN1) -DNDEBUG
 CFLAGS_DBG  = -g -O2
 CFLAGS_WARN = $(CFLAGS_WARN1) $(CFLAGS_WARN2) $(CFLAGS_WARN3) $(CFLAGS_WARN4) $(CFLAGS_WARN5) $(CFLAGS_WARN6)
-CFLAGS_PROF = -pg
+CFLAGS_PROF = -pg -DNDEBUG
 
 LDFLAGS_REL  = -s -flto=auto -lm
 LDFLAGS_DBG  = -lm

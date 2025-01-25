@@ -1,5 +1,6 @@
-#include "PolyBook.h"
 #include <string>
+#include <fstream>
+#include "PolyBook.h"
 #include "Attacks.h"
 #include "Move.h"
 

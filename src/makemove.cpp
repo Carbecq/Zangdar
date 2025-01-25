@@ -1,6 +1,7 @@
+#include <cassert>
 #include "Board.h"
 #include "Move.h"
-#include <cassert>
+#include "zobrist.h"
 
 /* This is the castle_mask array. We can use it to determine
 the castling permissions after a move. What we do is
@@ -65,7 +66,7 @@ void Board::make_move(const MOVE move) noexcept
                                 move,
                                 NO_SQUARE,                                                  // reset en passant. might be set later
                                 previousStatus.castling,                                    // copy meta. might be changed
-                                previousStatus.halfmove_counter + 1,                        // increment fifty move counter. might be reset
+                                previousStatus.fiftymove_counter + 1,                        // increment fifty move counter. might be reset
                                 previousStatus.fullmove_counter + (C == Color::BLACK),      // increment move counter
                                 0ULL,
                                 0ULL
@@ -116,7 +117,7 @@ void Board::make_move(const MOVE move) noexcept
 
             if (piece == PAWN)
             {
-                newStatus.halfmove_counter = 0;
+                newStatus.fiftymove_counter = 0;
             }
         }
 
@@ -157,7 +158,7 @@ void Board::make_move(const MOVE move) noexcept
                 newStatus.key ^= piece_key[C][promo][dest];
                 newStatus.key ^= piece_key[Them][captured][dest];
 
-                newStatus.halfmove_counter = 0;
+                newStatus.fiftymove_counter = 0;
             }
 
             //====================================================================================
@@ -182,7 +183,7 @@ void Board::make_move(const MOVE move) noexcept
                 newStatus.key ^= piece_key[C][piece][from] ^ piece_key[C][piece][dest];
                 newStatus.key ^= piece_key[Them][captured][dest];
 
-                newStatus.halfmove_counter = 0;
+                newStatus.fiftymove_counter = 0;
             }
         }
 
@@ -213,7 +214,7 @@ void Board::make_move(const MOVE move) noexcept
                 nnue.sub_add(C, PAWN, from, promo, dest);
             newStatus.key ^= piece_key[C][piece][from];
             newStatus.key ^= piece_key[C][promo][dest];
-            newStatus.halfmove_counter = 0;
+            newStatus.fiftymove_counter = 0;
         }
     }
 
@@ -243,9 +244,26 @@ void Board::make_move(const MOVE move) noexcept
             if constexpr (Update_NNUE == true)
                 nnue.sub_add(C, PAWN, from, PAWN, dest);
             newStatus.key      ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
-            newStatus.halfmove_counter = 0;
-            newStatus.ep_square = (C == Color::WHITE) ? SQ::south(dest) : SQ::north(dest);
-            newStatus.key ^= ep_key[newStatus.ep_square];
+            newStatus.fiftymove_counter = 0;
+
+            int new_ep;
+            if constexpr (C == Color::WHITE)
+                new_ep = SQ::south(dest);
+            else
+                new_ep = SQ::north(dest);
+
+            if (!BB::empty(pawn_attackers<Them>(new_ep))  )     // La case de prise en-passant est-elle attaquée par un pion ?
+            {
+                // printf("attaquée \n");
+                // En toute rigueur, il faudrait tester la légalité de la prise
+                // On s'en passera ...
+                newStatus.ep_square = new_ep;
+                newStatus.key ^= ep_key[newStatus.ep_square];
+            }
+            else
+            {
+                // printf("PAS attaquée \n");
+            }
         }
 
         //====================================================================================
@@ -268,10 +286,10 @@ void Board::make_move(const MOVE move) noexcept
             pieceOn[dest] = PAWN;
 
             newStatus.key      ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
-            newStatus.halfmove_counter = 0;
+            newStatus.fiftymove_counter = 0;
 
             // Remove the captured pawn
-            if (C == Color::WHITE)
+            if constexpr (C == Color::WHITE)
             {
                 BB::toggle_bit(typePiecesBB[PAWN],          SQ::south(dest));
                 BB::toggle_bit(colorPiecesBB[Color::BLACK], SQ::south(dest));
@@ -452,7 +470,7 @@ template <Color C> void Board::make_nullmove() noexcept
                                 Move::MOVE_NULL,
                                 NO_SQUARE,                                               // reset en passant. might be set later
                                 previousStatus.castling,                                 // copy meta. might be changed
-                                previousStatus.halfmove_counter + 1,                     // increment fifty move counter. might be reset
+                                previousStatus.fiftymove_counter + 1,                     // increment fifty move counter. might be reset
                                 previousStatus.fullmove_counter + (C == Color::BLACK),   // increment move counter
                                 0ULL,
                                 0ULL);

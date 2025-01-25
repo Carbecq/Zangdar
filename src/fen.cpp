@@ -209,7 +209,7 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
 
             if (op == "bm") // Best Move
             {
-                 while(true)
+                while(true)
                 {
                     ss >> auxi;
                     p = auxi.find(';');             // indique la fin du champ "bm"
@@ -287,7 +287,7 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
         // Halfmove clock
         // The halfmove clock specifies a decimal number of half moves with respect to the 50 move draw rule.
         // It is reset to zero after a capture or a pawn move and incremented otherwise.
-        ss >> get_status().halfmove_counter;
+        ss >> get_status().fiftymove_counter;
 
         // Fullmove clock
         // The number of the full moves in a game. It starts at 1, and is incremented after each Black's move.
@@ -296,7 +296,7 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
         // Move count: ignore and use zero, as we count since root
     }
 
-//-----------------------------------------
+    //-----------------------------------------
 
     // pièces attaquant le roi
     (side_to_move == WHITE) ? calculate_checkers_pinned<WHITE>() : calculate_checkers_pinned<BLACK>();
@@ -539,7 +539,7 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
         // Halfmove clock
         // The halfmove clock specifies a decimal number of half moves with respect to the 50 move draw rule.
         // It is reset to zero after a capture or a pawn move and incremented otherwise.
-        ss >> get_status().halfmove_counter;
+        ss >> get_status().fiftymove_counter;
 
         // Fullmove clock
         // The number of the full moves in a game. It starts at 1, and is incremented after each Black's move.
@@ -549,7 +549,7 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
         // get_status().gamemove_counter = 0;
     }
 
-//-----------------------------------------
+    //-----------------------------------------
 
     // pièces attaquant le roi
     (side_to_move == WHITE) ? calculate_checkers_pinned<WHITE>() : calculate_checkers_pinned<BLACK>();
@@ -695,16 +695,32 @@ void Board::apply_token(const std::string& token) noexcept
 {
     MoveList ml;
     legal_moves<C, MoveGenType::ALL>(ml);
+#ifndef NDEBUG
+    int nbr = 0;
+#endif
 
     for (const auto &mlmove : ml.mlmoves)
     {
         if (Move::name(mlmove.move) == token)
         {
+#ifndef NDEBUG
+            nbr++;
+#endif
             make_move<C, true>(mlmove.move);
             break;
         }
     }
-}
+
+#ifndef NDEBUG
+    if (nbr == 0)
+        printf("---------------------------nbr 0\n");
+    else if (nbr == 1)
+        printf("ok \n") ;
+    else
+        printf("---------------------------nbr > 1 \n");
+#endif
+
+ }
 
 template void Board::set_fen<true>(const std::string &fen, bool logTactics) noexcept;
 template void Board::set_fen<false>(const std::string &fen, bool logTactics) noexcept;

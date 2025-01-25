@@ -194,7 +194,6 @@ HEADERS += \
     src/MoveList.h \
     src/MovePicker.h \
     src/NNUE.h \
-    src/OrderInfo.h \
     src/PolyBook.h \
     src/Search.h \
     src/ThreadPool.h \
@@ -220,7 +219,6 @@ SOURCES += \
     src/DataGen.cpp \
     src/MovePicker.cpp \
     src/NNUE.cpp \
-    src/OrderInfo.cpp \
     src/PolyBook.cpp \
     src/Search.cpp \
     src/ThreadPool.cpp \

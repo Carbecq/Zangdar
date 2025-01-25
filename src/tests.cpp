@@ -248,29 +248,11 @@ void test_perft(const std::string& str, const std::string& m_fen, int depth)
 //---------------------------------------------------------
 void test_eval(const std::string& fen)
 {
-    //    std::string promobug = "8/p1R5/6p1/3k2Np/7P/5K2/1bp4r/8 b - - 14 60 ";
-
-    //    fen = "7k/3q4/8/1r1R2b1/8/3p4/8/7K w - - 0 1";
-    //    fen = "r3k3/1K6/8/8/8/8/8/8 w q - 0 1";
-    //    fen = "k7/8/8/1p6/5q2/1Q2P3/8/7K w - - 0 1";
-    //    fen = "7k/Rp1b3B/2BR3p/2Nr2Qn/q5qb/prqn1b2/1PP1P3/3R1K2 w - - 0 1"; // test mvvlva
-    //fen = "8/k7/3p4/p2P1p2/P2P1P2/8/8/K7 w - - 0 1 ";
-    //fen = "6k1/5ppp/8/1pP5/PP6/4P3/8/6K1 w - - 3 1 ";
-    //fen = "6k1/4Pppp/8/1pP5/PP6/4P3/4P3/6K1 w - - 3 1 ";
-
-    // 4k3/8/8/8/8/8/8/4K2R w K - 0 1 ;D1 15 ;D2 66 ;D3 1197 ;D4 7059 ;D5 133987 ;D6 764643
-//    std::string fen2 = "7k/8/1Pp5/4P3/8/3p4/P7/7K b - - 0 1 ";
-    std::string bug =
-//        "2rqr3/pb5Q/4p1p1/1P1p2k1/3P4/2N5/PP6/1K2R3 w - - 0 28 ";
- //   "rnbqkbnr/ppppp3/5qqq/8/3P4/QQQ5/4PPPP/RNBQKBNR b KQkq - 0 1";
-"2rBrb2/3k1p2/1Q4p1/4P3/3n1P1p/2P4P/P6P/1K1R4 w - - 0 39 ";
-
     Board b;
     b.reset();
 
     b.test_value(fen);
 }
-// phase = 24 0 : eval = 159 159
 
 //====================================================
 //! \brief Réalisation d'un test contrôlant si

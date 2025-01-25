@@ -1,4 +1,5 @@
 #include <sstream>
+#include "zobrist.h"
 #include "Board.h"
 
 //=======================================

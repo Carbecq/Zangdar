@@ -3,8 +3,6 @@
 
 class PolyBook;
 
-#include <fstream>
-#include <random>
 #include "defines.h"
 #include "Board.h"
 

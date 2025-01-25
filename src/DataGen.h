@@ -4,9 +4,6 @@
 class DataGen;
 
 #include <memory>
-#include <thread>
-#include <vector>
-#include <random>
 #include "Board.h"
 #include "Search.h"
 
