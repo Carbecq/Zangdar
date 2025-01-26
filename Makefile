@@ -42,7 +42,6 @@ DEFS = -DHOME=$(HOME)
 #  Quelques defines utilisés en debug
 # DEFS += -DDEBUG_EVAL
 # DEFS += -DDEBUG_LOG
-# DEFS += -DDEBUG_HASH
 # DEFS += -DDEBUG_TIME
 
 #  Affichage "lisible"

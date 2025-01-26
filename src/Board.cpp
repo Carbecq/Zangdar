@@ -122,10 +122,13 @@ std::string Board::display() const noexcept
     } else {
         ss << "EP       : " << square_name[get_ep_square()] << '\n';
     }
-    ss <<     "Turn     : " << side_name[turn()] << '\n';
-    ss <<     "InCheck  : " << bool_name[is_in_check()] << "\n";
-    ss <<     "Key      : " << std::hex << get_key() << "\n";
-    ss <<     "Fen      : " << get_fen() << "\n";
+    ss << "Turn         : " << side_name[turn()] << '\n';
+    ss << "InCheck      : " << bool_name[is_in_check()] << "\n";
+    ss << "Key          : " << std::hex << get_key() << "\n";
+    ss << "Fen          : " << get_fen() << "\n";
+    ss << "50 move      : " << std::dec << get_fiftymove_counter() << "\n";
+    ss << "game counter : " << StatusHistory.size() - 1 << "\n";
+    ss << "full move    : " << get_fullmove_counter() << "\n";
 
     std::cout << std::hex << (get_key())
               << "  shift32= " << (get_key() >> 32)

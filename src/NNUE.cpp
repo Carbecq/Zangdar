@@ -1,9 +1,5 @@
 #include "NNUE.h"
 #include <cassert>
-#include <algorithm>
-#include <cstdint>
-#include <iomanip>
-#include <iostream>
 #include "types.h"
 #include "bitmask.h"
 #include "simd.h"

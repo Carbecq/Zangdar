@@ -56,6 +56,8 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
     // ajout d'un élément, il en faut au moins 1
     // il ne faut pas re-initialiser StatusHistory
     // car il contient les coups provenant de "uci position"
+    //  StatusHistory[0] : position initiale, avant de jouer le moindre coup
+    //  StatusHistory[1] : position après avoir joué le premier coup
     StatusHistory.push_back(Status{});
 
     // est-ce une notation FEN ou EPD ?
@@ -631,10 +633,10 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     else
         fen += square_name[get_status().ep_square];
 
-    //------------------------------------------------------- half-move
+    //------------------------------------------------------- fifty-move
 
     fen += " ";
-    fen += std::to_string(get_halfmove_counter());
+    fen += std::to_string(get_fiftymove_counter());
 
     //------------------------------------------------------- full-move
 

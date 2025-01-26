@@ -602,26 +602,15 @@ void Uci::go_run(const std::string& abc, const std::string& fen, int dmax, int t
         auxi = START_FEN;
     else if (abc == "b")
         auxi = bug;
-    else if (abc == "b1")
-        auxi = "2rqr3/pb5Q/4p1p1/1P1p2k1/3P4/2N5/PP6/1K2R3 w - - 0 28 ";
-    else if (abc == "b2")
-        auxi = "2rBrb2/3k1p2/1Q4p1/4P3/3n1P1p/2P4P/P6P/1K1R4 w - - 0 39";   // mat en 2
-    else if (abc == "b3")
-        auxi = "3Q4/p3b1k1/2p2rPp/2q5/4B3/P2P4/7P/6RK w - - ";
-    else if (abc == "b4")
-        auxi = "1nbq1r1k/3rbp1p/p1p1pp1Q/1p6/P1pPN3/5NP1/1P2PPBP/R4RK1 w - - "; // mat en 4
-    else if (abc == "b5")
-        auxi = "r5k1/1bp3pp/p2p4/1p6/5p2/1PBP1nqP/1PP3Q1/R4R1K b - - ";
-    else if (abc == "b6")
-        auxi = "8/7p/5k2/5p2/p1p2P2/Pr1pPK2/1P1R3P/8 b - - ";   // promotion
-    else if (abc == "b7")
-        auxi = "2b3k1/4rrpp/p2p4/2pP2RQ/1pP1Pp1N/1P3P1P/1q6/6RK w - - ";    // mat 6 >> descendre le temps à 3s
     else
         auxi = fen;
 
     //    Options.log_uci = true;
-    uci_board.reset();
-    uci_board.set_fen<true>(auxi, false);
+    if (abc != "n")
+    {
+        uci_board.reset();
+        uci_board.set_fen<true>(auxi, false);
+    }
     std::cout << uci_board.display() << std::endl;
     std::string strgo;
 
@@ -749,8 +738,6 @@ void Uci::go_test(int dmax, int tmax)
                 total_am++;
             else
                 total_ko++;
-
-            //        searchObject.clearHistory();
 
         } // boucle position
 

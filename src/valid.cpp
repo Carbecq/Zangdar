@@ -14,13 +14,25 @@ bool Board::valid() const noexcept
         return false;
     }
 
-    if (get_ep_square() != NO_SQUARE) {
-        if (turn() == Color::WHITE && SQ::rank(get_ep_square()) != 5) {
+    const int epsq = get_ep_square();
+    Color color = turn();
+    if (epsq != NO_SQUARE) {
+        if (color == Color::WHITE && SQ::rank(get_ep_square()) != 5) {
             std::cout << "erreur 1" << std::endl;
             return false;
         }
-        if (turn() == Color::BLACK && SQ::rank(get_ep_square()) != 2) {
+        if (color == Color::BLACK && SQ::rank(get_ep_square()) != 2) {
             std::cout << "erreur 2" << std::endl;
+            return false;
+        }
+        if (color == Color::WHITE && BB::empty(pawn_attackers<BLACK>(epsq)))
+        {
+            std::cout << "case de pep impossible Blanc" << std::endl;
+            return false;
+        }
+        if (color == Color::BLACK && BB::empty(pawn_attackers<WHITE>(epsq)))
+        {
+            std::cout << "case de pep impossible Noir" << std::endl;
             return false;
         }
     }

@@ -11,7 +11,8 @@
 #include "Attacks.h"
 #include "NNUE.h"
 
-// structure destinée à stocker l'historique de make_move.
+// Structure définissant une position.
+// Elle est destinée à stocker l'historique de make_move.
 // celle-ci sera nécessaire pour effectuer un unmake_move
 struct Status
 {
@@ -407,6 +408,19 @@ public:
         return false;
     }
 
+
+    //     /* position fen rnbq1rk1/pppp1ppn/4pb1p/8/2PP4/1P2PN2/PB2BPPP/RN1Q1RK1 b - - 0 8
+    //      *     moves d7d6 d1c2 b7b6 b1c3 c8b7 d4d5 f8e8 d5e6  | h7g6 h8g8 g1h2 b7c6 c2e2
+    //      *
+    //      *          1    2    3    4    5    6    7    8    9      10   11   12   13   14        StatusHistory.size()
+    //      *          0    1    2    3    4    5    6    7    8      9    10  >11<  12   13        gamemove_counter , 11 dans l'exemple
+    //      *                                   i         i       R   i         C                   R = root, C = position cherchée
+    //      *                                        0    1    2      3    4   >5<                  fiftymove_counter -> gamemove_counter - fiftymove_counter = 6
+    //      *                                   5         7           9                             i
+    //      *                                                   0     1    2   >3<   4    5         ply
+    //      */
+
+
     //=============================================================================
     //! \brief  Détermine si la position est nulle
     //-----------------------------------------------------------------------------
@@ -454,12 +468,12 @@ public:
     inline const Status& get_status() const { return StatusHistory.back(); }
     inline Status& get_status()             { return StatusHistory.back(); }
 
-    [[nodiscard]] inline int get_halfmove_counter() const noexcept { return get_status().fiftymove_counter;  }
-    [[nodiscard]] inline int get_fullmove_counter() const noexcept { return get_status().fullmove_counter;  }
-    [[nodiscard]] inline int get_ep_square()        const noexcept { return get_status().ep_square;         }
-    [[nodiscard]] inline U64 get_key()              const noexcept { return get_status().key;               }
-    [[nodiscard]] inline Bitboard get_checkers()    const noexcept { return get_status().checkers;          }
-    [[nodiscard]] inline Bitboard get_pinned()      const noexcept { return get_status().pinned;            }
+    [[nodiscard]] inline int get_fiftymove_counter() const noexcept { return get_status().fiftymove_counter;  }
+    [[nodiscard]] inline int get_fullmove_counter()  const noexcept { return get_status().fullmove_counter;  }
+    [[nodiscard]] inline int get_ep_square()         const noexcept { return get_status().ep_square;         }
+    [[nodiscard]] inline U64 get_key()               const noexcept { return get_status().key;               }
+    [[nodiscard]] inline Bitboard get_checkers()     const noexcept { return get_status().checkers;          }
+    [[nodiscard]] inline Bitboard get_pinned()       const noexcept { return get_status().pinned;            }
 
     inline void reserve_capacity() {    // la capacité ne passe pas avec la copie
         nnue.reserve_capacity();

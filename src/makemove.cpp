@@ -439,17 +439,6 @@ void Board::make_move(const MOVE move) noexcept
     // attention : on a changé de camp !!!
     calculate_checkers_pinned<~C>();
 
-#if defined DEBUG_HASH
-    U64 hash_1, hash_2;
-    calculate_hash(hash_1, hash_2);
-
-    if (hash_1 != get_status().hash)
-    {
-        std::cout << Move::name(move) << "  : hash pb : hash = " << get_status().hash << " ; calc = " << hash_1 << std::endl;
-        std::cout << display() << std::endl << std::endl;
-    }
-#endif
-
 #ifndef NDEBUG
     // on ne passe ici qu'en debug
     assert(valid());

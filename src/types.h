@@ -116,7 +116,7 @@ enum Direction : int {
 
 struct PVariation {
     MOVE line[MAX_PLY+1];
-    int  length;
+    int  length = 0;
 };
 
 using KillerTable              = MOVE[MAX_PLY+2];
