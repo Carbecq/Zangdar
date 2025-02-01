@@ -25,12 +25,12 @@ bool Board::valid() const noexcept
             std::cout << "erreur 2" << std::endl;
             return false;
         }
-        if (color == Color::WHITE && BB::empty(pawn_attackers<BLACK>(epsq)))
+        if (color == Color::WHITE && BB::empty(pawn_attackers<WHITE>(epsq)))
         {
             std::cout << "case de pep impossible Blanc" << std::endl;
             return false;
         }
-        if (color == Color::BLACK && BB::empty(pawn_attackers<WHITE>(epsq)))
+        if (color == Color::BLACK && BB::empty(pawn_attackers<BLACK>(epsq)))
         {
             std::cout << "case de pep impossible Noir" << std::endl;
             return false;

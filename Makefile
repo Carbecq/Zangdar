@@ -1,6 +1,12 @@
 CXX = clang++
 #CXX = g++
 
+ifeq ($(CXX),clang++)
+	COMP := clang
+else
+	COMP := gcc
+endif
+
 SRC1 = src
 SRC2 = src/pyrrhic
 
@@ -114,9 +120,9 @@ $(info Version = $(VERSION))
 
 ### Executable name
 ifeq ($(target_windows),yes)
-	EXE = $(DEFAULT_EXE)-$(CXX)$(PGO).exe
+	EXE := $(DEFAULT_EXE)-$(COMP).exe
 else
-	EXE = $(DEFAULT_EXE)-$(CXX)
+	EXE := $(DEFAULT_EXE)-$(COMP)
 endif
 
 #---------------------------------------------------------------------
@@ -166,16 +172,6 @@ PGO_USE   = -fprofile-use
 
 endif
 
-### Executable statique avec Windows
-ifeq ($(target_windows),yes)
-	LDFLAGS_WIN = -static
-    PGO_BENCH = ./$(EXE) bench 20 > nul 2>&1
-	PGO_CLEAN = rmdir /s /q $(PGO_DIR)
-else
-    PGO_BENCH = ./$(EXE) bench 20 > /dev/null 2>&1
-	PGO_CLEAN = $(RM) -rf $(PGO_DIR)
-endif
-
 # https://stackoverflow.com/questions/5088460/flags-to-enable-thorough-and-verbose-g-warnings
 # CFLAGS  : -fsanitize=undefined -fsanitize=memory and -fsanitize=address and maybe even -fsanitize=thread
 # LDFLAGS : -fsanitize=address -static-libsan
@@ -196,6 +192,11 @@ PGO_FLAGS = -fno-asynchronous-unwind-tables
 #   Targets
 #---------------------------------------------------------------------
 
+### Executable statique avec Windows
+ifeq ($(target_windows),yes)
+    LDFLAGS_WIN = -static
+endif
+
 release: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL)
 release: LDFLAGS = $(LDFLAGS_REL) $(LDFLAGS_WIN) $(LDFLAGS_STA)
 
@@ -205,8 +206,17 @@ debug: LDFLAGS = $(LDFLAGS_DBG) $(LDFLAGS_WIN) $(LDFLAGS_STA)
 prof: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_PROF)
 prof: LDFLAGS = $(LDFLAGS_PROF) $(LDFLAGS_WIN) $(LDFLAGS_STA)
 
+pgo: EXE := $(EXE)-pgo
 pgo: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL)
 pgo: LDFLAGS = $(LDFLAGS_REL) $(LDFLAGS_WIN) $(LDFLAGS_STA)
+
+ifeq ($(target_windows),yes)
+    PGO_BENCH = ./$(EXE) bench 20 > nul 2>&1
+    PGO_CLEAN = rmdir /s /q $(PGO_DIR)
+else
+    PGO_BENCH = ./$(EXE) bench 20 > /dev/null 2>&1
+    PGO_CLEAN = $(RM) -rf $(PGO_DIR)
+endif
 
 #---------------------------------------------------------------------
 #	Dépendances
