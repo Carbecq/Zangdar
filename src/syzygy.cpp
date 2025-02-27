@@ -14,6 +14,8 @@ https://github.com/AndyGrant/Pyrrhic
 
 //=========================================================================
 //! \brief Converts a tbresult into a score
+//! \param[in] wdl  result
+//! \param[in] dtz  ply
 //-------------------------------------------------------------------------
 void Board::TBScore(const unsigned wdl, const unsigned dtz, int& score, int& bound) const
 {

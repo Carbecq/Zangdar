@@ -602,6 +602,8 @@ void Uci::go_run(const std::string& abc, const std::string& fen, int dmax, int t
         auxi = START_FEN;
     else if (abc == "b")
         auxi = bug;
+    else if (abc == "p21")
+        auxi = POS_21;
     else
         auxi = fen;
 

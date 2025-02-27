@@ -31,6 +31,7 @@ DEFINES += VERSION='\\"$${VERSION}\\"'
 # DEFINES +=  DEBUG_EVAL
 # DEFINES +=  DEBUG_LOG
 # DEFINES +=  DEBUG_TIME
+# DEFINES += USE_PRETTY
 
 #------------------------------------------------------
 # https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html

@@ -245,7 +245,7 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int bound, int dep
 bool TranspositionTable::probe(U64 key, int ply, MOVE& move, int &score, int &bound, int& depth)
 {
     move  = Move::MOVE_NONE;
-    score = NOSCORE;
+    score = VALUE_NONE;
     bound = BOUND_NONE;
 
     // extract the 32-bit key from the 64-bit zobrist hash

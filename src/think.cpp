@@ -257,7 +257,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     }
 
     //  Recherche de la position actuelle dans la table de transposition
-    int   tt_score = NOSCORE;
+    int   tt_score = VALUE_NONE;
     MOVE  tt_move  = Move::MOVE_NONE;
     int   tt_bound = BOUND_NONE;
     int   tt_depth = -1;
@@ -279,7 +279,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
 
     // Probe the Syzygy Tablebases
-    int tb_score = NOSCORE;
+    int tb_score = VALUE_NONE;
     int tb_bound = BOUND_NONE;
     if (!isSingular && threadPool.get_useSyzygy() && board.probe_wdl(tb_score, tb_bound, si->ply) == true)
     {
@@ -290,7 +290,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             || (tb_bound == BOUND_LOWER && tb_score >= beta)
             || (tb_bound == BOUND_UPPER && tb_score <= alpha))
         {
-            transpositionTable.store(board.get_key(), Move::MOVE_NONE, tb_score, tb_bound, MAX_PLY, si->ply);
+            transpositionTable.store(board.get_key(), Move::MOVE_NONE, tb_score, tb_bound, depth, si->ply);
             return tb_score;
         }
 
@@ -305,7 +305,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             }
 
             // Never score something better than the known Syzygy value
-            if (tb_bound == BOUND_UPPER)
+            else if (tb_bound == BOUND_UPPER)
             {
                 max_score = tb_score;
             }

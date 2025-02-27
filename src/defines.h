@@ -48,7 +48,7 @@ static constexpr int TBWIN          = 30000;
 static constexpr int TBWIN_IN_X     = TBWIN - MAX_PLY;
 
 static constexpr int INFINITE       = MATE + 1;
-static constexpr int NOSCORE        = MATE + 2;     // ne peut jamais être atteint
+static constexpr int VALUE_NONE     = MATE + 2;     // ne peut jamais être atteint
 
 static constexpr int MOVE_OVERHEAD  = 100;
 
@@ -88,6 +88,7 @@ const std::string QUIESC          = "2r1r1k1/pp1q1ppp/3p1b2/3P4/3Q4/5N2/PP2RPPP/
 const std::string LCTII_01        = "r3kb1r/3n1pp1/p6p/2pPp2q/Pp2N3/3B2PP/1PQ2P2/R3K2R w KQkq -";
 const std::string FINE_70         = "8/k7/3p4/p2P1p2/P2P1P2/8/8/K7 w - -";
 const std::string WAC_2           = "8/7p/5k2/5p2/p1p2P2/Pr1pPK2/1P1R3P/8 b - -";
+const std::string POS_21          = "r1b2k1r/5n2/p4q2/1ppn1Pp1/3pp1p1/NP2P3/P1PPBK2/1RQN2R1 w - - 0 22";
 
 //=========================================================
 
