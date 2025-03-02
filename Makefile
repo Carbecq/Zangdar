@@ -120,10 +120,11 @@ $(info Version = $(VERSION))
 
 ### Executable name
 ifeq ($(target_windows),yes)
-	EXE := $(DEFAULT_EXE)-$(COMP).exe
+	ZSUF := .exe
 else
-	EXE := $(DEFAULT_EXE)-$(COMP)
+	ZSUF :=
 endif
+EXE := $(DEFAULT_EXE)-$(COMP)$(ZSUF)
 
 #---------------------------------------------------------------------
 #   Options de compilation
@@ -206,7 +207,7 @@ debug: LDFLAGS = $(LDFLAGS_DBG) $(LDFLAGS_WIN) $(LDFLAGS_STA)
 prof: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_PROF)
 prof: LDFLAGS = $(LDFLAGS_PROF) $(LDFLAGS_WIN) $(LDFLAGS_STA)
 
-pgo: EXE := $(EXE)-pgo
+pgo: EXE := $(DEFAULT_EXE)-$(COMP)-pgo$(ZSUF)
 pgo: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL)
 pgo: LDFLAGS = $(LDFLAGS_REL) $(LDFLAGS_WIN) $(LDFLAGS_STA)
 

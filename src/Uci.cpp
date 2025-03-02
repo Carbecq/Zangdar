@@ -261,9 +261,9 @@ void Uci::run()
             printf("c++ 2x \n");
 #endif
 
-// NOTE : On peut avoir simultanément : _MSC_VER ET __llvm__
-//        Il faut faire attention à l'ordre des tests
-//        pour définir quelle version sera prise (Bitboard.h)
+            // NOTE : On peut avoir simultanément : _MSC_VER ET __llvm__
+            //        Il faut faire attention à l'ordre des tests
+            //        pour définir quelle version sera prise (Bitboard.h)
 
 #if defined(__INTEL_COMPILER)
             printf("INTEL_COMPILER \n");
@@ -398,10 +398,10 @@ void Uci::parse_go(std::istringstream& iss)
     uci_timer.setup(uci_board.side_to_move);
 
 
-// La recherche est lancée dans une ou plusieurs threads séparées
-// Le programme principal contine dans la thread courante
-// de façon à continuer à recevoir les commandes
-// de UCI. Pax exemple : stop, quit.
+    // La recherche est lancée dans une ou plusieurs threads séparées
+    // Le programme principal contine dans la thread courante
+    // de façon à continuer à recevoir les commandes
+    // de UCI. Pax exemple : stop, quit.
 #if defined DEBUG_LOG
     char message[100];
     sprintf(message, "UCI::start_thinking ");
@@ -639,10 +639,6 @@ void Uci::go_test(int dmax, int tmax)
     std::string     line;
     std::string     aux;
     std::ifstream   ifs;
-    //    std::vector<std::string> liste1;
-    //    std::vector<std::string>  poslist;                // liste des positions
-    //    std::string     aa;
-    //    char            tag = ';';
     int             numero      = 0;
     int             total_bm    = 0;
     int             total_am    = 0;
@@ -650,7 +646,6 @@ void Uci::go_test(int dmax, int tmax)
     U64             total_nodes = 0;
     U64             total_time  = 0;
     int             total_depths = 0;
-    bool            found_am;
 
     std::ifstream   f(str_path);
     if (!f.is_open())
@@ -699,7 +694,6 @@ void Uci::go_test(int dmax, int tmax)
         total_nodes = 0;
         total_time  = 0;
         total_depths = 0;
-        found_am     = false;
 
         // Boucle sur l'ensemble des positions de test
         while (std::getline(ifs, line))
@@ -734,12 +728,7 @@ void Uci::go_test(int dmax, int tmax)
             //            }
 
             // Exécution du test
-            if (go_tactics(line, dmax, tmax, total_nodes, total_time, total_depths, found_am) == true)
-                total_bm++;
-            else if (found_am == true)
-                total_am++;
-            else
-                total_ko++;
+            go_tactics(line, dmax, tmax, total_nodes, total_time, total_depths, total_bm, total_am, total_ko);
 
         } // boucle position
 
@@ -773,7 +762,7 @@ void Uci::go_test(int dmax, int tmax)
 //! \brief Réalisaion d'un test tactique
 //! et comparaison avec le résultat
 //-------------------------------------------------------------
-bool Uci::go_tactics(const std::string& line, int dmax, int tmax, U64& total_nodes, U64& total_time, int& total_depths, bool& found_am)
+void Uci::go_tactics(const std::string& line, int dmax, int tmax, U64& total_nodes, U64& total_time, int& total_depths, int& total_bm, int& total_am, int& total_ko)
 {
     transpositionTable.clear();
     threadPool.reset();
@@ -806,14 +795,14 @@ bool Uci::go_tactics(const std::string& line, int dmax, int tmax, U64& total_nod
     std::string str1 = Move::show(best, 1);
     std::string str2 = Move::show(best, 2);
     std::string str3 = Move::show(best, 3);
-
-    bool found_bm = false;
-    found_am = false;
-    std::string abc;
+    std::stringstream ss;
+    std::string found[2] = { "   : ", "OK : "};
 
     // NOTE : il est possible que dans certains cas, il faut donner
     // à la fois la case de départ et celle d'arrivée pour déterminer
     // réellement le coup.
+    bool found_bm = false;
+    bool first = true;
     for (auto & e : uci_board.best_moves)
     {
         // On vire tous les caractères inutiles à la comparaison
@@ -824,50 +813,62 @@ bool Uci::go_tactics(const std::string& line, int dmax, int tmax, U64& total_nod
 
         if(str1==e || str2 == e || str3 == e) // attention au format de sortie de Move::show()
         {
+            ss << "coup trouvé : " << e;
             found_bm = true;
-            abc   = e;
             break;
         }
-    }
-
-    if (found_bm == false)
-    {
-        for (auto & e : uci_board.avoid_moves)
+        else
         {
-            // On vire tous les caractères inutiles à la comparaison
-            for (char c : std::string("+#!?"))
-            {
-                e.erase(std::remove(e.begin(), e.end(), c), e.end());
-            }
-
-            if(str1==e || str2 == e || str3 == e) // attention au format de sortie de Move::show()
-            {
-                found_am = true;
-                abc      = e;
-                break;
-            }
+            if (first == false)
+                ss << " ; ";
+            ss << "coup à trouver : " << e;
+            ss << ", coup trouvé = " << str1;
         }
+        first = false;
     }
+    if (!uci_board.best_moves.empty())
+        std::cout << found[found_bm] << ss.str() << std::endl;
+
+
+    bool avoid_am = true;
+    first = true;
+    for (auto & e : uci_board.avoid_moves)
+    {
+        // On vire tous les caractères inutiles à la comparaison
+        for (char c : std::string("+#!?"))
+        {
+            e.erase(std::remove(e.begin(), e.end(), c), e.end());
+        }
+
+        if(str1 == e || str2 == e || str3 == e) // attention au format de sortie de Move::show()
+        {
+            avoid_am = false;
+            ss << "coup non évité : " << e ;
+            break;
+        }
+        else
+        {
+            if (first == false)
+                ss << " ; ";
+            ss << "coup à éviter : " << e;
+            ss << ", coup trouvé = " << str1;
+        }
+        first = false;
+    }
+    if (!uci_board.avoid_moves.empty())
+        std::cout << found[avoid_am] << ss.str() << std::endl;
 
     if (found_bm)
     {
-        std::cout << "ok : " << abc << std::endl;
-        return(true);
+        total_bm++;
     }
-    else if (found_am)
+    else if (avoid_am && !uci_board.avoid_moves.empty())
     {
-        std::cout << "ERREUR : " << abc << std::endl;
-        return(false);
+        total_am++;
     }
     else
     {
-        //       display_ascii();
-
-        std::cout << "-----------------meilleurs coups = ";
-        for (auto & e : uci_board.best_moves)
-            std::cout << e << " ";
-        std::cout << "; coup trouvé = " << str1 << std::endl;
-        return(false);
+        total_ko++;
     }
 }
 

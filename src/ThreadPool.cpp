@@ -90,7 +90,7 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
     printlog(message);
 #endif
 
-    MOVE best = 0;
+    MOVE best = Move::MOVE_NONE;
 
     // Probe Opening Book
     if(ownBook.get_useBook() == true && (best = ownBook.get_move(board)) != 0)
