@@ -330,8 +330,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     }
 
     // Re-initialise les killer des enfants
-    td->killer1[si->ply+1] = Move::MOVE_NULL;
-    td->killer2[si->ply+1] = Move::MOVE_NULL;
+    td->killer1[si->ply+1] = Move::MOVE_NONE;
+    td->killer2[si->ply+1] = Move::MOVE_NONE;
 
     //  Avons-nous amélioré la position ?
     //  Si on ne s'est pas amélioré dans cette ligne, on va pouvoir couper un peu plus
