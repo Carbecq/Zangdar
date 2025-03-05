@@ -45,6 +45,13 @@ HOME = \"/mnt/Datas/Echecs/Programmation/Zangdar/\"
 #HOME = \"./\"
 DEFS = -DHOME=$(HOME)
 
+ifeq ($(target_windows),yes)
+	SYZYGY = \"D:/Echecs/Syzygy\"
+else
+	SYZYGY = \"/mnt/Datas/Echecs/Syzygy\"
+endif
+DEFS += -DSYZYGY=$(SYZYGY)
+
 #  Quelques defines utilisés en debug
 # DEFS += -DDEBUG_EVAL
 # DEFS += -DDEBUG_LOG

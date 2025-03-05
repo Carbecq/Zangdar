@@ -14,37 +14,56 @@ static constexpr int BOUND_EXACT = 3;   // PV-node   (Knuth's Type 1) : alpha < 
 
 class TranspositionTable;
 
+#include <cassert>
 #include "defines.h"
 
 struct HashEntry {
+    static constexpr U32 AgeBits = 5;
+    static constexpr U32 AgeCycle = 1 << AgeBits;       // 32
+    static constexpr U32 AgeMask = AgeCycle - 1;        // 31
+
     U32   key32;    // 32 bits
     MOVE  move;     // 32 bits  (seuls 24 bits sont utilisés)
     I16   score;    // 16 bits
+    I16   eval;     // 16 bits
     U08   depth;    //  8 bits
-    U08   date;     //  8 bits
-    U08   bound;    //  8 bits  (2 bits nécessaires seulement)
+    U08   agePvBound;    //  8 bits  (5 bits age : 1 bit pv ; 2 bits bound)
+                         //           0-31
+
+    [[nodiscard]] inline auto age() const
+    {
+        return static_cast<U32>(agePvBound >> 3);
+    }
+
+    [[nodiscard]] inline auto pv() const
+    {
+        return (static_cast<U32>(agePvBound >> 2) & 1) != 0;
+    }
+
+    [[nodiscard]] inline auto bound() const
+    {
+        return static_cast<U08>(agePvBound & 0x3);
+    }
+
+    inline auto setAgePvBound(U32 age, bool pv, U08 bound)
+    {
+        assert(age < (1 << AgeBits));
+        agePvBound = (age << 3) | (static_cast<U32>(pv) << 2) | static_cast<U32>(bound);
+    }
 
     /* hash32 :
      *
-     * total = 104 bits = 13 octets
-     * le compilateur ajoute un padding de 24 bits pour avoir un alignement mémoire de 32 bits : 128 = 32*4
+     * total = 112 bits = 14 octets
+     * le compilateur ajoute un padding de 16 bits pour avoir un alignement mémoire de 32 bits : 128 = 32*4
      *  donc sizeof(HashEntry) = 16
+     *
+     *
 
-avec la date :
 Nombre de clusters  : 2097152
 Taille d'un cluster : 64 octets
 Entrées par cluster : 4
 Taille d'une entrée : 16 octets
-Total entrées       : 8.388.608
-Taille totale       : 134217728  134217728 (128) Mo
-
-sans la date : 96 bits
-Nombre de clusters  : 2097152
-Taille d'un cluster : 48 octets
-Entrées par cluster : 4
-Taille d'une entrée : 12 octets
 Total entrées       : 8388608
-Taille totale       : 100663296  100663296 (96) Mo
 
  */
 
@@ -70,49 +89,19 @@ struct HashCluster {
     std::array<HashEntry, CLUSTER_SIZE> entries;
 };
 
-/*
-
-hash64  = 8020241708cd0710 ;
-shift32 = 80202417 ;
-cast32  =          8cd0710 ;
-autre   = 88ed2307
-
-
-*/
 
 
 //----------------------------------------------------------
 
-/* Remarques
- *  > dans Koivisto, la date (ou age) est mise dans move (8 bits) comme score
- */
-
-// 134 217 728 = 2 ^ 27 = 128 Mo
-// 0000 1000 0000 0000 0000 0000 0000 0000
-//
-//  8388608 entries of 16 for a total of 134217728
-//
-// tt_size = 8388608 = 100000000000000000000000 = 2 ^ 23
-//
-// tt_mask = tt_size - 4 = 0111 1111 1111 1111 1111 1100    : index multiple de 4
-// tt_mask = tt_size - 2 = 0111 1111 1111 1111 1111 1110
-// tt_mask = tt_size - 1 = 0111 1111 1111 1111 1111 1111
 
 class TranspositionTable
 {
 private:
-    static constexpr int KMULT = 256;
     static constexpr U64 ONE = 1ULL;
 
-    // int         tt_size;
     U64            tt_mask;
-    U08            tt_date;
-    // int         tt_buckets;
-    // HashEntry*  tt_entries = nullptr;
-    // Usize clusterCount = 0;
-    HashCluster* tt_entries = nullptr;
-
-
+    U32            tt_age{};
+    HashCluster*   tt_entries = nullptr;
 
 
     // https://lemire.me/blog/2016/06/27/a-fast-alternative-to-the-modulo-reduction/
@@ -129,7 +118,6 @@ private:
         return key & tt_mask;
     }
 
-
 public:
     TranspositionTable() : TranspositionTable(HASH_SIZE) {}
     TranspositionTable(int MB);
@@ -141,26 +129,32 @@ public:
     void info();
 
     void clear(void);
-    void update_age(void);
-    void store(U64 hash, MOVE move, int score, int bound, int depth, int ply);
-    bool probe(U64 hash, int ply, MOVE &code, int &score, int &bound, int &depth);
+    inline auto update_age()
+    {
+        tt_age = (tt_age + 1) % (1 << HashEntry::AgeBits);
+    }
+
+    void store(U64 hash, MOVE move, int score, int eval, int bound, int depth, int ply, bool pv);
+    bool probe(U64 hash, int ply, MOVE &code, int &score, int &eval, int &bound, int &depth, bool &pv);
     void stats();
     int  hash_full() const;
 
     //! \brief Store terminal scores as distance from the current position to mate/TB
     int ScoreToTT (const int score, const int ply)
     {
-        return score >=  TBWIN_IN_X ? score + ply
+        return   score == VALUE_NONE ? VALUE_NONE
+               : score >=  TBWIN_IN_X ? score + ply
                : score <= -TBWIN_IN_X ? score - ply
-                                        : score;
+               : score;
     }
 
     //! \brief Add the distance from root to terminal scores get the total distance to mate/TB
     int ScoreFromTT (const int score, const int ply)
     {
-        return score >=  TBWIN_IN_X ? score - ply
+        return   score == VALUE_NONE ? VALUE_NONE
+               : score >=  TBWIN_IN_X ? score - ply
                : score <= -TBWIN_IN_X ? score + ply
-                                        : score;
+               : score;
     }
 
     //------------------------------------------------

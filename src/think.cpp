@@ -234,8 +234,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     int  score      = -INFINITE;
     int  best_score = -INFINITE;        // initially assume the worst case
     MOVE best_move  = Move::MOVE_NONE;  // meilleur coup local
-    int  max_score  = INFINITE;         // best possible
-    bool isSingular = si->excluded != Move::MOVE_NONE;
+    // int  max_score  = INFINITE;         // best possible
+    bool isExcluded = si->excluded != Move::MOVE_NONE;
 
 
     //  Check Extension
@@ -256,12 +256,15 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             return alpha;
     }
 
+
     //  Recherche de la position actuelle dans la table de transposition
     int   tt_score = VALUE_NONE;
+    int   tt_eval  = VALUE_NONE;
     MOVE  tt_move  = Move::MOVE_NONE;
     int   tt_bound = BOUND_NONE;
-    int   tt_depth = -1;
-    bool  tt_hit   = isSingular ? false : transpositionTable.probe(board.get_key(), si->ply, tt_move, tt_score, tt_bound, tt_depth);
+    int   tt_depth = 0;
+    bool  tt_pv    = false;
+    bool  tt_hit   = isExcluded ? false : transpositionTable.probe(board.get_key(), si->ply, tt_move, tt_score, tt_eval, tt_bound, tt_depth, tt_pv);
 
     // Trust TT if not a pvnode and the entry depth is sufficiently high
     // At non-PV nodes we check for an early TT cutoff
@@ -281,7 +284,10 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     // Probe the Syzygy Tablebases
     int tb_score = VALUE_NONE;
     int tb_bound = BOUND_NONE;
-    if (!isSingular && threadPool.get_useSyzygy() && board.probe_wdl(tb_score, tb_bound, si->ply) == true)
+    int max_score = MATE;
+    const bool ttPV = isPV || tt_pv;
+
+    if (!isExcluded && threadPool.get_useSyzygy() && board.probe_wdl(tb_score, tb_bound, si->ply) == true)
     {
         td->tbhits++;
 
@@ -290,7 +296,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             || (tb_bound == BOUND_LOWER && tb_score >= beta)
             || (tb_bound == BOUND_UPPER && tb_score <= alpha))
         {
-            transpositionTable.store(board.get_key(), Move::MOVE_NONE, tb_score, tb_bound, depth, si->ply);
+            transpositionTable.store(board.get_key(), Move::MOVE_NONE, tb_score, VALUE_NONE, tb_bound, depth, si->ply, ttPV);
             return tb_score;
         }
 
@@ -318,15 +324,16 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
     if (isInCheck)
     {
-        si->eval = static_eval = -MATE + si->ply;
+        static_eval = si->eval = -MATE + si->ply;
     }
-    else if (isSingular)
+    else if (isExcluded)
     {
         static_eval = si->eval;
     }
     else
     {
-        si->eval = static_eval = board.evaluate();
+        static_eval = si->eval = (tt_hit && tt_eval != VALUE_NONE) ?
+                tt_eval : board.evaluate();
     }
 
     // Re-initialise les killer des enfants
@@ -339,7 +346,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
     // Amélioration de static-eval, au cas où tt_score est assez bon
     if(    !isInCheck
-        && !isSingular
+        && !isExcluded
         && tt_hit
         && (    tt_bound == BOUND_EXACT
             || (tt_bound == BOUND_LOWER && tt_score >= static_eval)
@@ -349,7 +356,12 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     }
 
 
-    if (!isInCheck && !isRoot && !isPV && !isSingular)
+    // Toss the static evaluation into the TT if we won't overwrite something
+    // if (!tt_hit && !isInCheck && !isExcluded)
+    //     transpositionTable.store(board.get_key(), Move::MOVE_NONE, VALUE_NONE, static_eval, BOUND_NONE, 0, si->ply);
+
+
+    if (!isInCheck && !isRoot && !isPV && !isExcluded)
     {
         //---------------------------------------------------------------------
         //  RAZORING
@@ -413,7 +425,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         //---------------------------------------------------------------------
         int betaCut = beta + ProbCutMargin;
         if (   !isInCheck
-            && !isPV
+            && !ttPV
             && depth >= ProbCutDepth
             && !(tt_hit && tt_depth >= depth - 3 && tt_score < betaCut))
         {
@@ -437,7 +449,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 // Coupure si cette dernière recherche bat betaCut
                 if (pbScore >= betaCut)
                 {
-                    transpositionTable.store(board.get_key(), pbMove, pbScore, BOUND_LOWER, depth-3, si->ply);
+                    transpositionTable.store(board.get_key(), pbMove, pbScore, static_eval, BOUND_LOWER, depth-3, si->ply, false);
                     return pbScore;
                 }
             }
@@ -507,7 +519,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
         if (   depth > 8
             && si->ply < 2 * depth
-            && !isSingular  // Avoid recursive singular search
+            && !isExcluded  // Avoid recursive singular search
             && !isRoot
             && move == tt_move
             && tt_depth > depth - 3
@@ -630,7 +642,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             int R = Reductions[isQuiet][std::min(31, depth)][std::min(31, move_count)];
 
             // Reduce less in pv nodes
-            R -= isPV;
+            R -= ttPV;
             // Reduce less when improving
             R -= improving;
 
@@ -717,11 +729,10 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                         // Met à jour le Counter-Move
                         update_counter_move(td, THEM, si->ply, move);
                     }
-                    transpositionTable.store(board.get_key(), move, score, BOUND_LOWER, depth, si->ply);
-                    return score;
+                    break;
+                    // transpositionTable.store(board.get_key(), move, score, static_eval, BOUND_LOWER, depth, si->ply);
+                    // return score;
                 }
-
-
             } // score > alpha
         }     // meilleur coup
     }         // boucle sur les coups
@@ -735,16 +746,23 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     }
 
     // don't let our score inflate too high (tb)
+    // if (isPV)
+    //     best_score = std::max(syzygyMin, std::min(best_score, syzygyMax));
     best_score = std::min(best_score, max_score);
 
-    if (!td->stopped && !isSingular)
+    if (!td->stopped && !isExcluded)
     {
         //  si on est ici, c'est que l'on a trouvé au moins 1 coup
         //  et de plus : score < beta
         //  si score >  alpha    : c'est un bon coup : HASH_EXACT
         //  si score <= alpha    : c'est un coup qui n'améliore pas alpha : HASH_ALPHA
-        int flag = (alpha != old_alpha) ? BOUND_EXACT : BOUND_UPPER;
-        transpositionTable.store(board.get_key(), best_move, best_score, flag, depth, si->ply);
+
+        int bound = best_score >= beta     ? BOUND_LOWER
+                  : best_score > old_alpha ? BOUND_EXACT
+                  : BOUND_UPPER;
+        // tt_store(board->hash, thread->height, bestMove, best, eval, depth, ttBound);
+        // int flag = (alpha != old_alpha) ? BOUND_EXACT : BOUND_UPPER;
+        transpositionTable.store(board.get_key(), best_move, best_score, static_eval, bound, depth, si->ply, ttPV);
     }
 
     return best_score;

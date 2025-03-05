@@ -243,6 +243,15 @@ void Uci::run()
             iss >> tmax;
         }
 
+        else if (token == "yyy")
+        {
+            std::string syzygy_path(SYZYGY);
+            std::string command = "name SyzygyPath value ";
+            command += syzygy_path;
+            std::istringstream stream(command);
+            parse_options(stream);
+        }
+
         else if (token == "systeme")
         {
 #if __cplusplus >= 201103L

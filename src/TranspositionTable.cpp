@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cmath>
+#include <climits>
 #include "defines.h"
 #include <iostream>
 #include <cstring>
@@ -7,7 +8,7 @@
 #include "TranspositionTable.h"
 
 
-// Code inspiré de Sungorus
+// Code inspiré de Sungorus, puis Stormphrax
 // Idées provenant de Bruce Moreland
 
 
@@ -28,7 +29,7 @@ TranspositionTable::TranspositionTable(int MB)
 #endif
 
     tt_entries = nullptr;
-    tt_date    = 0;
+    tt_age     = 0;
 
     init_size(MB);
 }
@@ -53,23 +54,6 @@ void TranspositionTable::init_size(int mbsize)
 #endif
 
     Usize size  = (mbsize * 1024 * 1024) / sizeof(HashCluster);
-
-    // if (nbr_elem == clusterCount)
-    //     return;
-
-    // size must be a power of 2!
-    // clusterCount = 1;
-
-    // while (clusterCount <= nbr_elem)
-    //     clusterCount *= 2;
-    // clusterCount /= 2;
-
-    // printf("cc = %d \n", clusterCount);
-
-    // assert(clusterCount!=0 && (clusterCount&(clusterCount-1))==0); // power of 2
-
-    // tt_buckets = 4;
-
 
     // L'index est calculé par : key & tt_mask
     // if faut que le nombre de clusters soit un multiple de 2
@@ -121,115 +105,87 @@ void TranspositionTable::clear(void)
     printlog(message);
 #endif
 
-    tt_date = 0;
+    tt_age = 0;
 
     std::memset(tt_entries, 0, sizeof(HashCluster) * (tt_mask+1));
 }
 
 //========================================================
-//! \brief  Mise à jour de l'age
-//! tt_date = [0...255]
-//--------------------------------------------------------
-void TranspositionTable::update_age(void)
-{
-    tt_date++;
-}
-
-//========================================================
 //! \brief  Ecriture dans la hashtable d'une nouvelle donnée
 //--------------------------------------------------------
-void TranspositionTable::store(U64 key, MOVE move, int score, int bound, int depth, int ply)
+void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int bound, int depth, int ply, bool pv)
 {
-    assert(abs(score) <= MATE);
-    assert(0 <= depth && depth < MAX_PLY);
-    assert(bound == BOUND_LOWER || bound == BOUND_UPPER || bound == BOUND_EXACT);
+    assert(0 <= depth && depth <= MAX_PLY);
 
     // extract the 32-bit key from the 64-bit zobrist hash
-    U32 key32 = (key >> 32);
-        //  static_cast<U16>(key);
-        // key & 0xFFFF;
-        // static_cast<U16>(key);  //TODO autre moyen ??
+    // U32 key32 = (key >> 32);
+    U32 key32 = static_cast<U32>(key);
+    //  static_cast<U16>(key);
+    // key & 0xFFFF;
+
+    /*
+    hash64  = 8020241708cd0710 ;
+    shift32 = 80202417 ;
+    cast32  =          8cd0710 ;
+    autre   = 88ed2307
+    */
+
+    const auto entryValue = [this](const auto &entry)
+    {
+        const I32 relativeAge = (HashEntry::AgeCycle + tt_age - entry.age()) & HashEntry::AgeMask;
+        return entry.depth - relativeAge * 2;
+    };
 
     HashCluster& cluster = tt_entries[index(key)];
-
-    // tt_entries + (key & tt_mask);
-
-    //     tt_mask    = tt_size - tt_buckets;
-
-    //  U64 i1 = key & (tt_size-1);
-    //  U64 i2 = key % tt_size;
-    //  U64 i3 = mul_hi(key, tt_size);
-    // if (i2 != i3 )
-    //  {
-    //      std::cout << "ereur index " << i1 << "  " << "  " << i2 << "  " << i3 << std::endl;
-    //  }
-
-    // HashEntry *replace = nullptr;
-    HashEntry *entry = nullptr;
-    int oldest = -1;
-    int age;
-
-    entry = &(cluster.entries[0]);
+    HashEntry *replace = nullptr;
+    auto minValue = std::numeric_limits<I32>::max();
 
     for (auto & elem : cluster.entries)
     {
-        // entry = &c;
+        assert (tt_age >= elem.age());
 
-        assert (tt_date >= elem.date);
-
-        // Found a matching hash or an unused entry
-        if (elem.key32 == key32 || elem.bound == Move::FLAG_NONE)
+        // always take an empty entry, or one from the same position
+        // Question : But there are some entries with TtFlag=None , when it stores rawStaticEval.
+        // >>>"empty" just means no search score in this case (I think), in which one with a search score is better
+        // >>> in other words caching a static eval score and not a search score, to avoid calling eval
+        if (elem.key32 == key32 || elem.bound() == BOUND_NONE)
         {
-            entry = &elem;
+            replace = &elem;
             break;
         }
 
-        // Take the first entry as a starting point
-        // if (i == 0)
-        // {
-        //     replace = entry;
-        //     continue;
-        // }
+        // otherwise, take the lowest-weighted entry by depth and age
+        const auto value = entryValue(elem);
 
-        /* 1) tt_date >= entry->date
-         * 2) le "+255" sert à compenser "-entry->depth",
-         *    lorsque tt_date=entry->date, "(tt_date - entry->date) * 256" vaut 0
-         * 3) KMULT définit l'équivalence entre date et depth.
-         *    Pour une différence de 1 pour la date, il faut KMULT différence
-         *    pour la profondeur.
-         *    Dans Sungorus, KMULT=256, donc la profondeur ne peut pas entrer
-         *    en concurence avec la date.
-         * 4) age va de 255 --> 255*(KMULT+1)
-         */
-
-        // age = ((tt_date - entry->date) & 255) * 256 + 255 - entry->depth;    // version Sungorus
-        age = (tt_date - elem.date) * KMULT + 255 - elem.depth;             // version simplifiée
-
-        // if (   replace->depth - (tt_date - replace->date) * KMULT            // version comme Ethereal, Berserk
-        //     >= entry->depth   - (tt_date - entry->date) * KMULT )
-        if (age > oldest)
+        if (value < minValue)
         {
-            oldest  = age;
-            entry = &elem;
+            replace  = &elem;
+            minValue = value;
         }
-        // entry++;
     }
 
-    assert(entry != nullptr);
+    assert(replace != nullptr);
 
+    // Roughly the SF replacement scheme
     // Don't overwrite an entry from the same position, unless we have
     // an exact bound or depth that is nearly as good as the old one
-    if (    bound != BOUND_EXACT
-        &&  key32 == entry->key32
-        &&  depth < entry->depth - 3)
+    if (!(bound == BOUND_EXACT
+          || key32 != replace->key32
+          || replace->age() != tt_age
+          || depth + 4 + pv * 2 > replace->depth))
         return;
 
-    entry->key32  = key32;
-    entry->move   = (MOVE)move;
-    entry->score  = static_cast<I16>(ScoreToTT(score, ply));
-    entry->depth  = static_cast<I08>(depth);
-    entry->date   = static_cast<I08>(tt_date);
-    entry->bound  = static_cast<I08>(bound);
+    // only overwrite the move if new move is not a null move or the entry is from a different position
+    // idea from Sirius, Stockfish and Ethereal
+    // Preserve any existing move for the same position
+    if (move || replace->key32 != key32)
+        replace->move = move;
+
+    replace->key32  = key32;
+    replace->score  = static_cast<I16>(ScoreToTT(score, ply));
+    replace->eval   = static_cast<I16>(eval);
+    replace->depth  = static_cast<I08>(depth);
+    replace->setAgePvBound(tt_age, pv, bound);
 }
 
 //========================================================
@@ -242,32 +198,24 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int bound, int dep
 //! \param{in]  depth
 //! \param{in]  ply
 //--------------------------------------------------------
-bool TranspositionTable::probe(U64 key, int ply, MOVE& move, int &score, int &bound, int& depth)
+bool TranspositionTable::probe(U64 key, int ply, MOVE& move, int &score, int& eval, int &bound, int& depth, bool& pv)
 {
-    move  = Move::MOVE_NONE;
-    score = VALUE_NONE;
-    bound = BOUND_NONE;
-
     // extract the 32-bit key from the 64-bit zobrist hash
-    // U16 key16 = static_cast<U16>(key);
-    U32 key32 = (key >> 32);
-        // key & 0xFFFF;
-    // static_cast<U16>(key);  //TODO autre moyen ??
+    const U32 key32 = static_cast<U32>(key);
 
-    HashCluster& cluster = tt_entries[index(key)];
-
-    for (HashEntry& entry : cluster.entries)
+    const HashCluster& cluster = tt_entries[index(key)];
+    for (const HashEntry& entry : cluster.entries)
     {
-        assert (tt_date >= entry.date);
+        assert (tt_age >= entry.age());
 
         if (entry.key32 == key32)
         {
-            entry.date = tt_date;
-
             move  = entry.move;
-            bound = entry.bound;
+            bound = entry.bound();
             depth = entry.depth;
             score = ScoreFromTT(entry.score, ply);
+            eval  = entry.eval;
+            pv    = entry.pv();
 
             return true;
         }
@@ -309,8 +257,8 @@ int TranspositionTable::hash_full() const
         for (Usize j=0; j<CLUSTER_SIZE; j++)
         {
             if (   tt_entries[i].entries[j].move != Move::MOVE_NONE
-                && tt_entries[i].entries[j].date == tt_date
-                )
+                   && tt_entries[i].entries[j].age() == tt_age
+                   )
                 used++;
         }
     }

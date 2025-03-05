@@ -38,18 +38,21 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
     if (si->ply >= MAX_PLY)
         return isInCheck ? 0 : board.evaluate();
 
+    const bool isPV = ((beta - alpha) != 1);
 
     // Est-ce que la table de transposition est utilisable ?
     int   old_alpha = alpha;
-    int   tt_score;
+    int   tt_score = 0;
+    int   tt_eval  = VALUE_NONE;
     MOVE  tt_move  = Move::MOVE_NONE;
-    int   tt_bound;
-    int   tt_depth;
-    bool  tt_hit   = transpositionTable.probe(board.get_key(), si->ply, tt_move, tt_score, tt_bound, tt_depth);
+    int   tt_bound = BOUND_NONE;
+    int   tt_depth = 0;
+    bool  tt_pv    = false; //TODO
+    bool  tt_hit   = transpositionTable.probe(board.get_key(), si->ply, tt_move, tt_score, tt_eval, tt_bound, tt_depth, tt_pv);
 
     // note : on ne teste pas la profondeur, car dans la Quiescence, elle est à 0
     //        dans la cas de la Quiescence, on cut tous les coups, y compris la PV
-    if (tt_hit)
+    if (tt_hit && !isPV)
     {
         if (   (tt_bound == BOUND_EXACT)
             || (tt_bound == BOUND_LOWER && tt_score >= beta)
@@ -59,12 +62,20 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
         }
     }
 
+    const bool ttPV = isPV || tt_pv;
+
+
     // Evaluation statique
     int static_eval;
 
     if (!isInCheck)
     {
-        static_eval = board.evaluate();
+        static_eval = si->eval = (tt_hit && tt_eval != VALUE_NONE) ?
+                      tt_eval : board.evaluate();
+
+        // Toss the static evaluation into the TT if we won't overwrite something
+        // if (!tt_hit)
+        //     transpositionTable.store(board.get_key(), Move::MOVE_NONE, VALUE_NONE, static_eval, BOUND_NONE, 0, si->ply);
 
         // le score est trop mauvais pour moi, on n'a pas besoin
         // de chercher plus loin
@@ -139,9 +150,9 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
                 // try for an early cutoff:
                 if(score >= beta)
                 {
-
-                    transpositionTable.store(board.get_key(), move, score, BOUND_LOWER, 0, si->ply);
-                    return score;
+                    // transpositionTable.store(board.get_key(), move, score, static_eval, BOUND_LOWER, 0, si->ply);
+                    // return score;
+                    break;
                 }
             }
         }
@@ -149,8 +160,11 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
 
     if (!td->stopped)
     {
-        int flag = (alpha != old_alpha) ? BOUND_EXACT : BOUND_UPPER;
-        transpositionTable.store(board.get_key(), best_move, best_score, flag, 0, si->ply);
+        // int flag = (alpha != old_alpha) ? BOUND_EXACT : BOUND_UPPER;
+        int bound = best_score >= beta    ? BOUND_LOWER
+                : best_score > old_alpha ? BOUND_EXACT
+                : BOUND_UPPER;
+        transpositionTable.store(board.get_key(), best_move, best_score, static_eval, bound, 0, si->ply, ttPV);
     }
 
     return best_score;
