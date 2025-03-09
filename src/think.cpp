@@ -62,8 +62,10 @@ void Search::think(Board board, Timer timer, int m_index)
 
             show_uci_best(td);
         }
+
+        transpositionTable.update_age();
     }
-    //  Transtable.stats();
+    // transpositionTable.stats();
 }
 
 //======================================================
@@ -320,21 +322,46 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
 
     //  Evaluation Statique
-    int static_eval;
+    int static_eval = VALUE_NONE;
+    if (!isExcluded)
+    {
+        if (isInCheck)
+        {
+            static_eval = si->eval = -MATE + si->ply;
+        }
+        else
+        {
+            static_eval = si->eval = (tt_hit && tt_eval != VALUE_NONE) ?
+                    tt_eval : board.evaluate();
 
-    if (isInCheck)
-    {
-        static_eval = si->eval = -MATE + si->ply;
+            if(
+                tt_hit
+                && (    tt_bound == BOUND_EXACT
+                    || (tt_bound == BOUND_LOWER && tt_score >= static_eval)
+                    || (tt_bound == BOUND_UPPER && tt_score <= static_eval) ))
+            {
+                static_eval = tt_score;
+            }
+        }
+
+        // if (!ttHit)
+        //     m_ttable.put(pos.key(), ScoreNone, rawStaticEval, NullMove, 0, 0, TtFlag::None, ttpv);
+
     }
-    else if (isExcluded)
-    {
-        static_eval = si->eval;
-    }
-    else
-    {
-        static_eval = si->eval = (tt_hit && tt_eval != VALUE_NONE) ?
-                tt_eval : board.evaluate();
-    }
+
+    // if (isInCheck)
+    // {
+    //     static_eval = si->eval = -MATE + si->ply;
+    // }
+    // else if (isExcluded)
+    // {
+    //     static_eval = si->eval;
+    // }
+    // else
+    // {
+    //     static_eval = si->eval = (tt_hit && tt_eval != VALUE_NONE) ?
+    //             tt_eval : board.evaluate();
+    // }
 
     // Re-initialise les killer des enfants
     td->killer1[si->ply+1] = Move::MOVE_NONE;
@@ -342,23 +369,29 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
     //  Avons-nous amélioré la position ?
     //  Si on ne s'est pas amélioré dans cette ligne, on va pouvoir couper un peu plus
-    bool improving = (si->ply >= 2) && !isInCheck && (static_eval > (si-2)->eval);
+    // bool improving = (si->ply >= 2) && !isInCheck && (static_eval > (si-2)->eval);
+
+    const bool improving = [&]
+    {
+        if (isInCheck)
+            return false;
+        if (si->ply > 1 && (si-2)->eval != VALUE_NONE)
+            return si->eval > (si - 2)->eval;
+        if (si->ply > 3 && (si-4)->eval != VALUE_NONE)
+            return si->eval > (si - 4)->eval;
+        return true;
+    }();
 
     // Amélioration de static-eval, au cas où tt_score est assez bon
-    if(    !isInCheck
-        && !isExcluded
-        && tt_hit
-        && (    tt_bound == BOUND_EXACT
-            || (tt_bound == BOUND_LOWER && tt_score >= static_eval)
-            || (tt_bound == BOUND_UPPER && tt_score <= static_eval) ))
-    {
-        static_eval = tt_score;
-    }
-
-
-    // Toss the static evaluation into the TT if we won't overwrite something
-    // if (!tt_hit && !isInCheck && !isExcluded)
-    //     transpositionTable.store(board.get_key(), Move::MOVE_NONE, VALUE_NONE, static_eval, BOUND_NONE, 0, si->ply);
+    // if(    !isInCheck
+    //     && !isExcluded
+    //     && tt_hit
+    //     && (    tt_bound == BOUND_EXACT
+    //         || (tt_bound == BOUND_LOWER && tt_score >= static_eval)
+    //         || (tt_bound == BOUND_UPPER && tt_score <= static_eval) ))
+    // {
+    //     static_eval = tt_score;
+    // }
 
 
     if (!isInCheck && !isRoot && !isPV && !isExcluded)

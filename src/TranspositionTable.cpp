@@ -57,16 +57,19 @@ void TranspositionTable::init_size(int mbsize)
 
     // L'index est calculé par : key & tt_mask
     // if faut que le nombre de clusters soit un multiple de 2
-    int keySize = static_cast<int>(std::log2(size));    // puissance de 2
-    tt_mask = (ONE << keySize) - ONE;                   // tt_mask = nbr_clusters - 1
+    // int keySize = static_cast<int>(std::log2(size));    // puissance de 2
 
-    if (tt_entries != nullptr)
+    if (size != nbr_cluster)
     {
-        delete [] tt_entries;
-        tt_entries = nullptr;
-    }
+        if (tt_entries != nullptr)
+        {
+            delete [] tt_entries;
+            tt_entries = nullptr;
+        }
 
-    tt_entries = new HashCluster[(ONE << keySize)];
+        nbr_cluster = size;
+        tt_entries  = new HashCluster[nbr_cluster];
+    }
 
     clear();
 
@@ -107,7 +110,7 @@ void TranspositionTable::clear(void)
 
     tt_age = 0;
 
-    std::memset(tt_entries, 0, sizeof(HashCluster) * (tt_mask+1));
+    std::memset(tt_entries, 0, sizeof(HashCluster) * (nbr_cluster));
 }
 
 //========================================================
@@ -266,25 +269,16 @@ int TranspositionTable::hash_full() const
     return used/CLUSTER_SIZE;
 }
 
-/// prefetch() preloads the given address in L1/L2 cache. This is a non-blocking
-/// function that doesn't stall the CPU waiting for data to be loaded from memory,
-/// which can be quite slow.
-void TranspositionTable::prefetch(const U64 key)
-{
-    // __builtin_prefetch(&tt_entries[hash & tt_mask]);
-    __builtin_prefetch(&tt_entries[index(key)]);
-
-}
 
 void TranspositionTable::info()
 {
-    std::cout << "Nombre de clusters  : " << (tt_mask+1) << std::endl
+    std::cout << "Nombre de clusters  : " << (nbr_cluster) << std::endl
               << "Taille d'un cluster : " << sizeof(HashCluster) << " octets" << std::endl
               << "Entrées par cluster : " << CLUSTER_SIZE << std::endl
               << "Taille d'une entrée : " << sizeof(HashEntry) << " octets" << std::endl
-              << "Total entrées       : " << (tt_mask+1) * CLUSTER_SIZE << std::endl
-              << "Taille totale       : " << (tt_mask+1)*sizeof(HashCluster) << "  " << (tt_mask+1) * CLUSTER_SIZE*sizeof(HashEntry)
-              << " (" << (tt_mask+1)*sizeof(HashCluster)/1024.0/1024.0 << ") Mo"
+              << "Total entrées       : " << (nbr_cluster) * CLUSTER_SIZE << std::endl
+              << "Taille totale       : " << (nbr_cluster)*sizeof(HashCluster) << "  " << (nbr_cluster) * CLUSTER_SIZE*sizeof(HashEntry)
+              << " (" << (nbr_cluster)*sizeof(HashCluster)/1024.0/1024.0 << ") Mo"
               << std::endl;
 
 }

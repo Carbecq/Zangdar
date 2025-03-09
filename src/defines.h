@@ -20,6 +20,7 @@ using I32   = int32_t;
 using U32   = uint32_t;
 using I64   = int64_t;
 using U64   = uint64_t;
+using U128  = unsigned __int128;
 using CHAR  = char;
 using UCHAR = unsigned char;
 

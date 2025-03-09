@@ -131,9 +131,6 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
             threadData[i].search = new Search();
         }
 
-        // Préparation des tables de transposition
-        transpositionTable.update_age();
-
         // Il faut mettre le lancement des threads dans une boucle séparée
         // car il faut être sur que la Search soit bien créée
         // board et timer sont passés par valeur.

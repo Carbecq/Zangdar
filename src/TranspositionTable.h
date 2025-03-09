@@ -86,7 +86,7 @@ Taille totale       : 134217696  134217696 (128) Mo
 static constexpr Usize CLUSTER_SIZE = 4;
 
 struct HashCluster {
-    std::array<HashEntry, CLUSTER_SIZE> entries;
+    std::array<HashEntry, CLUSTER_SIZE> entries{};
 };
 
 
@@ -99,9 +99,9 @@ class TranspositionTable
 private:
     static constexpr U64 ONE = 1ULL;
 
-    U64            tt_mask;
+    Usize          nbr_cluster{};
     U32            tt_age{};
-    HashCluster*   tt_entries = nullptr;
+    HashCluster*   tt_entries{};
 
 
     // https://lemire.me/blog/2016/06/27/a-fast-alternative-to-the-modulo-reduction/
@@ -114,8 +114,9 @@ private:
     // }
 
     inline U64 index(U64 key) {
-        // return static_cast<U64>((static_cast<U128>(key) * static_cast<U128>(clusterCount)) >> 64);
-        return key & tt_mask;
+        // this emits a single mul on both x64 and arm64
+        return static_cast<U64>((static_cast<U128>(key) * static_cast<U128>(nbr_cluster)) >> 64);
+        // return key & tt_mask;
     }
 
 public:
@@ -125,7 +126,7 @@ public:
 
     void init_size(int mbsize);
     void set_hash_size(int mbsize);
-    int  get_hash_size(void) const { return tt_mask+1; }
+    int  get_hash_size(void) const { return nbr_cluster; }
     void info();
 
     void clear(void);
@@ -158,8 +159,14 @@ public:
     }
 
     //------------------------------------------------
+    /// prefetch() preloads the given address in L1/L2 cache. This is a non-blocking
+    /// function that doesn't stall the CPU waiting for data to be loaded from memory,
+    /// which can be quite slow.
+    inline void prefetch(const U64 key)
+    {
+        __builtin_prefetch(&tt_entries[index(key)]);
+    }
 
-    void prefetch(const U64 hash);
 };
 
 extern TranspositionTable transpositionTable;
