@@ -3,7 +3,6 @@
 #include "Board.h"
 #include "Search.h"
 #include "PolyBook.h"
-#include "TranspositionTable.h"
 #include "Move.h"
 
 

@@ -71,7 +71,7 @@ bool Board::probe_wdl(int& score, int& bound, int ply) const
         occupancy_p<KING>(),   occupancy_p<QUEEN>(),
         occupancy_p<ROOK>(),   occupancy_p<BISHOP>(),
         occupancy_p<KNIGHT>(), occupancy_p<PAWN>(),
-        get_status().ep_square == NO_SQUARE ? 0 : get_status().ep_square,
+        get_status().ep_square == SQUARE_NONE ? 0 : get_status().ep_square,
         turn() == WHITE ? 1 : 0);
 
     // Probe failed
@@ -105,7 +105,7 @@ bool Board::probe_root(MOVE& move) const
         occupancy_p<ROOK>(),   occupancy_p<BISHOP>(),
         occupancy_p<KNIGHT>(), occupancy_p<PAWN>(),
         get_status().fiftymove_counter,
-        get_status().ep_square == NO_SQUARE ? 0 : get_status().ep_square,
+        get_status().ep_square == SQUARE_NONE ? 0 : get_status().ep_square,
         turn() == WHITE ? 1 : 0,
         nullptr);
 
@@ -149,17 +149,18 @@ MOVE Board::convertPyrrhicMove(unsigned result) const
     unsigned to    = TB_GET_TO(result);
     unsigned from  = TB_GET_FROM(result);
     unsigned ep    = TB_GET_EP(result);
-    unsigned promo = TB_GET_PROMOTES(result);
+    unsigned promo = TB_GET_PROMOTES(result);   // 1 = Dame ; 4 = Cavalier      syzygy
+                                                // 5          2                 moi
 
     // Convert the move notation. Care that Pyrrhic's promotion flags are inverted
     if (ep == 0u && promo == 0u)
-        return Move::CODE(from, to, pieceOn[from], pieceOn[to], NO_PIECE, Move::FLAG_NONE); // MoveMake(from, to, NORMAL_MOVE);
+        return Move::CODE(from, to, pieceBoard[from], pieceBoard[to], PIECE_NONE, Move::FLAG_NONE); // MoveMake(from, to, NORMAL_MOVE);
     else if (ep != 0u)
-        return Move::CODE(from, get_status().ep_square, PAWN, PAWN, NO_PIECE, Move::FLAG_ENPASSANT_MASK);
+        return Move::CODE(from, get_status().ep_square, PAWN, PAWN, PIECE_NONE, Move::FLAG_ENPASSANT_MASK);
     else /* if (promo != 0u) */
     {
         PieceType p = static_cast<PieceType>(6-promo);
-        return Move::CODE(from, to, PAWN, pieceOn[to], p, Move::FLAG_NONE);
+        return Move::CODE(from, to, PAWN, pieceBoard[to], p, Move::FLAG_NONE);
     }
 }
 

@@ -39,8 +39,8 @@ void Uci::run()
     // main loop
     std::string token;
     std::string line;
-    std::string fen  = SILVER2;
-    int         dmax = 4;
+    std::string fen  = START_FEN;
+    int         dmax = 6;
     int         tmax = 0;
     int         nthreads = 1;
 

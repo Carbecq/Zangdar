@@ -23,19 +23,11 @@ void Board::undo_move() noexcept
     const auto from     = Move::from(move);
     const auto piece    = Move::piece(move);
     const auto captured = Move::captured(move);
-    const auto promo    = Move::promotion(move);
+    const auto promoted = Move::promotion(move);
 
     // Déplacement du roi
     if (piece == KING)
         x_king[C] = from;
-
-    // Remove piece
-    BB::toggle_bit(colorPiecesBB[C],    dest);
-    BB::toggle_bit(typePiecesBB[piece],  dest);
-
-    // Add piece
-    BB::toggle_bit(colorPiecesBB[C], from);
-    BB::toggle_bit(typePiecesBB[piece], from);
 
     //====================================================================================
     //  Coup normal (pas spécial)
@@ -47,8 +39,7 @@ void Board::undo_move() noexcept
         //------------------------------------------------------------------------------------
         if (Move::is_depl(move))
         {
-            pieceOn[from] = piece;
-            pieceOn[dest] = NO_PIECE;
+            move_piece(dest, from, C, piece);
         }
 
         //====================================================================================
@@ -61,16 +52,9 @@ void Board::undo_move() noexcept
             //------------------------------------------------------------------------------------
             if (Move::is_promoting(move))
             {
-                // Replace pawn with piece
-                BB::toggle_bit(typePiecesBB[PAWN], dest);
-                BB::toggle_bit(typePiecesBB[promo], dest);
-
-                // Replace the captured piece
-                BB::toggle_bit(typePiecesBB[captured], dest);
-                BB::toggle_bit(colorPiecesBB[Them], dest);
-                
-                pieceOn[from] = PAWN;
-                pieceOn[dest] = captured;
+                remove_piece(dest, C, promoted);
+                set_piece(dest, Them, captured);
+                set_piece(from, C, PAWN);
             }
 
             //====================================================================================
@@ -78,10 +62,8 @@ void Board::undo_move() noexcept
             //------------------------------------------------------------------------------------
             else
             {
-                pieceOn[from]= piece;
-                BB::toggle_bit(colorPiecesBB[Them], dest);
-                BB::toggle_bit(typePiecesBB[captured], dest);
-                pieceOn[dest]  = captured;
+                move_piece(dest, from, C, piece);
+                set_piece(dest, Them, captured);
             }
         }
 
@@ -90,12 +72,8 @@ void Board::undo_move() noexcept
         //------------------------------------------------------------------------------------
         else if (Move::is_promoting(move))
         {
-            // Replace piece with pawn
-            BB::toggle_bit(typePiecesBB[PAWN], dest);
-            BB::toggle_bit(typePiecesBB[promo], dest);
-            
-            pieceOn[from] = PAWN;
-            pieceOn[dest] = NO_PIECE;
+            remove_piece(dest, C, promoted);
+            set_piece(from, C, PAWN);
         }
     }
 
@@ -109,8 +87,7 @@ void Board::undo_move() noexcept
         //------------------------------------------------------------------------------------
         if (Move::is_double(move))
         {
-            pieceOn[from] = piece;
-            pieceOn[dest] = NO_PIECE;
+            move_piece(dest, from, C, piece);
         }
 
         //====================================================================================
@@ -119,24 +96,12 @@ void Board::undo_move() noexcept
         else if (Move::is_enpassant(move))
         {
             // Replace the captured pawn
-            if (C == Color::WHITE)
-            {
-                BB::toggle_bit(typePiecesBB[PAWN], SQ::south(dest));
-                BB::toggle_bit(colorPiecesBB[Color::BLACK], SQ::south(dest));
-                
-                pieceOn[from] = PAWN;
-                pieceOn[dest] = NO_PIECE;
-                pieceOn[SQ::south(dest)] = PAWN;
-            }
+            move_piece(dest, from, C, PAWN);
+
+            if constexpr (C == Color::WHITE)
+                set_piece(SQ::south(dest), Them, PAWN);
             else
-            {
-                BB::toggle_bit(typePiecesBB[PAWN], SQ::north(dest));
-                BB::toggle_bit(colorPiecesBB[Color::WHITE], SQ::north(dest));
-                
-                pieceOn[from] = PAWN;
-                pieceOn[dest] = NO_PIECE;
-                pieceOn[SQ::north(dest)] = PAWN;
-            }
+                set_piece(SQ::north(dest), Them, PAWN);
         }
 
         //====================================================================================
@@ -149,26 +114,13 @@ void Board::undo_move() noexcept
             //------------------------------------------------------------------------------------
             if ((SQ::square_BB(dest)) & FILE_G_BB)
             {
-                pieceOn[from] = KING;
-                pieceOn[dest] = NO_PIECE;
+                move_piece(dest, from, C, KING);
 
                 // Move the rook
                 if constexpr (C == WHITE)
-                {
-                    BB::toggle_bit2(colorPiecesBB[C],   H1, F1);
-                    BB::toggle_bit2(typePiecesBB[ROOK], H1, F1);
-
-                    pieceOn[H1] = ROOK;
-                    pieceOn[F1] = NO_PIECE;
-                }
+                    move_piece(F1, H1, C, ROOK);
                 else
-                {
-                    BB::toggle_bit2(colorPiecesBB[C],   H8, F8);
-                    BB::toggle_bit2(typePiecesBB[ROOK], H8, F8);
-
-                    pieceOn[H8] = ROOK;
-                    pieceOn[F8] = NO_PIECE;
-                }
+                    move_piece(F8, H8, C, ROOK);
             }
 
             //====================================================================================
@@ -176,26 +128,13 @@ void Board::undo_move() noexcept
             //------------------------------------------------------------------------------------
             else if ((SQ::square_BB(dest)) & FILE_C_BB)
             {
-                pieceOn[from] = KING;
-                pieceOn[dest] = NO_PIECE;
+                move_piece(dest, from, C, KING);
 
                 // Move the rook
                 if constexpr (C == WHITE)
-                {
-                    BB::toggle_bit2(colorPiecesBB[C],   A1, D1);
-                    BB::toggle_bit2(typePiecesBB[ROOK], A1, D1);
-
-                    pieceOn[A1] = ROOK;
-                    pieceOn[D1] = NO_PIECE;
-                }
+                    move_piece(D1, A1, C, ROOK);
                 else
-                {
-                    BB::toggle_bit2(colorPiecesBB[C],   A8, D8);
-                    BB::toggle_bit2(typePiecesBB[ROOK], A8, D8);
-
-                    pieceOn[A8] = ROOK;
-                    pieceOn[D8] = NO_PIECE;
-                }
+                    move_piece(D8, A8, C, ROOK);
             }
         }
     }
@@ -204,7 +143,7 @@ void Board::undo_move() noexcept
 
 #ifndef NDEBUG
     // on ne passe ici qu'en debug
-    valid();
+    assert(valid<Update_NNUE>("après undo_move"));
 #endif
 }
 
@@ -218,7 +157,7 @@ template <Color C> void Board::undo_nullmove() noexcept
 
 #ifndef NDEBUG
     // on ne passe ici qu'en debug
-    valid();
+    assert(valid<false>("après undo_nullmove"));
 #endif
 }
 

@@ -456,7 +456,7 @@ constexpr int square_safe(const int f, const int r) {
     if (0 <= f && f < 8 && 0 <= r && r < 8)
         return SQ::square(f, r);
     else
-        return NO_SQUARE;
+        return SQUARE_NONE;
 }
 
 constexpr std::array<Mask, N_SQUARES> DirectionMask = [] {
@@ -478,7 +478,7 @@ constexpr std::array<Mask, N_SQUARES> DirectionMask = [] {
             for (int j = 1; j < 8; ++j)
             {
                 int y = square_safe(f + king_dir[i][0] * j, r + king_dir[i][1] * j);
-                if (y != NO_SQUARE)
+                if (y != SQUARE_NONE)
                 {
                     d[sq][y] = king_dir[i][0] + 8 * king_dir[i][1];
                     b[sq].direction[y] = myabs(d[sq][y]);

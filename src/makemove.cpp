@@ -34,7 +34,7 @@ void Board::make_move(const MOVE move) noexcept
     const auto from     = Move::from(move);
     const auto piece    = Move::piece(move);
     const auto captured = Move::captured(move);
-    const auto promo    = Move::promotion(move);
+    const auto promoted = Move::promotion(move);
 
     // std::cout << display() << std::endl << std::endl;
     //    printf("move  = (%s) \n", Move::name(move).c_str());
@@ -47,13 +47,13 @@ void Board::make_move(const MOVE move) noexcept
     //    printf("promo = %s \n", piece_name[promo].c_str());
     //    printf("flags = %u \n", Move::flags(move));
 
-    assert(pieceOn[king_square<C>()] == KING);
+    assert(pieceBoard[king_square<C>()] == KING);
     assert(dest != from);
-    assert(piece != NO_PIECE);
+    assert(piece != PIECE_NONE);
+    assert(piece == pieceBoard[from]);
     assert(captured != KING);
-    assert(promo != PAWN);
-    assert(promo != KING);
-    assert(pieceOn[from] == piece);
+    assert(promoted != PAWN);
+    assert(promoted != KING);
     assert(!StatusHistory.empty());
 
     if constexpr (Update_NNUE == true)
@@ -64,7 +64,7 @@ void Board::make_move(const MOVE move) noexcept
     StatusHistory.emplace_back( // ajoute un nouvel élément à la fin
                                 previousStatus.key ^ side_key,                              // zobrist will be changed later
                                 move,
-                                NO_SQUARE,                                                  // reset en passant. might be set later
+                                SQUARE_NONE,                                                  // reset en passant. might be set later
                                 previousStatus.castling,                                    // copy meta. might be changed
                                 previousStatus.fiftymove_counter + 1,                        // increment fifty move counter. might be reset
                                 previousStatus.fullmove_counter + (C == Color::BLACK),      // increment move counter
@@ -76,7 +76,7 @@ void Board::make_move(const MOVE move) noexcept
 
     // La prise en passant n'est valable que tout de suite
     // Il faut donc la supprimer
-    if (previousStatus.ep_square != NO_SQUARE)
+    if (previousStatus.ep_square != SQUARE_NONE)
         newStatus.key ^= ep_key[previousStatus.ep_square];
 
     // Déplacement du roi
@@ -102,23 +102,17 @@ void Board::make_move(const MOVE move) noexcept
         //------------------------------------------------------------------------------------
         if (Move::is_depl(move))
         {
-            assert(captured == NO_PIECE);
-            assert(promo    == NO_PIECE);
+            assert(captured == PIECE_NONE);
+            assert(promoted == PIECE_NONE);
 
-            BB::toggle_bit2(colorPiecesBB[C], from, dest);
-            BB::toggle_bit2(typePiecesBB[piece], from, dest);
-            
-            pieceOn[from] = NO_PIECE;
-            pieceOn[dest] = piece;
+            move_piece(from, dest, C, piece);
+
+            newStatus.key ^= piece_key[C][piece][from] ^ piece_key[C][piece][dest];
+            if (piece == PAWN)
+                newStatus.fiftymove_counter = 0;
 
             if constexpr (Update_NNUE == true)
                 nnue.sub_add(C, piece, from, piece, dest);
-            newStatus.key ^= piece_key[C][piece][from] ^ piece_key[C][piece][dest];
-
-            if (piece == PAWN)
-            {
-                newStatus.fiftymove_counter = 0;
-            }
         }
 
         //====================================================================================
@@ -132,33 +126,22 @@ void Board::make_move(const MOVE move) noexcept
             if (Move::is_promoting(move))
             {
                 assert(piece    == PAWN);
-                assert(captured != NO_PIECE);
-                assert(promo    != NO_PIECE);
+                assert(captured != PIECE_NONE);
+                assert(promoted != PIECE_NONE);
                 assert(SQ::file(dest) != SQ::file(from));
-                assert((C == Color::WHITE && SQ::rank(dest) == 7) ||
-                       (C == Color::BLACK && SQ::rank(dest) == 0));
-                assert((C == Color::WHITE && SQ::rank(from) == 6) ||
-                       (C == Color::BLACK && SQ::rank(from) == 1));
+                assert((C == Color::WHITE && SQ::rank(dest) == 7) || (C == Color::BLACK && SQ::rank(dest) == 0));
+                assert((C == Color::WHITE && SQ::rank(from) == 6) || (C == Color::BLACK && SQ::rank(from) == 1));
 
-                BB::toggle_bit(typePiecesBB[PAWN], from);       // suppression du pion
-                BB::toggle_bit(colorPiecesBB[C], from);
 
-                BB::toggle_bit(typePiecesBB[captured], dest);   // Remove the captured piece
-                BB::toggle_bit(colorPiecesBB[Them], dest);
+                promocapt_piece(from, dest, C, captured, promoted);
 
-                BB::toggle_bit(typePiecesBB[promo], dest);      // Ajoute la pièce promue
-                BB::toggle_bit(colorPiecesBB[C], dest);
-                
-                pieceOn[from] = NO_PIECE;
-                pieceOn[dest] = promo;
+                newStatus.key ^= piece_key[C][piece][from];
+                newStatus.key ^= piece_key[C][promoted][dest];
+                newStatus.key ^= piece_key[Them][captured][dest];
+                newStatus.fiftymove_counter = 0;
 
                 if constexpr (Update_NNUE == true)
-                    nnue.sub_sub_add(C, PAWN, from, captured, promo, dest);
-                newStatus.key ^= piece_key[C][piece][from];
-                newStatus.key ^= piece_key[C][promo][dest];
-                newStatus.key ^= piece_key[Them][captured][dest];
-
-                newStatus.fiftymove_counter = 0;
+                    nnue.sub_sub_add(C, PAWN, from, captured, promoted, dest);
             }
 
             //====================================================================================
@@ -166,24 +149,17 @@ void Board::make_move(const MOVE move) noexcept
             //------------------------------------------------------------------------------------
             else
             {
-                assert(captured != NO_PIECE);
-                assert(promo == NO_PIECE);
+                assert(captured != PIECE_NONE);
+                assert(promoted == PIECE_NONE);
 
-                BB::toggle_bit2(colorPiecesBB[C],    from, dest);   //  déplacement de la pièce
-                BB::toggle_bit2(typePiecesBB[piece], from, dest);
+                capture_piece(from, dest, C, piece, captured);
 
-                BB::toggle_bit(colorPiecesBB[Them],    dest);       //  suppression de la pièce prise
-                BB::toggle_bit(typePiecesBB[captured], dest);
-
-                pieceOn[from] = NO_PIECE;
-                pieceOn[dest] = piece;
+                newStatus.key ^= piece_key[C][piece][from] ^ piece_key[C][piece][dest];
+                newStatus.key ^= piece_key[Them][captured][dest];
+                newStatus.fiftymove_counter = 0;
 
                 if constexpr (Update_NNUE == true)
                     nnue.sub_sub_add(C, piece, from, captured, piece, dest);
-                newStatus.key ^= piece_key[C][piece][from] ^ piece_key[C][piece][dest];
-                newStatus.key ^= piece_key[Them][captured][dest];
-
-                newStatus.fiftymove_counter = 0;
             }
         }
 
@@ -193,28 +169,20 @@ void Board::make_move(const MOVE move) noexcept
         else if (Move::is_promoting(move))
         {
             assert(piece    == PAWN);
-            assert(captured == NO_PIECE);
-            assert(promo    != NO_PIECE);
+            assert(captured == PIECE_NONE);
+            assert(promoted != PIECE_NONE);
             assert(SQ::file(dest) == SQ::file(from));
-            assert((C == Color::WHITE && SQ::rank(dest) == 7) ||
-                   (C == Color::BLACK && SQ::rank(dest) == 0));
-            assert((C == Color::WHITE && SQ::rank(from) == 6) ||
-                   (C == Color::BLACK && SQ::rank(from) == 1));
+            assert((C == Color::WHITE && SQ::rank(dest) == 7) || (C == Color::BLACK && SQ::rank(dest) == 0));
+            assert((C == Color::WHITE && SQ::rank(from) == 6) || (C == Color::BLACK && SQ::rank(from) == 1));
 
-            BB::toggle_bit(typePiecesBB[PAWN], from);       // suppression du pion
-            BB::toggle_bit(colorPiecesBB[C], from);
+            promotion_piece(from, dest, C, promoted);
 
-            BB::toggle_bit(typePiecesBB[promo], dest);      // Ajoute la pièce promue
-            BB::toggle_bit(colorPiecesBB[C], dest);
-            
-            pieceOn[from] = NO_PIECE;
-            pieceOn[dest] = promo;
+            newStatus.key ^= piece_key[C][piece][from];
+            newStatus.key ^= piece_key[C][promoted][dest];
+            newStatus.fiftymove_counter = 0;
 
             if constexpr (Update_NNUE == true)
-                nnue.sub_add(C, PAWN, from, promo, dest);
-            newStatus.key ^= piece_key[C][piece][from];
-            newStatus.key ^= piece_key[C][promo][dest];
-            newStatus.fiftymove_counter = 0;
+                nnue.sub_add(C, PAWN, from, promoted, dest);
         }
     }
 
@@ -229,22 +197,19 @@ void Board::make_move(const MOVE move) noexcept
         if (Move::is_double(move))
         {
             assert(piece == PAWN);
-            assert(captured == NO_PIECE);
-            assert(promo == NO_PIECE);
+            assert(captured == PIECE_NONE);
+            assert(promoted == PIECE_NONE);
             assert(SQ::file(dest) == SQ::file(from));
             assert((C == Color::WHITE && SQ::rank(dest) == 3) || (C == Color::BLACK && SQ::rank(dest) == 4));
             assert((C == Color::WHITE && SQ::rank(from) == 1) || (C == Color::BLACK && SQ::rank(from) == 6));
 
-            BB::toggle_bit2(colorPiecesBB[C], from, dest);
-            BB::toggle_bit2(typePiecesBB[piece], from, dest);
-            
-            pieceOn[from] = NO_PIECE;
-            pieceOn[dest] = piece;
+            move_piece(from, dest, C, PAWN);
+
+            newStatus.key ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
+            newStatus.fiftymove_counter = 0;
 
             if constexpr (Update_NNUE == true)
                 nnue.sub_add(C, PAWN, from, PAWN, dest);
-            newStatus.key      ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
-            newStatus.fiftymove_counter = 0;
 
             int new_ep;
             if constexpr (C == Color::WHITE)
@@ -273,42 +238,34 @@ void Board::make_move(const MOVE move) noexcept
         {
             assert(piece == PAWN);
             assert(captured == PAWN);
-            assert(promo == NO_PIECE);
+            assert(promoted == PIECE_NONE);
             //TODO assert(SQ::file(dest) == SQ::file(ep_old));
             assert((C == Color::WHITE && SQ::rank(dest) == 5)   || (C == Color::BLACK && SQ::rank(dest) == 2));
             assert((C == Color::WHITE && SQ::rank(from) == 4) || (C == Color::BLACK && SQ::rank(from) == 3));
             assert(SQ::file(dest) - SQ::file(from) == 1     || SQ::file(from) - SQ::file(dest) == 1);
 
-            BB::toggle_bit2(colorPiecesBB[C],   from, dest);
-            BB::toggle_bit2(typePiecesBB[PAWN], from, dest);
-            
-            pieceOn[from] = NO_PIECE;
-            pieceOn[dest] = PAWN;
+            move_piece(from, dest, C, PAWN);
 
-            newStatus.key      ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
+            newStatus.key ^= piece_key[C][PAWN][from] ^ piece_key[C][PAWN][dest];
             newStatus.fiftymove_counter = 0;
 
             // Remove the captured pawn
             if constexpr (C == Color::WHITE)
             {
-                BB::toggle_bit(typePiecesBB[PAWN],          SQ::south(dest));
-                BB::toggle_bit(colorPiecesBB[Color::BLACK], SQ::south(dest));
-                pieceOn[SQ::south(dest)] = NO_PIECE;
+                remove_piece(SQ::south(dest), Color::BLACK, PAWN);
 
+                newStatus.key ^= piece_key[Them][PAWN][SQ::south(dest)];
                 if constexpr (Update_NNUE == true)
                     nnue.sub_sub_add(C, PAWN, from, PAWN, SQ::south(dest), PAWN, dest);
-                newStatus.key      ^= piece_key[Them][PAWN][SQ::south(dest)];
-            }
+             }
             else
             {
-                BB::toggle_bit(typePiecesBB[PAWN],          SQ::north(dest));
-                BB::toggle_bit(colorPiecesBB[Color::WHITE], SQ::north(dest));
-                pieceOn[SQ::north(dest)] = NO_PIECE;
+                remove_piece(SQ::north(dest), Color::WHITE, PAWN);
 
+                newStatus.key ^= piece_key[Them][PAWN][SQ::north(dest)];
                 if constexpr (Update_NNUE == true)
                     nnue.sub_sub_add(C, PAWN, from, PAWN, SQ::north(dest), PAWN, dest);
-                newStatus.key      ^= piece_key[Them][PAWN][SQ::north(dest)];
-            }
+           }
         }
 
         //====================================================================================
@@ -317,10 +274,10 @@ void Board::make_move(const MOVE move) noexcept
         else if (Move::is_castling(move))
         {
             assert(piece    == KING);
-            assert(captured == NO_PIECE);
-            assert(promo    == NO_PIECE);
-            assert(pieceOn[from] == KING);
-            assert(pieceOn[dest] == NO_PIECE);
+            assert(captured == PIECE_NONE);
+            assert(promoted == PIECE_NONE);
+            assert(pieceBoard[from] == KING);
+            assert(pieceBoard[dest] == PIECE_NONE);
 
             //====================================================================================
             //  Petit Roque
@@ -330,50 +287,38 @@ void Board::make_move(const MOVE move) noexcept
                 assert((dest == get_king_dest<C, CastleSide::KING_SIDE>())  );
 
                 // Move the King
-                BB::toggle_bit2(colorPiecesBB[C], from, dest);
-                BB::toggle_bit2(typePiecesBB[KING], from, dest);
-                
-                pieceOn[from] = NO_PIECE;
-                pieceOn[dest] = KING;
+                move_piece(from, dest, C, KING);
 
                 assert(piece_on(get_king_dest<C, CastleSide::KING_SIDE>()) == KING);
 
-                if constexpr (Update_NNUE == true)
-                    nnue.sub_add(C, piece, from, piece, dest);
                 newStatus.key ^= piece_key[C][piece][from];
                 newStatus.key ^= piece_key[C][piece][dest];
+                if constexpr (Update_NNUE == true)
+                    nnue.sub_add(C, piece, from, piece, dest);
 
                 // Move the Rook
                 if constexpr (C == WHITE)
                 {
-                    BB::toggle_bit2(colorPiecesBB[C],   H1, F1);
-                    BB::toggle_bit2(typePiecesBB[ROOK], H1, F1);
-
-                    pieceOn[H1] = NO_PIECE;
-                    pieceOn[F1] = ROOK;
+                    move_piece(H1, F1, C, ROOK);
 
                     assert(piece_on(F1) == ROOK);
 
-                    if constexpr (Update_NNUE == true)
-                        nnue.sub_add(C, ROOK, H1, ROOK, F1);
                     newStatus.key ^= piece_key[C][ROOK][H1];
                     newStatus.key ^= piece_key[C][ROOK][F1];
+                    if constexpr (Update_NNUE == true)
+                        nnue.sub_add(C, ROOK, H1, ROOK, F1);
                 }
                 else
                 {
-                    BB::toggle_bit2(colorPiecesBB[C],   H8, F8);
-                    BB::toggle_bit2(typePiecesBB[ROOK], H8, F8);
-
-                    pieceOn[H8] = NO_PIECE;
-                    pieceOn[F8] = ROOK;
+                    move_piece(H8, F8, C, ROOK);
 
                     assert(piece_on(F8) == ROOK);
 
-                    if constexpr (Update_NNUE == true)
-                        nnue.sub_add(C, ROOK, H8, ROOK, F8);
                     newStatus.key ^= piece_key[C][ROOK][H8];
                     newStatus.key ^= piece_key[C][ROOK][F8];
-                }
+                    if constexpr (Update_NNUE == true)
+                        nnue.sub_add(C, ROOK, H8, ROOK, F8);
+                 }
             }
 
             //====================================================================================
@@ -384,49 +329,37 @@ void Board::make_move(const MOVE move) noexcept
                 assert((dest == get_king_dest<C, CastleSide::QUEEN_SIDE>() ));
 
                 // Move the King
-                BB::toggle_bit2(colorPiecesBB[C], from, dest);
-                BB::toggle_bit2(typePiecesBB[KING], from, dest);
-                
-                pieceOn[from] = NO_PIECE;
-                pieceOn[dest] = KING;
+                move_piece(from, dest, C, KING);
 
                 assert(piece_on(get_king_dest<C, CastleSide::QUEEN_SIDE>()) == KING);
 
-                if constexpr (Update_NNUE == true)
-                    nnue.sub_add(C, piece, from, piece, dest);
                 newStatus.key ^= piece_key[C][piece][from];
                 newStatus.key ^= piece_key[C][piece][dest];
+                if constexpr (Update_NNUE == true)
+                    nnue.sub_add(C, piece, from, piece, dest);
 
                 // Move the Rook
                 if constexpr (C == WHITE)
                 {
-                    BB::toggle_bit2(colorPiecesBB[C],   A1, D1);
-                    BB::toggle_bit2(typePiecesBB[ROOK], A1, D1);
-
-                    pieceOn[A1] = NO_PIECE;
-                    pieceOn[D1] = ROOK;
+                    move_piece(A1, D1, C, ROOK);
 
                     assert(piece_on(D1) == ROOK);
 
-                    if constexpr (Update_NNUE == true)
-                        nnue.sub_add(C, ROOK, A1, ROOK, D1);
                     newStatus.key ^= piece_key[C][ROOK][A1];
                     newStatus.key ^= piece_key[C][ROOK][D1];
-                }
+                    if constexpr (Update_NNUE == true)
+                        nnue.sub_add(C, ROOK, A1, ROOK, D1);
+                 }
                 else
                 {
-                    BB::toggle_bit2(colorPiecesBB[C],   A8, D8);
-                    BB::toggle_bit2(typePiecesBB[ROOK], A8, D8);
-
-                    pieceOn[A8] = NO_PIECE;
-                    pieceOn[D8] = ROOK;
+                    move_piece(A8, D8, C, ROOK);
 
                     assert(piece_on(D8) == ROOK);
 
-                    if constexpr (Update_NNUE == true)
-                        nnue.sub_add(C, ROOK, A8, ROOK, D8);
                     newStatus.key ^= piece_key[C][ROOK][A8];
                     newStatus.key ^= piece_key[C][ROOK][D8];
+                    if constexpr (Update_NNUE == true)
+                        nnue.sub_add(C, ROOK, A8, ROOK, D8);
                 }
             }
         } // Roques
@@ -441,7 +374,7 @@ void Board::make_move(const MOVE move) noexcept
 
 #ifndef NDEBUG
     // on ne passe ici qu'en debug
-    assert(valid());
+    assert(valid<Update_NNUE>(" après make_move"));
 #endif
 }
 
@@ -457,7 +390,7 @@ template <Color C> void Board::make_nullmove() noexcept
     StatusHistory.emplace_back(
                                 previousStatus.key ^ side_key,  // zobrist will be changed later
                                 Move::MOVE_NULL,
-                                NO_SQUARE,                                               // reset en passant. might be set later
+                                SQUARE_NONE,                                               // reset en passant. might be set later
                                 previousStatus.castling,                                 // copy meta. might be changed
                                 previousStatus.fiftymove_counter + 1,                     // increment fifty move counter. might be reset
                                 previousStatus.fullmove_counter + (C == Color::BLACK),   // increment move counter
@@ -468,7 +401,7 @@ template <Color C> void Board::make_nullmove() noexcept
 
     // La prise en passant n'est valable que tout de suite
     // Il faut donc la supprimer
-    if (previousStatus.ep_square != NO_SQUARE)
+    if (previousStatus.ep_square != SQUARE_NONE)
         newStatus.key ^= ep_key[previousStatus.ep_square];
 
     // Swap sides
@@ -479,7 +412,7 @@ template <Color C> void Board::make_nullmove() noexcept
 
 #ifndef NDEBUG
     // on ne passe ici qu'en debug
-    valid();
+    assert(valid<false>("après make null_move"));
 #endif
 }
 
@@ -487,14 +420,98 @@ template <Color C> void Board::make_nullmove() noexcept
 //! \brief  Met une pièce à la case indiquée
 //-----------------------------------------------------------------------------
 template <bool Update_NNUE>
-void Board::set_piece(const int square, const Color color, const PieceType piece) noexcept
+void Board::add_piece(const int square, const Color color, const PieceType piece) noexcept
 {
     colorPiecesBB[color] |= SQ::square_BB(square);
     typePiecesBB[piece]  |= SQ::square_BB(square);
-    pieceOn[square]       = piece;
+    pieceBoard[square]       = piece;
 
     if constexpr (Update_NNUE == true)
         nnue.add(color, piece, square);
+}
+
+void Board::set_piece(const int square, const Color color, const PieceType piece) noexcept
+{
+    BB::toggle_bit(colorPiecesBB[color], square);
+    BB::toggle_bit(typePiecesBB[piece],  square);
+    pieceBoard[square] = piece;
+}
+
+void Board::remove_piece(const int square, const Color color, const PieceType piece) noexcept
+{
+    BB::toggle_bit(colorPiecesBB[color], square);
+    BB::toggle_bit(typePiecesBB[piece], square);
+    pieceBoard[square] = PieceType::PIECE_NONE;
+}
+
+//=============================================================================
+//! \brief  Déplace une pièce à la case indiquée
+//-----------------------------------------------------------------------------
+void Board::move_piece(const int from,
+                       const int dest,
+                       const Color color,
+                       const PieceType piece) noexcept
+{
+    BB::toggle_bit2(colorPiecesBB[color], from, dest);
+    BB::toggle_bit2(typePiecesBB[piece], from, dest);
+    pieceBoard[from] = PieceType::PIECE_NONE;
+    pieceBoard[dest] = piece;
+}
+
+//=============================================================================
+//! \brief  Déplace une pièce à la case indiquée
+//-----------------------------------------------------------------------------
+void Board::promotion_piece(const int from,
+                            const int dest,
+                            const Color color,
+                            const PieceType promo) noexcept
+{
+    BB::toggle_bit(typePiecesBB[PAWN], from); // suppression du pion
+    BB::toggle_bit(colorPiecesBB[color], from);
+
+    BB::toggle_bit(typePiecesBB[promo], dest); // Ajoute la pièce promue
+    BB::toggle_bit(colorPiecesBB[color], dest);
+
+    pieceBoard[from] = PieceType::PIECE_NONE;
+    pieceBoard[dest] = promo;
+}
+
+void Board::promocapt_piece(const int from,
+                            const int dest,
+                            const Color color,
+                            const PieceType captured,
+                            const PieceType promoted) noexcept
+{
+    BB::toggle_bit(typePiecesBB[PAWN], from); // suppression du pion
+    BB::toggle_bit(colorPiecesBB[color], from);
+
+    BB::toggle_bit(typePiecesBB[captured], dest); // Remove the captured piece
+    BB::toggle_bit(colorPiecesBB[~color], dest);
+
+    BB::toggle_bit(typePiecesBB[promoted], dest); // Ajoute la pièce promue
+    BB::toggle_bit(colorPiecesBB[color], dest);
+
+    pieceBoard[from] = PieceType::PIECE_NONE;
+    pieceBoard[dest] = promoted;
+}
+
+//=============================================================================
+//! \brief  Déplace une pièce à la case indiquée
+//-----------------------------------------------------------------------------
+void Board::capture_piece(const int from,
+                          const int dest,
+                          const Color color,
+                          const PieceType piece,
+                          const PieceType captured) noexcept
+{
+    BB::toggle_bit2(colorPiecesBB[color], from, dest);
+    BB::toggle_bit2(typePiecesBB[piece], from, dest);
+
+    BB::toggle_bit(colorPiecesBB[~color], dest); //  suppression de la pièce prise
+    BB::toggle_bit(typePiecesBB[captured], dest);
+
+    pieceBoard[from] = PieceType::PIECE_NONE;
+    pieceBoard[dest] = piece;
 }
 
 
@@ -507,5 +524,5 @@ template void Board::make_move<BLACK, false>(const U32 move) noexcept;
 template void Board::make_nullmove<WHITE>() noexcept;
 template void Board::make_nullmove<BLACK>() noexcept;
 
-template void Board::set_piece<true>(const int square, const Color color, const PieceType piece) noexcept;
-template void Board::set_piece<false>(const int square, const Color color, const PieceType piece) noexcept;
+template void Board::add_piece<true>(const int square, const Color color, const PieceType piece) noexcept;
+template void Board::add_piece<false>(const int square, const Color color, const PieceType piece) noexcept;

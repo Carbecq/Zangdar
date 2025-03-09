@@ -45,7 +45,7 @@ void Board::legal_moves(MoveList& ml) noexcept
     Bitboard pieceBB;
     Bitboard attackBB;
     int from, to, d, ep;
-    int x_checker = NO_SQUARE;
+    int x_checker = SQUARE_NONE;
 
     //-------------------------------------------------------------------------------------------
 
@@ -90,14 +90,14 @@ void Board::legal_moves(MoveList& ml) noexcept
                     if (SQ::is_on_seventh_rank<C>(from))
                         push_capture_promotion(ml, from, to);
                     else
-                        add_capture_move(ml, from, to, PAWN, pieceOn[to], Move::FLAG_NONE);
+                        add_capture_move(ml, from, to, PAWN, pieceBoard[to], Move::FLAG_NONE);
                 }
                 else if (d == abs(pawn_right) && (SQ::square_BB(to = from + pawn_right) & Attacks::pawn_attacks<C>(from) & enemyBB))
                 {
                     if (SQ::is_on_seventh_rank<C>(from))
                         push_capture_promotion(ml, from, to);
                     else
-                        add_capture_move(ml, from, to, PAWN, pieceOn[to], Move::FLAG_NONE);
+                        add_capture_move(ml, from, to, PAWN, pieceBoard[to], Move::FLAG_NONE);
                 }
             }
             
@@ -200,7 +200,7 @@ void Board::legal_moves(MoveList& ml) noexcept
      */
     if constexpr (MGType & MoveGenType::NOISY)
     {
-        if (get_status().ep_square!=NO_SQUARE && (!checkersBB || x_checker == get_status().ep_square - pawn_push))
+        if (get_status().ep_square!=SQUARE_NONE && (!checkersBB || x_checker == get_status().ep_square - pawn_push))
         {
             // file : a...h
 
@@ -347,7 +347,7 @@ void Board::legal_moves(MoveList& ml) noexcept
         {
             to = BB::pop_lsb(maskn);
             if (!square_attacked<Them>(to))
-                add_capture_move(ml, K, to, KING, pieceOn[to], Move::FLAG_NONE);
+                add_capture_move(ml, K, to, KING, pieceBoard[to], Move::FLAG_NONE);
         }
     }
 

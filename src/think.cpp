@@ -41,6 +41,7 @@ void Search::think(Board board, Timer timer, int m_index)
     // iterative deepening
     iterative_deepening<C>(board, timer, td, si);
 
+    // Arrêt des threads, affichage du résultat
     if (m_index == 0)
     {
         if (threadPool.get_logUci())
@@ -184,30 +185,32 @@ int Search::aspiration_window(Board& board, Timer& timer, ThreadData* td, Search
 template<Color C>
 int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int depth, ThreadData* td, SearchInfo* si)
 {
-    assert(board.valid());
     assert(beta > alpha);
 
     constexpr Color THEM = ~C;
 
      //  Time-out
     if (td->stopped || timer.check_limits(td->depth, td->index, td->nodes))
-     {
+    {
          td->stopped = true;
          return 0;
-     }
+    }
 
 
     // Prefetch La table de transposition aussitôt que possible
     transpositionTable.prefetch(board.get_key());
 
 
-    bool isRoot = (si->ply == 0);
+    //  Caractéristiques de la position
+    const bool isInCheck  = board.is_in_check();
+    const bool isExcluded = si->excluded != Move::MOVE_NONE;
+    const bool isRoot     = (si->ply == 0);
 
     // For PVS, the node is a PV node if beta - alpha != 1 (full-window = not a null window)
     // We do not want to do most pruning techniques on PV nodes
     // Ne pas confondre avec PV NODE (notation Knuth)
     // Utiliser plutôt la notation : EXACT
-    bool isPV = ((beta - alpha) != 1);
+    const bool isPV = ((beta - alpha) != 1);
 
 
     // Ensure a fresh PV
@@ -231,13 +234,9 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         return board.evaluate();
 
 
-    //  Caractéristiques de la position
-    bool isInCheck  = board.is_in_check();
     int  score      = -INFINITE;
     int  best_score = -INFINITE;        // initially assume the worst case
     MOVE best_move  = Move::MOVE_NONE;  // meilleur coup local
-    // int  max_score  = INFINITE;         // best possible
-    bool isExcluded = si->excluded != Move::MOVE_NONE;
 
 
     //  Check Extension
@@ -334,8 +333,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             static_eval = si->eval = (tt_hit && tt_eval != VALUE_NONE) ?
                     tt_eval : board.evaluate();
 
-            if(
-                tt_hit
+            // Amélioration de static-eval, au cas où tt_score est assez bon
+            if(tt_hit
                 && (    tt_bound == BOUND_EXACT
                     || (tt_bound == BOUND_LOWER && tt_score >= static_eval)
                     || (tt_bound == BOUND_UPPER && tt_score <= static_eval) ))
@@ -349,28 +348,14 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
     }
 
-    // if (isInCheck)
-    // {
-    //     static_eval = si->eval = -MATE + si->ply;
-    // }
-    // else if (isExcluded)
-    // {
-    //     static_eval = si->eval;
-    // }
-    // else
-    // {
-    //     static_eval = si->eval = (tt_hit && tt_eval != VALUE_NONE) ?
-    //             tt_eval : board.evaluate();
-    // }
 
     // Re-initialise les killer des enfants
     td->killer1[si->ply+1] = Move::MOVE_NONE;
     td->killer2[si->ply+1] = Move::MOVE_NONE;
 
+
     //  Avons-nous amélioré la position ?
     //  Si on ne s'est pas amélioré dans cette ligne, on va pouvoir couper un peu plus
-    // bool improving = (si->ply >= 2) && !isInCheck && (static_eval > (si-2)->eval);
-
     const bool improving = [&]
     {
         if (isInCheck)
@@ -382,16 +367,6 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         return true;
     }();
 
-    // Amélioration de static-eval, au cas où tt_score est assez bon
-    // if(    !isInCheck
-    //     && !isExcluded
-    //     && tt_hit
-    //     && (    tt_bound == BOUND_EXACT
-    //         || (tt_bound == BOUND_LOWER && tt_score >= static_eval)
-    //         || (tt_bound == BOUND_UPPER && tt_score <= static_eval) ))
-    // {
-    //     static_eval = tt_score;
-    // }
 
 
     if (!isInCheck && !isRoot && !isPV && !isExcluded)
@@ -505,7 +480,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     //  Génération des coups
     //------------------------------------------------------------------------------------
     bool skipQuiets = false;
-    MOVE mc = get_counter_move(td, THEM, si->ply);
+    MOVE mc = td->get_counter_move(THEM, si->ply);
 
     MovePicker movePicker(&board, td, si->ply, tt_move,
                           td->killer1[si->ply], td->killer2[si->ply], mc, 0);
@@ -734,7 +709,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
                 // update the PV
                 if (td->index == 0)
-                    update_pv(si, move);
+                    td->update_pv(si, move);
 
                 // If score beats beta we have a cutoff
                 if (score >= beta)
@@ -744,27 +719,25 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                     if (isQuiet)
                     {
                         // Bonus pour le coup quiet ayant provoqué un cutoff (fail-high)
-                        update_history(td, C, move, depth*depth);
-                        update_counter_move_history(td, si->ply, move, depth*depth);
-                        update_followup_move_history(td, si->ply, move, depth*depth);
+                        td->update_history(C, move, depth*depth);
+                        td->update_counter_move_history(si->ply, move, depth*depth);
+                        td->update_followup_move_history(si->ply, move, depth*depth);
 
                         // Malus pour les autres coups quiets
                         for (int i = 0; i < quiets_count - 1; i++)
                         {
-                            update_history(td, C, quiets_moves[i], -depth*depth);
-                            update_counter_move_history(td, si->ply, quiets_moves[i], -depth*depth);
-                            update_followup_move_history(td, si->ply, quiets_moves[i], -depth*depth);
+                            td->update_history(C, quiets_moves[i], -depth*depth);
+                            td->update_counter_move_history(si->ply, quiets_moves[i], -depth*depth);
+                            td->update_followup_move_history(si->ply, quiets_moves[i], -depth*depth);
                         }
 
                         // Met à jour les Killers
-                        update_killers(td, si->ply, move);
+                        td->update_killers(si->ply, move);
 
                         // Met à jour le Counter-Move
-                        update_counter_move(td, THEM, si->ply, move);
+                        td->update_counter_move(THEM, si->ply, move);
                     }
                     break;
-                    // transpositionTable.store(board.get_key(), move, score, static_eval, BOUND_LOWER, depth, si->ply);
-                    // return score;
                 }
             } // score > alpha
         }     // meilleur coup

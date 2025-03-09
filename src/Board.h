@@ -18,7 +18,7 @@ struct Status
 {
     U64  key                = 0ULL;                     // nombre unique (?) correspondant à la position
     MOVE move               = Move::MOVE_NONE;
-    int  ep_square          = SquareType::NO_SQUARE;    // case en-passant : si les blancs jouent e2-e4, la case est e3
+    int  ep_square          = SquareType::SQUARE_NONE;    // case en-passant : si les blancs jouent e2-e4, la case est e3
     U32  castling           = CastleType::CASTLE_NONE;  // droit au roque
     int  fiftymove_counter  = 0;                        // nombre de demi-coups depuis la dernière capture ou le dernier mouvement de pion.
     int  fullmove_counter   = 1;                        // le nombre de coups complets. Il commence à 1 et est incrémenté de 1 après le coup des noirs.
@@ -106,6 +106,7 @@ public:
     template <Color C>
     void calculate_checkers_pinned() noexcept;
     void calculate_hash(U64 &khash) const;
+    void calculate_nnue(int& eval) ;
 
     //! \brief  Retourne le Bitboard de TOUS les attaquants (Blancs et Noirs) de la case "sq"
     [[nodiscard]] Bitboard all_attackers(const int sq, const Bitboard occ) const noexcept
@@ -345,11 +346,11 @@ public:
                 return PieceType(i);
             }
         }
-        return NO_PIECE;
+        return PIECE_NONE;
     }
 
 
-    bool valid() const noexcept;
+    template <bool Update_NNUE> bool valid(const std::string& message) noexcept;
     [[nodiscard]] std::string display() const noexcept;
 
     template<Color C> Bitboard getNonPawnMaterial() const noexcept
@@ -427,10 +428,17 @@ public:
     [[nodiscard]] inline bool is_draw(int ply) const noexcept { return ((is_repetition(ply) || fiftymoves())); }
 
     //=============================================================================
-    //! \brief  Met une pièce à la case indiquée
+    //! \brief  Ajoute une pièce à la case indiquée
     //-----------------------------------------------------------------------------
-    template <bool Update_NNUE>
+    template <bool Update_NNUE> void add_piece(const int square, const Color color, const PieceType piece) noexcept;
     void set_piece(const int square, const Color color, const PieceType piece) noexcept;
+    void move_piece(const int from, const int dest, const Color color, const PieceType piece) noexcept;
+    void remove_piece(const int square, const Color color, const PieceType piece) noexcept;
+    void capture_piece(const int from, const int dest, const Color color,
+                              const PieceType piece, const PieceType captured) noexcept;
+    void promotion_piece(const int from, const int dest, const Color color, const PieceType promo) noexcept;
+    void promocapt_piece(const int from, const int dest, const Color color, const PieceType captured, const PieceType promoted) noexcept;
+
 
     bool test_mirror(const std::string &line);
     template<Color C, bool divide> [[nodiscard]] std::uint64_t perft(const int depth) noexcept;
@@ -454,7 +462,7 @@ public:
 
     std::array<Bitboard, N_COLORS> colorPiecesBB;   // bitboard des pièces pour chaque couleur
     std::array<Bitboard, N_PIECES> typePiecesBB;    // bitboard des pièces pour chaque type de pièce
-    std::array<PieceType, N_SQUARES> pieceOn;       // donne le type de la pièce occupant la case indiquée
+    std::array<PieceType, N_SQUARES> pieceBoard;       // donne le type de la pièce occupant la case indiquée
     std::array<int, N_COLORS> x_king;               // position des rois
     Color side_to_move;                         // camp au trait
     std::vector<std::string> best_moves;        // meilleur coup (pour les tests tactiques)

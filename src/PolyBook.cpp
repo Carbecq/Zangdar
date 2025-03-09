@@ -90,7 +90,7 @@ U64 PolyBook::calculate_hash(const Board& board)
     // capture our pawn
 
     int epsq = board.get_ep_square();
-    if (epsq != NO_SQUARE)
+    if (epsq != SQUARE_NONE)
     {
         // Bitboard des attaques de pion ADVERSE
         Bitboard bb = Attacks::pawn_attacks(!us, epsq);
@@ -260,8 +260,8 @@ MOVE PolyBook::poly_to_move(U16 polyMove, const Board& board)
 
     int from = SQ::square(ff, fr);
     int dest = SQ::square(tf, tr);
-    PieceType piece = board.pieceOn[from];
-    PieceType capt  = board.pieceOn[dest];
+    PieceType piece = board.pieceBoard[from];
+    PieceType capt  = board.pieceBoard[dest];
     PieceType promo = static_cast<PieceType>(pp);
     int       flags = Move::FLAG_NONE;
 

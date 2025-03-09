@@ -196,7 +196,7 @@ MLMove MovePicker::next_move(bool skipQuiets)
         stage = STAGE_KILLER_2;
 
         if (   !skipQuiets
-            && killer1 != tt_move)
+               && killer1 != tt_move)
         {
             if (is_legal(killer1))
                 return MLMove{killer1, 0};
@@ -211,7 +211,7 @@ MLMove MovePicker::next_move(bool skipQuiets)
         stage = STAGE_COUNTER_MOVE;
 
         if (   !skipQuiets
-            && killer2 != tt_move)
+               && killer2 != tt_move)
         {
             if (is_legal(killer2))
                 return MLMove{killer2, 0};
@@ -226,9 +226,9 @@ MLMove MovePicker::next_move(bool skipQuiets)
         stage = STAGE_GENERATE_QUIET;
 
         if (   !skipQuiets
-            && counter != tt_move
-            && counter != killer1
-            && counter != killer2)
+               && counter != tt_move
+               && counter != killer1
+               && counter != killer2)
         {
             if (is_legal(counter))
                 return MLMove{counter, 0};
@@ -265,9 +265,9 @@ MLMove MovePicker::next_move(bool skipQuiets)
             MLMove bestMove = pop_move(mlq, best);
 
             if (   bestMove.move == tt_move
-                || bestMove.move == killer1
-                || bestMove.move == killer2
-                || bestMove.move == counter )
+                   || bestMove.move == killer1
+                   || bestMove.move == killer2
+                   || bestMove.move == counter )
                 return next_move(skipQuiets);
             else
                 return bestMove;
@@ -287,9 +287,9 @@ MLMove MovePicker::next_move(bool skipQuiets)
 
             // Don't play the table move twice
             if (   bestMove.move == tt_move
-                || bestMove.move == killer1
-                || bestMove.move == killer2
-                || bestMove.move == counter )
+                   || bestMove.move == killer1
+                   || bestMove.move == killer2
+                   || bestMove.move == counter )
                 return next_move(skipQuiets);
             return bestMove;
         }
@@ -338,7 +338,7 @@ void MovePicker::score_noisy()
         // Enpass is a special case of MVV-LVA
         else if (Move::is_enpassant(move))
             value = MvvLvaScores[PAWN][PAWN];
-                // eg_value[PAWN] - PAWN;
+        // eg_value[PAWN] - PAWN;
 
         mln.mlmoves[i].value = value;
     }
@@ -356,8 +356,8 @@ void MovePicker::score_quiet()
     {
         move = mlq.mlmoves[i].move;
         mlq.mlmoves[i].value = thread_data->get_history(board->turn(), move)
-                             + thread_data->get_counter_move_history(ply, move)
-                             + thread_data->get_followup_move_history(ply, move);
+                + thread_data->get_counter_move_history(ply, move)
+                + thread_data->get_followup_move_history(ply, move);
     }
 }
 
@@ -428,7 +428,10 @@ void MovePicker::shift_bad(int idx)
 //------------------------------------------------------------------
 bool MovePicker::is_legal(MOVE move)
 {
-    if (/*move == NULL_MOVE ||*/ move == Move::MOVE_NONE)
+    // assert(move != Move::MOVE_NONE);
+    assert(move != Move::MOVE_NULL);
+
+    if (move == Move::MOVE_NONE)
         return false;
 
     //ZZZZ  Peut-on faire plus rapide ???
@@ -452,12 +455,12 @@ bool MovePicker::is_legal(MOVE move)
 std::string pchar[N_PIECES] = {"NoPiece", "Pion", "Cavalier", "Fou", "Tour", "Dame", "Roi"};
 void MovePicker::verify_MvvLva()
 {
-   for(int Victim = PAWN; Victim <= KING; ++Victim)
-   {
-       for(int Attacker = PAWN; Attacker <= KING; ++Attacker)
-       {
-           printf("%10s prend %10s = %d\n", pchar[Attacker].c_str(), pchar[Victim].c_str(), MvvLvaScores[Victim][Attacker]);
-       }
-   }
+    for(int Victim = PAWN; Victim <= KING; ++Victim)
+    {
+        for(int Attacker = PAWN; Attacker <= KING; ++Attacker)
+        {
+            printf("%10s prend %10s = %d\n", pchar[Attacker].c_str(), pchar[Victim].c_str(), MvvLvaScores[Victim][Attacker]);
+        }
+    }
 
 }

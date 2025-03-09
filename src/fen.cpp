@@ -75,52 +75,52 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
     for (const auto &c : word) {
         switch (c) {
         case 'P':
-            set_piece<Update_NNUE>(i, Color::WHITE, PAWN);
+            add_piece<Update_NNUE>(i, Color::WHITE, PAWN);
             i++;
             break;
         case 'p':
-            set_piece<Update_NNUE>(i, Color::BLACK, PAWN);
+            add_piece<Update_NNUE>(i, Color::BLACK, PAWN);
             i++;
             break;
         case 'N':
-            set_piece<Update_NNUE>(i, Color::WHITE, KNIGHT);
+            add_piece<Update_NNUE>(i, Color::WHITE, KNIGHT);
             i++;
             break;
         case 'n':
-            set_piece<Update_NNUE>(i, Color::BLACK, KNIGHT);
+            add_piece<Update_NNUE>(i, Color::BLACK, KNIGHT);
             i++;
             break;
         case 'B':
-            set_piece<Update_NNUE>(i, Color::WHITE, BISHOP);
+            add_piece<Update_NNUE>(i, Color::WHITE, BISHOP);
             i++;
             break;
         case 'b':
-            set_piece<Update_NNUE>(i, Color::BLACK, BISHOP);
+            add_piece<Update_NNUE>(i, Color::BLACK, BISHOP);
             i++;
             break;
         case 'R':
-            set_piece<Update_NNUE>(i, Color::WHITE, ROOK);
+            add_piece<Update_NNUE>(i, Color::WHITE, ROOK);
             i++;
             break;
         case 'r':
-            set_piece<Update_NNUE>(i, Color::BLACK, ROOK);
+            add_piece<Update_NNUE>(i, Color::BLACK, ROOK);
             i++;
             break;
         case 'Q':
-            set_piece<Update_NNUE>(i, Color::WHITE, QUEEN);
+            add_piece<Update_NNUE>(i, Color::WHITE, QUEEN);
             i++;
             break;
         case 'q':
-            set_piece<Update_NNUE>(i, Color::BLACK, QUEEN);
+            add_piece<Update_NNUE>(i, Color::BLACK, QUEEN);
             i++;
             break;
         case 'K':
-            set_piece<Update_NNUE>(i, Color::WHITE, KING);
+            add_piece<Update_NNUE>(i, Color::WHITE, KING);
             x_king[Color::WHITE] = i;
             i++;
             break;
         case 'k':
-            set_piece<Update_NNUE>(i, Color::BLACK, KING);
+            add_piece<Update_NNUE>(i, Color::BLACK, KING);
             x_king[Color::BLACK] = i;
             i++;
             break;
@@ -309,7 +309,6 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
     get_status().key = khash;
 
     //   std::cout << display() << std::endl;
-    assert(valid());
 }
 
 //=========================================================================
@@ -354,52 +353,52 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     for (const auto &c : word) {
         switch (c) {
         case 'P':
-            set_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, PAWN);
+            add_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, PAWN);
             i++;
             break;
         case 'p':
-            set_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, PAWN);
+            add_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, PAWN);
             i++;
             break;
         case 'N':
-            set_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, KNIGHT);
+            add_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, KNIGHT);
             i++;
             break;
         case 'n':
-            set_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, KNIGHT);
+            add_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, KNIGHT);
             i++;
             break;
         case 'B':
-            set_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, BISHOP);
+            add_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, BISHOP);
             i++;
             break;
         case 'b':
-            set_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, BISHOP);
+            add_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, BISHOP);
             i++;
             break;
         case 'R':
-            set_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, ROOK);
+            add_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, ROOK);
             i++;
             break;
         case 'r':
-            set_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, ROOK);
+            add_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, ROOK);
             i++;
             break;
         case 'Q':
-            set_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, QUEEN);
+            add_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, QUEEN);
             i++;
             break;
         case 'q':
-            set_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, QUEEN);
+            add_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, QUEEN);
             i++;
             break;
         case 'K':
-            set_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, KING);
+            add_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, KING);
             x_king[~Color::WHITE] = SQ::mirrorVertically(i);
             i++;
             break;
         case 'k':
-            set_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, KING);
+            add_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, KING);
             x_king[~Color::BLACK] = SQ::mirrorVertically(i);
             i++;
             break;
@@ -562,7 +561,6 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     get_status().key = khash;
 
     //   std::cout << display() << std::endl;
-    assert(valid());
 }
 
 //============================================================
@@ -581,7 +579,7 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
         {
             const auto sq = SQ::square(x, y);
             const PieceType piece = piece_on(sq);
-            if (piece == NO_PIECE) {
+            if (piece == PIECE_NONE) {
                 num_empty++;
             } else {
                 // Add the number of empty squares so far
@@ -628,7 +626,7 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     //------------------------------------------------------- en-passant
 
     fen += " ";
-    if (get_status().ep_square == NO_SQUARE)
+    if (get_status().ep_square == SQUARE_NONE)
         fen += "-";
     else
         fen += square_name[get_status().ep_square];

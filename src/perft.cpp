@@ -10,7 +10,7 @@ template <Color C, bool divide=false>
         return 1;
 
     U64 nodes  = 0ULL;
-    U32 move;
+    MOVE move;
 
     MoveList ml;
     legal_moves<C, MoveGenType::ALL>(ml);

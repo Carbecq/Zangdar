@@ -196,6 +196,7 @@ HEADERS += \
     src/NNUE.h \
     src/PolyBook.h \
     src/Search.h \
+    src/ThreadData.h \
     src/ThreadPool.h \
     src/Timer.h \
     src/TranspositionTable.h \
@@ -221,6 +222,7 @@ SOURCES += \
     src/NNUE.cpp \
     src/PolyBook.cpp \
     src/Search.cpp \
+    src/ThreadData.cpp \
     src/ThreadPool.cpp \
     src/Timer.cpp \
     src/TranspositionTable.cpp \

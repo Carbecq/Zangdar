@@ -35,7 +35,7 @@ int NNUE::evaluate()
 void NNUE::reset()
 {
     accumulator.clear();
-    accumulator.push_back({});
+    accumulator.push_back({});  // Adds a new element at the end of the vector, after its current last element.
     accumulator.back().init_biases(network->feature_biases);
 }
 
@@ -242,8 +242,8 @@ std::pair<Usize, Usize> NNUE::get_indices(Color color, PieceType piece, int squa
     //  Lorsque une entrée est modifiée par un coup, il faut retrouver
     //  son indice.
 
-    assert(piece  != PieceType::NO_PIECE);
-    assert(square != SquareType::NO_SQUARE);
+    assert(piece  != PieceType::PIECE_NONE);
+    assert(square != SquareType::SQUARE_NONE);
 
     constexpr Usize color_stride = N_SQUARES * 6;
     constexpr Usize piece_stride = N_SQUARES;

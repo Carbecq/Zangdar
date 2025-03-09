@@ -29,8 +29,8 @@ void Board::reset() noexcept
 {
     colorPiecesBB.fill(0ULL);
     typePiecesBB.fill(0ULL);
-    pieceOn.fill(NO_PIECE);
-    x_king.fill(NO_SQUARE);
+    pieceBoard.fill(PIECE_NONE);
+    x_king.fill(SQUARE_NONE);
     side_to_move = Color::WHITE;
     avoid_moves.clear();
     best_moves.clear();
@@ -117,7 +117,7 @@ std::string Board::display() const noexcept
     ss << (can_castle<BLACK, CastleSide::KING_SIDE>()  ? "k" : "");
     ss << (can_castle<BLACK, CastleSide::QUEEN_SIDE>() ? "q" : "");
     ss << '\n';
-    if (get_ep_square() == NO_SQUARE) {
+    if (get_ep_square() == SQUARE_NONE) {
         ss << "EP       : -\n";
     } else {
         ss << "EP       : " << square_name[get_ep_square()] << '\n';
@@ -130,12 +130,11 @@ std::string Board::display() const noexcept
     ss << "game counter : " << StatusHistory.size() - 1 << "\n";
     ss << "full move    : " << get_fullmove_counter() << "\n";
 
-    std::cout << std::hex << (get_key())
-              << "  shift32= " << (get_key() >> 32)
-              << "  cast32= " << (static_cast<U32>(get_key()))
-              << "  autre= " << ((get_key()>>32) ^ (get_key()&0xffffffff))
-              << std::endl;
-
+    // std::cout << std::hex << (get_key())
+    //           << "  shift32= " << (get_key() >> 32)
+    //           << "  cast32= " << (static_cast<U32>(get_key()))
+    //           << "  autre= " << ((get_key()>>32) ^ (get_key()&0xffffffff))
+    //           << std::dec << std::endl;
 
     return(ss.str());
 }
@@ -154,7 +153,8 @@ void Board::calculate_hash(U64& khash) const
         khash ^= side_key;
     }
 
-    // Pieces
+    // Pieces Blanches
+
     bb = occupancy_cp<WHITE, PAWN>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
@@ -185,6 +185,9 @@ void Board::calculate_hash(U64& khash) const
         int sq = BB::pop_lsb(bb);
         khash ^= piece_key[WHITE][KING][sq];
     }
+
+    // Pieces Noires
+
     bb = occupancy_cp<BLACK, PAWN>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
@@ -220,10 +223,91 @@ void Board::calculate_hash(U64& khash) const
     khash ^= castle_key[get_status().castling];
 
     // EP
-    if (get_status().ep_square != NO_SQUARE) {
+    if (get_status().ep_square != SQUARE_NONE) {
         khash ^= ep_key[get_status().ep_square];
     }
 
 }
 
+//=============================================================
+//! \brief  Calcule la valeur du réseau
+//-------------------------------------------------------------
+void Board::calculate_nnue(int &eval)
+{
+    eval = 0;
+
+    Bitboard bb;
+
+    NNUE nn{};
+    nn.reserve_capacity();
+    nn.reset();
+
+    // Pieces Blanches
+
+    bb = occupancy_cp<WHITE, PAWN>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        nn.add(WHITE, PAWN, sq);
+    }
+    bb = occupancy_cp<WHITE, KNIGHT>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        nn.add(WHITE, KNIGHT, sq);
+    }
+    bb = occupancy_cp<WHITE, BISHOP>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        nn.add(WHITE, BISHOP, sq);
+    }
+    bb = occupancy_cp<WHITE, ROOK>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        nn.add(WHITE, ROOK, sq);
+    }
+    bb = occupancy_cp<WHITE, QUEEN>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        nn.add(WHITE, QUEEN, sq);
+    }
+    bb = occupancy_cp<WHITE, KING>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        nn.add(WHITE, KING, sq);
+    }
+
+    // Pieces Noires
+
+    bb = occupancy_cp<BLACK, PAWN>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        nn.add(BLACK, PAWN, sq);
+    }
+    bb = occupancy_cp<BLACK, KNIGHT>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        nn.add(BLACK, KNIGHT, sq);
+    }
+    bb = occupancy_cp<BLACK, BISHOP>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        nn.add(BLACK, BISHOP, sq);
+    }
+    bb = occupancy_cp<BLACK, ROOK>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        nn.add(BLACK, ROOK, sq);
+    }
+    bb = occupancy_cp<BLACK, QUEEN>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        nn.add(BLACK, QUEEN, sq);
+    }
+    bb = occupancy_cp<BLACK, KING>();
+    while (bb) {
+        int sq = BB::pop_lsb(bb);
+        nn.add(BLACK, KING, sq);
+    }
+
+    eval = nn.evaluate<WHITE>();
+}
 

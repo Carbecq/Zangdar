@@ -5,108 +5,11 @@
 class Search;
 
 #include <cstring>
-#include <thread>
 #include "Timer.h"
 #include "Board.h"
 #include "types.h"
 #include "defines.h"
-
-constexpr int STACK_OFFSET = 4;
-constexpr int STACK_SIZE   = MAX_PLY + 2*STACK_OFFSET;  // taille un peu trop grande, mais multiple de 8
-
-//! \brief  Données initialisées à chaque début de recherche
-struct SearchInfo {
-    MOVE        excluded;   // coup à éviter
-    int         eval;       // évaluation statique
-    MOVE        move;       // coup cherché
-    int         ply;        // profondeur de recherche
-    PVariation  pv;         // Principale Variation
-    int         doubleExtensions;
-}__attribute__((aligned(64)));
-
-//! \brief  Données d'une thread
-struct ThreadData
-{
-public:
-
-    SearchInfo  _info[STACK_SIZE];
-    std::thread thread;
-    Search*     search;     // pointeur sur la classe de recherche
-    SearchInfo* info;       // pointeur décalé de STACK_OFFSET sur la tableau total _info[STACK_SIZE]
-
-    int         index;
-    int         depth;
-    int         seldepth;
-    int         score;
-    U64         nodes;
-    bool        stopped;
-    U64         tbhits;
-
-    MOVE        best_move;
-    int         best_score;
-    int         best_depth;
-
-    //*********************************************************************
-    //  Données initialisées une seule fois au début d'une nouvelle partie
-
-    KillerTable killer1;    // Killer Moves
-    KillerTable killer2;
-
-    // tableau donnant le bonus/malus d'un coup quiet ayant provoqué un cutoff
-    // bonus history [Color][From][Dest]
-    Historytable  history;
-
-    // tableau des coups qui ont causé un cutoff au ply précédent
-    // counter_move[opposite_color][piece][dest]
-    CounterMoveTable counter_move;
-
-    // counter_move history [piece][dest]
-    CounterMoveHistoryTable  counter_move_history;
-
-    // [piece][dest][piece][dest]
-    FollowupMoveHistoryTable  followup_move_history;
-
-    // capture history
- //   int capture_history[N_PIECES][N_SQUARES][N_PIECES] = {{{0}}};
-
-    //*********************************************************************
-    void reset()
-    {
-        std::memset(_info,                 0, sizeof(SearchInfo)*STACK_SIZE);
-        std::memset(killer1,               0, sizeof(KillerTable));
-        std::memset(killer2,               0, sizeof(KillerTable));
-        std::memset(history,               0, sizeof(Historytable));
-        std::memset(counter_move,          0, sizeof(CounterMoveTable));
-        std::memset(counter_move_history,  0, sizeof(CounterMoveHistoryTable));
-        std::memset(followup_move_history, 0, sizeof(FollowupMoveHistoryTable));
-    }
-    //*********************************************************************
-    int get_history(Color color, const MOVE move) const
-    {
-        return(history[color][Move::from(move)][Move::dest(move)]);
-    }
-    //==================================================================
-    //! \brief  Récupère le counter_move history
-    //! \param[in] ply    ply cherché
-    //------------------------------------------------------------------
-    int get_counter_move_history(int ply, MOVE move) const
-    {
-        MOVE previous_move = info[ply-1].move;
-
-        return( (previous_move==Move::MOVE_NONE || previous_move==Move::MOVE_NULL)
-                    ? 0
-                    : counter_move_history[Move::piece(previous_move)][Move::dest(previous_move)][Move::piece(move)][Move::dest(move)] );
-    }
-    int get_followup_move_history(int ply, MOVE move) const
-    {
-        MOVE folowup_move = info[ply-2].move;
-
-        return( (folowup_move==Move::MOVE_NONE || folowup_move==Move::MOVE_NULL)
-                    ? 0
-                    : followup_move_history[Move::piece(folowup_move)][Move::dest(folowup_move)][Move::piece(move)][Move::dest(move)] );
-    }
-
-}__attribute__((aligned(64)));
+#include "ThreadData.h"
 
 
 // classe permettant de redéfinir mon 'locale'
@@ -138,15 +41,6 @@ private:
 
     void show_uci_result(const ThreadData *td, I64 elapsed, const PVariation &pv) const;
     void show_uci_best(const ThreadData *td) const;
-
-    void update_pv(SearchInfo* si, const MOVE move) const;
-    void update_killers(ThreadData *td, int ply, MOVE move);
-    void update_history(ThreadData *td, Color color, MOVE move, int bonus);
-    void update_counter_move(ThreadData *td, Color oppcolor, int ply, MOVE move);
-    MOVE get_counter_move(ThreadData *td, Color oppcolor, int ply) const;
-    void update_counter_move_history(ThreadData *td, int ply, MOVE move, int bonus);
-    void update_followup_move_history(ThreadData* td, int ply, MOVE move, int bonus);
-
 
     static constexpr int CONTEMPT    = 0;
 

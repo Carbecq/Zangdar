@@ -119,6 +119,7 @@ void TranspositionTable::clear(void)
 void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int bound, int depth, int ply, bool pv)
 {
     assert(0 <= depth && depth <= MAX_PLY);
+    assert(move != Move::MOVE_NULL);
 
     // extract the 32-bit key from the 64-bit zobrist hash
     // U32 key32 = (key >> 32);
@@ -178,10 +179,9 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int boun
           || depth + 4 + pv * 2 > replace->depth))
         return;
 
-    // only overwrite the move if new move is not a null move or the entry is from a different position
     // idea from Sirius, Stockfish and Ethereal
     // Preserve any existing move for the same position
-    if (move || replace->key32 != key32)
+    if (move != Move::MOVE_NONE || replace->key32 != key32)
         replace->move = move;
 
     replace->key32  = key32;
