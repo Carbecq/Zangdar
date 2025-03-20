@@ -1,7 +1,6 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-#include <array>
 #include <string>
 #include "defines.h"
 
@@ -13,7 +12,7 @@
 
 constexpr int N_COLORS = 2;
 
-enum Color : int
+enum Color : U08
 {
     WHITE    = 0,
     BLACK    = 1
@@ -27,42 +26,166 @@ const std::string camp[2][N_COLORS] = {
 const std::string bool_name[2] = { "false", "true" };
 
 //Inverts the color (WHITE -> BLACK) and (BLACK -> WHITE)
-constexpr Color operator~(Color C) { return Color(C ^ BLACK); }
+constexpr Color operator~(Color C) { return Color(C ^ Color::BLACK); }
 
 /*******************************************************
  ** Les pièces
  **---------------------------------------------------*/
 
-constexpr int N_PIECES = 7;
+constexpr int N_PIECE     = 15;
 
-enum PieceType : int
+enum class Piece : U08
 {
-    PIECE_NONE = 0,
+    NONE           = 0, // 0000
+
+    WHITE_PAWN     = 1, // 0001
+    WHITE_KNIGHT   ,
+    WHITE_BISHOP   ,
+    WHITE_ROOK     ,
+    WHITE_QUEEN    ,
+    WHITE_KING     = 6,
+
+    BLACK_PAWN     = 9, // 1001
+    BLACK_KNIGHT   ,
+    BLACK_BISHOP   ,
+    BLACK_ROOK     ,
+    BLACK_QUEEN    ,
+    BLACK_KING     = 14,
+
+ };
+
+constexpr std::initializer_list<Piece> all_PIECE = {
+    Piece::WHITE_PAWN, Piece::WHITE_KNIGHT, Piece::WHITE_BISHOP,
+    Piece::WHITE_ROOK, Piece::WHITE_QUEEN,  Piece::WHITE_KING,
+    Piece::BLACK_PAWN, Piece::BLACK_KNIGHT, Piece::BLACK_BISHOP,
+    Piece::BLACK_ROOK, Piece::BLACK_QUEEN,  Piece::BLACK_KING
+};
+
+constexpr int N_PIECE_TYPE = 7;
+
+enum class PieceType : U08
+{
+    NONE     = 0,
     PAWN     = 1,
     KNIGHT   = 2,
     BISHOP   = 3,
     ROOK     = 4,
     QUEEN    = 5,
-    KING     = 6
+    KING     = 6,
 };
 
-const std::string piece_name[N_PIECES] {
-    "NONE", "Pawn", "Knight", "Bishop", "Rook", "Queen", "King"
+constexpr std::initializer_list<PieceType> all_PIECE_TYPE = {
+    PieceType::PAWN, PieceType::KNIGHT, PieceType::BISHOP,
+    PieceType::ROOK, PieceType::QUEEN,  PieceType::KING
 };
 
-const std::string piece_symbol[N_COLORS][N_PIECES] {
-                                     {  "?", "P", "N", "B", "R", "Q", "K"},
-                                     {  "?", "p", "n", "b", "r", "q", "k"},
-                                     };
-
-static const std::array<std::string, N_PIECES> nom_piece_max = { "?", "", "N", "B", "R", "Q", "K"};
-static const std::array<std::string, N_PIECES> nom_piece_min = { "?", "", "n", "b", "r", "q", "k"};
 
 //  Valeur des pièces
 
-constexpr int EGPieceValue[N_PIECES] = {
+constexpr int EGPieceValue[N_PIECE_TYPE] = {
     0, 221, 676, 701, 1192, 2101, 0
 };
+
+
+[[nodiscard]] constexpr auto pieceFromChar(char c)
+{
+    switch (c)
+    {
+    case 'p': return Piece::  BLACK_PAWN;
+    case 'P': return Piece::  WHITE_PAWN;
+    case 'n': return Piece::BLACK_KNIGHT;
+    case 'N': return Piece::WHITE_KNIGHT;
+    case 'b': return Piece::BLACK_BISHOP;
+    case 'B': return Piece::WHITE_BISHOP;
+    case 'r': return Piece::  BLACK_ROOK;
+    case 'R': return Piece::  WHITE_ROOK;
+    case 'q': return Piece:: BLACK_QUEEN;
+    case 'Q': return Piece:: WHITE_QUEEN;
+    case 'k': return Piece::  BLACK_KING;
+    case 'K': return Piece::  WHITE_KING;
+    default : return Piece::       NONE;
+    }
+}
+
+[[nodiscard]] constexpr auto pieceToChar(Piece piece)
+{
+    switch (piece)
+    {
+    case Piece::        NONE: return ' ';
+    case Piece::  BLACK_PAWN: return 'p';
+    case Piece::  WHITE_PAWN: return 'P';
+    case Piece::BLACK_KNIGHT: return 'n';
+    case Piece::WHITE_KNIGHT: return 'N';
+    case Piece::BLACK_BISHOP: return 'b';
+    case Piece::WHITE_BISHOP: return 'B';
+    case Piece::  BLACK_ROOK: return 'r';
+    case Piece::  WHITE_ROOK: return 'R';
+    case Piece:: BLACK_QUEEN: return 'q';
+    case Piece:: WHITE_QUEEN: return 'Q';
+    case Piece::  BLACK_KING: return 'k';
+    case Piece::  WHITE_KING: return 'K';
+    default: return '?';
+    }
+}
+
+[[nodiscard]] constexpr auto pieceTypeFromChar(char c)
+{
+    switch (c)
+    {
+    case 'p': return PieceType::PAWN;
+    case 'n': return PieceType::KNIGHT;
+    case 'b': return PieceType::BISHOP;
+    case 'r': return PieceType::  ROOK;
+    case 'q': return PieceType:: QUEEN;
+    case 'k': return PieceType::  KING;
+    default : return PieceType::  NONE;
+    }
+}
+
+[[nodiscard]] constexpr auto pieceTypeToCharMin(PieceType piece)
+{
+    switch (piece)
+    {
+    case PieceType::  NONE: return ' ';
+    case PieceType::  PAWN: return 'p';
+    case PieceType::KNIGHT: return 'n';
+    case PieceType::BISHOP: return 'b';
+    case PieceType::  ROOK: return 'r';
+    case PieceType:: QUEEN: return 'q';
+    case PieceType::  KING: return 'k';
+    default: return '?';
+    }
+}
+
+[[nodiscard]] constexpr auto pieceTypeToCharMax(PieceType piece)
+{
+    switch (piece)
+    {
+    case PieceType::  NONE: return ' ';
+    case PieceType::  PAWN: return 'P';
+    case PieceType::KNIGHT: return 'N';
+    case PieceType::BISHOP: return 'B';
+    case PieceType::  ROOK: return 'R';
+    case PieceType:: QUEEN: return 'Q';
+    case PieceType::  KING: return 'K';
+    default: return '?';
+    }
+}
+
+[[nodiscard]] constexpr auto pieceTypeToChar(PieceType piece)
+{
+    switch (piece)
+    {
+    case PieceType::  NONE: return "None";
+    case PieceType::  PAWN: return "Pawn";
+    case PieceType::KNIGHT: return "Knight";
+    case PieceType::BISHOP: return "Bishop";
+    case PieceType::  ROOK: return "Rook";
+    case PieceType:: QUEEN: return "Queen";
+    case PieceType::  KING: return "King";
+    default: return "???";
+    }
+}
 
 /*******************************************************
  ** Les cases
@@ -119,11 +242,6 @@ struct PVariation {
     int  length = 0;
 };
 
-using KillerTable              = MOVE[MAX_PLY+2];
-using Historytable             = I16[N_COLORS][N_SQUARES][N_SQUARES];
-using CounterMoveTable         = MOVE[N_COLORS][N_PIECES][N_SQUARES];
-using CounterMoveHistoryTable  = I16[N_PIECES][N_SQUARES][N_PIECES][N_SQUARES];
-using FollowupMoveHistoryTable = I16[N_PIECES][N_SQUARES][N_PIECES][N_SQUARES];
 
 //! \brief  Détermination du signe d'une valeur
 //! \return -1 ou +1
@@ -134,12 +252,6 @@ template <typename T>
 
 //==================================================
 
-enum CastleType { CASTLE_NONE = 0, CASTLE_WK = 1, CASTLE_WQ = 2, CASTLE_BK = 4, CASTLE_BQ = 8 };
-
-enum CastleSide {
-    KING_SIDE,
-    QUEEN_SIDE
-};
 
 //TODO : noisy : uniquement la promotion en dame
 //                la mettre avant les captures dans le choix du coup
@@ -148,6 +260,42 @@ enum MoveGenType {
     NOISY = 1,              // captures, promotions, prise en passant
     QUIET = 2,              // déplacements, roque, pas de capture, pas de promotion
     ALL   = NOISY | QUIET
+};
+
+//==================================================
+//  Roque
+//--------------------------------------------------
+
+/* This is the castle_mask array. We can use it to determine
+the castling permissions after a move. What we do is
+logical-AND the castle bits with the castle_mask bits for
+both of the move's ints. Let's say castle is 1, meaning
+that white can still castle kingside. Now we play a move
+where the rook on h1 gets captured. We AND castle with
+castle_mask[63], so we have 1&14, and castle becomes 0 and
+white can't castle kingside anymore.
+ (TSCP) */
+
+constexpr U32 castle_mask[N_SQUARES] = {
+    13, 15, 15, 15, 12, 15, 15, 14,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    15, 15, 15, 15, 15, 15, 15, 15,
+    7, 15, 15, 15,  3, 15, 15, 11
+};
+
+constexpr U32 CASTLE_NONE = 0;
+constexpr U32 CASTLE_WK = 1;
+constexpr U32 CASTLE_WQ = 2;
+constexpr U32 CASTLE_BK = 4;
+constexpr U32 CASTLE_BQ = 8;
+
+enum class CastleSide {
+    KING_SIDE,
+    QUEEN_SIDE
 };
 
 constexpr static Bitboard F1G1_BB = 0x60;                   // petit roque ; cases entre le roi et la tour
@@ -159,6 +307,23 @@ constexpr static Bitboard B8D8_BB = 0xE00000000000000;
 constexpr static Bitboard C1D1_BB = 0xC;                    // grand roque ; cases qui ne doivent pas être attaquées
 constexpr static Bitboard C8D8_BB = 0xC00000000000000;
 
+//==================================================
+//! Données initialisées à chaque début de recherche
+//--------------------------------------------------
+
+using PieceTo = I16[N_PIECE][N_SQUARES];
+
+struct SearchInfo {
+    MOVE        excluded{};   // coup à éviter
+    int         eval{};       // évaluation statique
+    MOVE        move{};       // coup cherché
+    int         ply{};        // profondeur de recherche
+    PVariation  pv{};         // Principale Variation
+    int         doubleExtensions{};
+    PieceTo*    continuation_history;
+    MOVE        killer1{};      //TODO vérifier initialisation
+    MOVE        killer2{};
+}__attribute__((aligned(64)));
 
 
 

@@ -5,7 +5,7 @@ class MovePicker;
 
 #include "MoveList.h"
 #include "Board.h"
-#include "Search.h"
+#include "History.h"
 
 enum {
     STAGE_TABLE,
@@ -20,9 +20,9 @@ enum {
     STAGE_DONE
 };
 
-constexpr int MvvLvaScores[N_PIECES][N_PIECES] = {
+constexpr int MvvLvaScores[N_PIECE_TYPE][N_PIECE_TYPE] = {
     {0,  0,  0,  0,  0,  0,  0}, // victim No_Piece
-    {0, 16, 15, 14, 13, 12, 11}, // victim Pawn
+    {0, 16, 15, 14, 13, 12, 11}, // victim PAWN
     {0, 26, 25, 24, 23, 22, 21}, // victim Knight
     {0, 36, 35, 34, 33, 32, 31}, // victim Bishop
     {0, 46, 45, 44, 43, 42, 41}, // vitcim Rook
@@ -36,7 +36,7 @@ class MovePicker
 {
 public:
 
-    MovePicker(Board *_board, const ThreadData* _thread_data, int _ply,
+    MovePicker(Board *_board, const History& _history, const SearchInfo* _info,
                MOVE _ttMove, MOVE _killer1, MOVE _killer2, MOVE _counter,
                int _threshold) ;
 
@@ -58,14 +58,14 @@ public:
 
 
 private:
-    Board*              board;
-    const ThreadData*   thread_data;  // pour les différents history
+    Board*          board;
+    const History&  history;  // pour les différents history
+    const SearchInfo* info;
 
     int     stage;         // étape courante du sélecteur
     bool    gen_quiet;     // a-t-on déjà généré les coups tranquilles ?
     bool    gen_legal;
     int     threshold;
-    int     ply;
 
     MOVE tt_move;
     MOVE killer1;

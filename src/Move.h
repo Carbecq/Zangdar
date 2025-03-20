@@ -13,17 +13,22 @@ namespace Move
 
 0000 0000 0000 0000 0011 1111 -> From             <<  0
 0000 0000 0000 1111 1100 0000 -> Dest             <<  6
-0000 0000 0111 0000 0000 0000 -> Moving Piece     << 12
-0000 0011 1000 0000 0000 0000 -> Captured Piece   << 15
-0001 1100 0000 0000 0000 0000 -> Promotion Piece  << 18
+0000 0000 1111 0000 0000 0000 -> Moving Piece     << 12
+0000 1111 0000 0000 0000 0000 -> Captured Piece   << 16
+1111 0000 0000 0000 0000 0000 -> Promotion Piece  << 20
 
-0010 0000 0000 0000 0000 0000 -> Double
-0100 0000 0000 0000 0000 0000 -> En-Passant
-1000 0000 0000 0000 0000 0000 -> Castle
+Flags : bits 24 à 26
 
+0001 -> Double
+0010 -> En-Passant
+0100 -> Castle
+
+uuuu uzzz pppp cccc mmmm dddd ddff ffff
+        |    |    |    |    |    |    |
 0000 0000 0000 0000 0000 0000 0000 0000
-          <--- move 24 bits        --->
-uuuu uuuu inutilisés
+      <---  -- move 27 bits        --->
+
+
 
 */
 
@@ -35,44 +40,48 @@ uuuu uuuu inutilisés
 constexpr int     SHIFT_FROM  =  0;
 constexpr int     SHIFT_DEST  =  6;
 constexpr int     SHIFT_PIECE = 12;
-constexpr int     SHIFT_CAPT  = 15;
-constexpr int     SHIFT_PROMO = 18;
-constexpr int     SHIFT_FLAGS = 21;
+constexpr int     SHIFT_CAPT  = 16;
+constexpr int     SHIFT_PROMO = 20;
+constexpr int     SHIFT_FLAGS = 24;
 
 constexpr U32 MOVE_NONE = 0;
 
 // Fields
 //                                                dest  from
-//                                    fffPPPCCCMMMDDDDDDFFFFFF
-constexpr U32 MOVE_FROM_MASK      = 0b000000000000000000111111;
+//                                  0b0fffPPPPCCCCMMMMDDDDDDFFFFFF
+constexpr U32 MOVE_FROM_MASK      = 0b0000000000000000000000111111;
 
-//                                    fffPPPCCCMMMDDDDDDFFFFFF
-constexpr U32 MOVE_DEST_MASK      = 0b000000000000111111000000;
+//                                  0b0fffPPPPCCCCMMMMDDDDDDFFFFFF
+constexpr U32 MOVE_DEST_MASK      = 0b0000000000000000111111000000;
 
-//                                    fffPPPCCCMMMDDDDDDFFFFFF
-constexpr U32 MOVE_FROMDEST_MASK  = 0b000000000000111111111111;
+//                                  0b0fffPPPPCCCCMMMMDDDDDDFFFFFF
+constexpr U32 MOVE_FROMDEST_MASK  = 0b0000000000000000111111111111;
 
-//                                    fffPPPCCCMMMDDDDDDFFFFFF
-constexpr U32 MOVE_PIECE_MASK     = 0b000000000111000000000000;
+//                                      0b0fffPPPPCCCCMMMMDDDDDDFFFFFF
+constexpr U32 MOVE_PIECE_MASK         = 0b0000000000001111000000000000;
+constexpr U32 MOVE_PIECETYPE_MASK     = 0b0000000000000111000000000000;
 
-//                                    fffPPPCCCMMMDDDDDDFFFFFF
-constexpr U32 MOVE_CAPT_MASK      = 0b000000111000000000000000;
+//                                      0b0fffPPPPCCCCMMMMDDDDDDFFFFFF
+constexpr U32 MOVE_CAPT_MASK          = 0b0000000011110000000000000000;
+constexpr U32 MOVE_CAPTTYPE_MASK      = 0b0000000001110000000000000000;
 
-//                                    fffPPPCCCMMMDDDDDDFFFFFF
-constexpr U32 MOVE_PROMO_MASK     = 0b000111000000000000000000;
+//                                      0b0fffPPPPCCCCMMMMDDDDDDFFFFFF
+constexpr U32 MOVE_PROMO_MASK         = 0b0000111100000000000000000000;
+constexpr U32 MOVE_PROMOTYPE_MASK     = 0b0000011100000000000000000000;
 
-//                                    fffPPPCCCMMMDDDDDDFFFFFF
-constexpr U32 MOVE_FLAGS_MASK     = 0b111000000000000000000000;
+//                                  0b0fffPPPPCCCCMMMMDDDDDDFFFFFF
+constexpr U32 MOVE_FLAGS_MASK     = 0b0111000000000000000000000000;
 
 // Special move flags
 constexpr U32 FLAG_NONE           = 0;
-//                                        fffPPPCCCMMMDDDDDDFFFFFF
-constexpr U32 FLAG_DOUBLE_MASK    = 0b0000001000000000000000000000;
-constexpr U32 FLAG_ENPASSANT_MASK = 0b0000010000000000000000000000;
-constexpr U32 FLAG_CASTLE_MASK    = 0b0000100000000000000000000000;
 
-//                                            fffPPPCCCMMMDDDDDDFFFFFF
-constexpr U32 MOVE_DEPL_MASK      = 0b00000000111111111000000000000000;
+//                                  0b0fffPPPPCCCCMMMMDDDDDDFFFFFF
+constexpr U32 FLAG_DOUBLE_MASK    = 0b0001000000000000000000000000;
+constexpr U32 FLAG_ENPASSANT_MASK = 0b0010000000000000000000000000;
+constexpr U32 FLAG_CASTLE_MASK    = 0b0100000000000000000000000000;
+
+//                                  0b0fffPPPPCCCCMMMMDDDDDDFFFFFF
+constexpr U32 MOVE_DEPL_MASK      = 0b0111111111110000000000000000;
 
 // NULL_MOVE
 
@@ -95,13 +104,13 @@ constexpr U32 MOVE_NULL           = 65; // 1000001
 
 
 
-[[nodiscard]] constexpr U32 CODE(
-    const int          _from,
-    const int          _dest,
-    const PieceType    _piece,
-    const PieceType    _captured,
-    const PieceType    _promotion,
-    const U32          _flags)
+[[nodiscard]] constexpr MOVE CODE(
+    const int   _from,
+    const int   _dest,
+    const Piece _piece,
+    const Piece _captured,
+    const Piece _promotion,
+    const U32   _flags)
 {
     return( static_cast<U32>(_from)      << SHIFT_FROM  |
             static_cast<U32>(_dest)      << SHIFT_DEST  |
@@ -113,68 +122,101 @@ constexpr U32 MOVE_NULL           = 65; // 1000001
 }
 
 //! \brief  Retourne la case de départ
-[[nodiscard]] constexpr int from(const U32 move) noexcept {
+[[nodiscard]] constexpr inline int from(const MOVE move) noexcept {
     return (move & MOVE_FROM_MASK);
 }
 
 //! \brief  Retourne la case d'arrivée
-[[nodiscard]] constexpr int dest(const U32 move) noexcept {
+[[nodiscard]] constexpr inline int dest(const MOVE move) noexcept {
     return ((move & MOVE_DEST_MASK) >> SHIFT_DEST);
 }
 
 //! \brief  Retourne la case d'arrivée et de départ combinées
 //! Est utilisé comme indice
-[[nodiscard]] constexpr int fromdest(const MOVE move) noexcept {
+[[nodiscard]] constexpr inline int fromdest(const MOVE move) noexcept {
     return (move & MOVE_FROMDEST_MASK);
 }
 
 //! \brief  Retourne la pièce se déplaçant
-[[nodiscard]] constexpr PieceType piece(const U32 move) noexcept {
-    return static_cast<PieceType>((move & MOVE_PIECE_MASK) >> SHIFT_PIECE);
+[[nodiscard]] constexpr inline Piece piece(const MOVE move) noexcept {
+    return static_cast<Piece>((move & MOVE_PIECE_MASK) >> SHIFT_PIECE);
+}
+
+//! \brief  Retourne le type de la pièce se déplaçant
+[[nodiscard]] constexpr inline PieceType piece_type(const MOVE move) noexcept {
+    return static_cast<PieceType>((move & MOVE_PIECETYPE_MASK) >> SHIFT_PIECE);
 }
 
 //! \brief  Retourne la pièce prise
-[[nodiscard]] constexpr PieceType captured(const U32 move) noexcept {
-    return static_cast<PieceType>((move & MOVE_CAPT_MASK) >> SHIFT_CAPT);
+[[nodiscard]] constexpr inline Piece captured(const MOVE move) noexcept {
+    return static_cast<Piece>((move & MOVE_CAPT_MASK) >> SHIFT_CAPT);
+}
+
+//! \brief  Retourne le type de la pièce prise
+[[nodiscard]] constexpr inline PieceType captured_type(const MOVE move) noexcept {
+    return static_cast<PieceType>((move & MOVE_CAPTTYPE_MASK) >> SHIFT_CAPT);
 }
 
 //! \brief  Retourne la pièce de promotion
-[[nodiscard]] constexpr PieceType promotion(const U32 move)  noexcept {
-    return static_cast<PieceType>(((move & MOVE_PROMO_MASK) >> SHIFT_PROMO));
+[[nodiscard]] constexpr inline Piece promoted(const MOVE move)  noexcept {
+    return static_cast<Piece>(((move & MOVE_PROMO_MASK) >> SHIFT_PROMO));
+}
+
+//! \brief  Retourne le type de la pièce de promotion
+[[nodiscard]] constexpr inline PieceType promoted_type(const MOVE move)  noexcept {
+    return static_cast<PieceType>(((move & MOVE_PROMOTYPE_MASK) >> SHIFT_PROMO));
 }
 
 //! \brief  Retourne les flags du coup
-[[nodiscard]] constexpr U32 flags(const U32 move)  noexcept {
-    return static_cast<PieceType>(move & MOVE_FLAGS_MASK);
+[[nodiscard]] constexpr inline U32 flags(const MOVE move)  noexcept {
+    return static_cast<U32>(move & MOVE_FLAGS_MASK);
 }
 
+//! \brief  retourne la couleur de la pièce
+[[nodiscard]] constexpr inline Color color(Piece piece) {
+    return static_cast<Color>(static_cast<U32>(piece) >> 3);
+}
+
+//! \brief  retourne le type de la pièce
+[[nodiscard]] constexpr inline PieceType type (Piece piece)
+{
+    return static_cast<PieceType>(static_cast<U32>(piece) & 7);
+}
+
+//! \brief  retourne une pièce à partir de son type et de sa couleur
+[[nodiscard]] constexpr inline Piece make_piece(Color color, PieceType pt)
+{
+    return static_cast<Piece>((color << 3) + static_cast<U32>(pt));
+}
+
+
 //! \brief Détermine si le coup est un déplacement simple
-[[nodiscard]] constexpr bool is_depl(const U32 move) noexcept {
+[[nodiscard]] constexpr inline bool is_depl(const MOVE move) noexcept {
     return ((move & MOVE_DEPL_MASK)==MOVE_NONE);
 }
 
 //! \brief Détermine si le coup est une poussée double de pion
-[[nodiscard]] constexpr bool is_double(const U32 move) noexcept {
+[[nodiscard]] constexpr inline bool is_double(const MOVE move) noexcept {
     return (move & FLAG_DOUBLE_MASK);
 }
 
 //! \brief Détermine si le coup est un roque
-[[nodiscard]] constexpr bool is_castling(const U32 move) noexcept {
+[[nodiscard]] constexpr inline bool is_castling(const MOVE move) noexcept {
     return (move & FLAG_CASTLE_MASK);
 }
 
 //! \brief Détermine si le coup est une capture, y compris promotion avec capture et prise enpassant
-[[nodiscard]] constexpr bool is_capturing(const U32 move) noexcept {
+[[nodiscard]] constexpr inline bool is_capturing(const MOVE move) noexcept {
     return (move & MOVE_CAPT_MASK);
 }
 
 //! \brief Détermine si le coup est une promotion
-[[nodiscard]] constexpr bool is_promoting(const U32 move) noexcept {
+[[nodiscard]] constexpr inline bool is_promoting(const MOVE move) noexcept {
     return (move & MOVE_PROMO_MASK);
 }
 
 //! \brief Détermine si le coup est une prise en passant
-[[nodiscard]] constexpr bool is_enpassant(const U32 move) noexcept {
+[[nodiscard]] constexpr inline bool is_enpassant(const MOVE move) noexcept {
     return (move & FLAG_ENPASSANT_MASK);
 }
 
@@ -182,8 +224,12 @@ constexpr U32 MOVE_NULL           = 65; // 1000001
 //!     + prise
 //!     + promotion (avec ou sans prise)
 //!     + prise en passant
-[[nodiscard]] constexpr bool is_tactical(const U32 move) noexcept {
+[[nodiscard]] constexpr inline bool is_tactical(const MOVE move) noexcept {
     return (move & (MOVE_CAPT_MASK | MOVE_PROMO_MASK | FLAG_ENPASSANT_MASK));
+}
+
+[[nodiscard]] constexpr inline bool is_ok(const MOVE m) noexcept {
+  return m != MOVE_NONE && m != MOVE_NULL;
 }
 
 //=================================================
@@ -200,7 +246,7 @@ constexpr U32 MOVE_NULL           = 65; // 1000001
     str += square_name[Move::dest(move)];
     if (Move::is_promoting(move))
     {
-        str += nom_piece_min[Move::promotion(move)];
+        str += pieceTypeToCharMin(Move::promoted_type(move));
     }
 
     return str;
@@ -243,14 +289,14 @@ constexpr U32 MOVE_NULL           = 65; // 1000001
         char cfile_to = 'a' + file_to;
         char crank_to = '1' + rank_to;
 
-        PieceType ptype = Move::piece(move);
+        PieceType ptype = Move::piece_type(move);
 
         if (mode != 4)
         {
-            ss << nom_piece_max[ptype];
+            ss << pieceTypeToCharMax(ptype);
         }
 
-        if (ptype != PAWN)
+        if (ptype != PieceType::PAWN)
         {
             if (mode == 2)
                 ss << cfile_from;
@@ -265,7 +311,7 @@ constexpr U32 MOVE_NULL           = 65; // 1000001
         }
         else if (mode == 1)
         {
-            if (ptype == PAWN && Move::is_capturing(move))
+            if (ptype == PieceType::PAWN && Move::is_capturing(move))
                 ss << cfile_from;
         }
 
@@ -280,9 +326,9 @@ constexpr U32 MOVE_NULL           = 65; // 1000001
         if (Move::is_promoting(move))
         {
             if (mode == 4)
-                ss << nom_piece_min[Move::promotion(move)];
+                ss << pieceTypeToCharMin(Move::promoted_type(move));
             else
-                ss << "=" << nom_piece_max[Move::promotion(move)];
+                ss << "=" << pieceTypeToCharMax(Move::promoted_type(move));
         }
     }
 

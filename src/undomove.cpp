@@ -10,6 +10,8 @@ void Board::undo_move() noexcept
 {
     constexpr Color Them     = ~C;
 
+    // printf("------------------------------------------undo move \n");
+
     if constexpr (Update_NNUE == true)
         nnue.pop(); // retourne a l'accumulateur précédent
 
@@ -18,15 +20,14 @@ void Board::undo_move() noexcept
     // Swap sides
     side_to_move = ~side_to_move;
 
-    // const auto &move    = BoardStatusHistory[gamemove_counter].move;
-    const auto dest     = Move::dest(move);
-    const auto from     = Move::from(move);
-    const auto piece    = Move::piece(move);
-    const auto captured = Move::captured(move);
-    const auto promoted = Move::promotion(move);
+    const auto  dest     = Move::dest(move);
+    const auto  from     = Move::from(move);
+    const Piece piece    = Move::piece(move);
+    const Piece captured = Move::captured(move);
+    const Piece promoted = Move::promoted(move);
 
     // Déplacement du roi
-    if (piece == KING)
+    if (Move::type(piece) == PieceType::KING)
         x_king[C] = from;
 
     //====================================================================================
@@ -54,7 +55,7 @@ void Board::undo_move() noexcept
             {
                 remove_piece(dest, C, promoted);
                 set_piece(dest, Them, captured);
-                set_piece(from, C, PAWN);
+                set_piece(from, C, piece);
             }
 
             //====================================================================================
@@ -73,7 +74,7 @@ void Board::undo_move() noexcept
         else if (Move::is_promoting(move))
         {
             remove_piece(dest, C, promoted);
-            set_piece(from, C, PAWN);
+            set_piece(from, C, piece);
         }
     }
 
@@ -95,13 +96,12 @@ void Board::undo_move() noexcept
         //------------------------------------------------------------------------------------
         else if (Move::is_enpassant(move))
         {
-            // Replace the captured pawn
-            move_piece(dest, from, C, PAWN);
+            move_piece(dest, from, C, piece);
 
             if constexpr (C == Color::WHITE)
-                set_piece(SQ::south(dest), Them, PAWN);
+                set_piece(SQ::south(dest), Them, captured);
             else
-                set_piece(SQ::north(dest), Them, PAWN);
+                set_piece(SQ::north(dest), Them, captured);
         }
 
         //====================================================================================
@@ -114,13 +114,13 @@ void Board::undo_move() noexcept
             //------------------------------------------------------------------------------------
             if ((SQ::square_BB(dest)) & FILE_G_BB)
             {
-                move_piece(dest, from, C, KING);
+                move_piece(dest, from, C, piece);
 
                 // Move the rook
                 if constexpr (C == WHITE)
-                    move_piece(F1, H1, C, ROOK);
+                    move_piece(F1, H1, C, Piece::WHITE_ROOK);
                 else
-                    move_piece(F8, H8, C, ROOK);
+                    move_piece(F8, H8, C, Piece::BLACK_ROOK);
             }
 
             //====================================================================================
@@ -128,13 +128,13 @@ void Board::undo_move() noexcept
             //------------------------------------------------------------------------------------
             else if ((SQ::square_BB(dest)) & FILE_C_BB)
             {
-                move_piece(dest, from, C, KING);
+                move_piece(dest, from, C, piece);
 
                 // Move the rook
                 if constexpr (C == WHITE)
-                    move_piece(D1, A1, C, ROOK);
+                    move_piece(D1, A1, C, Piece::WHITE_ROOK);
                 else
-                    move_piece(D8, A8, C, ROOK);
+                    move_piece(D8, A8, C, Piece::BLACK_ROOK);
             }
         }
     }

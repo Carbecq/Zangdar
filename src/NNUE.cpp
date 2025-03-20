@@ -3,6 +3,7 @@
 #include "types.h"
 #include "bitmask.h"
 #include "simd.h"
+#include "Move.h"
 
 namespace {
 
@@ -62,9 +63,9 @@ void NNUE::pop()
 //========================================================================
 //! \brief  Ajout d'une feature
 //------------------------------------------------------------------------
-void NNUE::add(Color color, PieceType piece, int from)
+void NNUE::add(Piece piece, int from)
 {
-    const auto [white_idx, black_idx] = get_indices(color, piece, from);
+    const auto [white_idx, black_idx] = get_indices(piece, from);
 
     auto& accu = accumulator.back();
 
@@ -99,12 +100,12 @@ void NNUE::add(Color color, PieceType piece, int from)
 //! \param[in]  sub_piece       pièce supprimée de from
 //! \param[in]  add_piece       pièce ajoutée en dest
 //---------------------------------------------------------------------------------
-void NNUE::sub_add(Color color, PieceType sub_piece, int from, PieceType add_piece, int dest)
+void NNUE::sub_add(Piece sub_piece, int from, Piece add_piece, int dest)
 {
     // Optimisations de : https://cosmo.tardis.ac/files/2024-06-01-nnue.html
 
-    const auto [white_sub_idx, black_sub_idx] = get_indices(color, sub_piece, from);
-    const auto [white_add_idx, black_add_idx] = get_indices(color, add_piece, dest);
+    const auto [white_sub_idx, black_sub_idx] = get_indices(sub_piece, from);
+    const auto [white_add_idx, black_add_idx] = get_indices(add_piece, dest);
 
     auto& accu = accumulator.back();
 
@@ -141,11 +142,11 @@ void NNUE::sub_add(Color color, PieceType sub_piece, int from, PieceType add_pie
 //! \param[in]  sub_piece_2     pièce ennemie supprimée de dest
 //! \param[in]  add_piece       pièce ajoutée en dest
 //---------------------------------------------------------------------------------
-void NNUE::sub_sub_add(Color color, PieceType sub_piece_1, int from, PieceType sub_piece_2, PieceType add_piece, int dest)
+void NNUE::sub_sub_add(Piece sub_piece_1, int from, Piece sub_piece_2, Piece add_piece, int dest)
 {
-    const auto [white_sub1_idx, black_sub1_idx] = get_indices(color, sub_piece_1, from);
-    const auto [white_sub2_idx, black_sub2_idx] = get_indices(~color, sub_piece_2, dest);   // <<< ~color
-    const auto [white_add_idx, black_add_idx]   = get_indices(color, add_piece, dest);
+    const auto [white_sub1_idx, black_sub1_idx] = get_indices(sub_piece_1, from);
+    const auto [white_sub2_idx, black_sub2_idx] = get_indices(sub_piece_2, dest);   // <<< ~color
+    const auto [white_add_idx, black_add_idx]   = get_indices(add_piece, dest);
 
     auto& accu = accumulator.back();
 
@@ -188,11 +189,11 @@ void NNUE::sub_sub_add(Color color, PieceType sub_piece_1, int from, PieceType s
 //! \param[in]  add_piece       pièce ajoutée en dest
 //!
 //---------------------------------------------------------------------------------
-void NNUE::sub_sub_add(Color color, PieceType sub_piece_1, int from, PieceType sub_piece_2, int sub, PieceType add_piece, int dest)
+void NNUE::sub_sub_add(Piece sub_piece_1, int from, Piece sub_piece_2, int sub, Piece add_piece, int dest)
 {
-    const auto [white_sub1_idx, black_sub1_idx] = get_indices(color, sub_piece_1, from);
-    const auto [white_sub2_idx, black_sub2_idx] = get_indices(~color, sub_piece_2, sub);   // <<< ~color
-    const auto [white_add_idx, black_add_idx]   = get_indices(color, add_piece, dest);
+    const auto [white_sub1_idx, black_sub1_idx] = get_indices(sub_piece_1, from);
+    const auto [white_sub2_idx, black_sub2_idx] = get_indices(sub_piece_2, sub);   // <<< ~color
+    const auto [white_add_idx, black_add_idx]   = get_indices(add_piece, dest);
 
     auto& accu = accumulator.back();
 
@@ -229,7 +230,7 @@ void NNUE::sub_sub_add(Color color, PieceType sub_piece_1, int from, PieceType s
 //! \brief  Calcule l'indece du triplet (couleur, piece, case)
 //! dans l'Input Layer
 //------------------------------------------------------------------------
-std::pair<Usize, Usize> NNUE::get_indices(Color color, PieceType piece, int square)
+std::pair<Usize, Usize> NNUE::get_indices(Piece piece, int square)
 {
     // L'input Layer est rangée ainsi :
     //  + Les blancs
@@ -242,19 +243,22 @@ std::pair<Usize, Usize> NNUE::get_indices(Color color, PieceType piece, int squa
     //  Lorsque une entrée est modifiée par un coup, il faut retrouver
     //  son indice.
 
-    assert(piece  != PieceType::PIECE_NONE);
+    assert(piece  != Piece::NONE);
     assert(square != SquareType::SQUARE_NONE);
 
     constexpr Usize color_stride = N_SQUARES * 6;
     constexpr Usize piece_stride = N_SQUARES;
 
-    //TODO : refaire le codage des pièces ?
-    //  PieceType : PAWN = 1
-    //  pour NNUE : PAWN = 0
-    const Usize piece_nnue = static_cast<Usize>(piece - 1);
+    const auto base  = static_cast<U32>(Move::type(piece));
+    const auto color = Move::color(piece);
 
-    const auto white_indice =  color * color_stride + piece_nnue * piece_stride + static_cast<Usize>(square);
-    const auto black_indice = !color * color_stride + piece_nnue * piece_stride + static_cast<Usize>(SQ::mirrorVertically(square));
+    //TODO : refaire le codage des pièces ?
+    //  moi  : PAWN = 1
+    //  NNUE : PAWN = 0
+    const auto base_nnue = base - 1;
+
+    const auto white_indice =  color * color_stride + base_nnue * piece_stride + static_cast<Usize>(square);
+    const auto black_indice = !color * color_stride + base_nnue * piece_stride + static_cast<Usize>(SQ::mirrorVertically(square));
 
     return {white_indice, black_indice};
 }

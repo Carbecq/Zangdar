@@ -51,12 +51,12 @@ bool Board::valid(const std::string &message) noexcept
         }
     }
     
-    if (BB::count_bit(occupancy_cp<Color::WHITE, KING>()) != 1) {
+    if (BB::count_bit(occupancy_cp<Color::WHITE, PieceType::KING>()) != 1) {
         std::cout << "erreur 3" << std::endl;
         return false;
     }
     
-    if (BB::count_bit(occupancy_cp<Color::BLACK, KING>()) != 1) {
+    if (BB::count_bit(occupancy_cp<Color::BLACK, PieceType::KING>()) != 1) {
         std::cout << "erreur 4" << std::endl;
         return false;
     }
@@ -68,9 +68,9 @@ bool Board::valid(const std::string &message) noexcept
         return false;
     }
 
-    if (occupancy_p<PAWN>() & (RANK_1_BB | RANK_8_BB)) {
+    if (occupancy_p<PieceType::PAWN>() & (RANK_1_BB | RANK_8_BB)) {
         printf("%s \n", display().c_str());
-        BB::PrintBB(occupancy_p<PAWN>(), "erreur 6");
+        BB::PrintBB(occupancy_p<PieceType::PAWN>(), "erreur 6");
         BB::PrintBB(RANK_1_BB, "erreur 6");
         BB::PrintBB(RANK_8_BB, "erreur 6");
 
@@ -78,8 +78,9 @@ bool Board::valid(const std::string &message) noexcept
         return false;
     }
 
-    for (int i = PAWN; i <= KING; ++i) {
-        for (int j = i + 1; j <= KING; ++j) {
+    // Attention : ça marche car l'enum PieceType est consécutif
+    for (auto i = static_cast<U32>(PieceType::PAWN); i <= static_cast<U32>(PieceType::KING); ++i) {
+        for (auto j = i + 1; j <= static_cast<U32>(PieceType::KING); ++j) {
             if (typePiecesBB[i] & typePiecesBB[j]) {
                 std::cout << "erreur 7 " << std::endl;
                 return false;
@@ -116,9 +117,15 @@ bool Board::valid(const std::string &message) noexcept
 
     for (int i=0; i<64; i++)
     {
+        Piece p1 = pieceBoard[i] ;
+        auto n1  = pieceToChar(p1);
+        Piece p2 =  piece_on(i) ;
+        auto n2  = pieceToChar(p2);
+
         if (pieceBoard[i] != piece_on(i))
         {
-            std::cout << "erreur piece case " << i << std::endl;
+            std::cout << "erreur piece case " << i << " : " << square_name[i]
+                         << " board : " << n1 << " pieceon : "<< n2 <<  std::endl;
             return(false);
         }
     }

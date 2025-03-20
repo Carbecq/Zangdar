@@ -75,10 +75,10 @@ public:
     template<Color color> int  evaluate();
     inline void reserve_capacity() { accumulator.reserve(512); }  // la capacité ne passe pas avec la copie
 
-    void add(Color color, PieceType piece, int from);
-    void sub_add(Color color, PieceType from_piece, int from, PieceType to_piece, int dest);
-    void sub_sub_add(Color color, PieceType sub_piece_1, int from, PieceType sub_piece_2, PieceType add_piece, int dest);
-    void sub_sub_add(Color color, PieceType sub_piece_1, int from, PieceType sub_piece_2, int sub, PieceType add_piece, int dest);
+    void add(Piece piece, int from);
+    void sub_add(Piece from_piece, int from, Piece to_piece, int dest);
+    void sub_sub_add(Piece sub_piece_1, int from, Piece sub_piece_2, Piece add_piece, int dest);
+    void sub_sub_add(Piece sub_piece_1, int from, Piece sub_piece_2, int sub, Piece add_piece, int dest);
 
 private:
     std::vector<Accumulator> accumulator;   // pile des accumulateurs
@@ -87,7 +87,7 @@ private:
                        const std::array<I16, HIDDEN_LAYER_SIZE>& them,
                        const std::array<I16, HIDDEN_LAYER_SIZE * 2>& weights);
 
-    std::pair<Usize, Usize> get_indices(Color color, PieceType piece, int square);
+    std::pair<Usize, Usize> get_indices(Piece piece, int square);
 
 
     constexpr inline I32 screlu(I16 x) {

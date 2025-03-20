@@ -23,8 +23,8 @@ void Board::legal_moves(MoveList& ml) noexcept
     Bitboard emptyBB    = ~occupiedBB;
     Bitboard enemyBB    = colorPiecesBB[Them];
 
-    const Bitboard bq         = typePiecesBB[BISHOP] | typePiecesBB[QUEEN];
-    const Bitboard rq         = typePiecesBB[ROOK]   | typePiecesBB[QUEEN];
+    const Bitboard bq         = typePiecesBB[static_cast<U32>(PieceType::BISHOP)] | typePiecesBB[static_cast<U32>(PieceType::QUEEN)];
+    const Bitboard rq         = typePiecesBB[static_cast<U32>(PieceType::ROOK)]   | typePiecesBB[static_cast<U32>(PieceType::QUEEN)];
 
     //-----------------------------------------------------------------------------------------
     //  Calcul des pièces clouées, et des échecs
@@ -45,7 +45,7 @@ void Board::legal_moves(MoveList& ml) noexcept
     Bitboard pieceBB;
     Bitboard attackBB;
     int from, to, d, ep;
-    int x_checker = SQUARE_NONE;
+    int x_checker = SquareType::SQUARE_NONE;
 
     //-------------------------------------------------------------------------------------------
 
@@ -77,7 +77,7 @@ void Board::legal_moves(MoveList& ml) noexcept
         }
 
         // pawn (pinned)
-        pieceBB = typePiecesBB[PAWN] & pinnedBB;
+        pieceBB = typePiecesBB[static_cast<U32>(PieceType::PAWN)] & pinnedBB;
 
         while (pieceBB) {
             from = BB::pop_lsb(pieceBB);
@@ -88,16 +88,16 @@ void Board::legal_moves(MoveList& ml) noexcept
                 if (d == abs(pawn_left) && (SQ::square_BB(to = from + pawn_left) & Attacks::pawn_attacks<C>(from) & enemyBB ))
                 {
                     if (SQ::is_on_seventh_rank<C>(from))
-                        push_capture_promotion(ml, from, to);
+                        push_capture_promotion(ml, from, to, C);
                     else
-                        add_capture_move(ml, from, to, PAWN, pieceBoard[to], Move::FLAG_NONE);
+                        add_capture_move(ml, from, to, Move::make_piece(C, PieceType::PAWN), pieceBoard[to], Move::FLAG_NONE);
                 }
                 else if (d == abs(pawn_right) && (SQ::square_BB(to = from + pawn_right) & Attacks::pawn_attacks<C>(from) & enemyBB))
                 {
                     if (SQ::is_on_seventh_rank<C>(from))
-                        push_capture_promotion(ml, from, to);
+                        push_capture_promotion(ml, from, to, C);
                     else
-                        add_capture_move(ml, from, to, PAWN, pieceBoard[to], Move::FLAG_NONE);
+                        add_capture_move(ml, from, to, Move::make_piece(C, PieceType::PAWN), pieceBoard[to], Move::FLAG_NONE);
                 }
             }
             
@@ -105,9 +105,9 @@ void Board::legal_moves(MoveList& ml) noexcept
             {
                 if (d == abs(pawn_push) && (SQ::square_BB(to = from + pawn_push) & emptyBB))
                 {
-                    add_quiet_move(ml, from, to, PAWN, Move::FLAG_NONE);
+                    add_quiet_move(ml, from, to, Move::make_piece(C, PieceType::PAWN), Move::FLAG_NONE);
                     if (SQ::is_on_second_rank<C>(from) && (SQ::square_BB(to += pawn_push) & emptyBB))
-                        add_quiet_move(ml, from, to, PAWN, Move::FLAG_DOUBLE_MASK);
+                        add_quiet_move(ml, from, to, Move::make_piece(C, PieceType::PAWN), Move::FLAG_DOUBLE_MASK);
                 }
             }
         }
@@ -200,7 +200,7 @@ void Board::legal_moves(MoveList& ml) noexcept
      */
     if constexpr (MGType & MoveGenType::NOISY)
     {
-        if (get_status().ep_square!=SQUARE_NONE && (!checkersBB || x_checker == get_status().ep_square - pawn_push))
+        if (get_status().ep_square!=SquareType::SQUARE_NONE && (!checkersBB || x_checker == get_status().ep_square - pawn_push))
         {
             // file : a...h
 
@@ -208,7 +208,7 @@ void Board::legal_moves(MoveList& ml) noexcept
             ep = to - pawn_push;        // 20 - (-8)  noirs = 28 = e4
             from = ep - 1;              // 28 - 1 = 27 = d4
 
-            Bitboard our_pawns = occupancy_cp<C, PAWN>();
+            Bitboard our_pawns = occupancy_cp<C, PieceType::PAWN>();
             if (SQ::file(to) > 0 && our_pawns & SQ::square_BB(from) )
             {
                 pieceBB = occupiedBB ^ SQ::square_BB(from) ^ SQ::square_BB(ep) ^ SQ::square_BB(to);
@@ -216,7 +216,9 @@ void Board::legal_moves(MoveList& ml) noexcept
                 if (!(Attacks::bishop_moves(K, pieceBB) & bq & colorPiecesBB[Them]) &&
                     !(Attacks::rook_moves(K, pieceBB)   & rq & colorPiecesBB[Them]) )
                 {
-                    add_capture_move(ml, from, to, PAWN, PAWN, Move::FLAG_ENPASSANT_MASK);
+                    add_capture_move(ml, from, to,
+                                     Move::make_piece(C, PieceType::PAWN),
+                                     Move::make_piece(Them, PieceType::PAWN), Move::FLAG_ENPASSANT_MASK);
                 }
             }
 
@@ -228,14 +230,14 @@ void Board::legal_moves(MoveList& ml) noexcept
                 if ( !(Attacks::bishop_moves(K, pieceBB) & bq & colorPiecesBB[Them]) &&
                     !(Attacks::rook_moves(K, pieceBB)   & rq & colorPiecesBB[Them]) )
                 {
-                    add_capture_move(ml, from, to, PAWN, PAWN, Move::FLAG_ENPASSANT_MASK);
+                    add_capture_move(ml, from, to, Move::make_piece(C, PieceType::PAWN), Move::make_piece(Them, PieceType::PAWN), Move::FLAG_ENPASSANT_MASK);
                 }
             }
         }
     }
 
     // pawn
-    pieceBB = typePiecesBB[PAWN] & unpinnedBB;
+    pieceBB = typePiecesBB[static_cast<U32>(PieceType::PAWN)] & unpinnedBB;
 
     if constexpr (MGType & MoveGenType::NOISY)
     {
@@ -244,16 +246,16 @@ void Board::legal_moves(MoveList& ml) noexcept
         else
             attackBB = ((pieceBB & ~FILE_A_BB) >> 9 ) & enemyBB;
 
-        push_capture_promotions(ml, attackBB & PromotionRank[C], pawn_left);
-        push_pawn_capture_moves(ml, attackBB & ~PromotionRank[C], pawn_left);
+        push_capture_promotions(ml, attackBB & PromotionRank[C], pawn_left, C);
+        push_pawn_capture_moves(ml, attackBB & ~PromotionRank[C], pawn_left, C);
 
         if constexpr (C==Color::WHITE)
             attackBB = ((pieceBB & ~FILE_H_BB) << 9) & enemyBB;
         else
             attackBB = ((pieceBB & ~FILE_H_BB) >> 7) & enemyBB;
 
-        push_capture_promotions(ml, attackBB & PromotionRank[C], pawn_right);
-        push_pawn_capture_moves(ml, attackBB & ~PromotionRank[C], pawn_right);
+        push_capture_promotions(ml, attackBB & PromotionRank[C], pawn_right, C);
+        push_pawn_capture_moves(ml, attackBB & ~PromotionRank[C], pawn_right, C);
     }
 
     if constexpr (C==Color::WHITE)
@@ -263,36 +265,36 @@ void Board::legal_moves(MoveList& ml) noexcept
 
     if constexpr (MGType & MoveGenType::NOISY)
     {
-        push_quiet_promotions(ml, attackBB & PromotionRank[C], pawn_push);
+        push_quiet_promotions(ml, attackBB & PromotionRank[C], pawn_push, C);
     }
 
     if constexpr (MGType & MoveGenType::QUIET)
     {
-        push_pawn_quiet_moves(ml, attackBB & ~PromotionRank[C], pawn_push, Move::FLAG_NONE);
+        push_pawn_quiet_moves(ml, attackBB & ~PromotionRank[C], pawn_push, C, Move::FLAG_NONE);
 
         if constexpr (C==Color::WHITE)
             attackBB = ((((pieceBB & RANK_2_BB) << 8) & ~occupiedBB) << 8) & emptyBB;
         else
             attackBB = ((((pieceBB & RANK_7_BB) >> 8) & ~occupiedBB) >> 8) & emptyBB;
 
-        push_pawn_quiet_moves(ml, attackBB, 2 * pawn_push, Move::FLAG_DOUBLE_MASK);
+        push_pawn_quiet_moves(ml, attackBB, 2 * pawn_push, C, Move::FLAG_DOUBLE_MASK);
     }
 
     // knight
 
-    pieceBB = typePiecesBB[KNIGHT] & unpinnedBB;
+    pieceBB = typePiecesBB[static_cast<U32>(PieceType::KNIGHT)] & unpinnedBB;
     while (pieceBB)
     {
         from = BB::pop_lsb(pieceBB);
         if constexpr (MGType & MoveGenType::NOISY)
         {
             attackBB = Attacks::knight_moves(from) & enemyBB;
-            push_piece_capture_moves(ml, attackBB, from, KNIGHT);
+            push_piece_capture_moves(ml, attackBB, from, C, PieceType::KNIGHT);
         }
         if constexpr (MGType & MoveGenType::QUIET)
         {
             attackBB = Attacks::knight_moves(from) & emptyBB;
-            push_piece_quiet_moves(ml, attackBB, from, KNIGHT);
+            push_piece_quiet_moves(ml, attackBB, from, C, PieceType::KNIGHT);
         }
     }
 
@@ -347,7 +349,7 @@ void Board::legal_moves(MoveList& ml) noexcept
         {
             to = BB::pop_lsb(maskn);
             if (!square_attacked<Them>(to))
-                add_capture_move(ml, K, to, KING, pieceBoard[to], Move::FLAG_NONE);
+                add_capture_move(ml, K, to, Move::make_piece(C, PieceType::KING), pieceBoard[to], Move::FLAG_NONE);
         }
     }
 
@@ -358,7 +360,7 @@ void Board::legal_moves(MoveList& ml) noexcept
         {
             to = BB::pop_lsb(maskq);
             if (!square_attacked<Them>(to))
-                add_quiet_move(ml, K, to, KING, Move::FLAG_NONE);
+                add_quiet_move(ml, K, to, Move::make_piece(C, PieceType::KING), Move::FLAG_NONE);
         }
     }
 

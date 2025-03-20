@@ -190,6 +190,7 @@ HEADERS += \
     src/Bitboard.h \
     src/Board.h \
     src/DataGen.h \
+    src/History.h \
     src/Move.h \
     src/MoveList.h \
     src/MovePicker.h \
@@ -218,6 +219,7 @@ SOURCES += \
     src/Attacks.cpp \
     src/Board.cpp \
     src/DataGen.cpp \
+    src/History.cpp \
     src/MovePicker.cpp \
     src/NNUE.cpp \
     src/PolyBook.cpp \

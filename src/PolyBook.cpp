@@ -62,11 +62,11 @@ U64 PolyBook::calculate_hash(const Board& board)
     int sq;
     Bitboard pieces;
 
-    for (PieceType type : {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING})
+    for (PieceType type : {PieceType::PAWN, PieceType::KNIGHT, PieceType::BISHOP, PieceType::ROOK, PieceType::QUEEN, PieceType::KING})
     {
         for (Color color : {BLACK, WHITE})
         {
-            pieces = board.colorPiecesBB[color] & board.typePiecesBB[type];
+            pieces = board.colorPiecesBB[color] & board.typePiecesBB[static_cast<U32>(type)];
 
             while (pieces)
             {
@@ -86,8 +86,8 @@ U64 PolyBook::calculate_hash(const Board& board)
     if(board.can_castle<BLACK, CastleSide::QUEEN_SIDE>()) hash ^= Random64Poly[offset + 3];
 
     // enpassant
-    // enable en passant flag only if there si a pawn capable to
-    // capture our pawn
+    // enable en passant flag only if there si a Pawn capable to
+    // capture our Pawn
 
     int epsq = board.get_ep_square();
     if (epsq != SQUARE_NONE)
@@ -95,7 +95,7 @@ U64 PolyBook::calculate_hash(const Board& board)
         // Bitboard des attaques de pion ADVERSE
         Bitboard bb = Attacks::pawn_attacks(!us, epsq);
 
-        if (bb & board.colorPiecesBB[board.side_to_move] & board.typePiecesBB[PAWN])
+        if (bb & board.colorPiecesBB[board.side_to_move] & board.typePiecesBB[static_cast<U32>(PieceType::PAWN)])
         {
             int file = SQ::file(epsq);
             hash ^= Random64Poly[772 + file];
@@ -260,10 +260,11 @@ MOVE PolyBook::poly_to_move(U16 polyMove, const Board& board)
 
     int from = SQ::square(ff, fr);
     int dest = SQ::square(tf, tr);
-    PieceType piece = board.pieceBoard[from];
-    PieceType capt  = board.pieceBoard[dest];
-    PieceType promo = static_cast<PieceType>(pp);
-    int       flags = Move::FLAG_NONE;
+    Piece piece = board.pieceBoard[from];
+    Piece capt  = board.pieceBoard[dest];
+    Color color = Move::color(piece);
+    Piece promo = Move::make_piece(color, static_cast<PieceType>(pp));
+    int   flags = Move::FLAG_NONE;
 
     return Move::CODE(from, dest, piece, capt, promo, flags);
 }

@@ -31,6 +31,7 @@ using MOVE      = U32;
 
 using TimePoint = std::chrono::high_resolution_clock;
 
+//-----------------------------------------------------------------------------
 
 static constexpr int MAX_PLY    =  128;     // profondeur max de recherche (en demi-coups)
 static constexpr int MAX_HISTO  = 1024;     // longueur max de l'historique (partie + recherche) (en demi-coups)

@@ -68,9 +68,9 @@ bool Board::probe_wdl(int& score, int& bound, int ply) const
 
     unsigned result = tb_probe_wdl(
         occupancy_c<WHITE>(),  occupancy_c<BLACK>(),
-        occupancy_p<KING>(),   occupancy_p<QUEEN>(),
-        occupancy_p<ROOK>(),   occupancy_p<BISHOP>(),
-        occupancy_p<KNIGHT>(), occupancy_p<PAWN>(),
+        occupancy_p<PieceType::KING>(),   occupancy_p<PieceType::QUEEN>(),
+        occupancy_p<PieceType::ROOK>(),   occupancy_p<PieceType::BISHOP>(),
+        occupancy_p<PieceType::KNIGHT>(), occupancy_p<PieceType::PAWN>(),
         get_status().ep_square == SQUARE_NONE ? 0 : get_status().ep_square,
         turn() == WHITE ? 1 : 0);
 
@@ -101,9 +101,9 @@ bool Board::probe_root(MOVE& move) const
     // Call Pyrrhic
     unsigned result = tb_probe_root(
         occupancy_c<WHITE>(),  occupancy_c<BLACK>(),
-        occupancy_p<KING>(),   occupancy_p<QUEEN>(),
-        occupancy_p<ROOK>(),   occupancy_p<BISHOP>(),
-        occupancy_p<KNIGHT>(), occupancy_p<PAWN>(),
+        occupancy_p<PieceType::KING>(),   occupancy_p<PieceType::QUEEN>(),
+        occupancy_p<PieceType::ROOK>(),   occupancy_p<PieceType::BISHOP>(),
+        occupancy_p<PieceType::KNIGHT>(), occupancy_p<PieceType::PAWN>(),
         get_status().fiftymove_counter,
         get_status().ep_square == SQUARE_NONE ? 0 : get_status().ep_square,
         turn() == WHITE ? 1 : 0,
@@ -152,15 +152,20 @@ MOVE Board::convertPyrrhicMove(unsigned result) const
     unsigned promo = TB_GET_PROMOTES(result);   // 1 = Dame ; 4 = Cavalier      syzygy
                                                 // 5          2                 moi
 
+    //TODO à vérifier
+
+    Piece piece = pieceBoard[from];
+    Color color = Move::color(piece);
+
     // Convert the move notation. Care that Pyrrhic's promotion flags are inverted
     if (ep == 0u && promo == 0u)
-        return Move::CODE(from, to, pieceBoard[from], pieceBoard[to], PIECE_NONE, Move::FLAG_NONE); // MoveMake(from, to, NORMAL_MOVE);
+        return Move::CODE(from, to, pieceBoard[from], pieceBoard[to], Piece::NONE, Move::FLAG_NONE); // MoveMake(from, to, NORMAL_MOVE);
     else if (ep != 0u)
-        return Move::CODE(from, get_status().ep_square, PAWN, PAWN, PIECE_NONE, Move::FLAG_ENPASSANT_MASK);
+        return Move::CODE(from, get_status().ep_square, piece, Move::make_piece(~color, PieceType::PAWN), Piece::NONE, Move::FLAG_ENPASSANT_MASK);
     else /* if (promo != 0u) */
     {
         PieceType p = static_cast<PieceType>(6-promo);
-        return Move::CODE(from, to, PAWN, pieceBoard[to], p, Move::FLAG_NONE);
+        return Move::CODE(from, to, piece, pieceBoard[to], Move::make_piece(color, p), Move::FLAG_NONE);
     }
 }
 

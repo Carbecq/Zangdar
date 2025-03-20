@@ -6,15 +6,15 @@
 //=====================================================
 //! \brief  Constructeur
 //-----------------------------------------------------
-MovePicker::MovePicker(Board* _board, const ThreadData *_thread_data, int _ply,
+MovePicker::MovePicker(Board* _board, const History& _history, const SearchInfo *_info,
                        MOVE _ttMove, MOVE _killer1, MOVE _killer2, MOVE _counter, int _threshold) :
     board(_board),
-    thread_data(_thread_data),
+    history(_history),
+    info(_info),
     stage(STAGE_TABLE),
     gen_quiet(false),
     gen_legal(false),
     threshold(_threshold),
-    ply(_ply),
     tt_move(_ttMove),
     killer1(_killer1),
     killer2(_killer2),
@@ -329,18 +329,18 @@ void MovePicker::score_noisy()
 
 
         //    value = mg_value[dest_type] - Move::piece(move);
-        value = MvvLvaScores[Move::captured(move)][Move::piece(move)];
+        value = MvvLvaScores[static_cast<U32>(Move::captured_type(move))][static_cast<U32>(Move::piece_type(move))];
 
         // A bonus is in order for queen promotions
         if (Move::is_promoting(move))
-            value += EGPieceValue[Move::promotion(move)];
+            value += EGPieceValue[static_cast<U32>(Move::promoted_type(move))];
 
         // Enpass is a special case of MVV-LVA
         else if (Move::is_enpassant(move))
-            value = MvvLvaScores[PAWN][PAWN];
-        // eg_value[PAWN] - PAWN;
+            value = MvvLvaScores[static_cast<U32>(PieceType::PAWN)][static_cast<U32>(PieceType::PAWN)];
+        // eg_value[PAWN] -PieceType::PAWN;
 
-        mln.mlmoves[i].value = value;
+        mln.mlmoves[i].value = value + history.get_capture_history(move) / 100; //TODO à modérer ??
     }
 }
 
@@ -351,13 +351,11 @@ void MovePicker::score_quiet()
 {
     MOVE move;
 
-    // Use the History score from the Butterfly Bitboards for sorting
+    // Use the History score for sorting
     for (size_t i = 0; i < mlq.count; i++)
     {
         move = mlq.mlmoves[i].move;
-        mlq.mlmoves[i].value = thread_data->get_history(board->turn(), move)
-                + thread_data->get_counter_move_history(ply, move)
-                + thread_data->get_followup_move_history(ply, move);
+        mlq.mlmoves[i].value = history.get_quiet_history(board->turn(), info, move);
     }
 }
 
@@ -377,6 +375,7 @@ int MovePicker::get_best(const MoveList& ml)
 
     return best_index;
 }
+
 //========================================================
 //! \brief  Retourne le coup indiqué
 //! puis déplace le dernier élément à la position
@@ -452,12 +451,12 @@ bool MovePicker::is_legal(MOVE move)
 }
 
 
-std::string pchar[N_PIECES] = {"NoPiece", "Pion", "Cavalier", "Fou", "Tour", "Dame", "Roi"};
+std::string pchar[N_PIECE_TYPE] = {"NoPiece", "Pion", "Cavalier", "Fou", "Tour", "Dame", "Roi"};
 void MovePicker::verify_MvvLva()
 {
-    for(int Victim = PAWN; Victim <= KING; ++Victim)
+    for(U32 Victim = static_cast<U32>(PieceType::PAWN); Victim <= static_cast<U32>(PieceType::KING); ++Victim)
     {
-        for(int Attacker = PAWN; Attacker <= KING; ++Attacker)
+        for(U32 Attacker = static_cast<U32>(PieceType::PAWN); Attacker <= static_cast<U32>(PieceType::KING); ++Attacker)
         {
             printf("%10s prend %10s = %d\n", pchar[Attacker].c_str(), pchar[Victim].c_str(), MvvLvaScores[Victim][Attacker]);
         }

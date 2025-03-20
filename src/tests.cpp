@@ -446,9 +446,9 @@ static void sort_moves(MoveList& ml)
         MOVE m = ml.mlmoves[i].move;
         if (Move::is_capturing(m))
         {
-            PieceType piece = Move::piece(m);
-            PieceType capt  = Move::captured(m);
-            ml.mlmoves[i].value = MvvLvaScores[capt][piece];
+            PieceType piece = Move::piece_type(m);
+            PieceType capt  = Move::captured_type(m);
+            ml.mlmoves[i].value = MvvLvaScores[static_cast<U32>(capt)][static_cast<U32>(piece)];
         }
         else
         {

@@ -24,8 +24,8 @@ void Board::calculate_checkers_pinned() noexcept
     //Checkers of each piece type are identified by:
     //1. Projecting attacks FROM the king square
     //2. Intersecting this bitboard with the enemy bitboard of that piece type
-    get_status().checkers = (Attacks::knight_moves(K)     & occupancy_cp<THEM, KNIGHT>())
-             | (Attacks::pawn_attacks<US>(K) & occupancy_cp<THEM, PAWN>());
+    get_status().checkers = (Attacks::knight_moves(K)     & occupancy_cp<THEM, PieceType::KNIGHT>())
+             | (Attacks::pawn_attacks<US>(K) & occupancy_cp<THEM, PieceType::PAWN>());
 
     //Here, we identify slider checkers and pinners simultaneously, and candidates for such pinners
     //and checkers are represented by the bitboard <candidates>
@@ -56,38 +56,38 @@ template <Color C>
 
     // Pawns
     if constexpr (C == Color::WHITE) {
-        const auto pawns = occupancy_cp<C, PAWN>();
+        const auto pawns = occupancy_cp<C, PieceType::PAWN>();
         mask |= BB::north_east(pawns);
         mask |= BB::north_west(pawns);
     } else {
-        const auto pawns = occupancy_cp<C, PAWN>();
+        const auto pawns = occupancy_cp<C, PieceType::PAWN>();
         mask |= BB::south_east(pawns);
         mask |= BB::south_west(pawns);
     }
 
     // Knights
-    Bitboard bb = occupancy_cp<C, KNIGHT>();
+    Bitboard bb = occupancy_cp<C, PieceType::KNIGHT>();
     while (bb) {
         int fr = BB::pop_lsb(bb);
         mask |= Attacks::knight_moves(fr);
     }
 
     // Bishops
-    bb = occupancy_cp<C, BISHOP>();
+    bb = occupancy_cp<C, PieceType::BISHOP>();
     while (bb) {
         int fr = BB::pop_lsb(bb);
         mask |= Attacks::bishop_moves(fr, ~occupancy_none());
     }
 
     // Rooks
-    bb = occupancy_cp<C, ROOK>();
+    bb = occupancy_cp<C, PieceType::ROOK>();
     while (bb) {
         int fr = BB::pop_lsb(bb);
         mask |= Attacks::rook_moves(fr, ~occupancy_none());
     }
 
     // Queens
-    bb = occupancy_cp<C, QUEEN>();
+    bb = occupancy_cp<C, PieceType::QUEEN>();
     while (bb) {
         int fr = BB::pop_lsb(bb);
         mask |= Attacks::queen_moves(fr, ~occupancy_none());
@@ -112,8 +112,8 @@ template <Color C>
     Bitboard rAttacks = Attacks::rook_moves(sq, occupiedBB);
     Bitboard bAttacks = Attacks::bishop_moves(sq, occupiedBB);
 
-    Bitboard rooks   = (enemy & typePiecesBB[ROOK]) & ~rAttacks;
-    Bitboard bishops = (enemy & typePiecesBB[BISHOP]) & ~bAttacks;
+    Bitboard rooks   = (enemy & typePiecesBB[static_cast<U32>(PieceType::ROOK)]) & ~rAttacks;
+    Bitboard bishops = (enemy & typePiecesBB[static_cast<U32>(PieceType::BISHOP)]) & ~bAttacks;
 
     return (  rooks &   Attacks::rook_moves(sq, occupiedBB & ~rAttacks))
            | (bishops & Attacks::bishop_moves(sq, occupiedBB & ~bAttacks));

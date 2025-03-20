@@ -96,7 +96,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
     MOVE best_move  = Move::MOVE_NONE;  // meilleur coup local
     int  score;
     MOVE move;
-    MovePicker movePicker(&board, td, si->ply, Move::MOVE_NONE,
+    MovePicker movePicker(&board, td->history, si, Move::MOVE_NONE,
                           Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, 0);
 
     // Boucle sur tous les coups
@@ -120,7 +120,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
         {
             if (Move::is_capturing(move))
             {
-                if (static_eval + 300 + EGPieceValue[Move::captured(move)] <= alpha)
+                if (static_eval + 300 + EGPieceValue[static_cast<U32>(Move::captured_type(move))] <= alpha)
                 {
                     continue;
                 }

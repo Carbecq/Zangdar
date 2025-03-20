@@ -28,7 +28,10 @@ void Search::think(Board board, Timer timer, int m_index)
     SearchInfo* si = &td->info[0];
 
     for (int i = 0; i < MAX_PLY+STACK_OFFSET; i++)
+    {
         (si + i)->ply = i;
+        (si + i)->continuation_history = &td->history.continuation_history[0][0];
+    }
 
     /*
     0   4                                     131 135
@@ -350,8 +353,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
 
     // Re-initialise les killer des enfants
-    td->killer1[si->ply+1] = Move::MOVE_NONE;
-    td->killer2[si->ply+1] = Move::MOVE_NONE;
+    (si+1)->killer1 = Move::MOVE_NONE;
+    (si+1)->killer2 = Move::MOVE_NONE;
 
 
     //  Avons-nous amélioré la position ?
@@ -411,8 +414,9 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         {
             int R = 3 + (32.0 * depth + std::min(static_eval - beta, 384)) / 128.0;
 
-            board.make_nullmove<C>();
             si->move = Move::MOVE_NULL;
+            si->continuation_history = &td->history.continuation_history[0][0];
+            board.make_nullmove<C>();
             int null_score = -alpha_beta<~C>(board, timer, -beta, -beta + 1, depth - 1 - R, td, si+1);
             board.undo_nullmove<C>();
 
@@ -437,7 +441,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             && depth >= ProbCutDepth
             && !(tt_hit && tt_depth >= depth - 3 && tt_score < betaCut))
         {
-            MovePicker movePicker(&board, td, si->ply, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, 0);
+            MovePicker movePicker(&board, td->history, si, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, 0);
             MOVE pbMove;
 
             while ( (pbMove = movePicker.next_move(true).move ) != Move::MOVE_NONE )
@@ -480,27 +484,25 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     //  Génération des coups
     //------------------------------------------------------------------------------------
     bool skipQuiets = false;
-    MOVE mc = td->get_counter_move(THEM, si->ply);
+    MOVE mc = td->history.get_counter_move(si);
 
-    MovePicker movePicker(&board, td, si->ply, tt_move,
-                          td->killer1[si->ply], td->killer2[si->ply], mc, 0);
+    MovePicker movePicker(&board, td->history, si, tt_move,
+                          si->killer1, si->killer2, mc, 0);
 
     const int old_alpha = alpha;
     int  move_count = 0;
-    MOVE quiets_moves[MAX_MOVES];
+    std::array<MOVE, MAX_MOVES> quiets_moves;
     int  quiets_count = 0;
+    std::array<MOVE, MAX_MOVES> noisy_moves;
+    int  noisy_count = 0;
     MOVE move;
-    bool isQuiet;
-    int  hist = 0, cmhist = 0, fuhist = 0;
+    int  history_score = 0;
 
     // Static Exchange Evaluation Pruning Margins
     int  seeMargin[2] = {
         SEENoisyMargin * depth * depth,
         SEEQuietMargin * depth
     };
-
-    // Futility Pruning Margin
-    int futilityMargin = static_eval + FutilityMargin * depth;
 
     // Boucle sur tous les coups
     while ( (move = movePicker.next_move(skipQuiets).move ) != Move::MOVE_NONE )
@@ -510,14 +512,18 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
         const U64 starting_nodes = td->nodes;
 
-        isQuiet = !Move::is_tactical(move);    // capture, promotion (avec capture ou non), prise en-passant
-        if (isQuiet)
+        const bool isQuiet = !Move::is_tactical(move);    // capture, promotion (avec capture ou non), prise en-passant
+        const bool isCapture = Move::is_capturing(move);
+
+        if (isCapture)
+        {
+            noisy_moves[noisy_count++] = move;
+            history_score = td->history.get_capture_history(C);
+        }
+        else
         {
             quiets_moves[quiets_count++] = move;
-
-            cmhist = td->get_counter_move_history(si->ply, move);
-            fuhist = td->get_followup_move_history(si->ply, move);
-            hist   = td->get_history(C, move) + cmhist + fuhist;
+            history_score = td->history.get_quiet_history(C, si, move);
         }
 
         //-------------------------------------------------
@@ -571,12 +577,20 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         //-------------------------------------------------
         // Futility Pruning.
         //-------------------------------------------------
+
+        // history_score =
+        //     move.IsCapture(state)
+        //         ? history.GetCaptureMoveScore(state, move)
+        //         : history.GetQuietMoveScore(state, move, stack->threats, stack);
+
+        // const int futility_margin = 201 + 82 * lmr_depth +
+        //                             history / 137;
+
         if (   !isRoot
+            &&  depth <= 8
             &&  isQuiet
             &&  best_score > -TBWIN_IN_X
-            &&  futilityMargin <= alpha
-            &&  depth <= FutilityPruningDepth
-            &&  hist < FutilityPruningHistoryLimit[improving])
+            &&  static_eval + 75 + 100*depth <= alpha)
         {
             skipQuiets = true;
         }
@@ -595,25 +609,13 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         }
 
         //-------------------------------------------------
-        // Counter Move Pruning.
+        // Countinuation Move Pruning.
         //-------------------------------------------------
         if (   !isRoot
             &&  isQuiet
             &&  best_score > -TBWIN_IN_X
-            &&  depth <= CounterMovePruningDepth[improving]
-            &&  cmhist < CounterMoveHistoryLimit[improving])
-        {
-            continue;
-        }
-
-        //-------------------------------------------------
-        // Follow Up Move Pruning.
-        //-------------------------------------------------
-        if (   !isRoot
-            &&  isQuiet
-            &&  best_score > -TBWIN_IN_X
-            &&  depth <= FollowUpMovePruningDepth[improving]
-            &&  fuhist < FollowUpMoveHistoryLimit[improving])
+            &&  depth <= ContinuationMovePruningDepth[improving]
+            &&  history_score < ContinuationMoveHistoryLimit[improving]) //TODO voir cette marge
         {
             continue;
         }
@@ -631,8 +633,9 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         }
 
         // execute current move
-        board.make_move<C, true>(move);
         si->move = move;
+        si->continuation_history = &td->history.continuation_history[static_cast<U32>(Move::piece(move))][Move::dest(move)];
+        board.make_move<C, true>(move);
 
         // Update counter of moves actually played
         move_count++;
@@ -661,7 +664,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             R += board.getNonPawnMaterialCount<THEM>() < 2;
 
             // Adjust based on history
-            R -= std::max(-2, std::min(2, hist / 5000));
+            R -= std::max(-2, std::min(2, history_score / 5000));
 
             // Depth after reductions, avoiding going straight to quiescence
             int lmrDepth = std::clamp(newDepth - R, 1, newDepth);
@@ -719,24 +722,28 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                     if (isQuiet)
                     {
                         // Bonus pour le coup quiet ayant provoqué un cutoff (fail-high)
-                        td->update_history(C, move, depth*depth);
-                        td->update_counter_move_history(si->ply, move, depth*depth);
-                        td->update_followup_move_history(si->ply, move, depth*depth);
+                        td->history.update_quiet_history(C, si, move, depth*depth);
 
                         // Malus pour les autres coups quiets
                         for (int i = 0; i < quiets_count - 1; i++)
-                        {
-                            td->update_history(C, quiets_moves[i], -depth*depth);
-                            td->update_counter_move_history(si->ply, quiets_moves[i], -depth*depth);
-                            td->update_followup_move_history(si->ply, quiets_moves[i], -depth*depth);
-                        }
+                            td->history.update_quiet_history(C, si, quiets_moves[i], -depth*depth);
 
                         // Met à jour les Killers
-                        td->update_killers(si->ply, move);
+                        td->history.update_killers(si, move);
 
                         // Met à jour le Counter-Move
-                        td->update_counter_move(THEM, si->ply, move);
+                        td->history.update_counter_move(si, move);
                     }
+                    else
+                    {
+                        td->history.update_capture_history(move, depth*depth);
+
+                        // for (int i = 0; i < noisy_count - 1; i++)
+                        // {
+                        //     td->history.update_capture_history(move, -depth*depth);
+                        // }
+                    }
+
                     break;
                 }
             } // score > alpha
@@ -749,6 +756,16 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         // On est en échec, et on n'a aucun coup : on est MAT
         // On n'est pas en échec, et on n'a aucun coup : on est PAT
         return isInCheck ? -MATE + si->ply : 0;
+    }
+
+    if (best_move)
+    {
+      // Since "good" captures are expected to be the best moves, we apply a
+      // penalty to all captures even in the case where the best move was quiet
+        for (int i = 0; i < noisy_count - 1; i++)
+        {
+            td->history.update_capture_history(move, -depth*depth);
+        }
     }
 
     // don't let our score inflate too high (tb)
