@@ -42,8 +42,8 @@ using CounterMoveTable         = MOVE[N_PIECE][N_SQUARES];
 //============================================================================
 // using ContinuationHistoryTable = I16[N_PIECE][N_SQUARES][N_PIECE][N_SQUARES];
 
-using CounterMoveHistoryTable  = I16[N_PIECE_TYPE][N_SQUARES][N_PIECE_TYPE][N_SQUARES];
-using FollowupMoveHistoryTable = I16[N_PIECE_TYPE][N_SQUARES][N_PIECE_TYPE][N_SQUARES];
+using CounterMoveHistoryTable  = I16[N_PIECE][N_SQUARES][N_PIECE][N_SQUARES];
+using FollowupMoveHistoryTable = I16[N_PIECE][N_SQUARES][N_PIECE][N_SQUARES];
 
 class History
 {

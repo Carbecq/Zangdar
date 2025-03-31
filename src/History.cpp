@@ -91,7 +91,7 @@ int History::get_counter_move_history(const SearchInfo* info, MOVE move) const
 
     return( (previous_move==Move::MOVE_NONE || previous_move==Move::MOVE_NULL)
                 ? 0
-                : counter_move_history[static_cast<int>(Move::piece_type(previous_move))][Move::dest(previous_move)][static_cast<int>(Move::piece_type(move))][Move::dest(move)] );
+                : counter_move_history[static_cast<int>(Move::piece(previous_move))][Move::dest(previous_move)][static_cast<int>(Move::piece(move))][Move::dest(move)] );
 }
 
 //=================================================================
@@ -111,10 +111,10 @@ void History::update_counter_move_history(const SearchInfo*info, MOVE move, int 
 
     bonus = std::max(-400, std::min(400, bonus));
 
-    PieceType prev_piece = Move::piece_type(previous_move);
+    Piece prev_piece = Move::piece(previous_move);
     int       prev_dest  = Move::dest(previous_move);
 
-    PieceType piece = Move::piece_type(move);
+    Piece piece = Move::piece(move);
     int       dest  = Move::dest(move);
 
     cm_histo = counter_move_history[static_cast<int>(prev_piece)][prev_dest][static_cast<int>(piece)][dest];
@@ -128,7 +128,7 @@ int History::get_followup_move_history(const SearchInfo* info, MOVE move) const
 
     return( (folowup_move==Move::MOVE_NONE || folowup_move==Move::MOVE_NULL)
                 ? 0
-                : followup_move_history[static_cast<int>(Move::piece_type(folowup_move))][Move::dest(folowup_move)][static_cast<int>(Move::piece_type(move))][Move::dest(move)] );
+                : followup_move_history[static_cast<int>(Move::piece(folowup_move))][Move::dest(folowup_move)][static_cast<int>(Move::piece(move))][Move::dest(move)] );
 }
 
 //=================================================================
@@ -148,10 +148,10 @@ void History::update_followup_move_history(const SearchInfo*info, MOVE move, int
 
     bonus = std::max(-400, std::min(400, bonus));
 
-    PieceType followup_piece = Move::piece_type(followup_move);
+    Piece followup_piece = Move::piece(followup_move);
     int       followup_dest  = Move::dest(followup_move);
 
-    PieceType piece = Move::piece_type(move);
+    Piece piece = Move::piece(move);
     int       dest  = Move::dest(move);
 
     fm_histo = followup_move_history[static_cast<int>(followup_piece)][followup_dest][static_cast<int>(piece)][dest];
