@@ -13,8 +13,10 @@ void History::reset()
 {
     std::memset(main_history,         0, sizeof(MainHistoryTable));
     std::memset(counter_move,          0, sizeof(CounterMoveTable));
-    std::memset(continuation_history,  0, sizeof(ContinuationHistoryTable));
-    std::memset(capture_history,       0, sizeof(CaptureHistory));
+    // std::memset(continuation_history,  0, sizeof(ContinuationHistoryTable));
+    // std::memset(capture_history,       0, sizeof(CaptureHistory));
+    std::memset(counter_move_history,  0, sizeof(CounterMoveHistoryTable));
+    std::memset(followup_move_history, 0, sizeof(FollowupMoveHistoryTable));
 }
 
 //=========================================================
@@ -37,9 +39,9 @@ MOVE History::get_counter_move(const SearchInfo* info) const
 {
     MOVE previous_move = (info-1)->move;
 
-    return (Move::is_ok(previous_move)) ?
-                counter_move[static_cast<U32>(Move::piece(previous_move))][Move::dest(previous_move)] :
-                Move::MOVE_NONE;
+    return (Move::is_ok(previous_move))
+            ? counter_move[static_cast<U32>(Move::piece(previous_move))][Move::dest(previous_move)]
+            : Move::MOVE_NONE;
 }
 
 //=================================================================
@@ -55,68 +57,181 @@ void History::update_counter_move(const SearchInfo* info, MOVE move)
         counter_move[static_cast<U32>(Move::piece(previous_move))][Move::dest(previous_move)] = move;
 }
 
-
-I16 History::get_capture_history(MOVE move) const
+//*********************************************************************
+int History::get_history(Color color, const MOVE move) const
 {
-    return capture_history[static_cast<U32>(Move::piece(move))][Move::dest(move)][static_cast<U32>(Move::captured_type(move))];
+    return(main_history[color][Move::from(move)][Move::dest(move)]);
 }
 
-void History::update_capture_history(MOVE move, I16 bonus)
+//=========================================================
+//! \brief  Incrémente l'heuristique "History"
+//---------------------------------------------------------
+void History::update_history(Color color, MOVE move, int bonus)
 {
-    I16& histo = capture_history
-            [static_cast<U32>(Move::piece(move))]
-            [Move::dest(move)]
-            [static_cast<U32>(Move::captured_type(move))];
-    histo += scale_bonus(histo, bonus);
+    // valeur actuelle de l'history
+    int histo = main_history[color][Move::from(move)][Move::dest(move)];
+
+    // le bonus est contenu dans la zone [-400 , 400]
+    bonus  = std::max(-400, std::min(400, bonus));
+
+    // la nouvelle valeur de l'history est contenue dans la zone [-16384, 16384]
+    histo += 32 * bonus - histo * abs(bonus) / 512;
+
+    // Sauve la nouvelle valeur de l'history
+    main_history[color][Move::from(move)][Move::dest(move)] = histo;
 }
 
+//==================================================================
+//! \brief  Récupère le counter_move history
+//! \param[in] ply    ply cherché
+//------------------------------------------------------------------
+int History::get_counter_move_history(const SearchInfo* info, MOVE move) const
+{
+    MOVE previous_move = (info-1)->move;
+
+    return( (previous_move==Move::MOVE_NONE || previous_move==Move::MOVE_NULL)
+                ? 0
+                : counter_move_history[static_cast<int>(Move::piece_type(previous_move))][Move::dest(previous_move)][static_cast<int>(Move::piece_type(move))][Move::dest(move)] );
+}
+
+//=================================================================
+//! \brief  Update Counter Move History.
+//! \param[in] prev_move    coup recherché au ply précédant
+//! \param[in] move         coup de réfutation
+//-----------------------------------------------------------------
+void History::update_counter_move_history(const SearchInfo*info, MOVE move, int bonus)
+{
+    MOVE previous_move = (info-1)->move;
+
+    // Check for root position or null moves
+    if (previous_move == Move::MOVE_NONE || previous_move == Move::MOVE_NULL)
+        return;
+
+    int cm_histo;
+
+    bonus = std::max(-400, std::min(400, bonus));
+
+    PieceType prev_piece = Move::piece_type(previous_move);
+    int       prev_dest  = Move::dest(previous_move);
+
+    PieceType piece = Move::piece_type(move);
+    int       dest  = Move::dest(move);
+
+    cm_histo = counter_move_history[static_cast<int>(prev_piece)][prev_dest][static_cast<int>(piece)][dest];
+    cm_histo += 32 * bonus - cm_histo * abs(bonus) / 512;
+    counter_move_history[static_cast<int>(prev_piece)][prev_dest][static_cast<int>(piece)][dest] = cm_histo;
+}
+
+int History::get_followup_move_history(const SearchInfo* info, MOVE move) const
+{
+    MOVE folowup_move = (info-2)->move;
+
+    return( (folowup_move==Move::MOVE_NONE || folowup_move==Move::MOVE_NULL)
+                ? 0
+                : followup_move_history[static_cast<int>(Move::piece_type(folowup_move))][Move::dest(folowup_move)][static_cast<int>(Move::piece_type(move))][Move::dest(move)] );
+}
+
+//=================================================================
+//! \brief  Update Counter Move History.
+//! \param[in] prev_move    coup recherché au ply précédant
+//! \param[in] move         coup de réfutation
+//-----------------------------------------------------------------
+void History::update_followup_move_history(const SearchInfo*info, MOVE move, int bonus)
+{
+    MOVE followup_move = (info-2)->move;
+
+    // Check for root position or null moves
+    if (followup_move == Move::MOVE_NONE || followup_move == Move::MOVE_NULL)
+        return;
+
+    int fm_histo;
+
+    bonus = std::max(-400, std::min(400, bonus));
+
+    PieceType followup_piece = Move::piece_type(followup_move);
+    int       followup_dest  = Move::dest(followup_move);
+
+    PieceType piece = Move::piece_type(move);
+    int       dest  = Move::dest(move);
+
+    fm_histo = followup_move_history[static_cast<int>(followup_piece)][followup_dest][static_cast<int>(piece)][dest];
+    fm_histo += 32 * bonus - fm_histo * abs(bonus) / 512;
+    followup_move_history[static_cast<int>(followup_piece)][followup_dest][static_cast<int>(piece)][dest] = fm_histo;
+}
+
+
+
+
+//=================================================================
+//! \brief  Capture History : [moved piece][target square][captured piece type]
+//! \param[in] move
+//-----------------------------------------------------------------
+// I16 History::get_capture_history(MOVE move) const
+// {
+//     return capture_history[static_cast<U32>(Move::piece(move))][Move::dest(move)][static_cast<U32>(Move::captured_type(move))];
+// }
+
+// void History::update_capture_history(MOVE move, I16 bonus)
+// {
+//     I16& histo = capture_history
+//             [static_cast<U32>(Move::piece(move))]
+//             [Move::dest(move)]
+//             [static_cast<U32>(Move::captured_type(move))];
+//     histo += scale_bonus(histo, bonus);
+// }
+
+
+//==============================================================
+//! \brief  Retourne la somme de tous les history "quiet"
+//--------------------------------------------------------------
+// I16 History::get_quiet_history(Color color, const SearchInfo* info, const MOVE move) const
+// {
+//     // Main History
+//     I16 score = main_history[color][Move::from(move)][Move::dest(move)];
+
+//     // Continuation History
+//     const int  delta[2] = {1, 2};   //TODO utiliser aussi info-4 ??
+
+//     for (int n=0; n<2; n++)
+//     {
+//         int d = delta[n];
+//         if (Move::is_ok((info - d)->move))
+//             score += *(info - d)->continuation_history[static_cast<U32>(Move::piece(move))][Move::dest(move)];
+//     }
+
+//     return score;
+// }
+
+// void History::update_quiet_history(Color color, const SearchInfo* info, MOVE move, I16 bonus)
+// {
+//     // valeur actuelle du Main History
+//     I16& mh = main_history[color][Move::from(move)][Move::dest(move)];
+//     mh += scale_bonus(mh, bonus);
+
+//     //TODO : vérifier le bonus
+
+//     const int  delta[2] = {1, 2};
+
+//     for (int n=0; n<2; n++)
+//     {
+//         int d = delta[n];
+//         if (Move::is_ok((info - d)->move))
+//         {
+//             I16& histo = (*(info - d)->continuation_history)[static_cast<U32>(Move::piece(move))][Move::dest(move)];
+//             histo += scale_bonus(histo, bonus);
+//         }
+//     }
+
+// }
+
+//=====================================================
+//  Retourne le bonus
+//-----------------------------------------------------
 I16 History::scale_bonus(I16 score, I16 bonus)
 {
-    auto c_bonus = std::clamp(bonus, BONUS_MIN, BONUS_MAX);
+    // le bonus est contenu dans la zone [-400 , 400]
+    auto clamped_bonus = std::clamp(bonus, BONUS_MIN, BONUS_MAX);
 
-    return 32 * c_bonus - score * abs(c_bonus) / 512;
-}
-
-I16 History::get_quiet_history(Color color, const SearchInfo* info, const MOVE move) const
-{
-    I16 score = main_history[color][Move::from(move)][Move::dest(move)];
-
-    MOVE previous_move;
-    const int  delta[3] = {1, 2, 4};
-
-    for (int n=0; n<3; n++)
-    {
-        int d = delta[n];
-        previous_move = (info - d)->move;
-        if (Move::is_ok(previous_move))
-            score += *(info - d)->continuation_history[static_cast<U32>(Move::piece(move))][Move::dest(move)];
-    }
-
-    return score;
-}
-
-
-void History::update_quiet_history(Color color, const SearchInfo* info, MOVE move, I16 bonus)
-{
-    // valeur actuelle de l'main_history
-    I16& mh = main_history[color][Move::from(move)][Move::dest(move)];
-    mh += scale_bonus(mh, bonus);
-
-    //TODO : vérifier le bonus
-
-    MOVE previous_move;
-
-    const int  delta[3] = {1, 2, 4};
-
-    for (int n=0; n<3; n++)
-    {
-        int d = delta[n];
-        previous_move = (info - d)->move;
-        if (Move::is_ok(previous_move))
-        {
-            I16& histo = (*(info - d)->continuation_history)[static_cast<U32>(Move::piece(move))][Move::dest(move)];
-            histo += scale_bonus(histo, bonus);
-        }
-    }
-
+    // la nouvelle valeur de l'history est contenue dans la zone [-16384, 16384]
+    return 32 * clamped_bonus - score * abs(clamped_bonus) / 512;
 }

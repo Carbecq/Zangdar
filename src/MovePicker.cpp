@@ -340,7 +340,7 @@ void MovePicker::score_noisy()
             value = MvvLvaScores[static_cast<U32>(PieceType::PAWN)][static_cast<U32>(PieceType::PAWN)];
         // eg_value[PAWN] -PieceType::PAWN;
 
-        mln.mlmoves[i].value = value + history.get_capture_history(move) / 100; //TODO à modérer ??
+        mln.mlmoves[i].value = value ; // + history.get_capture_history(move) / 100; //TODO à modérer ??
     }
 }
 
@@ -355,7 +355,11 @@ void MovePicker::score_quiet()
     for (size_t i = 0; i < mlq.count; i++)
     {
         move = mlq.mlmoves[i].move;
-        mlq.mlmoves[i].value = history.get_quiet_history(board->turn(), info, move);
+        mlq.mlmoves[i].value = history.get_history(board->turn(), move)
+                + history.get_counter_move_history(info, move)
+                + history.get_followup_move_history(info, move);
+
+        // mlq.mlmoves[i].value = history.get_quiet_history(board->turn(), info, move);
     }
 }
 

@@ -12,17 +12,25 @@ using MainHistoryTable        = I16[N_COLORS][N_SQUARES][N_SQUARES];
 
 //============================================================================
 //  Capture History
+//      https://www.chessprogramming.org/History_Heuristic#Capture_History
+//
 //      Capture History, introduced by Stefan Geschwentner in 2016, is a variation on history heuristic applied on capture moves.
 //      It is a history table indexed by moved piece, target square, and captured piece type.
 //      The history table receives a bonus for captures that failed high, and maluses for all capture moves that did not fail high.
 //      The history values is used as a replacement for LVA in MVV-LVA.
 //============================================================================
+// using CaptureHistory           = I16[N_PIECE][N_SQUARES][N_PIECE_TYPE];     // [moved piece][target square][captured piece type]
 
-// moving_piece , dest, captured_type
-using CaptureHistory           = I16[N_PIECE][N_SQUARES][N_PIECE_TYPE];
 
+//============================================================================
+// Move Ordering : Countermove Heuristic
+// This heuristic assumes that many moves have a "natural" response
+//  indexed by [from][to] or by [piece][to] of the previous move
+//============================================================================
 using CounterMoveTable         = MOVE[N_PIECE][N_SQUARES];
 
+
+//============================================================================
 //  Continuation History
 /*
  * Continuation History is a generalization of Counter Moves History and Follow Up History.
@@ -30,10 +38,12 @@ using CounterMoveTable         = MOVE[N_PIECE][N_SQUARES];
  * 1-ply and 2-ply continuation histories are most popular and correspond to Counter Moves History
  * and Follow Up History respectively.
  * Many programs, notably Stockfish, also makes use of 3, 4, 5, and 6-ply continuation histories.
- *
  */
+//============================================================================
+// using ContinuationHistoryTable = I16[N_PIECE][N_SQUARES][N_PIECE][N_SQUARES];
 
-using ContinuationHistoryTable = I16[N_PIECE][N_SQUARES][N_PIECE][N_SQUARES];
+using CounterMoveHistoryTable  = I16[N_PIECE_TYPE][N_SQUARES][N_PIECE_TYPE][N_SQUARES];
+using FollowupMoveHistoryTable = I16[N_PIECE_TYPE][N_SQUARES][N_PIECE_TYPE][N_SQUARES];
 
 class History
 {
@@ -41,7 +51,7 @@ public:
     History();
     void reset();
 
-    ContinuationHistoryTable continuation_history {{{{0}}}};
+    // ContinuationHistoryTable continuation_history {{{{0}}}};
 
 //--------------------------------------------
 
@@ -50,11 +60,21 @@ public:
     MOVE get_counter_move(const SearchInfo *info) const;
     void update_counter_move(const SearchInfo *info, MOVE move);
 
-    I16  get_capture_history(MOVE move) const;
-    void update_capture_history(MOVE move, I16 bonus);
+    // I16  get_capture_history(MOVE move) const;
+    // void update_capture_history(MOVE move, I16 bonus);
 
-    I16  get_quiet_history(Color color, const SearchInfo *info, const MOVE move) const;
-    void update_quiet_history(Color color, const SearchInfo* info, MOVE move, I16 bonus);
+    // I16  get_quiet_history(Color color, const SearchInfo *info, const MOVE move) const;
+    // void update_quiet_history(Color color, const SearchInfo* info, MOVE move, I16 bonus);
+
+    CounterMoveHistoryTable  counter_move_history;
+    FollowupMoveHistoryTable  followup_move_history;
+
+    int  get_counter_move_history(const SearchInfo *info, MOVE move) const;
+    void update_counter_move_history(const SearchInfo *info, MOVE move, int bonus);
+    int  get_followup_move_history(const SearchInfo *info, MOVE move) const;
+    void update_followup_move_history(const SearchInfo *info, MOVE move, int bonus);
+    int  get_history(Color color, const MOVE move) const;
+    void update_history(Color color, MOVE move, int bonus);
 
 private:
 
@@ -77,8 +97,8 @@ private:
     // counter_move[opposite_color][piece][dest]
     CounterMoveTable counter_move = {{0}};
 
-    // capture history
-    CaptureHistory capture_history = {{{0}}};
+    // capture history  : [moved piece][target square][captured piece type]
+    // CaptureHistory capture_history = {{{0}}};
 
 
 };

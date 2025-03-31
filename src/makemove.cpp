@@ -132,7 +132,12 @@ void Board::make_move(const MOVE move) noexcept
                 newStatus.fiftymove_counter = 0;
 
                 if constexpr (Update_NNUE == true)
+                {
+                    assert(C == Move::color(piece));
+                    assert(Them == Move::color(captured));
+
                     nnue.sub_sub_add(piece, from, captured, promoted, dest);
+                }
             }
 
             //====================================================================================
@@ -150,7 +155,12 @@ void Board::make_move(const MOVE move) noexcept
                 newStatus.fiftymove_counter = 0;
 
                 if constexpr (Update_NNUE == true)
+                {
+                    assert(C == Move::color(piece));
+                    assert(Them == Move::color(captured));
+
                     nnue.sub_sub_add(piece, from, captured, piece, dest);
+                }
             }
         }
 
