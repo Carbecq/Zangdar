@@ -491,13 +491,11 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
     const int old_alpha = alpha;
     int  move_count = 0;
-    std::array<MOVE, MAX_MOVES> quiets_moves;
-    int  quiets_count = 0;
-    std::array<MOVE, MAX_MOVES> noisy_moves;
-    int  noisy_count = 0;
+    std::array<MOVE, MAX_MOVES> quiet_moves;
+    int  quiet_count = 0;
     MOVE move;
     // int  history_score = 0;
-    int  hist = 0, cmhist = 0, fuhist = 0;
+    int  hist = 0, cmhist = 0, fuhist = 0;  // pas I16 !!
 
     // Static Exchange Evaluation Pruning Margins
     int  seeMargin[2] = {
@@ -524,22 +522,16 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         if (move == si->excluded)
             continue;
 
-        const U64 starting_nodes = td->nodes;
-
+        const U64  starting_nodes = td->nodes;
         const bool isQuiet   = !Move::is_tactical(move);    // capture, promotion (avec capture ou non), prise en-passant
-        const bool isCapture = Move::is_capturing(move);
 
-        if (isCapture)
+        if (isQuiet)
         {
-            noisy_moves[noisy_count++] = move;
-            // history_score = td->history.get_capture_history(C);
-        }
-        else if (isQuiet)
-        {
-            quiets_moves[quiets_count++] = move;
+            quiet_moves[quiet_count++] = move;
             // history_score = td->history.get_quiet_history(C, si, move);
             cmhist = td->history.get_counter_move_history(si, move);
             fuhist = td->history.get_followup_move_history(si, move);
+            assert (C == board.turn());
             hist   = td->history.get_main_history(C, move) + cmhist + fuhist;
         }
 
@@ -632,7 +624,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             &&  isQuiet
             &&  best_score > -TBWIN_IN_X
             &&  depth <= LateMovePruningDepth
-            &&  quiets_count > LateMovePruningCount[improving][depth])
+            &&  quiet_count > LateMovePruningCount[improving][depth])
         {
             skipQuiets = true;
             continue;
@@ -766,30 +758,10 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 if (score >= beta)
                 {
                     // non, ce coup est trop bon pour l'adversaire
-                    // Update Killers
                     if (isQuiet)
                     {
-                        // Bonus pour le coup quiet ayant provoqué un cutoff (fail-high)
-                        // td->history.update_quiet_history(C, si, move, depth*depth);
-                        td->history.update_main_history(C, move, depth*depth);
-                        td->history.update_counter_move_history(si, move, depth*depth);
-                        td->history.update_followup_move_history(si, move, depth*depth);
-
-                        // Malus pour les autres coups quiets
-                        // for (int i = 0; i < quiets_count - 1; i++)
-                        //     td->history.update_quiet_history(C, si, quiets_moves[i], -depth*depth);
-                        for (int i = 0; i < quiets_count - 1; i++)
-                        {
-                            td->history.update_main_history(C, quiets_moves[i], -depth*depth);
-                            td->history.update_counter_move_history(si, quiets_moves[i], -depth*depth);
-                            td->history.update_followup_move_history(si, quiets_moves[i], -depth*depth);
-                        }
-
-                        // Met à jour les Killers
-                        td->history.update_killers(si, move);
-
-                        // Met à jour le Counter-Move
-                        td->history.update_counter_move(si, move);
+                        assert(C == board.turn());
+                        td->history.update_quiet_history(C, si, move, depth, quiet_count, quiet_moves);
                     }
                     else
                     {
@@ -819,10 +791,10 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     {
       // Since "good" captures are expected to be the best moves, we apply a
       // penalty to all captures even in the case where the best move was quiet
-        for (int i = 0; i < noisy_count - 1; i++)
-        {
+        // for (int i = 0; i < noisy_count - 1; i++)
+        // {
             // td->history.update_capture_history(move, -depth*depth);
-        }
+        // }
     }
 
     // don't let our score inflate too high (tb)

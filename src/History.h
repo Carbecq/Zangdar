@@ -7,7 +7,7 @@ class History;
 #include "defines.h"
 
 
-// Quiet History, aussi appelée Main History : color, from, to
+// Quiet History, aussi appelée Main History : side_to_move, from, to
 using MainHistoryTable        = I16[N_COLORS][N_SQUARES][N_SQUARES];
 
 //============================================================================
@@ -53,26 +53,20 @@ public:
 
 //--------------------------------------------
 
-    void update_killers(SearchInfo *info, MOVE move);
-
     MOVE get_counter_move(const SearchInfo *info) const;
-    void update_counter_move(const SearchInfo *info, MOVE move);
 
     // I16  get_capture_history(MOVE move) const;
     // void update_capture_history(MOVE move, I16 bonus);
 
-    // I16  get_quiet_history(Color color, const SearchInfo *info, const MOVE move) const;
-    // void update_quiet_history(Color color, const SearchInfo* info, MOVE move, I16 bonus);
+    int get_quiet_history(Color color, const SearchInfo *info, const MOVE move) const;
+    void update_quiet_history(Color color, SearchInfo *info, MOVE move, I16 depth,
+                              int quiet_count, std::array<MOVE, MAX_MOVES>& quiet_moves);
 
     I16  get_counter_move_history(const SearchInfo *info, MOVE move) const;
-    void update_counter_move_history(const SearchInfo *info, MOVE move, I16 bonus);
     I16  get_followup_move_history(const SearchInfo *info, MOVE move) const;
-    void update_followup_move_history(const SearchInfo *info, MOVE move, I16 bonus);
     I16  get_main_history(Color color, const MOVE move) const;
-    void update_main_history(Color color, MOVE move, I16 bonus);
 
 private:
-
 
 //----------------------------------------------------
     static constexpr I16 BONUS_MIN = I16{-400};
