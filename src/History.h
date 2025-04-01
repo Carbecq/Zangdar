@@ -42,8 +42,6 @@ using CounterMoveTable         = MOVE[N_PIECE][N_SQUARES];
 //============================================================================
 using ContinuationHistoryTable = I16[N_PIECE][N_SQUARES][N_PIECE][N_SQUARES];
 
-// using CounterMoveHistoryTable  = I16[N_PIECE][N_SQUARES][N_PIECE][N_SQUARES];
-// using FollowupMoveHistoryTable = I16[N_PIECE][N_SQUARES][N_PIECE][N_SQUARES];
 
 class History
 {
@@ -66,14 +64,11 @@ public:
     // I16  get_quiet_history(Color color, const SearchInfo *info, const MOVE move) const;
     // void update_quiet_history(Color color, const SearchInfo* info, MOVE move, I16 bonus);
 
-    // CounterMoveHistoryTable  counter_move_history;
-    // FollowupMoveHistoryTable  followup_move_history;
-
-    I16 get_counter_move_history(const SearchInfo *info, MOVE move) const;
+    I16  get_counter_move_history(const SearchInfo *info, MOVE move) const;
     void update_counter_move_history(const SearchInfo *info, MOVE move, I16 bonus);
-    I16 get_followup_move_history(const SearchInfo *info, MOVE move) const;
+    I16  get_followup_move_history(const SearchInfo *info, MOVE move) const;
     void update_followup_move_history(const SearchInfo *info, MOVE move, I16 bonus);
-    int  get_main_history(Color color, const MOVE move) const;
+    I16  get_main_history(Color color, const MOVE move) const;
     void update_main_history(Color color, MOVE move, I16 bonus);
 
 private:
@@ -83,7 +78,7 @@ private:
     static constexpr I16 BONUS_MIN = I16{-400};
     static constexpr I16 BONUS_MAX = I16{400};
 
-    I16 scale_bonus(I16& score, I16 bonus);
+    void scale_bonus(I16 *score, I16 bonus);
 
     //*********************************************************************
     //  Données initialisées une seule fois au début d'une nouvelle partie
