@@ -30,7 +30,7 @@ void Search::think(Board board, Timer timer, int m_index)
     for (int i = 0; i < MAX_PLY+STACK_OFFSET; i++)
     {
         (si + i)->ply = i;
-        // (si + i)->continuation_history = &td->history.continuation_history[0][0];
+        (si + i)->cont_hist = &td->history.continuation_history[0][0];
     }
 
     /*
@@ -415,7 +415,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             int R = 3 + (32.0 * depth + std::min(static_eval - beta, 384)) / 128.0;
 
             si->move = Move::MOVE_NULL;
-            // si->continuation_history = &td->history.continuation_history[0][0];
+            si->cont_hist = &td->history.continuation_history[0][0];
             board.make_nullmove<C>();
             int null_score = -alpha_beta<~C>(board, timer, -beta, -beta + 1, depth - 1 - R, td, si+1);
             board.undo_nullmove<C>();
@@ -448,6 +448,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             {
                 board.make_move<C, true>(pbMove);
                 si->move = pbMove;
+                si->cont_hist = &td->history.continuation_history[static_cast<U32>(Move::piece(pbMove))][Move::dest(pbMove)];
 
                 // Teste si une recherche de quiescence donne un score supérieur à betaCut
                 int pbScore = -quiescence<~C>(board, timer, -betaCut, -betaCut+1, td, si+1);
@@ -539,7 +540,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             // history_score = td->history.get_quiet_history(C, si, move);
             cmhist = td->history.get_counter_move_history(si, move);
             fuhist = td->history.get_followup_move_history(si, move);
-            hist   = td->history.get_history(C, move) + cmhist + fuhist;
+            hist   = td->history.get_main_history(C, move) + cmhist + fuhist;
         }
 
         //-------------------------------------------------
@@ -681,7 +682,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
         // execute current move
         si->move = move;
-        // si->continuation_history = &td->history.continuation_history[static_cast<U32>(Move::piece(move))][Move::dest(move)];
+        si->cont_hist = &td->history.continuation_history[static_cast<U32>(Move::piece(move))][Move::dest(move)];
         board.make_move<C, true>(move);
 
         // Update counter of moves actually played
@@ -770,7 +771,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                     {
                         // Bonus pour le coup quiet ayant provoqué un cutoff (fail-high)
                         // td->history.update_quiet_history(C, si, move, depth*depth);
-                        td->history.update_history(C, move, depth*depth);
+                        td->history.update_main_history(C, move, depth*depth);
                         td->history.update_counter_move_history(si, move, depth*depth);
                         td->history.update_followup_move_history(si, move, depth*depth);
 
@@ -779,7 +780,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                         //     td->history.update_quiet_history(C, si, quiets_moves[i], -depth*depth);
                         for (int i = 0; i < quiets_count - 1; i++)
                         {
-                            td->history.update_history(C, quiets_moves[i], -depth*depth);
+                            td->history.update_main_history(C, quiets_moves[i], -depth*depth);
                             td->history.update_counter_move_history(si, quiets_moves[i], -depth*depth);
                             td->history.update_followup_move_history(si, quiets_moves[i], -depth*depth);
                         }

@@ -95,14 +95,6 @@ constexpr U32 MOVE_DEPL_MASK      = 0b0111111111110000000000000000;
 
 constexpr U32 MOVE_NULL           = 65; // 1000001
 
-/* X Y  X&Y  X|Y  X^Y
- * 0 0  0    0    0
- * 0 1  0    1    1
- * 1 0  0    1    1
- * 1 1  1    1    0
- */
-
-
 
 [[nodiscard]] constexpr MOVE CODE(
     const int   _from,

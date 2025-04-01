@@ -129,6 +129,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
 
         board.make_move<C, true>(move);
         si->move = move;
+        si->cont_hist = &td->history.continuation_history[static_cast<U32>(Move::piece(move))][Move::dest(move)];
         score = -quiescence<~C>(board, timer, -beta, -alpha, td, si+1);
         board.undo_move<C, true>();
 

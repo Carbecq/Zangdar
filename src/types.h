@@ -320,7 +320,7 @@ struct SearchInfo {
     int         ply{};        // profondeur de recherche
     PVariation  pv{};         // Principale Variation
     int         doubleExtensions{};
-    PieceTo*    continuation_history;
+    PieceTo*    cont_hist{};    // pointeur sur History::continuation_history[piece(info-x)][dest(info-x)]
     MOVE        killer1{};      //TODO vérifier initialisation
     MOVE        killer2{};
 }__attribute__((aligned(64)));
