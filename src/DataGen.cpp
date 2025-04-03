@@ -136,12 +136,17 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
     std::unique_ptr<Search> search = std::make_unique<Search>();
     ThreadData* td = new ThreadData;
-    td->info   = &(td->_info[STACK_OFFSET]);
     td->index  = 0;
 
-    SearchInfo* si = &td->info[0];
+    SearchInfo* _info = new SearchInfo[STACK_SIZE];
+    // Grace au décalage, la position root peut regarder en arrière
+    SearchInfo* si  = _info + STACK_OFFSET;
+
     for (int i = 0; i < MAX_PLY+STACK_OFFSET; i++)
+    {
         (si + i)->ply = i;
+        (si + i)->cont_hist = &td->history.continuation_history[0][0];
+    }
 
     MoveList movelist;
     Usize    nbr_moves;
@@ -264,7 +269,8 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
             // printf("----------------------------nouveau coup \n");
             td->nodes = 0;
             td->stopped  = false;
-            std::memset(td->_info, 0, sizeof(SearchInfo)*STACK_SIZE);
+            //TODO
+            // std::memset(td->_info, 0, sizeof(SearchInfo)*STACK_SIZE);
             transpositionTable.update_age();
 
             // Partie nulle ?
@@ -406,7 +412,6 @@ void DataGen::data_search(Board& board, Timer& timer,
     // iterative deepening
     //==================================================
 
-    si->pv.length = 0;
     td->score     = -INFINITE;
     td->stopped   = false;
     td->nodes     = 0;

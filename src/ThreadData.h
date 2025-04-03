@@ -24,10 +24,8 @@ public:
     ThreadData();
     void reset();
 
-    SearchInfo  _info[STACK_SIZE];
     std::thread thread;
     Search*     search;     // pointeur sur la classe de recherche
-    SearchInfo* info;       // pointeur décalé de STACK_OFFSET sur la tableau total _info[STACK_SIZE]
     History     history;
 
     int         index;

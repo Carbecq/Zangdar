@@ -23,8 +23,6 @@ ThreadPool::ThreadPool(int _nbr, bool _tb, bool _log) :
     for (int i = 0; i < MAX_THREADS; i++)
     {
         threadData[i].search = nullptr;
-        // Grace au décalage, la position root peut regarder en arrière
-        threadData[i].info   = &(threadData[i]._info[STACK_OFFSET]);
         threadData[i].index  = i;
     }
 
@@ -67,7 +65,6 @@ void ThreadPool::reset()
     // Libère toute la mémoire
     for (int i = 0; i < nbrThreads; i++)
     {
-        std::memset(threadData[i]._info,                 0, sizeof(SearchInfo)*STACK_SIZE);
         threadData[i].history.reset();
         // std::memset(threadData[i].killer1,               0, sizeof(KillerTable));
         // std::memset(threadData[i].killer2,               0, sizeof(KillerTable));
@@ -123,10 +120,6 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
             threadData[i].best_depth = 0;
             threadData[i].best_move  = Move::MOVE_NONE;
             threadData[i].best_score = -INFINITE;
-
-            // on prend TOUT le tableau
-            // excluded, eval, move, ply, pv
-            std::memset(threadData[i]._info, 0, sizeof(SearchInfo)*STACK_SIZE);
 
             delete threadData[i].search;
             threadData[i].search = new Search();

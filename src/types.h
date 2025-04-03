@@ -315,7 +315,7 @@ using PieceTo = I16[N_PIECE][N_SQUARES];
 
 struct SearchInfo {
     MOVE        excluded{};   // coup à éviter
-    int         eval{};       // évaluation statique
+    int         static_eval{};       // évaluation statique
     MOVE        move{};       // coup cherché
     int         ply{};        // profondeur de recherche
     PVariation  pv{};         // Principale Variation

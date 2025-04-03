@@ -25,24 +25,9 @@ void Search::think(Board board, Timer timer, int m_index)
     board.reserve_capacity();
 
     ThreadData* td = &threadPool.threadData[m_index];
-    SearchInfo* si = &td->info[0];
-
-    for (int i = 0; i < MAX_PLY+STACK_OFFSET; i++)
-    {
-        (si + i)->ply = i;
-        (si + i)->cont_hist = &td->history.continuation_history[0][0];
-    }
-
-    /*
-    0   4                                     131 135
-    +---|--------------------------------------+---+        136 éléments total (128 + 2*4)
-
-    +---+--------------------------------------+---+
-        0                                     127 131       ply
- */
 
     // iterative deepening
-    iterative_deepening<C>(board, timer, td, si);
+    iterative_deepening<C>(board, timer, td);
 
     // Arrêt des threads, affichage du résultat
     if (m_index == 0)
@@ -79,9 +64,26 @@ void Search::think(Board board, Timer timer, int m_index)
 //!
 //------------------------------------------------------
 template<Color C>
-void Search::iterative_deepening(Board& board, Timer& timer, ThreadData* td, SearchInfo* si)
+void Search::iterative_deepening(Board& board, Timer& timer, ThreadData* td)
 {
-    si->pv.length = 0;
+    std::array<SearchInfo, STACK_SIZE> _info{};
+
+    /*
+    0   4                                     131 135
+    +---|--------------------------------------+---+        136 éléments total (128 + 2*4)
+
+    +---+--------------------------------------+---+
+        0                                     127 131       ply
+ */
+
+    // Grace au décalage, la position root peut regarder en arrière
+    SearchInfo* si  = &(_info[STACK_OFFSET]);
+
+    for (int i = 0; i < MAX_PLY+STACK_OFFSET; i++)
+    {
+        (si + i)->ply = i;
+        (si + i)->cont_hist = &td->history.continuation_history[0][0];
+    }
 
     for (td->depth = 1; td->depth <= timer.getSearchDepth(); td->depth++)
     {
@@ -329,11 +331,11 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     {
         if (isInCheck)
         {
-            static_eval = si->eval = -MATE + si->ply;
+            static_eval = si->static_eval = -MATE + si->ply;
         }
         else
         {
-            static_eval = si->eval = (tt_hit && tt_eval != VALUE_NONE) ?
+            static_eval = si->static_eval = (tt_hit && tt_eval != VALUE_NONE) ?
                     tt_eval : board.evaluate();
 
             // Amélioration de static-eval, au cas où tt_score est assez bon
@@ -363,10 +365,10 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     {
         if (isInCheck)
             return false;
-        if (si->ply > 1 && (si-2)->eval != VALUE_NONE)
-            return si->eval > (si - 2)->eval;
-        if (si->ply > 3 && (si-4)->eval != VALUE_NONE)
-            return si->eval > (si - 4)->eval;
+        if (si->ply > 1 && (si-2)->static_eval != VALUE_NONE)
+            return si->static_eval > (si - 2)->static_eval;
+        if (si->ply > 3 && (si-4)->static_eval != VALUE_NONE)
+            return si->static_eval > (si - 4)->static_eval;
         return true;
     }();
 
@@ -534,54 +536,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             assert (C == board.turn());
             hist   = td->history.get_main_history(C, move) + cmhist + fuhist;
         }
-
-        //-------------------------------------------------
-        //  SINGULAR EXTENSION
-        //-------------------------------------------------
-        int extension = 0;
-
-        if (   depth > 8
-            && si->ply < 2 * depth
-            && !isExcluded  // Avoid recursive singular search
-            && !isRoot
-            && move == tt_move
-            && tt_depth > depth - 3
-            && tt_bound == BOUND_LOWER
-            && abs(tt_score) < TBWIN_IN_X)
-        {
-            // Search to reduced depth with a zero window a bit lower than ttScore
-            int sing_beta  = tt_score - depth*2;    //TODO essai -depth*3
-            int sing_depth = (depth-1)/2;
-
-            si->excluded = move;
-            score = alpha_beta<C>(board, timer, sing_beta-1, sing_beta, sing_depth, td, si); //TODO si ou si+1 ?
-            si->excluded = Move::MOVE_NONE;
-
-            if (score < sing_beta)
-            {
-                if (   !isPV
-                    && score < sing_beta - 50
-                    && si->doubleExtensions <= 20)  // Avoid search explosion by limiting the number of double extensions
-                {
-                    extension = 2;
-                    si->doubleExtensions++;
-                }
-                else
-                {
-                    extension = 1;
-                }
-            }
-            else if (sing_beta >= beta)
-            {
-                // multicut!
-                return sing_beta;
-            }
-            else if (tt_score >= beta)
-            {
-                // negative extension!
-                extension = -2;
-            }
-        }
+        move_count++;
 
         //-------------------------------------------------
         // Futility Pruning.
@@ -672,13 +627,60 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             continue;
         }
 
+        //-------------------------------------------------
+        //  SINGULAR EXTENSION
+        //-------------------------------------------------
+        int extension = 0;
+
+        if (   depth > 8
+            && si->ply < 2 * depth
+            && !isExcluded  // Avoid recursive singular search
+            && !isRoot
+            && move == tt_move
+            && tt_depth > depth - 3
+            && tt_bound == BOUND_LOWER
+            && abs(tt_score) < TBWIN_IN_X)
+        {
+            // Search to reduced depth with a zero window a bit lower than ttScore
+            int sing_beta  = tt_score - depth*2;    //TODO essai -depth*3
+            int sing_depth = (depth-1)/2;
+
+            si->excluded = move;
+            score = alpha_beta<C>(board, timer, sing_beta-1, sing_beta, sing_depth, td, si); //TODO si ou si+1 ?
+            si->excluded = Move::MOVE_NONE;
+
+            if (score < sing_beta)
+            {
+                if (   !isPV
+                    && score < sing_beta - 50
+                    && si->doubleExtensions <= 20)  // Avoid search explosion by limiting the number of double extensions
+                {
+                    extension = 2;
+                    si->doubleExtensions++;
+                }
+                else
+                {
+                    extension = 1;
+                }
+            }
+            else if (sing_beta >= beta)
+            {
+                // multicut!
+                return sing_beta;
+            }
+            else if (tt_score >= beta)
+            {
+                // negative extension!
+                extension = -2;
+            }
+        }
+
+
         // execute current move
         si->move = move;
         si->cont_hist = &td->history.continuation_history[static_cast<U32>(Move::piece(move))][Move::dest(move)];
         board.make_move<C, true>(move);
 
-        // Update counter of moves actually played
-        move_count++;
 
         //------------------------------------------------------------------------------------
         //  LATE MOVE REDUCTION

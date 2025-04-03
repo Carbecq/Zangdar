@@ -35,7 +35,7 @@ public:
     template <Color C> int  aspiration_window(Board& board, Timer& timer, ThreadData* td, SearchInfo* si);
 
 private:
-    template <Color C> void iterative_deepening(Board& board, Timer& timer, ThreadData* td, SearchInfo* si);
+    template <Color C> void iterative_deepening(Board& board, Timer& timer, ThreadData* td);
     template <Color C> int  alpha_beta(Board& board, Timer& timer, int alpha, int beta, int depth, ThreadData* td, SearchInfo* si);
     template <Color C> int  quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadData* td, SearchInfo* si);
 

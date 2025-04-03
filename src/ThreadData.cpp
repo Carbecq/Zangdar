@@ -10,7 +10,6 @@ ThreadData::ThreadData()
 //*********************************************************************
 void ThreadData::reset()
 {
-    std::memset(_info,                 0, sizeof(SearchInfo)*STACK_SIZE);
     history.reset();
 }
 
