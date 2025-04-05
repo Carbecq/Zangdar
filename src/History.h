@@ -19,7 +19,7 @@ using MainHistoryTable        = I16[N_COLORS][N_SQUARES][N_SQUARES];
 //      The history table receives a bonus for captures that failed high, and maluses for all capture moves that did not fail high.
 //      The history values is used as a replacement for LVA in MVV-LVA.
 //============================================================================
-// using CaptureHistory           = I16[N_PIECE][N_SQUARES][N_PIECE_TYPE];     // [moved piece][target square][captured piece type]
+using CaptureHistory           = I16[N_PIECE][N_SQUARES][N_PIECE_TYPE];     // [moved piece][target square][captured piece type]
 
 
 //============================================================================
@@ -55,10 +55,12 @@ public:
 
     MOVE get_counter_move(const SearchInfo *info) const;
 
-    // I16  get_capture_history(MOVE move) const;
-    // void update_capture_history(MOVE move, I16 bonus);
+    I16  get_capture_history(MOVE move) const;
+    // void update_capture_history(MOVE move, I16 depth, bool good);
+    void update_capture_history(MOVE best_move, I16 depth,
+                                         int capture_count, std::array<MOVE, MAX_MOVES>& capture_moves);
 
-    int get_quiet_history(Color color, const SearchInfo *info, const MOVE move) const;
+    int  get_quiet_history(Color color, const SearchInfo *info, const MOVE move, int &cm_hist, int &fm_hist) const;
     void update_quiet_history(Color color, SearchInfo *info, MOVE move, I16 depth,
                               int quiet_count, std::array<MOVE, MAX_MOVES>& quiet_moves);
 
@@ -68,11 +70,16 @@ public:
 
 private:
 
+    static constexpr int HistoryDivisor = 16384;
+    static constexpr int MAX_HISTORY    = 16384;
+
 //----------------------------------------------------
     static constexpr I16 BONUS_MIN = I16{-400};
     static constexpr I16 BONUS_MAX = I16{400};
 
-    void scale_bonus(I16 *score, I16 bonus);
+    void gravity(I16 *entry, int bonus);
+    int stat_bonus(int depth);
+    int stat_malus(int depth);
 
     //*********************************************************************
     //  Données initialisées une seule fois au début d'une nouvelle partie
@@ -87,7 +94,7 @@ private:
     CounterMoveTable counter_move = {{0}};
 
     // capture history  : [moved piece][target square][captured piece type]
-    // CaptureHistory capture_history = {{{0}}};
+    CaptureHistory capture_history = {{{0}}};
 
 
 };
