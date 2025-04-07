@@ -57,45 +57,68 @@ void History::update_quiet_history(Color color, SearchInfo* info, MOVE best_move
                                    int quiet_count, std::array<MOVE, MAX_MOVES>& quiet_moves)
 {
     // Counter Move
-    //TODO test sur previous_move is_ok utile ??
-    MOVE previous_move = (info-1)->move;
-    if (Move::is_ok(previous_move))
-        counter_move[static_cast<U32>(Move::piece(previous_move))][Move::dest(previous_move)] = best_move;
-
-    // Killer Moves
-    if (info->killer1 != best_move)
+    if (Move::piece_type(best_move) != PieceType::QUEEN)
     {
-        info->killer2 = info->killer1;
-        info->killer1 = best_move;
+        MOVE previous_move = (info-1)->move;
+
+        if (Move::is_ok(previous_move))
+            counter_move[static_cast<U32>(Move::piece(previous_move))][Move::dest(previous_move)] = best_move;
+
+        // Killer Moves
+        if (info->killer1 != best_move)
+        {
+            info->killer2 = info->killer1;
+            info->killer1 = best_move;
+        }
     }
 
-    // Bonus pour le coup quiet ayant provoqué un cutoff (fail-high)
-    // Malus pour les autres coups quiets
+    // credits to ethereal
+    // only update quiet history if best move was important
+    if (!depth || (depth <= 3 && quiet_count <= 1))
+        return;
 
-    I16* histo;
     MOVE move;
     int bonus = stat_bonus(depth);
     int malus = stat_malus(depth);
+
+    // Bonus pour le coup quiet ayant provoqué un cutoff (fail-high)
+    update_main(color, best_move, bonus);
+    update_cont(info, best_move, bonus);
 
     // Malus pour les autres coups quiets
     for (int i = 0; i < quiet_count; i++)
     {
         move = quiet_moves[i];
-        histo = &(main_history[color][Move::from(move)][Move::dest(move)]);
-        gravity(histo, (quiet_moves[i] == best_move) ? bonus  : malus);
-
-        if (Move::is_ok((info-1)->move))
+        if (move != best_move)
         {
-            histo = &(*(info - 1)->cont_hist)[static_cast<int>(Move::piece(move))][Move::dest(move)];
-            gravity(histo, (quiet_moves[i] == best_move) ? bonus  : malus);
-        }
-
-        if (Move::is_ok((info-2)->move))
-        {
-            histo = &(*(info - 2)->cont_hist)[static_cast<U32>(Move::piece(move))][Move::dest(move)];
-            gravity(histo, (quiet_moves[i] == best_move) ? bonus  : malus);
+            update_main(color, move, malus);
+            update_cont(info, move, malus);
         }
     }
+}
+
+void History::update_main(Color color, MOVE move, int bonus)
+{
+    I16* histo = &(main_history[color][Move::from(move)][Move::dest(move)]);
+    gravity(histo, bonus);
+}
+
+void History::update_cont(SearchInfo* info, MOVE move, int bonus)
+{
+    for (int delta : {1, 2})    //TODO essayer aussi 4 et 6
+    {
+        if (Move::is_ok((info - delta)->move))
+        {
+            I16* histo = &(*(info - delta)->cont_hist)[static_cast<int>(Move::piece(move))][Move::dest(move)];
+            gravity(histo, bonus);
+        }
+    }
+}
+
+void History::update_capt(MOVE move, int malus)
+{
+    I16* histo = &(capture_history[static_cast<U32>(Move::piece(move))][Move::dest(move)][static_cast<U32>(Move::captured_type(move))]);
+    gravity(histo, malus);
 }
 
 //=================================================================
@@ -110,19 +133,19 @@ I16 History::get_capture_history(MOVE move) const
 void History::update_capture_history(MOVE best_move, I16 depth,
                                      int capture_count, std::array<MOVE, MAX_MOVES>& capture_moves)
 {
-    // Update the history for each capture move that was attempted. One of them
-    // might have been the move which produced a cutoff, and thus earn a bonus
-
-    I16* histo;
-    MOVE move;
     int bonus = stat_bonus(depth);
     int malus = stat_malus(depth);
 
+    // Bonus pour le coup ayant provoqué un cutoff (fail-high)
+    update_capt(best_move, bonus);
+
+    // Malus pour les autres coups
     for (int i = 0; i < capture_count; i++)
     {
-        move  = capture_moves[i];
-        histo = &(capture_history[static_cast<U32>(Move::piece(move))][Move::dest(move)][static_cast<U32>(Move::captured_type(move))]);
-        gravity(histo, (capture_moves[i] == best_move) ? bonus  : malus);
+        MOVE move = capture_moves[i];
+        if (move == best_move)
+            continue;
+        update_capt(move, malus);
     }
 }
 
@@ -141,9 +164,8 @@ void History::gravity(I16* entry, int bonus)
 
 int History::stat_bonus(int depth)
 {
-    // Formule Ethereal
-    // Approximately verbatim stat bonus formula from Stockfish
-    return depth > 13 ? 32 : 16 * depth * depth + 128 * std::max(depth - 1, 0);
+    return std::min(MAX_HISTORY_BONUS, HISTORY_MULT*depth - HISTORY_MINUS);
+
 }
 
 int History::stat_malus(int depth)

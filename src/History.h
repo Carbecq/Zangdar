@@ -8,7 +8,7 @@ class History;
 
 
 // Quiet History, aussi appelée Main History : side_to_move, from, to
-using MainHistoryTable        = I16[N_COLORS][N_SQUARES][N_SQUARES];
+using MainHistoryTable = I16[N_COLORS][N_SQUARES][N_SQUARES];
 
 //============================================================================
 //  Capture History
@@ -19,7 +19,7 @@ using MainHistoryTable        = I16[N_COLORS][N_SQUARES][N_SQUARES];
 //      The history table receives a bonus for captures that failed high, and maluses for all capture moves that did not fail high.
 //      The history values is used as a replacement for LVA in MVV-LVA.
 //============================================================================
-using CaptureHistory           = I16[N_PIECE][N_SQUARES][N_PIECE_TYPE];     // [moved piece][target square][captured piece type]
+using CaptureHistory = I16[N_PIECE][N_SQUARES][N_PIECE_TYPE];     // [moved piece][target square][captured piece type]
 
 
 //============================================================================
@@ -27,7 +27,7 @@ using CaptureHistory           = I16[N_PIECE][N_SQUARES][N_PIECE_TYPE];     // [
 // This heuristic assumes that many moves have a "natural" response
 //  indexed by [from][to] or by [piece][to] of the previous move
 //============================================================================
-using CounterMoveTable         = MOVE[N_PIECE][N_SQUARES];
+using CounterMoveTable = MOVE[N_PIECE][N_SQUARES];
 
 
 //============================================================================
@@ -63,26 +63,30 @@ public:
     void update_quiet_history(Color color, SearchInfo *info, MOVE move, I16 depth,
                               int quiet_count, std::array<MOVE, MAX_MOVES>& quiet_moves);
 
+    void update_main(Color color, MOVE move, int bonus);
+    void update_cont(SearchInfo* info, MOVE move, int bonus);
+    void update_capt(MOVE move, int malus);
 
 private:
 
     static constexpr int MAX_HISTORY    = 16384;
+    static constexpr int HISTORY_MULT   = 364;
+    static constexpr int HISTORY_MINUS  = -66;
+    static constexpr int MAX_HISTORY_BONUS = 1882;
 
 //----------------------------------------------------
     void gravity(I16 *entry, int bonus);
-    int  stat_bonus(int depth);
-    int  stat_malus(int depth);
+    int stat_bonus(int depth);
+    int stat_malus(int depth);
 
     //*********************************************************************
     //  Données initialisées une seule fois au début d'une nouvelle partie
 
 
     // tableau donnant le bonus/malus d'un coup quiet ayant provoqué un cutoff
-    // bonus main_history [Color][From][Dest]
     MainHistoryTable  main_history = {{{0}}};
 
     // tableau des coups qui ont causé un cutoff au ply précédent
-    // counter_move[opposite_color][piece][dest]
     CounterMoveTable counter_move = {{0}};
 
     // capture history  : [moved piece][target square][captured piece type]

@@ -491,7 +491,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     MovePicker movePicker(&board, td->history, si, tt_move,
                           si->killer1, si->killer2, td->history.get_counter_move(si), 0);
 
-    const int old_alpha = alpha;
+    int  bound = BOUND_UPPER;
     int  move_count = 0;
     std::array<MOVE, MAX_MOVES> quiet_moves;
     int  quiet_count = 0;
@@ -697,12 +697,13 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         if (score > best_score)
         {
             best_score = score; // le meilleur que l'on ait trouvé, pas forcément intéressant
-            best_move  = move;
 
             // If score beats alpha we update alpha
             if (score > alpha)
             {
+                best_move  = move;
                 alpha = score;
+                bound = BOUND_EXACT;
 
                 // update the PV
                 if (td->index == 0)
@@ -711,27 +712,35 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 // If score beats beta we have a cutoff
                 if (score >= beta)
                 {
+                    td->history.update_quiet_history(C, si, best_move, depth, quiet_count, quiet_moves);
+                    td->history.update_capture_history(best_move, depth, capture_count, capture_moves);
+
                     // non, ce coup est trop bon pour l'adversaire
+                    // ça ne sert à rien de rechercher plus loin
+                    bound = BOUND_LOWER;
                     break;
                 }
             } // score > alpha
         }     // meilleur coup
     }         // boucle sur les coups
 
-    if (best_score >= beta && !Move::is_tactical(best_move))
-        td->history.update_quiet_history(C, si, best_move, depth, quiet_count, quiet_moves);
-
-    if (best_score >= beta)
-        td->history.update_capture_history(best_move, depth, capture_count, capture_moves);
-
-
     // est-on mat ou pat ?
     if (move_count == 0)
     {
+        if (isExcluded)
+            return alpha;
+
         // On est en échec, et on n'a aucun coup : on est MAT
         // On n'est pas en échec, et on n'a aucun coup : on est PAT
         return isInCheck ? -MATE + si->ply : 0;
     }
+
+    // if (best_score >= beta && !Move::is_tactical(best_move))
+    //     td->history.update_quiet_history(C, si, best_move, depth, quiet_count, quiet_moves);
+
+    // if (best_score >= beta)
+    //     td->history.update_capture_history(best_move, depth, capture_count, capture_moves);
+
 
     best_score = std::min(best_score, max_score);
 
@@ -742,11 +751,6 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         //  si score >  alpha    : c'est un bon coup : HASH_EXACT
         //  si score <= alpha    : c'est un coup qui n'améliore pas alpha : HASH_ALPHA
 
-        int bound = best_score >= beta     ? BOUND_LOWER
-                  : best_score > old_alpha ? BOUND_EXACT
-                  : BOUND_UPPER;
-        // tt_store(board->hash, thread->height, bestMove, best, eval, depth, ttBound);
-        // int flag = (alpha != old_alpha) ? BOUND_EXACT : BOUND_UPPER;
         transpositionTable.store(board.get_key(), best_move, best_score, static_eval, bound, depth, si->ply, ttPV);
     }
 
