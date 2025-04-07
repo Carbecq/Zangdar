@@ -56,7 +56,6 @@ public:
     MOVE get_counter_move(const SearchInfo *info) const;
 
     I16  get_capture_history(MOVE move) const;
-    // void update_capture_history(MOVE move, I16 depth, bool good);
     void update_capture_history(MOVE best_move, I16 depth,
                                          int capture_count, std::array<MOVE, MAX_MOVES>& capture_moves);
 
@@ -64,22 +63,15 @@ public:
     void update_quiet_history(Color color, SearchInfo *info, MOVE move, I16 depth,
                               int quiet_count, std::array<MOVE, MAX_MOVES>& quiet_moves);
 
-    I16  get_counter_move_history(const SearchInfo *info, MOVE move) const;
-    I16  get_followup_move_history(const SearchInfo *info, MOVE move) const;
-    I16  get_main_history(Color color, const MOVE move) const;
 
 private:
 
-    static constexpr int HistoryDivisor = 16384;
     static constexpr int MAX_HISTORY    = 16384;
 
 //----------------------------------------------------
-    static constexpr I16 BONUS_MIN = I16{-400};
-    static constexpr I16 BONUS_MAX = I16{400};
-
     void gravity(I16 *entry, int bonus);
-    int stat_bonus(int depth);
-    int stat_malus(int depth);
+    int  stat_bonus(int depth);
+    int  stat_malus(int depth);
 
     //*********************************************************************
     //  Données initialisées une seule fois au début d'une nouvelle partie

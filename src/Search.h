@@ -52,8 +52,12 @@ private:
         {0, 3, 4, 6, 8, 12, 20, 30}
     };
 
-    static constexpr int ContinuationMovePruningDepth[] = { 3, 2 };
-    static constexpr int ContinuationMoveHistoryLimit[] = { 0, -1000 };
+    static constexpr int FutilityMargin = 95;
+    static constexpr int FutilityPruningDepth = 8;
+    static constexpr int FutilityPruningHistoryLimit[] = { 12000, 6000 };
+
+    static constexpr int ContinuationPruningDepth[] = { 3, 2 };
+    static constexpr int ContinuationPruningHistoryLimit[] = { -1000, -2500 };
 
     static constexpr int SEEPruningDepth =  9;
     static constexpr int SEEQuietMargin = -64;
