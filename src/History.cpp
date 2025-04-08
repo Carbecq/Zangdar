@@ -36,18 +36,27 @@ MOVE History::get_counter_move(const SearchInfo* info) const
 int History::get_quiet_history(Color color, const SearchInfo* info, const MOVE move, int& cm_hist, int& fm_hist) const
 {
     // Main History
-    int score = main_history[color][Move::from(move)][Move::dest(move)];
+    U32 piece = static_cast<U32>(Move::piece(move));
+    int from  = Move::from(move);
+    int dest  = Move::dest(move);
+
+    int score = main_history[color][from][dest];
 
     if (Move::is_ok((info-1)->move))
     {
-        cm_hist =  (*(info - 1)->cont_hist)[static_cast<U32>(Move::piece(move))][Move::dest(move)];
+        cm_hist =  (*(info - 1)->cont_hist)[piece][dest];
         score += cm_hist;
     }
 
     if (Move::is_ok((info-2)->move))
     {
-        fm_hist =  (*(info - 2)->cont_hist)[static_cast<U32>(Move::piece(move))][Move::dest(move)];
+        fm_hist =  (*(info - 2)->cont_hist)[piece][dest];
         score += fm_hist;
+    }
+
+    if (Move::is_ok((info-4)->move))
+    {
+        score += (*(info - 4)->cont_hist)[piece][dest];
     }
 
     return score;
@@ -105,7 +114,7 @@ void History::update_main(Color color, MOVE move, int bonus)
 
 void History::update_cont(SearchInfo* info, MOVE move, int bonus)
 {
-    for (int delta : {1, 2})    //TODO essayer aussi 4 et 6
+    for (int delta : {1, 2, 4})    //TODO essayer aussi 4 et 6 : attention info-delta dans _info ?
     {
         if (Move::is_ok((info - delta)->move))
         {
@@ -125,10 +134,6 @@ void History::update_capt(MOVE move, int malus)
 //! \brief  Capture History : [moved piece][target square][captured piece type]
 //! \param[in] move
 //-----------------------------------------------------------------
-I16 History::get_capture_history(MOVE move) const
-{
-    return capture_history[static_cast<U32>(Move::piece(move))][Move::dest(move)][static_cast<U32>(Move::captured_type(move))];
-}
 
 void History::update_capture_history(MOVE best_move, I16 depth,
                                      int capture_count, std::array<MOVE, MAX_MOVES>& capture_moves)
@@ -149,28 +154,5 @@ void History::update_capture_history(MOVE best_move, I16 depth,
     }
 }
 
-//=====================================================
-//  Ajoute un bonus à l'historique
-//      history gravity
-//-----------------------------------------------------
-void History::gravity(I16* entry, int bonus)
-{
-    // Formulation du WIKI :
-    // int clamped_bonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
-    // entry += clamped_bonus - (*entry) * abs(clamped_bonus) / MAX_HISTORY;
-
-    *entry += bonus - *entry * abs(bonus) / MAX_HISTORY;
-}
-
-int History::stat_bonus(int depth)
-{
-    return std::min(MAX_HISTORY_BONUS, HISTORY_MULT*depth - HISTORY_MINUS);
-
-}
-
-int History::stat_malus(int depth)
-{
-    return -stat_bonus(depth);
-}
 
 

@@ -5,7 +5,7 @@ class History;
 
 #include "types.h"
 #include "defines.h"
-
+#include "Move.h"
 
 // Quiet History, aussi appelée Main History : side_to_move, from, to
 using MainHistoryTable = I16[N_COLORS][N_SQUARES][N_SQUARES];
@@ -48,6 +48,9 @@ class History
 public:
     History();
     void reset();
+    inline I16 get_main_history(Color color, MOVE move) const {
+        return main_history[color][Move::from(move)][Move::dest(move)];
+    }
 
     ContinuationHistoryTable continuation_history {{{{0}}}};
 
@@ -55,7 +58,9 @@ public:
 
     MOVE get_counter_move(const SearchInfo *info) const;
 
-    I16  get_capture_history(MOVE move) const;
+    inline I16 get_capture_history(MOVE move) const {
+        return capture_history[static_cast<U32>(Move::piece(move))][Move::dest(move)][static_cast<U32>(Move::captured_type(move))];
+    }
     void update_capture_history(MOVE best_move, I16 depth,
                                          int capture_count, std::array<MOVE, MAX_MOVES>& capture_moves);
 
@@ -69,15 +74,35 @@ public:
 
 private:
 
-    static constexpr int MAX_HISTORY    = 16384;
-    static constexpr int HISTORY_MULT   = 364;
-    static constexpr int HISTORY_MINUS  = -66;
-    static constexpr int MAX_HISTORY_BONUS = 1882;
+    static constexpr int MAX_HISTORY = 16384;
+    static constexpr int BONUS_SCALE =  364;
+    static constexpr int BONUS_DELTA =  -66;
+    static constexpr int BONUS_MAX   = 1882;
 
 //----------------------------------------------------
-    void gravity(I16 *entry, int bonus);
-    int stat_bonus(int depth);
-    int stat_malus(int depth);
+    //=====================================================
+    //  Ajoute un bonus à l'historique
+    //      history gravity
+    //-----------------------------------------------------
+    inline void gravity(I16* entry, int bonus)
+    {
+        // Formulation du WIKI :
+        // int clamped_bonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
+        // entry += clamped_bonus - (*entry) * abs(clamped_bonus) / MAX_HISTORY;
+
+        *entry += bonus - *entry * abs(bonus) / MAX_HISTORY;
+    }
+
+    inline int stat_bonus(int depth)
+    {
+        return std::min(BONUS_MAX, BONUS_SCALE*depth - BONUS_DELTA);
+    }
+
+    inline int stat_malus(int depth)
+    {
+        return -stat_bonus(depth);
+    }
+
 
     //*********************************************************************
     //  Données initialisées une seule fois au début d'une nouvelle partie

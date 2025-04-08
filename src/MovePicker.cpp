@@ -350,13 +350,26 @@ void MovePicker::score_noisy()
 void MovePicker::score_quiet()
 {
     MOVE move;
-    int cm_hist, fm_hist;   // non utilisés
+    int value;
 
     // Use the History score for sorting
     for (size_t i = 0; i < mlq.count; i++)
     {
         move = mlq.mlmoves[i].move;
-        mlq.mlmoves[i].value = history.get_quiet_history(board->turn(), info, move, cm_hist, fm_hist);
+
+        U32 piece = static_cast<U32>(Move::piece(move));
+        int dest  = Move::dest(move);
+
+        value  = 2 * history.get_main_history(board->turn(), move);
+
+        if (Move::is_ok((info-1)->move))
+            value += 2 * (int)(*(info - 1)->cont_hist)[piece][dest];
+        if (Move::is_ok((info-2)->move))
+            value +=     (int)(*(info - 2)->cont_hist)[piece][dest];
+        if (Move::is_ok((info-4)->move))
+            value +=     (int)(*(info - 4)->cont_hist)[piece][dest];
+
+        mlq.mlmoves[i].value = value;
     }
 }
 
