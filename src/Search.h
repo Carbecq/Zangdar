@@ -42,9 +42,10 @@ private:
     void show_uci_result(const ThreadData *td, I64 elapsed, const PVariation &pv) const;
     void show_uci_best(const ThreadData *td) const;
 
-    static constexpr int CONTEMPT    = 0;
-
-    int Reductions[2][32][32];
+    static constexpr int AspirationWindowsDepth    = 6;
+    static constexpr int AspirationWindowsInitial  = 12;
+    static constexpr int AspirationWindowsDelta    = 16;
+    static constexpr int AspirationWindowsExpand   = 6667;
 
     static constexpr int LateMovePruningDepth = 7;
     static constexpr int LateMovePruningCount[2][8] = {
@@ -52,19 +53,11 @@ private:
         {0, 3, 4, 6, 8, 12, 20, 30}
     };
 
-    static constexpr int FutilityMargin = 95;
-    static constexpr int FutilityPruningDepth = 8;
-    static constexpr int FutilityPruningHistoryLimit[] = { 12000, 6000 };
+    static constexpr int CONTEMPT    = 0;
 
-    static constexpr int ContinuationPruningDepth[] = { 3, 2 };
-    static constexpr int ContinuationPruningHistoryLimit[] = { -1000, -2500 };
+    int Reductions[2][32][32];
 
-    static constexpr int SEEPruningDepth =  9;
-    static constexpr int SEEQuietMargin = -64;
-    static constexpr int SEENoisyMargin = -19;
 
-    static constexpr int ProbCutDepth  =   5;
-    static constexpr int ProbCutMargin = 100;
 
 };
 

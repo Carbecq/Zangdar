@@ -55,8 +55,8 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
     if (tt_hit && !isPV)    //TODO tester isPV ou non ??
     {
         if (   (tt_bound == BOUND_EXACT)
-            || (tt_bound == BOUND_LOWER && tt_score >= beta)
-            || (tt_bound == BOUND_UPPER && tt_score <= alpha))
+               || (tt_bound == BOUND_LOWER && tt_score >= beta)
+               || (tt_bound == BOUND_UPPER && tt_score <= alpha))
         {
             return tt_score;
         }
@@ -71,7 +71,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
     if (!isInCheck)
     {
         static_eval = (tt_hit && tt_eval != VALUE_NONE) ?
-                      tt_eval : board.evaluate();
+                    tt_eval : board.evaluate();
 
         // if (!tt_hit)
         //     transpositionTable.store(board.get_key(), Move::MOVE_NONE, VALUE_NONE, static_eval, BOUND_NONE, 0, si->ply);
@@ -91,6 +91,12 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
         static_eval = -MATE + si->ply; // idée de Koivisto
     }
 
+    //----------------------------------------------------------
+    //  Delta Pruning
+    //----------------------------------------------------------
+    // if (!isInCheck && static_eval + Tunable::DeltaPruningMargin < alpha)
+    //     return alpha;
+
 
     int  best_score = static_eval;
     MOVE best_move  = Move::MOVE_NONE;  // meilleur coup local
@@ -108,22 +114,18 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
             break;
 
 
-        // Delta Pruning
-        /*****************************************************************
-        *  Delta cutoff - a move guarentees the score well below alpha,  *
-        *  so  there's no point in searching it. This heuristic is  not  *
-        *  used  in the endgame, because of the  insufficient  material  *
-        *  issues and special endgame evaluation heuristics.             *
-        *****************************************************************/
+        /* Delta Pruning, a technique similar in concept to futility pruning,
+            only used in the quiescence search.
+            It works as follows: before we make a capture, we test whether
+            the captured piece value plus some safety margin (typically around 200 centipawns)
+            are enough to raise alpha for the current node.
+        */
 
-        if (!isInCheck)
+        if (!isInCheck && Move::is_capturing(move))
         {
-            if (Move::is_capturing(move))
+            if (static_eval + Tunable::DeltaPruningBias + EGPieceValue[static_cast<U32>(Move::captured_type(move))] <= alpha)
             {
-                if (static_eval + 300 + EGPieceValue[static_cast<U32>(Move::captured_type(move))] <= alpha)
-                {
-                    continue;
-                }
+                continue;
             }
         }
 
@@ -160,10 +162,9 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
 
     if (!td->stopped)
     {
-        // int flag = (alpha != old_alpha) ? BOUND_EXACT : BOUND_UPPER;
         int bound = best_score >= beta    ? BOUND_LOWER
-                : best_score > old_alpha ? BOUND_EXACT
-                : BOUND_UPPER;
+                                          : best_score > old_alpha ? BOUND_EXACT
+                                                                   : BOUND_UPPER;
         transpositionTable.store(board.get_key(), best_move, best_score, static_eval, bound, 0, si->ply, ttPV);
     }
 

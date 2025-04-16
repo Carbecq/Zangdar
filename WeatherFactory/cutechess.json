@@ -1,0 +1,12 @@
+{
+    "engine": "Zangdar-3.08.02-5950X-clang",
+    "book": "UHO_Lichess_4852_v1.epd",
+    "games": 16,
+    "tc": 10,
+    "hash": 128,
+    "threads": 16,
+    "save_rate": 10,
+    "pgnout": "tuner/games.pgn",
+    "use_fastchess": false
+}
+

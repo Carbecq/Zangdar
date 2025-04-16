@@ -1,0 +1,126 @@
+https://github.com/jnlt3/weather-factory
+
+engine          : name of the engine inside the `tuner` folder
+book            : name of the book inside the `tuner` folder
+games           : number of games played per SPSA iteration, make sure this is a multiple of two and ideally a multiple of threads.
+tc              : The time control the matches are going to be played at. Increment is automatically `tc / 100`.
+threads         : This corresponds to concurrency it cutechess, not the threads of the engine.
+pgnout          : The filepath to the PGN all the games played should be saved to.
+save_rate       : The number of games between times saving the state to a file
+use_fastchess   : Set to true of you want to use fastchess and set to false if you want to use cutechess
+
+______________________________
+
++ installer matpltlib (librairie python3)
+
++ créer un répertoire "tuning" (ou autre nom)
+
++ y copier le logiciel
+
++ dans ce répertoire, créer un autre répertoire "tuner" (nom obligatoire)
+
++ copier dans "tuner"
+    + binaire de Zangdar
+    + cutechess_cli
+    + opening book
+
++ modifier config.json et cutechess.json
+
++ supprimer dans tuner : state.json, graph.png, games.pgn
+
++ lancer : python3 main.py
+
++ le résultat est dans tuner/state.json
+
++ on peut voir l'évolution graphique dans tuner/graph.png
+
++ le tuner peut être arrêté à tout moment (CTRL-C), et repris par la suite.
+
+----------------------------------------------------
+Could somebody explain what the y axis is for within the weather factory graph?
+
+(param.value - param.start_val) / param.step
+so the change to the start value scaled to the step size
+
+--------------------------------------------------------
+Do you mean you have set "games": 280 in cutechess.json ?
+    yes
+    Don't do that. Your tune is going to take literally eons to arrive to something meaningful
+
+-----------------------------
+    {
+    "engine": "Clarity_Native.exe",
+    "book": "Pohl.epd",
+    "games": 6,
+    "tc": 20,
+    "hash": 32,
+    "threads": 6
+}
+-----------------------------
+so from what I have heard from other people, the fewer the games per iteration the faster you can do iterations and get a ballpark estimate of the values, and then from there you can increase the games per iteration and get more detailed values
+though most of that is inferences based on what I've heard others say so idk if there is any truth to it
+-----------------------------
+cutechess.json:
+{
+    "engine": "Nalwald-native",
+    "book": "Pohl.epd",
+    "games": <multiple of number of threads, but at least 24, but ideally not much more than that too>,
+    "tc": 8,
+    "hash": 32,
+    "threads": <your number of threads>,
+    "pgnout": "myPgns/weatherReportGames.pgn",
+    "use_fastchess": true
+}
+
+spsa.json:
+I kept it as is. Tbh I don't know what these values mean.
+Probably set A to something less, since usually people keep running their SPSAs
+for significantly less than 1,000,000 iterations and as the README says:
+"Ideally A = max iterations / 10", so for a start "A": 10000 could make sense.
+
+-----------------------------
+the step parameter should be large enough to create a 2-3 elo difference.
+
+For the SPSA config file, none of the values used in spsa.json except "A" require changing.
+Ideally A = max iterations / 10.
+
+-----------------------------
+I don't think 24 threads is a good idea. Some of the threads will get their own core while others will be sharing a core
+
+In that case I would either use 16 games or 32, and 16 threads
+Because of what a random noob said
+For a first tune a short time control may be better. But be sure to tune especially time management parameters only at longer time controls
+So t=8 is fine probably
+
+you generally want to tune at as long of a tc as you want. But stc for a first tune should be fine
+just don't tune stuff like singular extensions and time management at stc
+
+-----------------------------
+position de la légende :
+
+someone here told me to update graph.py with (at the end of the file):
+plt.legend(fontsize=4, loc="upper left")
+plt.savefig(f"tuner/{file_name}", dpi=250)
+plt.clf()
+-----------------------------
+-----------------------------
+-----------------------------
+-----------------------------
+-----------------------------
+
+-----------------------------
+bonus = std::min(hstMaxBonus.value, hstAdder.value * depth - hstSubtractor.value);
+
+inline Tunable hstMaxBonus("HST_MaxBonus", 1632, 1);
+inline Tunable hstAdder("HST_Adder", 276, 1);
+inline Tunable hstSubtractor("HST_Subtractor", 119, 1);
+
+------- Stormphrax
+	SP_TUNABLE_PARAM(maxHistoryBonus, 2576, 1024, 4096, 256)
+	SP_TUNABLE_PARAM(historyBonusDepthScale, 280, 128, 512, 32)
+	SP_TUNABLE_PARAM(historyBonusOffset, 432, 128, 768, 64)
+
+	std::clamp(
+			depth * historyBonusDepthScale() - tunable::historyBonusOffset(),
+			0, tunable::maxHistoryBonus()
+		)

@@ -6,6 +6,7 @@ class History;
 #include "types.h"
 #include "defines.h"
 #include "Move.h"
+#include "Tunable.h"
 
 // Quiet History, aussi appelée Main History : side_to_move, from, to
 using MainHistoryTable = I16[N_COLORS][N_SQUARES][N_SQUARES];
@@ -75,9 +76,6 @@ public:
 private:
 
     static constexpr int MAX_HISTORY = 16384;
-    static constexpr int BONUS_SCALE =  364;
-    static constexpr int BONUS_DELTA =  -66;
-    static constexpr int BONUS_MAX   = 1882;
 
 //----------------------------------------------------
     //=====================================================
@@ -95,7 +93,7 @@ private:
 
     inline int stat_bonus(int depth)
     {
-        return std::min(BONUS_MAX, BONUS_SCALE*depth - BONUS_DELTA);
+        return std::min<int>(Tunable::HistoryBonusMax, depth*Tunable::HistoryBonusMargin - Tunable::HistoryBonusBias);
     }
 
     inline int stat_malus(int depth)

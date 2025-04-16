@@ -14,6 +14,7 @@
 #include "pyrrhic/tbprobe.h"
 #include "Move.h"
 #include "bench.h"
+#include "Tunable.h"
 
 Board   uci_board;
 Timer   uci_timer;
@@ -91,7 +92,11 @@ void Uci::run()
             std::cout << "option name OwnBook type check default false" << std::endl;
             std::cout << "option name BookPath type string default " << "./" << std::endl;
             std::cout << "option name SyzygyPath type string default " << "<empty>" << std::endl;
-            std::cout << "option name MoveOverhead type spin default " << MOVE_OVERHEAD << " min 0 max 10000" << std::endl;;
+            std::cout << "option name MoveOverhead type spin default " << MOVE_OVERHEAD << " min 0 max 10000" << std::endl;
+
+#if defined USE_TUNE
+            std::cout << Tunable::paramsToUci();
+#endif
 
             std::cout << "uciok" << std::endl;
         }
@@ -241,6 +246,11 @@ void Uci::run()
         else if (token == "tmax")
         {
             iss >> tmax;
+        }
+
+        else if (token == "json")
+        {
+            Tunable::paramsToJSON();
         }
 
         else if (token == "yyy")
@@ -576,6 +586,20 @@ setoption name <id> [value <x>]
             iss >> MoveOverhead;
             uci_timer.setMoveOverhead(MoveOverhead);
         }
+
+        //------------------------------------------------------------
+        // Tuning
+        //------------------------------------------------------------
+#if defined USE_TUNE
+        else
+        {
+            int param;
+            iss >> value;      // "value"
+            iss >> param;
+            Tunable::setParam(option_name, param);
+        }
+#endif
+
     }
     else
     {

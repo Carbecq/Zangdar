@@ -128,11 +128,11 @@ int Search::aspiration_window(Board& board, Timer& timer, ThreadData* td, Search
     int depth  = td->depth;
     int score  = td->score;
 
-    const int initialWindow = 12;
-    int delta = 16;
+    const int initialWindow = AspirationWindowsInitial;
+    int delta = AspirationWindowsDelta;
 
     // After a few depths use a previous result to form the window
-    if (depth >= 6)
+    if (depth >= AspirationWindowsDepth)
     {
         alpha = std::max(score - initialWindow, -INFINITE);
         beta  = std::min(score + initialWindow, INFINITE);
@@ -168,7 +168,7 @@ int Search::aspiration_window(Board& board, Timer& timer, ThreadData* td, Search
             return score;
         }
 
-        delta += delta*2 / 3;
+        delta += delta * AspirationWindowsExpand / 10000;
     }
 
     return score;
@@ -379,8 +379,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         //---------------------------------------------------------------------
         //  RAZORING
         //---------------------------------------------------------------------
-        if (   depth <= 3
-            && (static_eval + 200 * depth) <= alpha)
+        if (   depth <= Tunable::RazoringDepth
+            && (static_eval + Tunable::RazoringMargin * depth) <= alpha)
         {
             score = quiescence<C>(board, timer, alpha, beta, td, si);
             if (score <= alpha)
@@ -394,11 +394,11 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         //  STATIC NULL MOVE PRUNING ou aussi REVERSE FUTILITY PRUNING
         //---------------------------------------------------------------------
         if (
-            depth <= 6
+            depth <= Tunable::SNMPDepth
             && abs(beta) < MATE_IN_X
             && board.getNonPawnMaterial<C>())
         {
-            int eval_margin = 70 * depth;
+            int eval_margin = Tunable::SNMPMargin * depth;
 
             if (static_eval - eval_margin >= beta)
                 return static_eval - eval_margin; // Fail Soft
@@ -408,13 +408,14 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         //  NULL MOVE PRUNING
         //---------------------------------------------------------------------
         if (
-            depth >= 3
+            depth >= Tunable::NMPDepth
             && static_eval >= beta
             && (si-1)->move != Move::MOVE_NULL
             && (si-2)->move != Move::MOVE_NULL
             && board.getNonPawnMaterial<C>())
         {
-            int R = 3 + (32.0 * depth + std::min(static_eval - beta, 384)) / 128.0;
+            int R = Tunable::NMPReduction
+                    + (Tunable::NMPMargin*depth + std::min<int>(static_eval - beta, Tunable::NMPMax)) / Tunable::NMPDivisor;
 
             si->move = Move::MOVE_NULL;
             si->cont_hist = &td->history.continuation_history[0][0];
@@ -437,10 +438,10 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         //---------------------------------------------------------------------
         //  ProbCut
         //---------------------------------------------------------------------
-        int betaCut = beta + ProbCutMargin;
+        int betaCut = beta + Tunable::ProbCutMargin;
         if (   !isInCheck
             && !ttPV
-            && depth >= ProbCutDepth
+            && depth >= Tunable::ProbCutDepth
             && !(tt_hit && tt_depth >= depth - 3 && tt_score < betaCut))
         {
             MovePicker movePicker(&board, td->history, si, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, 0);
@@ -457,7 +458,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
                 // Si oui, alors on effectue une recherche normale, avec une profondeur réduite
                 if (pbScore >= betaCut)
-                    pbScore = -alpha_beta<~C>(board, timer, -betaCut, -betaCut+1, depth-4, td, si+1);
+                    pbScore = -alpha_beta<~C>(board, timer, -betaCut, -betaCut+1, depth-Tunable::ProbcutReduction, td, si+1);
 
                 board.undo_move<C, true>();
 
@@ -502,12 +503,12 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
     // Static Exchange Evaluation Pruning Margins
     int  seeMargin[2] = {
-        SEENoisyMargin * depth * depth,
-        SEEQuietMargin * depth
+        Tunable::SEENoisyMargin * depth * depth,
+        Tunable::SEEQuietMargin * depth
     };
 
     // Futility Pruning Margin
-    int futility_margin = static_eval + FutilityMargin * depth;
+    int futility_pruning_margin = static_eval + Tunable::FPMargin * depth;
 
     // Boucle sur tous les coups
     while ( (move = movePicker.next_move(skipQuiets).move ) != Move::MOVE_NONE )
@@ -531,9 +532,9 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         if (   !isRoot
             &&  isQuiet
             &&  best_score > -TBWIN_IN_X
-            &&  futility_margin <= alpha
-            &&  depth <= FutilityPruningDepth
-            &&  hist < FutilityPruningHistoryLimit[improving])
+            &&  futility_pruning_margin <= alpha
+            &&  depth <= Tunable::FPDepth
+            &&  hist < (Tunable::FPHistoryLimit - Tunable::FPHistoryLimitImproving*improving) )
         {
             skipQuiets = true;
         }
@@ -552,13 +553,14 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         }
 
         //-------------------------------------------------
-        // Countinuation Move Pruning.
+        // History Pruning.
         //-------------------------------------------------
         if (   !isRoot
             &&  isQuiet
             &&  best_score > -TBWIN_IN_X
-            &&  depth <= ContinuationPruningDepth[improving]
-            &&  std::min(cmhist, fuhist) < ContinuationPruningHistoryLimit[improving])
+            &&  depth <= (Tunable::HistoryPruningDepth - improving)
+            &&  std::min(cmhist, fuhist) <
+               (Tunable::HistoryPruningLimit - improving*Tunable::HistoryPruningLimitImproving) )
         {
             continue;
         }
@@ -568,7 +570,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         //-------------------------------------------------
         if (   !isRoot
             &&  best_score > -TBWIN_IN_X
-            &&  depth <= SEEPruningDepth
+            &&  depth <= Tunable::SEEPruningDepth
             &&  movePicker.get_stage() > STAGE_GOOD_NOISY
             && !board.fast_see(move, seeMargin[isQuiet]))
         {
@@ -580,7 +582,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         //-------------------------------------------------
         int extension = 0;
 
-        if (   depth > 8
+        if (   depth > Tunable::SEDepth
             && si->ply < 2 * depth
             && !isExcluded  // Avoid recursive singular search
             && !isRoot
@@ -590,7 +592,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             && abs(tt_score) < TBWIN_IN_X)
         {
             // Search to reduced depth with a zero window a bit lower than ttScore
-            int sing_beta  = tt_score - depth*2;    //TODO essai -depth*3
+            int sing_beta  = tt_score - depth*2;
             int sing_depth = (depth-1)/2;
 
             si->excluded = move;
@@ -658,7 +660,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             R += board.getNonPawnMaterialCount<THEM>() < 2;
 
             // Adjust based on history
-            R -= std::max(-2, std::min(2, hist / 5000));
+            R -= std::max(-2, std::min(2, hist / Tunable::HistReductionDivisor));
 
             // Depth after reductions, avoiding going straight to quiescence
             int lmrDepth = std::clamp(newDepth - R, 1, newDepth);

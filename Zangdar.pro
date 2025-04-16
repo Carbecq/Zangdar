@@ -28,6 +28,9 @@ VERSION = "$$cat(VERSION.txt)"
 DEFINES += VERSION='\\"$${VERSION}\\"'
 
 #------------------------------------------------------
+# DEFINES += USE_TUNE
+
+#------------------------------------------------------
 # DEFINES +=  DEBUG_EVAL
 # DEFINES +=  DEBUG_LOG
 # DEFINES +=  DEBUG_TIME
@@ -201,6 +204,7 @@ HEADERS += \
     src/ThreadPool.h \
     src/Timer.h \
     src/TranspositionTable.h \
+    src/Tunable.h \
     src/Uci.h \
     src/bench.h \
     src/bitmask.h \
@@ -228,6 +232,7 @@ SOURCES += \
     src/ThreadPool.cpp \
     src/Timer.cpp \
     src/TranspositionTable.cpp \
+    src/Tunable.cpp \
     src/Uci.cpp \
     src/add_moves.cpp \
     src/attackers.cpp \
