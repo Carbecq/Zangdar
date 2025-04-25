@@ -17,6 +17,8 @@
 struct Status
 {
     U64  key                = 0ULL;                     // nombre unique (?) correspondant à la position
+    U64  pawn_key           = 0ULL;                     // nombre unique (?) correspondant à la position des pions
+    U64  mat_key[2]         = {0ULL, 0ULL};             // nombre unique (?) correspondant à la position des pièces
     MOVE move               = Move::MOVE_NONE;
     int  ep_square          = SquareType::SQUARE_NONE;  // case en-passant : si les blancs jouent e2-e4, la case est e3
     U32  castling           = CASTLE_NONE;              // droit au roque
@@ -105,7 +107,7 @@ public:
 
     template <Color C>
     void calculate_checkers_pinned() noexcept;
-    void calculate_hash(U64 &khash) const;
+    void calculate_hash(U64& key, U64& pawn_key, U64 mat_key[2]) const;
     void calculate_nnue(int& eval) ;
 
     //! \brief  Retourne le Bitboard de TOUS les attaquants (Blancs et Noirs) de la case "sq"
@@ -400,7 +402,7 @@ public:
     [[nodiscard]] inline bool is_repetition(int ply) const noexcept
     {
         int reps             = 0;
-        U64 current_hash     = get_status().key;
+        U64 current_key      = get_status().key;
         int gamemove_counter = StatusHistory.size() - 1;
         int halfmove_counter = get_status().fiftymove_counter;
 
@@ -413,7 +415,7 @@ public:
 
             // Check for matching hash with a two fold after the root,
             // or a three fold which occurs in part before the root move
-            if (    StatusHistory[i].key == current_hash
+            if (    StatusHistory[i].key == current_key
                 && (   i > gamemove_counter - ply   // 2-fold : on considère des positions dans l'arbre de recherche
                     || ++reps == 2) )               // 3-fold : on considère toutes les positions de la partie
                 return true;
@@ -473,10 +475,10 @@ public:
     //===========================================================================
     //  Données
 
-    std::array<Bitboard, N_COLORS>    colorPiecesBB;   // bitboard des pièces pour chaque couleur
+    std::array<Bitboard, N_COLORS>     colorPiecesBB;   // bitboard des pièces pour chaque couleur
     std::array<Bitboard, N_PIECE_TYPE> typePiecesBB;    // bitboard des pièces pour chaque type de pièce
-    std::array<Piece, N_SQUARES>      pieceBoard;      // donne la pièce occupant la case indiquée (type + couleur)
-    std::array<int, N_COLORS>         x_king;          // position des rois
+    std::array<Piece, N_SQUARES>       pieceBoard;      // donne la pièce occupant la case indiquée (type + couleur)
+    std::array<int, N_COLORS>          x_king;          // position des rois
     Color side_to_move;                         // camp au trait
     std::vector<std::string> best_moves;        // meilleur coup (pour les tests tactiques)
     std::vector<std::string> avoid_moves;       // coup à éviter (pour les tests tactiques)
@@ -489,10 +491,12 @@ public:
     inline const Status& get_status() const { return StatusHistory.back(); }
     inline Status& get_status()             { return StatusHistory.back(); }
 
-    [[nodiscard]] inline int get_fiftymove_counter() const noexcept { return get_status().fiftymove_counter;  }
+    [[nodiscard]] inline int get_fiftymove_counter() const noexcept { return get_status().fiftymove_counter; }
     [[nodiscard]] inline int get_fullmove_counter()  const noexcept { return get_status().fullmove_counter;  }
     [[nodiscard]] inline int get_ep_square()         const noexcept { return get_status().ep_square;         }
     [[nodiscard]] inline U64 get_key()               const noexcept { return get_status().key;               }
+    [[nodiscard]] inline U64 get_pawn_key()          const noexcept { return get_status().pawn_key;          }
+    [[nodiscard]] inline U64 get_mat_key(Color color) const noexcept { return get_status().mat_key[color];   }
     [[nodiscard]] inline Bitboard get_checkers()     const noexcept { return get_status().checkers;          }
     [[nodiscard]] inline Bitboard get_pinned()       const noexcept { return get_status().pinned;            }
 

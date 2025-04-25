@@ -143,14 +143,18 @@ std::string Board::display() const noexcept
 //=============================================================
 //! \brief  Calcule la valeur du hash
 //-------------------------------------------------------------
-void Board::calculate_hash(U64& khash) const
+void Board::calculate_hash(U64& key, U64& pawn_key, U64 mat_key[N_COLORS]) const
 {
-    khash = 0ULL;
+    key            = 0ULL;
+    pawn_key       = 0ULL;
+    mat_key[WHITE] = 0ULL;
+    mat_key[BLACK] = 0ULL;
+
     Bitboard bb;
 
     // Turn
     if (turn() == Color::BLACK) {
-        khash ^= side_key;
+        key ^= side_key;
     }
 
     // Pieces Blanches
@@ -158,32 +162,38 @@ void Board::calculate_hash(U64& khash) const
     bb = occupancy_cp<WHITE, PieceType::PAWN>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        khash ^= piece_key[static_cast<U32>(Piece::WHITE_PAWN)][sq];
+        key      ^= piece_key[static_cast<U32>(Piece::WHITE_PAWN)][sq];
+        pawn_key ^= piece_key[static_cast<U32>(Piece::WHITE_PAWN)][sq];
     }
     bb = occupancy_cp<WHITE, PieceType::KNIGHT>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        khash ^= piece_key[static_cast<U32>(Piece::WHITE_KNIGHT)][sq];
+        key            ^= piece_key[static_cast<U32>(Piece::WHITE_KNIGHT)][sq];
+        mat_key[WHITE] ^= piece_key[static_cast<U32>(Piece::WHITE_KNIGHT)][sq];
     }
     bb = occupancy_cp<WHITE, PieceType::BISHOP>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        khash ^= piece_key[static_cast<U32>(Piece::WHITE_BISHOP)][sq];
+        key            ^= piece_key[static_cast<U32>(Piece::WHITE_BISHOP)][sq];
+        mat_key[WHITE] ^= piece_key[static_cast<U32>(Piece::WHITE_BISHOP)][sq];
     }
     bb = occupancy_cp<WHITE, PieceType::ROOK>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        khash ^= piece_key[static_cast<U32>(Piece::WHITE_ROOK)][sq];
+        key            ^= piece_key[static_cast<U32>(Piece::WHITE_ROOK)][sq];
+        mat_key[WHITE] ^= piece_key[static_cast<U32>(Piece::WHITE_ROOK)][sq];
     }
     bb = occupancy_cp<WHITE, PieceType::QUEEN>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        khash ^= piece_key[static_cast<U32>(Piece::WHITE_QUEEN)][sq];
+        key            ^= piece_key[static_cast<U32>(Piece::WHITE_QUEEN)][sq];
+        mat_key[WHITE] ^= piece_key[static_cast<U32>(Piece::WHITE_QUEEN)][sq];
     }
     bb = occupancy_cp<WHITE, PieceType::KING>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        khash ^= piece_key[static_cast<U32>(Piece::WHITE_KING)][sq];
+        key            ^= piece_key[static_cast<U32>(Piece::WHITE_KING)][sq];
+        mat_key[WHITE] ^= piece_key[static_cast<U32>(Piece::WHITE_KING)][sq];
     }
 
     // Pieces Noires
@@ -191,40 +201,46 @@ void Board::calculate_hash(U64& khash) const
     bb = occupancy_cp<BLACK, PieceType::PAWN>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        khash ^= piece_key[static_cast<U32>(Piece::BLACK_PAWN)][sq];
+        key      ^= piece_key[static_cast<U32>(Piece::BLACK_PAWN)][sq];
+        pawn_key ^= piece_key[static_cast<U32>(Piece::BLACK_PAWN)][sq];
     }
     bb = occupancy_cp<BLACK, PieceType::KNIGHT>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        khash ^= piece_key[static_cast<U32>(Piece::BLACK_KNIGHT)][sq];
+        key            ^= piece_key[static_cast<U32>(Piece::BLACK_KNIGHT)][sq];
+        mat_key[BLACK] ^= piece_key[static_cast<U32>(Piece::BLACK_KNIGHT)][sq];
     }
     bb = occupancy_cp<BLACK, PieceType::BISHOP>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        khash ^= piece_key[static_cast<U32>(Piece::BLACK_BISHOP)][sq];
+        key            ^= piece_key[static_cast<U32>(Piece::BLACK_BISHOP)][sq];
+        mat_key[BLACK] ^= piece_key[static_cast<U32>(Piece::BLACK_BISHOP)][sq];
     }
     bb = occupancy_cp<BLACK, PieceType::ROOK>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        khash ^= piece_key[static_cast<U32>(Piece::BLACK_ROOK)][sq];
+        key            ^= piece_key[static_cast<U32>(Piece::BLACK_ROOK)][sq];
+        mat_key[BLACK] ^= piece_key[static_cast<U32>(Piece::BLACK_ROOK)][sq];
     }
     bb = occupancy_cp<BLACK, PieceType::QUEEN>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        khash ^= piece_key[static_cast<U32>(Piece::BLACK_QUEEN)][sq];
+        key            ^= piece_key[static_cast<U32>(Piece::BLACK_QUEEN)][sq];
+        mat_key[BLACK] ^= piece_key[static_cast<U32>(Piece::BLACK_QUEEN)][sq];
     }
     bb = occupancy_cp<BLACK, PieceType::KING>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        khash ^= piece_key[static_cast<U32>(Piece::BLACK_KING)][sq];
+        key            ^= piece_key[static_cast<U32>(Piece::BLACK_KING)][sq];
+        mat_key[BLACK] ^= piece_key[static_cast<U32>(Piece::BLACK_KING)][sq];
     }
 
     // Castling
-    khash ^= castle_key[get_status().castling];
+    key ^= castle_key[get_status().castling];
 
     // EP
     if (get_status().ep_square != SQUARE_NONE) {
-        khash ^= ep_key[get_status().ep_square];
+        key ^= ep_key[get_status().ep_square];
     }
 
 }

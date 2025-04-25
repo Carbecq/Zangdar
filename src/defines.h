@@ -42,6 +42,8 @@ static constexpr int HASH_SIZE      = 128;      // en Mo
 static constexpr int MIN_HASH_SIZE  = 1;
 static constexpr int MAX_HASH_SIZE  = 1024;
 
+static constexpr int PAWN_HASH_SIZE = 16384;
+
 static constexpr int MAX_THREADS    = 32;
 
 static constexpr int MATE           = 31000;

@@ -7,11 +7,26 @@ bool Board::valid(const std::string &message) noexcept
 {
 //    std::cout << "valid debut" << std::endl;
 
-    U64 hash_1;
-    calculate_hash(hash_1);
+    U64 hash_1, hash_2, hash_3[2];
+    calculate_hash(hash_1, hash_2, hash_3);
     if (get_status().key != hash_1)
     {
-        std::cout << "erreur hash 1" << std::endl;
+        std::cout << "erreur key " << std::endl;
+        return false;
+    }
+    if (get_status().pawn_key != hash_2)
+    {
+        std::cout << "erreur pawn key" << std::endl;
+        return false;
+    }
+    if (get_status().mat_key[WHITE] != hash_3[WHITE])
+    {
+        std::cout << "erreur mat key white" << std::endl;
+        return false;
+    }
+    if (get_status().mat_key[BLACK] != hash_3[BLACK])
+    {
+        std::cout << "erreur mat key black" << std::endl;
         return false;
     }
 

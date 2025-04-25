@@ -327,16 +327,17 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
     //  Evaluation Statique
     int static_eval = VALUE_NONE;
+    int raw_eval = VALUE_NONE;
     if (!isExcluded)
     {
         if (isInCheck)
         {
-            static_eval = si->static_eval = -MATE + si->ply;
+            raw_eval = static_eval = si->static_eval = -MATE + si->ply;
         }
         else
         {
-            static_eval = si->static_eval = (tt_hit && tt_eval != VALUE_NONE) ?
-                    tt_eval : board.evaluate();
+            raw_eval = (tt_hit && tt_eval != VALUE_NONE) ? tt_eval : board.evaluate();
+            static_eval = si->static_eval = td->history.correct_eval(board, raw_eval);
 
             // Amélioration de static-eval, au cas où tt_score est assez bon
             if(tt_hit
@@ -737,14 +738,15 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         return isInCheck ? -MATE + si->ply : 0;
     }
 
-    // if (best_score >= beta && !Move::is_tactical(best_move))
-    //     td->history.update_quiet_history(C, si, best_move, depth, quiet_count, quiet_moves);
-
-    // if (best_score >= beta)
-    //     td->history.update_capture_history(best_move, depth, capture_count, capture_moves);
-
-
     best_score = std::min(best_score, max_score);
+
+    if(   !isInCheck
+       && (best_move == Move::MOVE_NONE || !Move::is_capturing(best_move))
+       && !(bound == BOUND_LOWER && best_score <= si->static_eval)
+       && !(bound == BOUND_UPPER && best_score >= si->static_eval))
+    {
+        td->history.update_correction_history(board, depth, best_score, static_eval );
+    }
 
     if (!td->stopped && !isExcluded)
     {

@@ -55,7 +55,7 @@ DEFS += -DSYZYGY=$(SYZYGY)
 #---------------------------------------------------
 #  TUNING
 #---------------------------------------------------
-DEFS += -DUSE_TUNE
+# DEFS += -DUSE_TUNE
 
 #  Quelques defines utilisés en debug
 # DEFS += -DDEBUG_EVAL

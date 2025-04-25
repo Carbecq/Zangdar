@@ -304,9 +304,14 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
     (side_to_move == WHITE) ? calculate_checkers_pinned<WHITE>() : calculate_checkers_pinned<BLACK>();
 
     // Calculate hash
-    U64 khash;
-    calculate_hash(khash);
-    get_status().key = khash;
+    U64 key;
+    U64 pawn_key;
+    U64 mat_key[2];
+    calculate_hash(key, pawn_key, mat_key);
+    get_status().key      = key;
+    get_status().pawn_key = pawn_key;
+    get_status().mat_key[WHITE] = mat_key[WHITE];
+    get_status().mat_key[BLACK] = mat_key[BLACK];
 
     //   std::cout << display() << std::endl;
 }
@@ -556,9 +561,14 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     (side_to_move == WHITE) ? calculate_checkers_pinned<WHITE>() : calculate_checkers_pinned<BLACK>();
 
     // Calculate hash
-    U64 khash;
-    calculate_hash(khash);
-    get_status().key = khash;
+    U64 key;
+    U64 pawn_key;
+    U64 mat_key[2];
+    calculate_hash(key, pawn_key, mat_key);
+    get_status().key      = key;
+    get_status().pawn_key = pawn_key;
+    get_status().mat_key[WHITE] = mat_key[WHITE];
+    get_status().mat_key[BLACK] = mat_key[BLACK];
 
     //   std::cout << display() << std::endl;
 }

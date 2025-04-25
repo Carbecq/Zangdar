@@ -2,6 +2,7 @@
 #include "History.h"
 #include "Move.h"
 #include "types.h"
+#include "Board.h"
 
 History::History()
 {
@@ -11,10 +12,12 @@ History::History()
 //*********************************************************************
 void History::reset()
 {
-    std::memset(main_history,         0, sizeof(MainHistoryTable));
-    std::memset(counter_move,         0, sizeof(CounterMoveTable));
-    std::memset(continuation_history, 0, sizeof(ContinuationHistoryTable));
+    std::memset(main_history,          0, sizeof(MainHistoryTable));
+    std::memset(counter_move,          0, sizeof(CounterMoveTable));
+    std::memset(continuation_history,  0, sizeof(ContinuationHistoryTable));
     std::memset(capture_history,       0, sizeof(CaptureHistory));
+    std::memset(pawn_correction_history,     0, sizeof(PawnCorrectionHistoryTable));
+    std::memset(material_correction_history, 0, 2*sizeof(MaterialCorrectionHistoryTable));
 }
 
 //==================================================================
@@ -134,7 +137,6 @@ void History::update_capt(MOVE move, int malus)
 //! \brief  Capture History : [moved piece][target square][captured piece type]
 //! \param[in] move
 //-----------------------------------------------------------------
-
 void History::update_capture_history(MOVE best_move, I16 depth,
                                      int capture_count, std::array<MOVE, MAX_MOVES>& capture_moves)
 {
@@ -155,4 +157,53 @@ void History::update_capture_history(MOVE best_move, I16 depth,
 }
 
 
+//=================================================================
+//! \brief  Correction History : [color][pawn_key_index]
+//! \param[in] move
+//-----------------------------------------------------------------
+void History::update_correction_history(const Board& board, int depth, int best_score, int static_eval)
+{
+    const Color color = board.turn();
 
+    // Compute the new correction value, and retrieve the old value
+    const int scaled_bonus = (best_score - static_eval) * CorrectionHistoryScale;
+
+    // Weight the new value based on the search depth, and the old value based on the remaining weight
+    const int weight = std::min(depth + 1, 16);
+
+    int& pawn = pawn_correction_history[color][board.get_key() % PAWN_HASH_SIZE];
+    update_correction(pawn, scaled_bonus, weight);
+
+    int& wmat = material_correction_history[WHITE][color][board.get_mat_key(WHITE) % PAWN_HASH_SIZE];
+    update_correction(wmat, scaled_bonus, weight);
+
+    int& bmat = material_correction_history[BLACK][color][board.get_mat_key(BLACK) % PAWN_HASH_SIZE];
+    update_correction(bmat, scaled_bonus, weight);
+}
+
+void History::update_correction(int& entry, int scaled_bonus, int weight)
+{
+    // Compute the weighted sum of the old and new values, and clamp the result.
+
+    entry = (entry * (CorrectionHistoryScale - weight) + scaled_bonus * weight) / CorrectionHistoryScale;
+    entry = std::clamp(entry, -CorrectionHistoryMax, CorrectionHistoryMax);
+}
+
+//=========================================================
+//! \brief  Retourne la valeur de l'évaluation statique corrigée
+//! en fonction de Correction_History
+//!
+//---------------------------------------------------------
+int History::correct_eval(const Board& board, int raw_eval)
+{
+    // règle des 50 coups
+    //TODO raw_eval = (raw_eval * (200 - board.get_fiftymove_counter())) / 200;
+
+    int pawn = pawn_correction_history[board.turn()][board.get_pawn_key() % PAWN_HASH_SIZE];
+    int wmat = material_correction_history[WHITE][board.turn()][board.get_mat_key(WHITE) % PAWN_HASH_SIZE];
+    int bmat = material_correction_history[BLACK][board.turn()][board.get_mat_key(BLACK) % PAWN_HASH_SIZE];
+
+    int corrected = raw_eval + (pawn + wmat + bmat) / CorrectionHistoryScale;
+
+    return std::clamp(corrected, -TBWIN_IN_X+1, TBWIN_IN_X-1);
+}

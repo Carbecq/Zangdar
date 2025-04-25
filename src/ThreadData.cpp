@@ -7,12 +7,6 @@ ThreadData::ThreadData()
 
 }
 
-//*********************************************************************
-void ThreadData::reset()
-{
-    history.reset();
-}
-
 //=========================================================
 //! \brief  Mise à jour de la Principal variation
 //!

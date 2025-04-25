@@ -1,12 +1,14 @@
 #ifndef HISTORY_H
 #define HISTORY_H
 
+
 class History;
 
 #include "types.h"
 #include "defines.h"
 #include "Move.h"
 #include "Tunable.h"
+#include "Board.h"
 
 // Quiet History, aussi appelée Main History : side_to_move, from, to
 using MainHistoryTable = I16[N_COLORS][N_SQUARES][N_SQUARES];
@@ -43,6 +45,18 @@ using CounterMoveTable = MOVE[N_PIECE][N_SQUARES];
 //============================================================================
 using ContinuationHistoryTable = I16[N_PIECE][N_SQUARES][N_PIECE][N_SQUARES];
 
+//============================================================================
+//  Correction History
+//
+// Static Evaluation Correction History, also known as Correction History or CorrHist for short.
+// It records the difference between static evaluation and search score of a position to a table
+// indexed by the corresponding board feature, then uses the difference to adjust future
+// static evaluations in positions with the same feature
+//============================================================================
+using PawnCorrectionHistoryTable        = int[N_COLORS][PAWN_HASH_SIZE];
+using MaterialCorrectionHistoryTable    = int[N_COLORS][PAWN_HASH_SIZE];
+
+
 
 class History
 {
@@ -69,13 +83,17 @@ public:
     void update_quiet_history(Color color, SearchInfo *info, MOVE move, I16 depth,
                               int quiet_count, std::array<MOVE, MAX_MOVES>& quiet_moves);
 
-    void update_main(Color color, MOVE move, int bonus);
-    void update_cont(SearchInfo* info, MOVE move, int bonus);
-    void update_capt(MOVE move, int malus);
+
+    void update_correction_history(const Board &board, int depth, int best_score, int static_eval);
+
+    int correct_eval(const Board& board, int raw_eval);
+
 
 private:
 
     static constexpr int MAX_HISTORY = 16384;
+    static constexpr int CorrectionHistoryScale = 256;
+    static constexpr int CorrectionHistoryMax   = 256 * 32;
 
 //----------------------------------------------------
     //=====================================================
@@ -102,6 +120,12 @@ private:
     }
 
 
+    void update_main(Color color, MOVE move, int bonus);
+    void update_cont(SearchInfo* info, MOVE move, int bonus);
+    void update_capt(MOVE move, int malus);
+    void update_correction(int& entry, int scaled_bonus, int weight);
+
+
     //*********************************************************************
     //  Données initialisées une seule fois au début d'une nouvelle partie
 
@@ -115,7 +139,9 @@ private:
     // capture history  : [moved piece][target square][captured piece type]
     CaptureHistory capture_history = {{{0}}};
 
-
+    // Correction History
+    PawnCorrectionHistoryTable     pawn_correction_history = {{0}};
+    MaterialCorrectionHistoryTable material_correction_history[N_COLORS] = {{{0}}};
 };
 
 #endif // HISTORY_H

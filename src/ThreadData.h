@@ -22,7 +22,6 @@ class ThreadData
 {
 public:
     ThreadData();
-    void reset();
 
     std::thread thread;
     Search*     search;     // pointeur sur la classe de recherche

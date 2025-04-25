@@ -169,7 +169,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
         board.reset();
         board.set_fen<true>(START_FEN, false);
         transpositionTable.clear();
-        td->reset();
+        td->history.reset();
 
         //====================================================
         //  Initalisation random de l'échiquier

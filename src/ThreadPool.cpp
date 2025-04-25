@@ -66,14 +66,7 @@ void ThreadPool::reset()
     for (int i = 0; i < nbrThreads; i++)
     {
         threadData[i].history.reset();
-        // std::memset(threadData[i].killer1,               0, sizeof(KillerTable));
-        // std::memset(threadData[i].killer2,               0, sizeof(KillerTable));
-        // std::memset(threadData[i].quiet_history,               0, sizeof(QuietHistorytable));
-        // std::memset(threadData[i].counter_move,          0, sizeof(CounterMoveTable));
-        // std::memset(threadData[i].counter_move_history,  0, sizeof(CounterMoveHistoryTable));
-        // std::memset(threadData[i].followup_move_history, 0, sizeof(FollowupMoveHistoryTable));
     }
-
 }
 
 //=================================================
