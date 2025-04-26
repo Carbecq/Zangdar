@@ -14,6 +14,8 @@
 #include "DataGen.h"
 #include "defines.h"
 #include "TranspositionTable.h"
+// #include "ThreadPool.h"
+// #include "pyrrhic/tbprobe.h"
 
 //===========================================================================
 //! \brief  Constructeur

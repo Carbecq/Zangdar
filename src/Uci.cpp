@@ -8,7 +8,6 @@
 #include "defines.h"
 #include "Uci.h"
 #include "Timer.h"
-#include "PolyBook.h"
 #include "TranspositionTable.h"
 #include "ThreadPool.h"
 #include "pyrrhic/tbprobe.h"
@@ -89,8 +88,6 @@ void Uci::run()
             std::cout << "option name Hash type spin default " << HASH_SIZE <<" min " << MIN_HASH_SIZE << " max " << MAX_HASH_SIZE << std::endl;
             std::cout << "option name Clear Hash type button" << std::endl;
             std::cout << "option name Threads type spin default 1 min 1 max " << MAX_THREADS << std::endl;
-            std::cout << "option name OwnBook type check default false" << std::endl;
-            std::cout << "option name BookPath type string default " << "./" << std::endl;
             std::cout << "option name SyzygyPath type string default " << "<empty>" << std::endl;
             std::cout << "option name MoveOverhead type spin default " << MOVE_OVERHEAD << " min 0 max 10000" << std::endl;
 
@@ -144,7 +141,7 @@ void Uci::run()
         else if (token == "h")
         {
             std::cout << "benchmark                     : Zangdar bench <depth> <nbr_threads> <hash_size>"     << std::endl;
-            std::cout << "datagen                       : Zangdar datagen <nbr_threads> <nbr_fens> <output>"   << std::endl;
+            std::cout << "datagen                       : Zangdar datagen <nbr_threads> <nbr_fens (millions)> <output>"   << std::endl;
             std::cout << "q(uit) "      << std::endl;
             std::cout << "v(ersion) "   << std::endl;
             std::cout << "s <ref/big> [dmax]            : test suite_perft "                                    << std::endl;
@@ -512,52 +509,6 @@ setoption name <id> [value <x>]
             threadPool.set_threads(nbr);
         }
 
-        else if (option_name == "OwnBook")
-        {
-            iss >> value;      // "value"
-
-            /*
-              by default all the opening book handling is done by the GUI,
-              but there is an option for the engine to use its own book ("OwnBook" option)
-
-              this means that the engine has its own book which is accessed by the engine itself.
-            */
-
-            std::string use_book;  // "true" ou "false"
-            iss >> use_book;
-
-            if (use_book == "true")
-            {
-#if defined DEBUG_LOG
-                sprintf(message, "Uci::parse_options : OwnBook true");
-                printlog(message);
-#endif
-                ownBook.init("book.bin");
-            }
-            else
-            {
-#if defined DEBUG_LOG
-                sprintf(message, "Uci::parse_options : OwnBook false");
-                printlog(message);
-#endif
-                ownBook.set_useBook(false);
-            }
-        }
-
-        else if (option_name == "BookPath")
-        {
-            iss >> value;      // "value"
-
-            std::string path;
-            iss >> path;
-
-#if defined DEBUG_LOG
-            sprintf(message, "Uci::parse_options : BookPath (%s) ", path.c_str());
-            printlog(message);
-#endif
-            ownBook.set_path(path);
-        }
-
         else if (option_name == "SyzygyPath")
         {
             iss >> value;      // "value"
@@ -687,7 +638,6 @@ void Uci::go_test(int dmax, int tmax)
         return;
     }
 
-    ownBook.set_useBook(false);
     threadPool.set_logUci(false);
 
     //-------------------------------------------------
@@ -919,8 +869,6 @@ void Uci::bench(int argCount, char* argValue[])
     int     total       = 0;
     U64     total_nodes = 0;
     U64     total_time  = 0;
-
-    ownBook.set_useBook(false);
 
     int depth       = argCount > 2 ? atoi(argValue[2]) : 16;
     depth           = std::min(depth, MAX_PLY);

@@ -3,13 +3,11 @@
 #include "Uci.h"
 #include "TranspositionTable.h"
 #include "ThreadPool.h"
-#include "PolyBook.h"
 #include "Attacks.h"
 #include "DataGen.h"
 
 // Globals
 TranspositionTable  transpositionTable(HASH_SIZE);
-PolyBook            ownBook;
 ThreadPool          threadPool(1, false, true);
 
 extern void init_bitmasks();

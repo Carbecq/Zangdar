@@ -198,7 +198,6 @@ HEADERS += \
     src/MoveList.h \
     src/MovePicker.h \
     src/NNUE.h \
-    src/PolyBook.h \
     src/Search.h \
     src/ThreadData.h \
     src/ThreadPool.h \
@@ -226,7 +225,6 @@ SOURCES += \
     src/History.cpp \
     src/MovePicker.cpp \
     src/NNUE.cpp \
-    src/PolyBook.cpp \
     src/Search.cpp \
     src/ThreadData.cpp \
     src/ThreadPool.cpp \

@@ -2,7 +2,6 @@
 #include "ThreadPool.h"
 #include "Board.h"
 #include "Search.h"
-#include "PolyBook.h"
 #include "Move.h"
 
 
@@ -83,14 +82,11 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
 
     MOVE best = Move::MOVE_NONE;
 
-    // Probe Opening Book
-    if(ownBook.get_useBook() == true && (best = ownBook.get_move(board)) != 0)
-    {
-        std::cout << "bestmove " << Move::name(best) << std::endl;
-    }
+    //  an opening is selected by the gui, from the book, and the engines play from there
+    //  that's how engine testing works, be it by devs, rating lists, or tournaments
 
     // Probe Syzygy TableBases
-    else if (useSyzygy && board.probe_root(best) == true)
+    if (useSyzygy && board.probe_root(best) == true)
     {
         std::cout << "bestmove " << Move::name(best) << std::endl;
     }
