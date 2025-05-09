@@ -42,6 +42,7 @@ void Uci::run()
     std::string fen  = START_FEN;
     int         dmax = 6;
     int         tmax = 0;
+    int         nmax = 0;
     int         nthreads = 1;
 
     do
@@ -212,12 +213,13 @@ void Uci::run()
             iss >> str;
             iss >> dmax;
             iss >> tmax;
+            iss >> nmax;
             iss >> nthreads;
 
             if (nthreads > 1)
                 threadPool.set_threads(nthreads);
 
-            go_run(str, fen, dmax, tmax);
+            go_run(str, fen, dmax, tmax, nmax);
         }
 
         else if (token == "test")
@@ -243,6 +245,10 @@ void Uci::run()
         else if (token == "tmax")
         {
             iss >> tmax;
+        }
+        else if (token == "nmax")
+        {
+            iss >> nmax;
         }
 
         else if (token == "json")
@@ -561,11 +567,11 @@ setoption name <id> [value <x>]
 //=================================================================
 //! \brief  Lancement d'une recherche sur une position
 //-----------------------------------------------------------------
-void Uci::go_run(const std::string& abc, const std::string& fen, int dmax, int tmax)
+void Uci::go_run(const std::string& abc, const std::string& fen, int dmax, int tmax, int nmax)
 {
     std::string auxi;
     std::string bug = "";
-    printf("go_run : abc=%s fen=%s dmax=%d tmax=%d \n", abc.c_str(), fen.c_str(), dmax, tmax);
+    printf("go_run : abc=%s fen=%s dmax=%d tmax=%d nmax=%d \n", abc.c_str(), fen.c_str(), dmax, tmax, nmax);
     transpositionTable.clear();
     threadPool.reset();
 
@@ -604,6 +610,9 @@ void Uci::go_run(const std::string& abc, const std::string& fen, int dmax, int t
         strgo = "go depth " + std::to_string(dmax);
     else if (tmax != 0)
         strgo = "go movetime " + std::to_string(tmax);
+    else if (nmax != 0)
+        strgo = "go nodes " + std::to_string(nmax);
+
     std::istringstream issgo(strgo);
     parse_go(issgo);
 }

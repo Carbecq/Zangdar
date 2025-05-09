@@ -710,7 +710,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
                 // update the PV
                 if (td->index == 0)
-                    td->update_pv(si, move);
+                    update_pv(si, move);
 
                 // If score beats beta we have a cutoff
                 if (score >= beta)

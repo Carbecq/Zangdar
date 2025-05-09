@@ -21,14 +21,13 @@ public:
 
 private:
     void genfens(int thread_id, const std::string& str_file,
-                          std::atomic<Usize>& sum_fens,
-                          std::atomic<bool>& run);
+                 std::atomic<Usize>& sum_fens,
+                 std::atomic<bool>& run);
     int  set_threads(const int nbr);
     template <Color color> void data_search(Board& board, Timer& timer,
                      // Search* search,
                      std::unique_ptr<Search>& search,
                      ThreadData* td,
-                     SearchInfo* si,
                      MOVE &move, I32 &score);
 
     constexpr static int MAX_RANDOM_PLIES =     8;   // nombre maximum de plies joués au hasard
@@ -45,7 +44,8 @@ private:
     constexpr static int HARD_NODE_LIMIT  = 5'000'000;
     constexpr static int SOFT_NODE_LIMIT  =     5'000;
 
-
+    constexpr static std::string COLOR_WIN[N_COLORS] = {"1.0", "0.0"};
+    constexpr static std::string COLOR_DRAW = "0.5";
 };
 
 /* 1 - 2xColor

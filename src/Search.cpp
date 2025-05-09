@@ -128,4 +128,16 @@ void Search::show_uci_best(const ThreadData* td) const
     std::cout << "bestmove " << Move::name(td->best_move) << std::endl;
 }
 
+//=========================================================
+//! \brief  Mise à jour de la Principal variation
+//!
+//! \param[in]  name   coup en notation UCI
+//---------------------------------------------------------
+void Search::update_pv(SearchInfo* si, const MOVE move) const
+{
+    si->pv.length = 1 + (si+1)->pv.length;
+    si->pv.line[0] = move;
+    memcpy(si->pv.line+1, (si+1)->pv.line, sizeof(MOVE) * (si+1)->pv.length);
+}
+
 

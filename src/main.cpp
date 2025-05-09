@@ -30,6 +30,7 @@ int main(int argCount, char* argValue[])
     else if (argCount > 1 && strcmp(argValue[1], "datagen") == 0)
     {
         DataGen(std::stoi(std::string{argValue[2]}), std::stoi(std::string{argValue[3]}), std::string{argValue[4]});
+        std::cout << "fin datagen" << std::endl;
     }
 
     //  UCI

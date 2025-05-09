@@ -19,7 +19,7 @@ private:
     void quit();
     void parse_go(std::istringstream& iss);
     void parse_options(std::istringstream& iss);
-    void go_run(const std::string& abc, const std::string &fen, int dmax, int tmax);
+    void go_run(const std::string& abc, const std::string &fen, int dmax, int tmax, int nmax);
     void go_test(int dmax, int tmax);
     void go_tactics(const std::string& line, int dmax, int tmax, U64& total_nodes, U64& total_time, int &total_depths, int &total_bm, int &total_am, int &total_ko);
 
