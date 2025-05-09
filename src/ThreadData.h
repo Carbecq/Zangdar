@@ -39,8 +39,6 @@ public:
     int         best_score;
     int         best_depth;
 
-    void update_pv(SearchInfo* si, const MOVE move) const;
-
 private:
 
 }__attribute__((aligned(64)));

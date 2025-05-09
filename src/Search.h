@@ -41,6 +41,7 @@ private:
 
     void show_uci_result(const ThreadData *td, I64 elapsed, const PVariation &pv) const;
     void show_uci_best(const ThreadData *td) const;
+    void update_pv(SearchInfo* si, const MOVE move) const;
 
     static constexpr int AspirationWindowsDepth    = 6;
     static constexpr int AspirationWindowsInitial  = 12;

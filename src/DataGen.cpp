@@ -4,6 +4,12 @@
 
 // #define DEBUG_GEN
 
+/* bulletformat
+ *  each line is of the form <FEN> | <score> | <result>
+ *  score is white relative and in centipawns
+ *  result is white relative and of the form 1.0 for win, 0.5 for draw, 0.0 for loss
+*/
+
 #include <string>
 #include <cstring>
 #include <fstream>
@@ -14,8 +20,8 @@
 #include "DataGen.h"
 #include "defines.h"
 #include "TranspositionTable.h"
-// #include "ThreadPool.h"
-// #include "pyrrhic/tbprobe.h"
+#include "ThreadPool.h"
+#include "pyrrhic/tbprobe.h"
 
 //===========================================================================
 //! \brief  Constructeur
@@ -34,9 +40,11 @@ DataGen::DataGen(const int _nbr_threads, const int _max_fens, const std::string&
     //================================================
     int nbr_threads = set_threads(_nbr_threads);
 
-    //TODO utiliser Syzygy ?
-    // tb_init("/mnt/Datas/Echecs/Syzygy/");
-    // threadPool.set_useSyzygy(true);
+    // 1) évite d'avoir des positions avec 2 rois seuls
+    // 2) évite d'avoir une partie nulle avec R+T/R sans
+    //    que le mat soit trouvé
+    if (tb_init("/mnt/Datas/Echecs/Syzygy/") == true)
+        threadPool.set_useSyzygy(true);
 
     //================================================
     //  Lancement de la génération par thread
@@ -52,9 +60,9 @@ DataGen::DataGen(const int _nbr_threads, const int _max_fens, const std::string&
         str_file += "/data" + std::to_string(i) + ".txt";
 
         threads.emplace_back(
-            [this, i, str_file, &total_fens, &run] {
-                genfens(i, str_file, total_fens, run);
-            });
+                    [this, i, str_file, &total_fens, &run] {
+            genfens(i, str_file, total_fens, run);
+        });
     }
 
     // thread de contrôle d'arrêt
@@ -91,7 +99,7 @@ DataGen::DataGen(const int _nbr_threads, const int _max_fens, const std::string&
         if (total_fens > max_fens)
         {
             run = false;
-            std::cout << "taper un caractère\n";
+            std::cout << "taper un caractère, puis attendre un peu le temps que les threads arrêtent \n";
         }
     }
 
@@ -100,6 +108,8 @@ DataGen::DataGen(const int _nbr_threads, const int _max_fens, const std::string&
     //================================================
     for (auto& t : threads)
         t.join();
+
+    std::cout << "total fens generated = " << total_fens << std::endl;
 }
 
 //====================================================================
@@ -140,21 +150,12 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
     ThreadData* td = new ThreadData;
     td->index  = 0;
 
-    SearchInfo* _info = new SearchInfo[STACK_SIZE];
-    // Grace au décalage, la position root peut regarder en arrière
-    SearchInfo* si  = _info + STACK_OFFSET;
-
-    for (int i = 0; i < MAX_PLY+STACK_OFFSET; i++)
-    {
-        (si + i)->ply = i;
-        (si + i)->cont_hist = &td->history.continuation_history[0][0];
-    }
-
     MoveList movelist;
     Usize    nbr_moves;
     Board    board;
     int      drawCount = 0;
     int      winCount = 0;
+    bool     use_syzygy;
 
     std::string  result;  // 0.5 for draw, 1.0 for white win, 0.0 for black win. = ~Color = 1 - Color
     MOVE    move;
@@ -246,9 +247,9 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
         timer.setup(Color::WHITE);
 
         if (board.turn() == WHITE)
-            data_search<WHITE>(board, timer, search, td, si, move, score);
+            data_search<WHITE>(board, timer, search, td, move, score);
         else
-            data_search<BLACK>(board, timer, search, td, si, move, score);
+            data_search<BLACK>(board, timer, search, td, move, score);
         if (std::abs(score) > MAX_RANDOM_SCORE)
         {
             // printf("-------------------------------------------score false  %d\n", score);
@@ -264,21 +265,20 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
         drawCount   = 0;
         winCount    = 0;
         nbr_fens    = 0;
+        use_syzygy  = false;
         timer.setup(SOFT_NODE_LIMIT, HARD_NODE_LIMIT);
 
         while (true)
         {
             // printf("----------------------------nouveau coup \n");
-            td->nodes = 0;
-            td->stopped  = false;
-            //TODO
-            // std::memset(td->_info, 0, sizeof(SearchInfo)*STACK_SIZE);
+            td->nodes   = 0;
+            td->stopped = false;
             transpositionTable.update_age();
 
             // Partie nulle ?
             if (board.is_draw(0))   //TODO vérifier ce 0 (voir Integral V4, Clover)
             {
-                result = "0.5";
+                result = COLOR_DRAW;
                 break;
             }
 
@@ -291,28 +291,40 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
             // Aucun coup possible
             if (!nbr_moves)
             {
-                if (board.is_in_check()) {  // en échec : mat
-                    // 0.0 : Noir gagne ; 1.0 : Blanc gagne
-                    result = (board.turn() == WHITE ? "0.0" : "1.0");
+                if (board.is_in_check())    // en échec : mat
+                {
+                    result = COLOR_WIN[~board.turn()];
                 }
-                else {                      // pas en échec ; pat
-                    result = "0.5";
+                else                        // pas en échec ; pat
+                {
+                    result = COLOR_DRAW;
                 }
                 break;
             }
 
             if (board.turn() == WHITE)
-                data_search<WHITE>(board, timer, search, td, si, move, score);
+                data_search<WHITE>(board, timer, search, td, move, score);
             else
-                data_search<BLACK>(board, timer, search, td, si, move, score);
+                data_search<BLACK>(board, timer, search, td, move, score);
+
+            // printf("----------------------------ajout (%d) \n", filtered);
 
             //  Filtrage de la position
             //  On cherche une position tranquille
-            if (   !board.is_in_check()
+            if (    board.is_in_check() == false
                 && !Move::is_capturing(move)
-                && abs(score) < HIGH_SCORE )
+                && abs(score) < HIGH_SCORE)
             {
                 fens[nbr_fens++] = { board.get_fen() , score * (1 - 2*board.turn()) };
+            }
+            // printf("----------------------------ajout fin (%d) \n", ok_tb);
+
+            // Si on utilise les tables Syzygy, inutile d'aller plus loin
+            if (    threadPool.get_useSyzygy()
+                 && BB::count_bit(board.occupancy_all()) <= 6)
+            {
+                use_syzygy = true;
+                break;
             }
 
             // Adjudication de la partie
@@ -322,21 +334,9 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
             if (absScore >= MATE_IN_X)
             {
                 score *= (board.turn() == WHITE ? 1 : -1);
-                result = (score < 0 ? "0.0" : "1.0");
+                result = (score < 0 ? COLOR_WIN[BLACK] : COLOR_WIN[WHITE]);
                 break;
             }
-
-
-            // MOVE tbmove;
-            // int tbScore, tbBound;
-            // if (board.probe_wdl(tbScore, tbBound, MAX_RANDOM_PLIES) == true)
-            // {
-            //     score = tbScore;
-            //     score *= (board.turn() == WHITE ? 1 : -1);
-            //     result = (score < 0 ? 0.0 : 1.0);
-            //     break;
-            // }
-
 
             if (absScore >= HIGH_SCORE) {       // position gagnante
                 winCount++;
@@ -349,13 +349,14 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
                 winCount = 0;
             }
 
-            if (winCount >= MIN_WIN_COUNT) {            // on est certain de gagner
+            // Gain ou Nulle quasiment assuré, inutile d'aller plus loin
+            if (winCount >= MIN_WIN_COUNT) {            // on est presque certain de gagner
                 score *= (board.turn() == WHITE ? 1 : -1);
-                result = (score < 0 ? "0.0" : "1.0");
+                result = (score < 0 ? COLOR_WIN[BLACK] : COLOR_WIN[WHITE]);
                 break;
             }
-            else if (drawCount >= MIN_DRAW_COUNT) {     // on est certain de faire nul
-                result = "0.5";
+            else if (drawCount >= MIN_DRAW_COUNT) {     // on est presque certain de faire nul
+                result = COLOR_DRAW;
                 break;
             }
 
@@ -364,9 +365,17 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
                 board.make_move<WHITE, true>(move);
             else
                 board.make_move<BLACK, true>(move);
+        }
+        // printf("------------------fin de la partie \n");
 
-        } // fin de la partie
-
+        // Si on utilise les tables Syzygy, le résultat est exact.
+        if (use_syzygy)
+        {
+            score *= (board.turn() == WHITE ? 1 : -1);
+            result = score < 0 ? COLOR_WIN[BLACK] :
+                     score > 0 ? COLOR_WIN[WHITE] :
+                                 COLOR_DRAW;
+        }
 
         // Ecriture dans le fichier des fens collectées dans cette partie
         for (int i = 0; i < nbr_fens; i++)
@@ -374,9 +383,9 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
             file << fens[i].fen   << " | "
                  << fens[i].score << " | "
                  << result
-                 // <<  " | "
-                 // << "nbr_games=" << nbr_games <<  " | "
-                 // << "Noir gagne : 0.0 ; Blanc gagne : 1.0 "
+                    // <<  " | "
+                    // << "nbr_games=" << nbr_games <<  " | "
+                    // << "Noir gagne : 0.0 ; Blanc gagne : 1.0 "
                  << "\n";
         }
 
@@ -394,25 +403,17 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
     file.close();
 }
 
-// #define DEBUG_GEN
-
 //============================================================================
 //  Recherche dans la position actuelle
 //----------------------------------------------------------------------------
 template <Color C>
 void DataGen::data_search(Board& board, Timer& timer,
-                          // Search *search,
                           std::unique_ptr<Search>& search,
                           ThreadData *td,
-                          SearchInfo* si,
                           MOVE &move, I32 &score)
 {
     move  = Move::MOVE_NONE;
     score = -INFINITE;
-
-    //==================================================
-    // iterative deepening
-    //==================================================
 
     td->score     = -INFINITE;
     td->stopped   = false;
@@ -427,6 +428,18 @@ void DataGen::data_search(Board& board, Timer& timer,
     timer.debug(WHITE);
     timer.start();
 #endif
+
+    //==================================================
+    // iterative deepening
+    //==================================================
+
+    std::array<SearchInfo, STACK_SIZE> _info{};
+    SearchInfo* si  = &(_info[STACK_OFFSET]);
+    for (int i = 0; i < MAX_PLY+STACK_OFFSET; i++)
+    {
+        (si + i)->ply = i;
+        (si + i)->cont_hist = &td->history.continuation_history[0][0];
+    }
 
     for (td->depth = 1; td->depth <= std::max(1, timer.getSearchDepth()); td->depth++)
     {
@@ -447,9 +460,9 @@ void DataGen::data_search(Board& board, Timer& timer,
 
         std::cout << "time " << elapsed
                   << "  depth " << td->depth
-                  << "   nodes " << td->nodes
-                  << " score " << td->score
-                  << " move " << Move::name(td->best_move)
+                  << "  nodes " << td->nodes
+                  << "  score " << td->score
+                  << "  move " << Move::name(td->best_move)
                   << std::endl;
 #else
         auto elapsed = 0;
@@ -488,14 +501,12 @@ int DataGen::set_threads(const int nbr)
 }
 
 template void DataGen::data_search<WHITE>(Board& board, Timer& timer,
-                                          // Search* search,
-                                          std::unique_ptr<Search>& search,
-                                          ThreadData* td,
-                                          SearchInfo* si,
-                                          MOVE& move, I32& score);
+// Search* search,
+std::unique_ptr<Search>& search,
+ThreadData* td,
+MOVE& move, I32& score);
 template void DataGen::data_search<BLACK>(Board& board, Timer& timer,
-                                          // Search* search,
-                                          std::unique_ptr<Search>& search,
-                                          ThreadData* td,
-                                          SearchInfo* si,
-                                          MOVE& move, I32& score);
+// Search* search,
+std::unique_ptr<Search>& search,
+ThreadData* td,
+MOVE& move, I32& score);
