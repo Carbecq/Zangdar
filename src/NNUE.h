@@ -23,17 +23,17 @@
 
 #include "types.h"
 
-//  Description du réseau : (768->256)x2->1, SquaredClippedReLU
+//  Description du réseau : (768->768)x2->1, SquaredClippedReLU
 //
 //      entrées     : 2 (couleurs) * 6 (pièces) * 64 (cases)  = 768
-//      neurones    : 256 ; 1 seule couche
+//      neurones    : 768 ; 1 seule couche
 //      perspective : sorties : 2 * HIDDEN_LAYER_SIZE
 //      SquareClippedRelu : l'activation se fait en "clippant" la valeur entre 0 et QA (ici 255)
 
 
 
-constexpr Usize INPUT_LAYER_SIZE  = N_COLORS * 6 * N_SQUARES;      // = 768 : entrées (note : il n'y a que 6 pièces
-constexpr Usize HIDDEN_LAYER_SIZE = 256;     // Hidden Layer : nombre de neuron(es) ; va de 16 à ... 1024 (plus ?)
+constexpr Usize INPUT_LAYER_SIZE  = N_COLORS * 6 * N_SQUARES;   // = 768 : entrées (note : il n'y a que 6 pièces
+constexpr Usize HIDDEN_LAYER_SIZE = 768;                        // Hidden Layer : nombre de neuron(es) ; va de 16 à ... 1024 (plus ?)
 
 constexpr I32 SCALE = 400;
 constexpr I32 QA    = 255;      /// Hidden Layer Quantisation Factor

@@ -52,11 +52,6 @@ else
 endif
 DEFS += -DSYZYGY=$(SYZYGY)
 
-#---------------------------------------------------
-#  TUNING
-#---------------------------------------------------
-# DEFS += -DUSE_TUNE
-
 #  Quelques defines utilisés en debug
 # DEFS += -DDEBUG_EVAL
 # DEFS += -DDEBUG_LOG
@@ -71,7 +66,7 @@ DEFS += -DSYZYGY=$(SYZYGY)
 #---------------------------------------------------
 #  NNUE
 #---------------------------------------------------
-NETWORK = \"networks/net-2-255.bin\"
+NETWORK = \"networks/net-768-6b.bin\"
 CFLAGS_NNUE = -DNETWORK=$(NETWORK)
 
 #---------------------------------------------------------------------

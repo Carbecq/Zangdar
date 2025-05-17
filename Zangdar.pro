@@ -183,6 +183,7 @@ QMAKE_CXXFLAGS_DEBUG += -DNETWORK='\\"$${NETWORK}\\"'
 
 DISTFILES += \
     Makefile \
+    README.md \
     VERSION.txt \
     src/pyrrhic/LICENSE \
     src/pyrrhic/README.md
