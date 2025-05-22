@@ -21,8 +21,7 @@ int NNUE::evaluate(Usize count)
 {
     auto output = 0;
     const auto& current = accumulator.back();
-
-    int bucket = get_bucket(count);
+    const int bucket = get_bucket(count);
 
     if constexpr (color == Color::WHITE)
         output = activation(current.white, current.black, network->output_weights, bucket);
@@ -276,7 +275,7 @@ constexpr int kChunkSize = sizeof(simd::Vepi16) / sizeof(I16);
 
 I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
                      const std::array<I16, HIDDEN_LAYER_SIZE>& them,
-                     const std::array<I16, HIDDEN_LAYER_SIZE * N_COLORS * OUTPUT_BUCKET>& weights,
+                     const std::array<I16, HIDDEN_LAYER_SIZE * N_COLORS * OUTPUT_BUCKETS>& weights,
                      const int bucket)
 {
     // Routine provenant de Integral

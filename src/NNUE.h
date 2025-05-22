@@ -23,11 +23,12 @@
 
 #include "types.h"
 
-//  Description du réseau : (768->768)x2->1, SquaredClippedReLU
+//  Description du réseau : (768 -> 768)x2 -> 1x8, SquaredClippedReLU
 //
-//      entrées     : 2 (couleurs) * 6 (pièces) * 64 (cases)  = 768
-//      neurones    : 768 ; 1 seule couche
-//      perspective : sorties : 2 * HIDDEN_LAYER_SIZE
+//      entrées         : 2 (couleurs) * 6 (pièces) * 64 (cases)  = 768
+//      neurones        : 768 ; 1 seule couche
+//      perspective     : sorties : 2 * HIDDEN_LAYER_SIZE * OUTPUT_BUCKETS
+//      Output Buckets  :
 //      SquareClippedRelu : l'activation se fait en "clippant" la valeur entre 0 et QA (ici 255)
 
 
@@ -35,8 +36,8 @@
 
 constexpr Usize INPUT_LAYER_SIZE  = N_COLORS * 6 * N_SQUARES;   // = 768 : entrées (note : il n'y a que 6 pièces
 constexpr Usize HIDDEN_LAYER_SIZE = 768;                        // Hidden Layer : nombre de neuron(es) ; va de 16 à ... 1024 (plus ?)
-constexpr Usize OUTPUT_BUCKET     = 8;  //TODO à voir ?
-constexpr Usize BUCKET_DIVISOR    = (32 + OUTPUT_BUCKET - 1) / OUTPUT_BUCKET;   // 4.875 -> 4
+constexpr Usize OUTPUT_BUCKETS    = 8;  //TODO à voir ?
+constexpr Usize BUCKET_DIVISOR    = (32 + OUTPUT_BUCKETS - 1) / OUTPUT_BUCKETS;   // 4.875 -> 4
 
 
 constexpr I32 SCALE = 400;
@@ -50,16 +51,14 @@ struct Network {
     alignas(ALIGN) std::array<I16, HIDDEN_LAYER_SIZE>                     feature_biases;
 
     /* structure provenant de Bullet :
-     *
-     * output_weights[N_COLORS][HIDDEN_SIZE][OUTPUT_BUCKETS]; ???
-     *  v = color*HIDDEN_SIZE*OUTPUT_BUCKETS + weight*OUTPUT_BUCKETS + bucket
-
-     * output_weights[OUTPUT_BUCKETS][N_COLORS][HIDDEN_SIZE]; ???
-     *  v = bucket*N_COLORS*HIDDEN_SIZE + color*HIDDEN_SIZE + weight
+     * on a 2 possibilités :
+     *      non transposed : output_weights[N_COLORS][HIDDEN_SIZE][OUTPUT_BUCKETS];
+     *      transposed     : output_weights[OUTPUT_BUCKETS][N_COLORS][HIDDEN_SIZE];
+     * Bullet sort maintenant la version "transposed"
      */
-    alignas(ALIGN) std::array<I16, N_COLORS * HIDDEN_LAYER_SIZE * OUTPUT_BUCKET> output_weights;
 
-    alignas(ALIGN) std::array<I16, OUTPUT_BUCKET>                         output_bias;
+    alignas(ALIGN) std::array<I16, N_COLORS * HIDDEN_LAYER_SIZE * OUTPUT_BUCKETS> output_weights;
+    alignas(ALIGN) std::array<I16, OUTPUT_BUCKETS>                         output_bias;
 };
 
 
@@ -99,7 +98,7 @@ private:
 
     I32 activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
                    const std::array<I16, HIDDEN_LAYER_SIZE>& them,
-                   const std::array<I16, HIDDEN_LAYER_SIZE * 2 * OUTPUT_BUCKET>& weights,
+                   const std::array<I16, N_COLORS * HIDDEN_LAYER_SIZE * OUTPUT_BUCKETS>& weights,
                    const int bucket);
 
     std::pair<Usize, Usize> get_indices(Piece piece, int square);
@@ -112,12 +111,9 @@ private:
 
     // count = 32 : b = 7.5
     //          2 :     0
-    inline int get_bucket(int count) {
+    inline int get_bucket(Usize count) {
         return (count - 2) / BUCKET_DIVISOR;
     }
-
-#if defined __AVX2__
-#endif
 
 };
 
