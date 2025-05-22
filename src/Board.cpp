@@ -46,9 +46,9 @@ void Board::reset() noexcept
 [[nodiscard]] int Board::evaluate()
 {
     if (side_to_move == WHITE)
-        return nnue.evaluate<WHITE>();
+        return nnue.evaluate<WHITE>(BB::count_bit(occupancy_all()));
     else
-        return nnue.evaluate<BLACK>();
+        return nnue.evaluate<BLACK>(BB::count_bit(occupancy_all()));
 
     //note : certains codes modifient la valeur retournée par nnue
     //       soit avec une "phase", soit avec une valeur "random".
@@ -324,6 +324,6 @@ void Board::calculate_nnue(int &eval)
         nn.add(Piece::BLACK_KING, sq);
     }
 
-    eval = nn.evaluate<WHITE>();
+    eval = nn.evaluate<WHITE>(BB::count_bit(occupancy_all()));
 }
 

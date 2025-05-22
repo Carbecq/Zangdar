@@ -31,9 +31,13 @@
 //      SquareClippedRelu : l'activation se fait en "clippant" la valeur entre 0 et QA (ici 255)
 
 
+// https://www.chessprogramming.org/NNUE#Output_Buckets
 
 constexpr Usize INPUT_LAYER_SIZE  = N_COLORS * 6 * N_SQUARES;   // = 768 : entrées (note : il n'y a que 6 pièces
 constexpr Usize HIDDEN_LAYER_SIZE = 768;                        // Hidden Layer : nombre de neuron(es) ; va de 16 à ... 1024 (plus ?)
+constexpr Usize OUTPUT_BUCKET     = 8;  //TODO à voir ?
+constexpr Usize BUCKET_DIVISOR    = (32 + OUTPUT_BUCKET - 1) / OUTPUT_BUCKET;   // 4.875 -> 4
+
 
 constexpr I32 SCALE = 400;
 constexpr I32 QA    = 255;      /// Hidden Layer Quantisation Factor
@@ -42,10 +46,20 @@ constexpr I32 QAB   = QA * QB;
 
 //  Architecture du réseau
 struct Network {
-    alignas(ALIGN) std::array<I16, INPUT_LAYER_SIZE * HIDDEN_LAYER_SIZE> feature_weights;
-    alignas(ALIGN) std::array<I16, HIDDEN_LAYER_SIZE> feature_biases;
-    alignas(ALIGN) std::array<I16, HIDDEN_LAYER_SIZE * 2> output_weights;
-    I16 output_bias;
+    alignas(ALIGN) std::array<I16, INPUT_LAYER_SIZE * HIDDEN_LAYER_SIZE>  feature_weights;
+    alignas(ALIGN) std::array<I16, HIDDEN_LAYER_SIZE>                     feature_biases;
+
+    /* structure provenant de Bullet :
+     *
+     * output_weights[N_COLORS][HIDDEN_SIZE][OUTPUT_BUCKETS]; ???
+     *  v = color*HIDDEN_SIZE*OUTPUT_BUCKETS + weight*OUTPUT_BUCKETS + bucket
+
+     * output_weights[OUTPUT_BUCKETS][N_COLORS][HIDDEN_SIZE]; ???
+     *  v = bucket*N_COLORS*HIDDEN_SIZE + color*HIDDEN_SIZE + weight
+     */
+    alignas(ALIGN) std::array<I16, N_COLORS * HIDDEN_LAYER_SIZE * OUTPUT_BUCKET> output_weights;
+
+    alignas(ALIGN) std::array<I16, OUTPUT_BUCKET>                         output_bias;
 };
 
 
@@ -72,7 +86,7 @@ public:
     void push();
     void pop();
     void reset();
-    template<Color color> int  evaluate();
+    template<Color color> int  evaluate(Usize count);
     inline void reserve_capacity() { accumulator.reserve(512); }  // la capacité ne passe pas avec la copie
 
     void add(Piece piece, int from);
@@ -84,8 +98,9 @@ private:
     std::vector<Accumulator> accumulator;   // pile des accumulateurs
 
     I32 activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
-                       const std::array<I16, HIDDEN_LAYER_SIZE>& them,
-                       const std::array<I16, HIDDEN_LAYER_SIZE * 2>& weights);
+                   const std::array<I16, HIDDEN_LAYER_SIZE>& them,
+                   const std::array<I16, HIDDEN_LAYER_SIZE * 2 * OUTPUT_BUCKET>& weights,
+                   const int bucket);
 
     std::pair<Usize, Usize> get_indices(Piece piece, int square);
 
@@ -93,6 +108,12 @@ private:
     constexpr inline I32 screlu(I16 x) {
         auto clamped = std::clamp(static_cast<I32>(x), 0, QA);
         return clamped * clamped;
+    }
+
+    // count = 32 : b = 7.5
+    //          2 :     0
+    inline int get_bucket(int count) {
+        return (count - 2) / BUCKET_DIVISOR;
     }
 
 #if defined __AVX2__

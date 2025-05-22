@@ -17,15 +17,17 @@ const Network *network = reinterpret_cast<const Network *>(gnetworkDataData);
 //! \brief  Retourne l'évaluation du réseau
 //------------------------------------------------------
 template<Color color>
-int NNUE::evaluate()
+int NNUE::evaluate(Usize count)
 {
     auto output = 0;
     const auto& current = accumulator.back();
 
+    int bucket = get_bucket(count);
+
     if constexpr (color == Color::WHITE)
-        output = activation(current.white, current.black, network->output_weights);
+        output = activation(current.white, current.black, network->output_weights, bucket);
     else
-        output = activation(current.black, current.white, network->output_weights);
+        output = activation(current.black, current.white, network->output_weights, bucket);
 
     return output;
 }
@@ -274,7 +276,8 @@ constexpr int kChunkSize = sizeof(simd::Vepi16) / sizeof(I16);
 
 I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
                      const std::array<I16, HIDDEN_LAYER_SIZE>& them,
-                     const std::array<I16, HIDDEN_LAYER_SIZE * 2>& weights)
+                     const std::array<I16, HIDDEN_LAYER_SIZE * N_COLORS * OUTPUT_BUCKET>& weights,
+                     const int bucket)
 {
     // Routine provenant de Integral
     // Merci pour les commentaires )
@@ -282,13 +285,15 @@ I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
     // Doc : https://cosmo.tardis.ac/files/2024-06-01-nnue.html
     // On va utiliser l'algorithme "Lizard"
 
+    const int adresse = bucket * N_COLORS * HIDDEN_LAYER_SIZE;
+
     auto sum = simd::ZeroEpi32();
 
     // Compute evaluation from our perspective
     for (Usize i = 0; i < HIDDEN_LAYER_SIZE; i += kChunkSize)
     {
         const auto input  = simd::LoadEpi16(&us[i]);
-        const auto weight = simd::LoadEpi16(&weights[i]);
+        const auto weight = simd::LoadEpi16(&weights[adresse + i]);
 
         // Clip the accumulator values
         const auto clipped = simd::Clip(input, QA);
@@ -313,7 +318,7 @@ I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
     for (Usize i = 0; i < HIDDEN_LAYER_SIZE; i += kChunkSize)
     {
         const auto input  = simd::LoadEpi16(&them[i]);
-        const auto weight = simd::LoadEpi16(&weights[i + HIDDEN_LAYER_SIZE]);
+        const auto weight = simd::LoadEpi16(&weights[adresse + HIDDEN_LAYER_SIZE + i]);
 
         // Clip the accumulator values
         const auto clipped = simd::Clip(input, QA);
@@ -336,7 +341,7 @@ I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
     eval /= QA;
 
     // Add final output bias
-    eval += network->output_bias;
+    eval += network->output_bias[bucket];
 
     // Scale the evaluation
     eval *= SCALE;
@@ -352,18 +357,20 @@ I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
 
 I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
                      const std::array<I16, HIDDEN_LAYER_SIZE>& them,
-                     const std::array<I16, HIDDEN_LAYER_SIZE * 2>& weights)
+                     const std::array<I16, HIDDEN_LAYER_SIZE * N_COLORS * OUTPUT_BUCKET>& weights,
+                    const int bucket)
 {
     I32 eval = 0;
+    const int adresse = bucket * N_COLORS * HIDDEN_LAYER_SIZE;
 
     for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
     {
-        eval += screlu(us[i])   * weights[i];
-        eval += screlu(them[i]) * weights[HIDDEN_LAYER_SIZE + i];
+        eval += screlu(us[i])   * weights[adresse + i];
+        eval += screlu(them[i]) * weights[adresse + HIDDEN_LAYER_SIZE + i];
     }
 
     eval /= QA;
-    eval += network->output_bias;
+    eval += network->output_bias[bucket];
     eval *= SCALE;
     eval /= QAB;
 
@@ -373,7 +380,7 @@ I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
 #endif
 
 
-template int NNUE::evaluate<WHITE>();
-template int NNUE::evaluate<BLACK>();
+template int NNUE::evaluate<WHITE>(Usize count);
+template int NNUE::evaluate<BLACK>(Usize count);
 
 

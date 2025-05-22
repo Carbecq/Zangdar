@@ -31,7 +31,7 @@ bool Board::valid(const std::string &message) noexcept
     }
 
     if (Update_NNUE == true) {
-         int v1 = nnue.evaluate<WHITE>();
+         int v1 = nnue.evaluate<WHITE>(BB::count_bit(occupancy_all()));
          int v2{};
          calculate_nnue(v2);
          if (v1 != v2) {
