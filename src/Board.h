@@ -1,6 +1,8 @@
 #ifndef LIBCHESS_POSITION_HPP
 #define LIBCHESS_POSITION_HPP
 
+class Board;
+
 #include "MoveList.h"
 #include "Bitboard.h"
 #include "types.h"
@@ -167,8 +169,12 @@ public:
     [[nodiscard]] std::string get_fen() const noexcept;
     void mirror_fen(const std::string &fen, bool logTactics);
 
+    //! \brief  met à jour le réseau à partir de la position
+    void set_network();
+    template <Color US>void set_current_network(int king);
+
     //! \brief  Retourne la position du roi
-    template<Color C> [[nodiscard]] constexpr int king_square() const noexcept { return x_king[C]; }
+    template<Color C> [[nodiscard]] constexpr int king_square() const noexcept { return square_king[C]; }
 
     //! \brief Retourne le bitboard des cases attaquées
     template<Color C> [[nodiscard]] Bitboard squares_attacked() const noexcept;
@@ -445,7 +451,7 @@ public:
     //=============================================================================
     //! \brief  Ajoute une pièce à la case indiquée
     //-----------------------------------------------------------------------------
-    template <bool Update_NNUE> void add_piece(const int square, const Color color, const Piece piece) noexcept;
+    void add_piece(const int square, const Color color, const Piece piece) noexcept;
     void set_piece(const int square, const Color color, const Piece piece) noexcept;
     void move_piece(const int from, const int dest, const Color color, const Piece piece) noexcept;
     void remove_piece(const int square, const Color color, const Piece) noexcept;
@@ -478,7 +484,7 @@ public:
     std::array<Bitboard, N_COLORS>     colorPiecesBB;   // bitboard des pièces pour chaque couleur
     std::array<Bitboard, N_PIECE_TYPE> typePiecesBB;    // bitboard des pièces pour chaque type de pièce
     std::array<Piece, N_SQUARES>       pieceBoard;      // donne la pièce occupant la case indiquée (type + couleur)
-    std::array<int, N_COLORS>          x_king;          // position des rois
+    std::array<int, N_COLORS>          square_king;     // position des rois
     Color side_to_move;                         // camp au trait
     std::vector<std::string> best_moves;        // meilleur coup (pour les tests tactiques)
     std::vector<std::string> avoid_moves;       // coup à éviter (pour les tests tactiques)

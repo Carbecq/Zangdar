@@ -135,19 +135,19 @@ inline std::ostream &operator<<(std::ostream &os, const int square) noexcept {
     return os;
 }
 
-[[nodiscard]] constexpr int rank(int square) noexcept { return (square >> 3);   }   // sq / 8
-[[nodiscard]] constexpr int file(int square) noexcept { return (square & 7);    }   // sq % 8
+[[nodiscard]] constexpr inline int rank(int square) noexcept { return (square >> 3);   }   // sq / 8
+[[nodiscard]] constexpr inline int file(int square) noexcept { return (square & 7);    }   // sq % 8
 
-[[nodiscard]] constexpr int north(int square)       noexcept { return (square + NORTH);         }
-[[nodiscard]] constexpr int north_west(int square)  noexcept { return (square + NORTH + WEST);  }
-[[nodiscard]] constexpr int west(int square)        noexcept { return (square + WEST);          }
-[[nodiscard]] constexpr int south_west(int square)  noexcept { return (square + SOUTH + WEST);  }
-[[nodiscard]] constexpr int south(int square)       noexcept { return (square + SOUTH);         }
-[[nodiscard]] constexpr int south_east(int square)  noexcept { return (square + SOUTH + EAST);  }
-[[nodiscard]] constexpr int east(int square)        noexcept { return (square + EAST);          }
-[[nodiscard]] constexpr int north_east(int square)  noexcept { return (square + NORTH + EAST);  }
-[[nodiscard]] constexpr int south_south(int square) noexcept { return (square + 2*SOUTH);       }
-[[nodiscard]] constexpr int north_north(int square) noexcept { return (square + 2*NORTH);       }
+[[nodiscard]] constexpr inline int north(int square)       noexcept { return (square + NORTH);         }
+[[nodiscard]] constexpr inline int north_west(int square)  noexcept { return (square + NORTH + WEST);  }
+[[nodiscard]] constexpr inline int west(int square)        noexcept { return (square + WEST);          }
+[[nodiscard]] constexpr inline int south_west(int square)  noexcept { return (square + SOUTH + WEST);  }
+[[nodiscard]] constexpr inline int south(int square)       noexcept { return (square + SOUTH);         }
+[[nodiscard]] constexpr inline int south_east(int square)  noexcept { return (square + SOUTH + EAST);  }
+[[nodiscard]] constexpr inline int east(int square)        noexcept { return (square + EAST);          }
+[[nodiscard]] constexpr inline int north_east(int square)  noexcept { return (square + NORTH + EAST);  }
+[[nodiscard]] constexpr inline int south_south(int square) noexcept { return (square + 2*SOUTH);       }
+[[nodiscard]] constexpr inline int north_north(int square) noexcept { return (square + 2*NORTH);       }
 
 // flip vertically
 [[nodiscard]] constexpr inline int mirrorVertically(int sq) noexcept { return sq ^ 56; } // 0b111000

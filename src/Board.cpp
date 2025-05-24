@@ -30,7 +30,7 @@ void Board::reset() noexcept
     colorPiecesBB.fill(0ULL);
     typePiecesBB.fill(0ULL);
     pieceBoard.fill(Piece::NONE);
-    x_king.fill(SquareType::SQUARE_NONE);
+    square_king.fill(SquareType::SQUARE_NONE);
     side_to_move = Color::WHITE;
     avoid_moves.clear();
     best_moves.clear();
@@ -258,37 +258,41 @@ void Board::calculate_nnue(int &eval)
     nn.reserve_capacity();
     nn.reset();
 
+    bb = occupancy_cp<WHITE, PieceType::KING>();
+    int wking = BB::pop_lsb(bb);
+
+    bb = occupancy_cp<BLACK, PieceType::KING>();
+    int bking = BB::pop_lsb(bb);
+
+    nn.add(Piece::WHITE_KING, wking, wking, bking);
+    nn.add(Piece::BLACK_KING, bking, wking, bking);
+
     // Pieces Blanches
 
     bb = occupancy_cp<WHITE, PieceType::PAWN>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        nn.add(Piece::WHITE_PAWN, sq);
+        nn.add(Piece::WHITE_PAWN, sq, wking, bking);
     }
     bb = occupancy_cp<WHITE, PieceType::KNIGHT>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        nn.add(Piece::WHITE_KNIGHT, sq);
+        nn.add(Piece::WHITE_KNIGHT, sq, wking, bking);
     }
     bb = occupancy_cp<WHITE, PieceType::BISHOP>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        nn.add(Piece::WHITE_BISHOP, sq);
+        nn.add(Piece::WHITE_BISHOP, sq, wking, bking);
     }
     bb = occupancy_cp<WHITE, PieceType::ROOK>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        nn.add(Piece::WHITE_ROOK, sq);
+        nn.add(Piece::WHITE_ROOK, sq, wking, bking);
     }
     bb = occupancy_cp<WHITE, PieceType::QUEEN>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        nn.add(Piece::WHITE_QUEEN, sq);
-    }
-    bb = occupancy_cp<WHITE, PieceType::KING>();
-    while (bb) {
-        int sq = BB::pop_lsb(bb);
-        nn.add(Piece::WHITE_KING, sq);
+        nn.add(Piece::WHITE_QUEEN, sq, wking, bking);
     }
 
     // Pieces Noires
@@ -296,32 +300,27 @@ void Board::calculate_nnue(int &eval)
     bb = occupancy_cp<BLACK, PieceType::PAWN>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        nn.add(Piece::BLACK_PAWN, sq);
+        nn.add(Piece::BLACK_PAWN, sq, wking, bking);
     }
     bb = occupancy_cp<BLACK, PieceType::KNIGHT>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        nn.add(Piece::BLACK_KNIGHT, sq);
+        nn.add(Piece::BLACK_KNIGHT, sq, wking, bking);
     }
     bb = occupancy_cp<BLACK, PieceType::BISHOP>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        nn.add(Piece::BLACK_BISHOP, sq);
+        nn.add(Piece::BLACK_BISHOP, sq, wking, bking);
     }
     bb = occupancy_cp<BLACK, PieceType::ROOK>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        nn.add(Piece::BLACK_ROOK, sq);
+        nn.add(Piece::BLACK_ROOK, sq, wking, bking);
     }
     bb = occupancy_cp<BLACK, PieceType::QUEEN>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        nn.add(Piece::BLACK_QUEEN, sq);
-    }
-    bb = occupancy_cp<BLACK, PieceType::KING>();
-    while (bb) {
-        int sq = BB::pop_lsb(bb);
-        nn.add(Piece::BLACK_KING, sq);
+        nn.add(Piece::BLACK_QUEEN, sq, wking, bking);
     }
 
     eval = nn.evaluate<WHITE>(BB::count_bit(occupancy_all()));

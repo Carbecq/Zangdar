@@ -15,7 +15,6 @@ constexpr int STACK_SIZE   = MAX_PLY + 2*STACK_OFFSET;  // taille un peu trop gr
 
 // Déclarations pour le compilateur
 class Search;
-class Board;
 
 //! \brief  Données d'une thread
 class ThreadData

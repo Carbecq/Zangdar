@@ -118,13 +118,13 @@ bool Board::valid(const std::string &message) noexcept
     //        return false;
     //    }
     
-    if (x_king[WHITE] != king_square<WHITE>())
+    if (square_king[WHITE] != king_square<WHITE>())
     {
         std::cout << "erreur roi blanc" << std::endl;
         return(false);
     }
     
-    if (x_king[BLACK] != king_square<BLACK>())
+    if (square_king[BLACK] != king_square<BLACK>())
     {
         std::cout << "erreur roi noir" << std::endl;
         return(false);

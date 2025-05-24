@@ -75,53 +75,53 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
     for (const auto &c : word) {
         switch (c) {
         case 'P':
-            add_piece<Update_NNUE>(i, Color::WHITE, Piece::WHITE_PAWN);
+            add_piece(i, Color::WHITE, Piece::WHITE_PAWN);
             i++;
             break;
         case 'p':
-            add_piece<Update_NNUE>(i, Color::BLACK, Piece::BLACK_PAWN);
+            add_piece(i, Color::BLACK, Piece::BLACK_PAWN);
             i++;
             break;
         case 'N':
-            add_piece<Update_NNUE>(i, Color::WHITE, Piece::WHITE_KNIGHT);
+            add_piece(i, Color::WHITE, Piece::WHITE_KNIGHT);
             i++;
             break;
         case 'n':
-            add_piece<Update_NNUE>(i, Color::BLACK, Piece::BLACK_KNIGHT);
+            add_piece(i, Color::BLACK, Piece::BLACK_KNIGHT);
             i++;
             break;
         case 'B':
-            add_piece<Update_NNUE>(i, Color::WHITE, Piece::WHITE_BISHOP);
+            add_piece(i, Color::WHITE, Piece::WHITE_BISHOP);
             i++;
             break;
         case 'b':
-            add_piece<Update_NNUE>(i, Color::BLACK, Piece::BLACK_BISHOP);
+            add_piece(i, Color::BLACK, Piece::BLACK_BISHOP);
             i++;
             break;
         case 'R':
-            add_piece<Update_NNUE>(i, Color::WHITE, Piece::WHITE_ROOK);
+            add_piece(i, Color::WHITE, Piece::WHITE_ROOK);
             i++;
             break;
         case 'r':
-            add_piece<Update_NNUE>(i, Color::BLACK, Piece::BLACK_ROOK);
+            add_piece(i, Color::BLACK, Piece::BLACK_ROOK);
             i++;
             break;
         case 'Q':
-            add_piece<Update_NNUE>(i, Color::WHITE, Piece::WHITE_QUEEN);
+            add_piece(i, Color::WHITE, Piece::WHITE_QUEEN);
             i++;
             break;
         case 'q':
-            add_piece<Update_NNUE>(i, Color::BLACK, Piece::BLACK_QUEEN);
+            add_piece(i, Color::BLACK, Piece::BLACK_QUEEN);
             i++;
             break;
         case 'K':
-            add_piece<Update_NNUE>(i, Color::WHITE, Piece::WHITE_KING);
-            x_king[Color::WHITE] = i;
+            add_piece(i, Color::WHITE, Piece::WHITE_KING);
+            square_king[Color::WHITE] = i;
             i++;
             break;
         case 'k':
-            add_piece<Update_NNUE>(i, Color::BLACK, Piece::BLACK_KING);
-            x_king[Color::BLACK] = i;
+            add_piece(i, Color::BLACK, Piece::BLACK_KING);
+            square_king[Color::BLACK] = i;
             i++;
             break;
         case '1':
@@ -313,6 +313,10 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
     get_status().mat_key[WHITE] = mat_key[WHITE];
     get_status().mat_key[BLACK] = mat_key[BLACK];
 
+    //--------------------------------------------
+    if constexpr (Update_NNUE)
+        set_network();
+
     //   std::cout << display() << std::endl;
 }
 
@@ -358,53 +362,53 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     for (const auto &c : word) {
         switch (c) {
         case 'P':
-            add_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, Piece::WHITE_PAWN);
+            add_piece(SQ::mirrorVertically(i), ~Color::WHITE, Piece::WHITE_PAWN);
             i++;
             break;
         case 'p':
-            add_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, Piece::WHITE_PAWN);
+            add_piece(SQ::mirrorVertically(i), ~Color::BLACK, Piece::WHITE_PAWN);
             i++;
             break;
         case 'N':
-            add_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, Piece::WHITE_KNIGHT);
+            add_piece(SQ::mirrorVertically(i), ~Color::WHITE, Piece::WHITE_KNIGHT);
             i++;
             break;
         case 'n':
-            add_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, Piece::WHITE_KNIGHT);
+            add_piece(SQ::mirrorVertically(i), ~Color::BLACK, Piece::WHITE_KNIGHT);
             i++;
             break;
         case 'B':
-            add_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, Piece::WHITE_BISHOP);
+            add_piece(SQ::mirrorVertically(i), ~Color::WHITE, Piece::WHITE_BISHOP);
             i++;
             break;
         case 'b':
-            add_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, Piece::WHITE_BISHOP);
+            add_piece(SQ::mirrorVertically(i), ~Color::BLACK, Piece::WHITE_BISHOP);
             i++;
             break;
         case 'R':
-            add_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, Piece::WHITE_ROOK);
+            add_piece(SQ::mirrorVertically(i), ~Color::WHITE, Piece::WHITE_ROOK);
             i++;
             break;
         case 'r':
-            add_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, Piece::WHITE_ROOK);
+            add_piece(SQ::mirrorVertically(i), ~Color::BLACK, Piece::WHITE_ROOK);
             i++;
             break;
         case 'Q':
-            add_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, Piece::WHITE_QUEEN);
+            add_piece(SQ::mirrorVertically(i), ~Color::WHITE, Piece::WHITE_QUEEN);
             i++;
             break;
         case 'q':
-            add_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, Piece::WHITE_QUEEN);
+            add_piece(SQ::mirrorVertically(i), ~Color::BLACK, Piece::WHITE_QUEEN);
             i++;
             break;
         case 'K':
-            add_piece<false>(SQ::mirrorVertically(i), ~Color::WHITE, Piece::WHITE_KING);
-            x_king[~Color::WHITE] = SQ::mirrorVertically(i);
+            add_piece(SQ::mirrorVertically(i), ~Color::WHITE, Piece::WHITE_KING);
+            square_king[~Color::WHITE] = SQ::mirrorVertically(i);
             i++;
             break;
         case 'k':
-            add_piece<false>(SQ::mirrorVertically(i), ~Color::BLACK, Piece::WHITE_KING);
-            x_king[~Color::BLACK] = SQ::mirrorVertically(i);
+            add_piece(SQ::mirrorVertically(i), ~Color::BLACK, Piece::WHITE_KING);
+            square_king[~Color::BLACK] = SQ::mirrorVertically(i);
             i++;
             break;
         case '1':
@@ -655,6 +659,61 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     return fen;
 }
 
+//===========================================================
+//! \brief  met à jour le réseau à partir de la position
+//-----------------------------------------------------------
+void Board::set_network()
+{
+    nnue.reset();
+
+    int wking = square_king[WHITE];
+    int bking = square_king[BLACK];
+    Bitboard bb;
+    int square;
+
+    for (Color color : {WHITE, BLACK})
+    {
+        for (PieceType piece : {PieceType::PAWN, PieceType::KNIGHT, PieceType::BISHOP, PieceType::ROOK, PieceType::QUEEN, PieceType::KING})
+        {
+            bb = colorPiecesBB[color] & typePiecesBB[static_cast<U32>(piece)];
+
+            while(bb)
+            {
+                square = BB::pop_lsb(bb);
+                nnue.add(Move::make_piece(color, piece), square, wking, bking);
+            }
+        }
+    }
+}
+
+//===========================================================
+//! \brief  met à jour le réseau courant à partir de la position
+//!         de plus, on ne s'intéresse qu'à l'accumulateur "US"
+//! \param[in]  king    position du roi de couleur "US"
+//-----------------------------------------------------------
+template <Color US>
+void Board::set_current_network(int king)
+{
+    nnue.reset_current<US>();
+
+    Bitboard bb;
+    int square;
+
+    for (Color color : {WHITE, BLACK})
+    {
+        for (PieceType piece : {PieceType::PAWN, PieceType::KNIGHT, PieceType::BISHOP, PieceType::ROOK, PieceType::QUEEN, PieceType::KING})
+        {
+            bb = colorPiecesBB[color] & typePiecesBB[static_cast<U32>(piece)];
+
+            while(bb)
+            {
+                square = BB::pop_lsb(bb);
+                nnue.add<US>(Move::make_piece(color, piece), color, square, king);
+            }
+        }
+    }
+}
+
 //-----------------------------------------------------
 //! \brief Commande UCI : position
 //!         Entrée d'une position
@@ -735,3 +794,6 @@ void Board::apply_token(const std::string& token) noexcept
 
 template void Board::set_fen<true>(const std::string &fen, bool logTactics) noexcept;
 template void Board::set_fen<false>(const std::string &fen, bool logTactics) noexcept;
+
+template void Board::set_current_network<WHITE>(int king);
+template void Board::set_current_network<BLACK>(int king);

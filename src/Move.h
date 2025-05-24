@@ -164,13 +164,15 @@ constexpr U32 MOVE_NULL           = 65; // 1000001
     return static_cast<U32>(move & MOVE_FLAGS_MASK);
 }
 
+//----------------------------------------------------------------------------------
+
 //! \brief  retourne la couleur de la pièce
 [[nodiscard]] constexpr inline Color color(Piece piece) {
     return static_cast<Color>(static_cast<U32>(piece) >> 3);
 }
 
 //! \brief  retourne le type de la pièce
-[[nodiscard]] constexpr inline PieceType type (Piece piece)
+[[nodiscard]] constexpr inline PieceType type(Piece piece)
 {
     return static_cast<PieceType>(static_cast<U32>(piece) & 7);
 }
