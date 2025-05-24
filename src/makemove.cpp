@@ -322,7 +322,7 @@ void Board::make_move(const MOVE move) noexcept
                 assert(Move::type(piece_on(get_king_dest<Us, CastleSide::KING_SIDE>())) == PieceType::KING);
 
                 newStatus.key         ^= piece_key[static_cast<U32>(piece)][from] ^ piece_key[static_cast<U32>(piece)][dest];
-                newStatus.mat_key[Us] ^= piece_key[static_cast<U32>(piece)][dest] ^ piece_key[static_cast<U32>(piece)][dest];
+                newStatus.mat_key[Us] ^= piece_key[static_cast<U32>(piece)][from] ^ piece_key[static_cast<U32>(piece)][dest];
 
                 if constexpr (Update_NNUE == true)
                         nnue.sub_add(piece, from, piece, dest);
