@@ -113,20 +113,20 @@ void NNUE::add(Piece piece, int from, int wking, int bking)
 //! \param[in] king     position du roi de couleur "US"
 //----------------------------------------------------------------
 template <Color US>
-void NNUE::add(Piece piece, Color color, int from, int king)
+void NNUE::add(Piece piece, int from, int king)
 {
     auto& accu = accumulator.back();
 
     if constexpr (US == WHITE)
     {
-        const auto white_idx = get_indice<WHITE>(piece, color, from, king);
+        const auto white_idx = get_indice<WHITE>(piece, from, king);
 
         for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
             accu.white[i] += network->feature_weights[white_idx * HIDDEN_LAYER_SIZE + i];
     }
     else
     {
-        const auto black_idx = get_indice<BLACK>(piece, color, from, king);
+        const auto black_idx = get_indice<BLACK>(piece, from, king);
 
         for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
             accu.black[i] += network->feature_weights[black_idx * HIDDEN_LAYER_SIZE + i];
@@ -301,7 +301,7 @@ std::pair<Usize, Usize> NNUE::get_indices(Piece piece, int square, int wking, in
 }
 
 template <Color US>
-Usize NNUE::get_indice(Piece piece, Color color, int square, int king)
+Usize NNUE::get_indice(Piece piece, int square, int king)
 {
     assert(piece  != Piece::NONE);
     assert(square != SquareType::SQUARE_NONE);
@@ -310,6 +310,8 @@ Usize NNUE::get_indice(Piece piece, Color color, int square, int king)
     constexpr Usize piece_stride = N_SQUARES;
 
     const auto base  = static_cast<U32>(Move::type(piece));
+    const auto color = Move::color(piece);
+
     const auto base_nnue = base - 1;
 
     if constexpr (US == WHITE)
@@ -440,5 +442,5 @@ template int NNUE::evaluate<BLACK>(Usize count);
 template void NNUE::reset_current<WHITE>();
 template void NNUE::reset_current<BLACK>();
 
-template void NNUE::add<WHITE>(Piece piece, Color color, int from, int king);
-template void NNUE::add<BLACK>(Piece piece, Color color, int from, int king);
+template void NNUE::add<WHITE>(Piece piece, int from, int king);
+template void NNUE::add<BLACK>(Piece piece, int from, int king);

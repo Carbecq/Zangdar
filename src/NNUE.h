@@ -117,7 +117,7 @@ public:
     void sub_sub_add(Piece sub_piece_1, int from, Piece sub_piece_2, Piece add_piece, int dest, int wking, int bking);
     void sub_sub_add(Piece sub_piece_1, int from, Piece sub_piece_2, int sub, Piece add_piece, int dest, int wking, int bking);
 
-    template <Color US> void add(Piece piece, Color color, int from, int king);
+    template <Color US> void add(Piece piece, int from, int king);
 
 private:
 
@@ -129,7 +129,7 @@ private:
                    const int bucket);
 
     std::pair<Usize, Usize> get_indices(Piece piece, int square, int wking, int bking);
-    template <Color US> Usize get_indice(Piece piece, Color color, int square, int king);
+    template <Color US> Usize get_indice(Piece piece, int square, int king);
 
 
     constexpr inline I32 screlu(I16 x) {
@@ -143,10 +143,10 @@ private:
         return (count - 2) / BUCKET_DIVISOR;
     }
 
+    // Curieusement, le test inverse est pire (en elo)
     inline int get_square(int square, int king_square) {
-        return SQ::file(king_square) > FILE_D ? SQ::mirrorHorizontally(square) :square; //TODO ou l'inverse ??
+        return SQ::file(king_square) > FILE_D ? SQ::mirrorHorizontally(square) : square;
     }
-
 };
 
 #endif // NNUE_H

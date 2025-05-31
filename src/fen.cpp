@@ -315,7 +315,7 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
 
     //--------------------------------------------
     if constexpr (Update_NNUE)
-        set_network();
+            set_network();
 
     //   std::cout << display() << std::endl;
 }
@@ -603,7 +603,7 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
                 num_empty = 0;
 
                 fen += pieceToChar(piece);
-                        // piece_symbol[color_on(sq)][piece];
+                // piece_symbol[color_on(sq)][piece];
             }
         }
 
@@ -668,21 +668,13 @@ void Board::set_network()
 
     int wking = square_king[WHITE];
     int bking = square_king[BLACK];
-    Bitboard bb;
     int square;
 
-    for (Color color : {WHITE, BLACK})
+    Bitboard occupied = occupancy_all();
+    while (occupied)
     {
-        for (PieceType piece : {PieceType::PAWN, PieceType::KNIGHT, PieceType::BISHOP, PieceType::ROOK, PieceType::QUEEN, PieceType::KING})
-        {
-            bb = colorPiecesBB[color] & typePiecesBB[static_cast<U32>(piece)];
-
-            while(bb)
-            {
-                square = BB::pop_lsb(bb);
-                nnue.add(Move::make_piece(color, piece), square, wking, bking);
-            }
-        }
+        square = BB::pop_lsb(occupied);
+        nnue.add(pieceBoard[square], square, wking, bking);
     }
 }
 
@@ -696,21 +688,14 @@ void Board::set_current_network(int king)
 {
     nnue.reset_current<US>();
 
-    Bitboard bb;
+    // Bitboard bb;
     int square;
 
-    for (Color color : {WHITE, BLACK})
+    Bitboard occupied = occupancy_all();
+    while (occupied)
     {
-        for (PieceType piece : {PieceType::PAWN, PieceType::KNIGHT, PieceType::BISHOP, PieceType::ROOK, PieceType::QUEEN, PieceType::KING})
-        {
-            bb = colorPiecesBB[color] & typePiecesBB[static_cast<U32>(piece)];
-
-            while(bb)
-            {
-                square = BB::pop_lsb(bb);
-                nnue.add<US>(Move::make_piece(color, piece), color, square, king);
-            }
-        }
+        square = BB::pop_lsb(occupied);
+        nnue.add<US>(pieceBoard[square], square, king);
     }
 }
 
@@ -790,7 +775,7 @@ void Board::apply_token(const std::string& token) noexcept
         printf("---------------------------nbr > 1 \n");
 #endif
 
- }
+}
 
 template void Board::set_fen<true>(const std::string &fen, bool logTactics) noexcept;
 template void Board::set_fen<false>(const std::string &fen, bool logTactics) noexcept;

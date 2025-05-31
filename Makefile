@@ -35,9 +35,8 @@ endif
 #---------------------------------------------------------------------
 #   Defines divers
 #---------------------------------------------------------------------
-
-FILE    := VERSION.txt
-VERSION := $(file < $(FILE))
+CONFIG = VERSION.txt
+include ${CONFIG}
 
 # needed only for tests
 # just comment it if you want
@@ -66,7 +65,6 @@ DEFS += -DSYZYGY=$(SYZYGY)
 #---------------------------------------------------
 #  NNUE
 #---------------------------------------------------
-NETWORK = \"networks/net-768-ob8-hm-0.bin\"
 CFLAGS_NNUE = -DNETWORK=$(NETWORK)
 
 #---------------------------------------------------------------------
