@@ -1,2 +1,2 @@
-VERSION = 4.03.08
-NETWORK = \"networks/768_ob8_hm_wdl20-50_lr400-180.bin\"
+VERSION = 4.04
+NETWORK = \"networks/768_ob8_hm.bin\"
