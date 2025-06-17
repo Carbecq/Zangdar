@@ -54,8 +54,6 @@ private:
         {0, 3, 4, 6, 8, 12, 20, 30}
     };
 
-    static constexpr int CONTEMPT    = 0;
-
     int Reductions[2][32][32];
 
 

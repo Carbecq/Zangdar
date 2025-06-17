@@ -130,6 +130,8 @@ namespace SQ {
     return(rank * 8 + file);
 }
 
+inline bool is_ok(int s) { return s >= A1 && s <= H8; }
+
 inline std::ostream &operator<<(std::ostream &os, const int square) noexcept {
     os << square_name[square];
     return os;
@@ -322,7 +324,7 @@ constexpr std::array<std::array<int, N_SQUARES>, N_SQUARES> CHEBYSHEV_DISTANCE =
 //------------------------------------------------------------------
 // initialise un bitboard constitué des cases entre 2 cases
 // alignées en diagonale, ou droite
-
+// ne contient pas les cases from et dest
 constexpr std::array<std::array<Bitboard, N_SQUARES>, N_SQUARES> SQUARES_BETWEEN_MASK = [] {
     auto b = decltype(SQUARES_BETWEEN_MASK){};
 

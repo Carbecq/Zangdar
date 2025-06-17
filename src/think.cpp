@@ -193,23 +193,33 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     assert(beta > alpha);
 
     constexpr Color THEM = ~C;
+    const bool isRoot     = (si->ply == 0);
 
-     //  Time-out
+    //  Time-out
     if (td->stopped || timer.check_limits(td->depth, td->index, td->nodes))
     {
-         td->stopped = true;
-         return 0;
+        td->stopped = true;
+        return 0;
     }
 
+    // If the position has a move that causes a repetition, and we are losing,
+    // then we can cut off early since we can secure a draw
+    if (   !isRoot
+           && board.get_fiftymove_counter() >= 3
+           && alpha < VALUE_DRAW
+           && board.upcoming_repetition(si->ply))
+    {
+        alpha = VALUE_DRAW;
+        if (alpha >= beta)
+            return alpha;
+    }
 
     // Prefetch La table de transposition aussitôt que possible
     transpositionTable.prefetch(board.get_key());
 
-
     //  Caractéristiques de la position
     const bool isInCheck  = board.is_in_check();
     const bool isExcluded = si->excluded != Move::MOVE_NONE;
-    const bool isRoot     = (si->ply == 0);
 
     // For PVS, the node is a PV node if beta - alpha != 1 (full-window = not a null window)
     // We do not want to do most pruning techniques on PV nodes
@@ -217,9 +227,9 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     // Utiliser plutôt la notation : EXACT
     const bool isPV = ((beta - alpha) != 1);
 
-
     // Ensure a fresh PV
     si->pv.length     = 0;
+
 
     /* On a atteint la fin de la recherche
         Certains codes n'appellent la quiescence que si on n'est pas en échec
@@ -228,6 +238,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     {
         return (quiescence<C>(board, timer, alpha, beta, td, si));
     }
+
 
     // Update node count and selective depth
     td->nodes++;
@@ -253,7 +264,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     {
         //  Position nulle ?
         if (board.is_draw(si->ply))
-            return CONTEMPT;
+            return VALUE_DRAW;
 
         // Mate distance pruning
         alpha = std::max(alpha, -MATE + si->ply);
@@ -279,8 +290,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     if (tt_hit && !isPV && tt_depth >= depth)
     {
         if (   (tt_bound == BOUND_EXACT)
-            || (tt_bound == BOUND_LOWER && tt_score >= beta)
-            || (tt_bound == BOUND_UPPER && tt_score <= alpha))
+               || (tt_bound == BOUND_LOWER && tt_score >= beta)
+               || (tt_bound == BOUND_UPPER && tt_score <= alpha))
         {
             return tt_score;
         }
@@ -299,8 +310,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
         // Check to see if the WDL value would cause a cutoff
         if (    tb_bound == BOUND_EXACT
-            || (tb_bound == BOUND_LOWER && tb_score >= beta)
-            || (tb_bound == BOUND_UPPER && tb_score <= alpha))
+                || (tb_bound == BOUND_LOWER && tb_score >= beta)
+                || (tb_bound == BOUND_UPPER && tb_score <= alpha))
         {
             transpositionTable.store(board.get_key(), Move::MOVE_NONE, tb_score, VALUE_NONE, tb_bound, depth, si->ply, ttPV);
             return tb_score;
@@ -341,9 +352,9 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
             // Amélioration de static-eval, au cas où tt_score est assez bon
             if(tt_hit
-                && (    tt_bound == BOUND_EXACT
-                    || (tt_bound == BOUND_LOWER && tt_score >= static_eval)
-                    || (tt_bound == BOUND_UPPER && tt_score <= static_eval) ))
+                    && (    tt_bound == BOUND_EXACT
+                            || (tt_bound == BOUND_LOWER && tt_score >= static_eval)
+                            || (tt_bound == BOUND_UPPER && tt_score <= static_eval) ))
             {
                 static_eval = tt_score;
             }
@@ -381,7 +392,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         //  RAZORING
         //---------------------------------------------------------------------
         if (   depth <= Tunable::RazoringDepth
-            && (static_eval + Tunable::RazoringMargin * depth) <= alpha)
+               && (static_eval + Tunable::RazoringMargin * depth) <= alpha)
         {
             score = quiescence<C>(board, timer, alpha, beta, td, si);
             if (score <= alpha)
@@ -395,9 +406,9 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         //  STATIC NULL MOVE PRUNING ou aussi REVERSE FUTILITY PRUNING
         //---------------------------------------------------------------------
         if (
-            depth <= Tunable::SNMPDepth
-            && abs(beta) < MATE_IN_X
-            && board.getNonPawnMaterial<C>())
+                depth <= Tunable::SNMPDepth
+                && abs(beta) < MATE_IN_X
+                && board.getNonPawnMaterial<C>())
         {
             int eval_margin = Tunable::SNMPMargin * depth;
 
@@ -409,11 +420,11 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         //  NULL MOVE PRUNING
         //---------------------------------------------------------------------
         if (
-            depth >= Tunable::NMPDepth
-            && static_eval >= beta
-            && (si-1)->move != Move::MOVE_NULL
-            && (si-2)->move != Move::MOVE_NULL
-            && board.getNonPawnMaterial<C>())
+                depth >= Tunable::NMPDepth
+                && static_eval >= beta
+                && (si-1)->move != Move::MOVE_NULL
+                && (si-2)->move != Move::MOVE_NULL
+                && board.getNonPawnMaterial<C>())
         {
             int R = Tunable::NMPReduction
                     + (Tunable::NMPMargin*depth + std::min<int>(static_eval - beta, Tunable::NMPMax)) / Tunable::NMPDivisor;
@@ -441,9 +452,9 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         //---------------------------------------------------------------------
         int betaCut = beta + Tunable::ProbCutMargin;
         if (   !isInCheck
-            && !ttPV
-            && depth >= Tunable::ProbCutDepth
-            && !(tt_hit && tt_depth >= depth - 3 && tt_score < betaCut))
+               && !ttPV
+               && depth >= Tunable::ProbCutDepth
+               && !(tt_hit && tt_depth >= depth - 3 && tt_score < betaCut))
         {
             MovePicker movePicker(&board, td->history, si, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, 0);
             MOVE pbMove;
@@ -478,7 +489,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     // Internal Iterative Deepening.
     //---------------------------------------------------------------------
     if (   tt_move == Move::MOVE_NONE
-        && depth >= 4)
+           && depth >= 4)
     {
         depth--;
     }
@@ -531,11 +542,11 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         // Futility Pruning.
         //-------------------------------------------------
         if (   !isRoot
-            &&  isQuiet
-            &&  best_score > -TBWIN_IN_X
-            &&  futility_pruning_margin <= alpha
-            &&  depth <= Tunable::FPDepth
-            &&  hist < (Tunable::FPHistoryLimit - Tunable::FPHistoryLimitImproving*improving) )
+               &&  isQuiet
+               &&  best_score > -TBWIN_IN_X
+               &&  futility_pruning_margin <= alpha
+               &&  depth <= Tunable::FPDepth
+               &&  hist < (Tunable::FPHistoryLimit - Tunable::FPHistoryLimitImproving*improving) )
         {
             skipQuiets = true;
         }
@@ -544,10 +555,10 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         //  Late Move Pruning / Move Count Pruning
         //-------------------------------------------------
         if (   !isRoot
-            &&  isQuiet
-            &&  best_score > -TBWIN_IN_X
-            &&  depth <= LateMovePruningDepth
-            &&  quiet_count > LateMovePruningCount[improving][depth])
+               &&  isQuiet
+               &&  best_score > -TBWIN_IN_X
+               &&  depth <= LateMovePruningDepth
+               &&  quiet_count > LateMovePruningCount[improving][depth])
         {
             skipQuiets = true;
             continue;
@@ -557,10 +568,10 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         // History Pruning.
         //-------------------------------------------------
         if (   !isRoot
-            &&  isQuiet
-            &&  best_score > -TBWIN_IN_X
-            &&  depth <= (Tunable::HistoryPruningDepth - improving)
-            &&  std::min(cmhist, fuhist) <
+               &&  isQuiet
+               &&  best_score > -TBWIN_IN_X
+               &&  depth <= (Tunable::HistoryPruningDepth - improving)
+               &&  std::min(cmhist, fuhist) <
                (Tunable::HistoryPruningLimit - improving*Tunable::HistoryPruningLimitImproving) )
         {
             continue;
@@ -570,10 +581,10 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         //  Static Exchange Evaluation Pruning
         //-------------------------------------------------
         if (   !isRoot
-            &&  best_score > -TBWIN_IN_X
-            &&  depth <= Tunable::SEEPruningDepth
-            &&  movePicker.get_stage() > STAGE_GOOD_NOISY
-            && !board.fast_see(move, seeMargin[isQuiet]))
+               &&  best_score > -TBWIN_IN_X
+               &&  depth <= Tunable::SEEPruningDepth
+               &&  movePicker.get_stage() > STAGE_GOOD_NOISY
+               && !board.fast_see(move, seeMargin[isQuiet]))
         {
             continue;
         }
@@ -584,13 +595,13 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         int extension = 0;
 
         if (   depth > Tunable::SEDepth
-            && si->ply < 2 * depth
-            && !isExcluded  // Avoid recursive singular search
-            && !isRoot
-            && move == tt_move
-            && tt_depth > depth - 3
-            && tt_bound == BOUND_LOWER
-            && abs(tt_score) < TBWIN_IN_X)
+               && si->ply < 2 * depth
+               && !isExcluded  // Avoid recursive singular search
+               && !isRoot
+               && move == tt_move
+               && tt_depth > depth - 3
+               && tt_bound == BOUND_LOWER
+               && abs(tt_score) < TBWIN_IN_X)
         {
             // Search to reduced depth with a zero window a bit lower than ttScore
             int sing_beta  = tt_score - depth*2;
@@ -603,8 +614,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             if (score < sing_beta)
             {
                 if (   !isPV
-                    && score < sing_beta - 50
-                    && si->doubleExtensions <= 20)  // Avoid search explosion by limiting the number of double extensions
+                       && score < sing_beta - 50
+                       && si->doubleExtensions <= 20)  // Avoid search explosion by limiting the number of double extensions
                 {
                     extension = 2;
                     si->doubleExtensions++;
@@ -644,7 +655,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         bool doFullDepthSearch;
 
         if (   depth > 2
-            && move_count > (2 + isPV) )
+               && move_count > (2 + isPV) )
         {
             // Base reduction
             int R = Reductions[isQuiet][std::min(31, depth)][std::min(31, move_count)];
@@ -741,9 +752,9 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     best_score = std::min(best_score, max_score);
 
     if(   !isInCheck
-       && (best_move == Move::MOVE_NONE || !Move::is_capturing(best_move))
-       && !(bound == BOUND_LOWER && best_score <= si->static_eval)
-       && !(bound == BOUND_UPPER && best_score >= si->static_eval))
+          && (best_move == Move::MOVE_NONE || !Move::is_capturing(best_move))
+          && !(bound == BOUND_LOWER && best_score <= si->static_eval)
+          && !(bound == BOUND_UPPER && best_score >= si->static_eval))
     {
         td->history.update_correction_history(board, depth, best_score, static_eval );
     }

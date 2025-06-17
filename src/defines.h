@@ -46,6 +46,7 @@ static constexpr int PAWN_HASH_SIZE = 16384;
 
 static constexpr int MAX_THREADS    = 32;
 
+static constexpr int VALUE_DRAW     = 0;
 static constexpr int MATE           = 31000;
 static constexpr int MATE_IN_X      = MATE - MAX_PLY;
 static constexpr int TBWIN          = 30000;

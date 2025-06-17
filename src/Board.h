@@ -107,6 +107,7 @@ public:
     }
 
 
+
     template <Color C>
     void calculate_checkers_pinned() noexcept;
     void calculate_hash(U64& key, U64& pawn_key, U64 mat_key[2]) const;
@@ -228,65 +229,65 @@ public:
     template<Color C> constexpr bool can_castle() const
     {
         if constexpr (C == WHITE)
-            return get_status().castling & (CASTLE_WK | CASTLE_WQ);
+                return get_status().castling & (CASTLE_WK | CASTLE_WQ);
         else
-            return get_status().castling & (CASTLE_BK | CASTLE_BQ);
+        return get_status().castling & (CASTLE_BK | CASTLE_BQ);
     }
 
     template<Color C, CastleSide side> constexpr bool can_castle() const
     {
         if constexpr      (C == WHITE && side == CastleSide::KING_SIDE)
-            return get_status().castling & CASTLE_WK;
+                return get_status().castling & CASTLE_WK;
         else if constexpr (C == WHITE && side == CastleSide::QUEEN_SIDE)
-            return get_status().castling & CASTLE_WQ;
+                return get_status().castling & CASTLE_WQ;
         else if constexpr (C == BLACK && side == CastleSide::KING_SIDE)
-            return get_status().castling & CASTLE_BK;
+                return get_status().castling & CASTLE_BK;
         else if constexpr (C == BLACK && side == CastleSide::QUEEN_SIDE)
-            return get_status().castling & CASTLE_BQ;
+                return get_status().castling & CASTLE_BQ;
     }
 
     template <Color C, CastleSide side> constexpr Bitboard get_king_path()   // cases ne devant pas être attaquées
     {
         if constexpr      (C == WHITE && side == CastleSide::KING_SIDE)
-            return F1G1_BB;
+                return F1G1_BB;
         else if constexpr (C == WHITE && side == CastleSide::QUEEN_SIDE)
-            return C1D1_BB;
+                return C1D1_BB;
         else if constexpr (C == BLACK && side == CastleSide::KING_SIDE)
-            return F8G8_BB;
+                return F8G8_BB;
         else if constexpr (C == BLACK && side == CastleSide::QUEEN_SIDE)
-            return C8D8_BB;
+                return C8D8_BB;
     }
 
     template <Color C, CastleSide side> constexpr Bitboard get_rook_path()   // cases devant être libres
     {
         if constexpr      (C == WHITE && side == CastleSide::KING_SIDE)
-            return F1G1_BB;
+                return F1G1_BB;
         else if constexpr (C == WHITE && side == CastleSide::QUEEN_SIDE)
-            return B1D1_BB;
+                return B1D1_BB;
         else if constexpr (C == BLACK && side == CastleSide::KING_SIDE)
-            return F8G8_BB;
+                return F8G8_BB;
         else if constexpr (C == BLACK && side == CastleSide::QUEEN_SIDE)
-            return B8D8_BB;
+                return B8D8_BB;
     }
 
     template <Color C> constexpr int get_king_from()
     {
         if constexpr (C == WHITE)
-            return (E1);
+                return (E1);
         else
-            return (E8);
+        return (E8);
     }
 
     template <Color C, CastleSide side> constexpr int get_king_dest()
     {
         if constexpr      (C == WHITE && side == CastleSide::KING_SIDE)
-            return (G1);
+                return (G1);
         else if constexpr (C == WHITE && side == CastleSide::QUEEN_SIDE)
-            return (C1);
+                return (C1);
         else if constexpr (C == BLACK && side == CastleSide::KING_SIDE)
-            return (G8);
+                return (G8);
         else if constexpr (C == BLACK && side == CastleSide::QUEEN_SIDE)
-            return (C8);
+                return (C8);
     }
 
     /* Le roque nécessite plusieurs conditions :
@@ -316,8 +317,8 @@ public:
     template <Color C, CastleSide side> constexpr void gen_castle(MoveList& ml)
     {
         if (   can_castle<C, side>()
-            && BB::empty(get_rook_path<C, side>() & occupancy_all())
-            && !(squares_attacked<~C>() & get_king_path<C, side>()) )
+               && BB::empty(get_rook_path<C, side>() & occupancy_all())
+               && !(squares_attacked<~C>() & get_king_path<C, side>()) )
         {
             add_quiet_move(ml, get_king_from<C>(), get_king_dest<C, side>(), Move::make_piece(C, PieceType::KING), Move::FLAG_CASTLE_MASK);
         }
@@ -332,15 +333,21 @@ public:
 
     //! \brief  Retourne la couleur de la pièce située sur la case sq
     //! SUPPOSE qu'il y a une pièce sur cette case !!
-    [[nodiscard]] constexpr Color color_on(const int sq) const noexcept
+    [[nodiscard]] constexpr inline Color color_on(const int sq) const noexcept
     {
+        assert(sq != SQUARE_NONE);
         return( (colorPiecesBB[WHITE] & SQ::square_BB(sq)) ? WHITE : BLACK);
     }
 
-    [[nodiscard]] constexpr Piece piece_at(const int sq) const noexcept
+    [[nodiscard]] constexpr inline Piece piece_at(const int sq) const noexcept
     {
         assert(sq != SQUARE_NONE);
         return pieceBoard[sq];
+    }
+
+    [[nodiscard]] constexpr inline bool empty(const int sq) const noexcept {
+        assert(sq != SQUARE_NONE);
+        return piece_at(sq) == Piece::NONE;
     }
 
     //! \brief  Retourne le type de la pièce située sur la case sq
@@ -377,8 +384,8 @@ public:
     template<Color C> Bitboard getNonPawnMaterial() const noexcept
     {
         return (  colorPiecesBB[C]
-                ^ occupancy_cp<C, PieceType::PAWN>()
-                ^ occupancy_cp<C, PieceType::KING>() ) ;
+                  ^ occupancy_cp<C, PieceType::PAWN>()
+                  ^ occupancy_cp<C, PieceType::KING>() ) ;
     }
 
     template<Color C> int getNonPawnMaterialCount() const noexcept
@@ -422,8 +429,8 @@ public:
             // Check for matching hash with a two fold after the root,
             // or a three fold which occurs in part before the root move
             if (    StatusHistory[i].key == current_key
-                && (   i > gamemove_counter - ply   // 2-fold : on considère des positions dans l'arbre de recherche
-                    || ++reps == 2) )               // 3-fold : on considère toutes les positions de la partie
+                    && (   i > gamemove_counter - ply   // 2-fold : on considère des positions dans l'arbre de recherche
+                           || ++reps == 2) )               // 3-fold : on considère toutes les positions de la partie
                 return true;
         }
 
@@ -447,6 +454,9 @@ public:
     //! \brief  Détermine si la position est nulle
     //-----------------------------------------------------------------------------
     [[nodiscard]] inline bool is_draw(int ply) const noexcept { return ((is_repetition(ply) || fiftymoves())); }
+
+    bool upcoming_repetition(int ply) const;
+
 
     //=============================================================================
     //! \brief  Ajoute une pièce à la case indiquée

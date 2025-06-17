@@ -19,18 +19,16 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
         return 0;
     }
 
+    // partie nulle ?
+    if(board.is_draw(si->ply))
+        return VALUE_DRAW;
+
     // Prefetch La table de transposition aussitôt que possible
     transpositionTable.prefetch(board.get_key());
 
     // Update node count and selective depth
     td->nodes++;
     td->seldepth = std::max(td->seldepth, si->ply);
-
-
-    // partie nulle ?
-    if(board.is_draw(si->ply))
-        return CONTEMPT;
-
 
     // profondeur de recherche max atteinte
     // prevent overflows

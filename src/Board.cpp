@@ -1,6 +1,7 @@
 #include <sstream>
 #include "zobrist.h"
 #include "Board.h"
+#include "Cuckoo.h"
 
 //=======================================
 //! \brief  Constructeur
@@ -326,3 +327,58 @@ void Board::calculate_nnue(int &eval)
     eval = nn.evaluate<WHITE>(BB::count_bit(occupancy_all()));
 }
 
+// Upcoming repetition detection
+// http://www.open-chess.org/viewtopic.php?f=5&t=2300
+// Implemented originally in SF
+// Paper accessible @ http://marcelk.net/2013-04-06/paper/upcoming-rep-v2.pdf
+
+bool Board::upcoming_repetition(int ply) const
+{
+    // Adapted from Stockfish, Stormphrax
+
+    const auto distance = std::min(get_fiftymove_counter(), static_cast<I32>(StatusHistory.size()));
+
+    // Enough reversible moves played
+    if (distance < 3)
+        return false;
+
+    U32 mk;
+    int index = StatusHistory.size() - 1;
+
+    const Bitboard occupied = occupancy_all();
+    const U64 originalKey   = get_key();      // StatusHistory[StatusHistory.size() - 1].key
+
+    /* StatusHistory : array of board status, for all moves, including the last move played
+     */
+    assert(originalKey == StatusHistory[index].key);
+
+    for (I32 d = 3; d <= distance; d += 2)
+    {
+        U64 diff = originalKey ^ StatusHistory[index - d].key;
+
+        if (   (mk = Cuckoo::h1(diff), Cuckoo::keys[mk] == diff)
+               || (mk = Cuckoo::h2(diff), Cuckoo::keys[mk] == diff))
+        {
+            const MOVE move = Cuckoo::moves[mk];
+            const int  from = Move::from(move);
+            const int  dest = Move::dest(move);
+
+            // Test if the squares between a and b are all empty (a and b themselves excluded)
+            if (BB::empty(occupied & squares_between(from, dest)))
+            {
+                // repetition is after root, done
+                if (ply > d)
+                    return true;
+
+                // For nodes before or at the root, check that the move is a
+                // repetition rather than a move to the current position.
+                // In the cuckoo table, both moves Rc1c5 and Rc5c1 are stored in
+                // the same location, so we have to select which square to check.
+                if (Move::color(piece_at( empty(from) ? dest : from)) != turn() )
+                    continue;
+            }
+        }
+    }
+
+    return false;
+}

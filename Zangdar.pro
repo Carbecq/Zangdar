@@ -193,6 +193,7 @@ HEADERS += \
     src/Attacks.h \
     src/Bitboard.h \
     src/Board.h \
+    src/Cuckoo.h \
     src/DataGen.h \
     src/History.h \
     src/Move.h \
@@ -222,6 +223,7 @@ HEADERS += \
 SOURCES += \
     src/Attacks.cpp \
     src/Board.cpp \
+    src/Cuckoo.cpp \
     src/DataGen.cpp \
     src/History.cpp \
     src/MovePicker.cpp \

@@ -5,6 +5,7 @@
 #include "ThreadPool.h"
 #include "Attacks.h"
 #include "DataGen.h"
+#include "Cuckoo.h"
 
 // Globals
 TranspositionTable  transpositionTable(HASH_SIZE);
@@ -15,6 +16,7 @@ extern void init_bitmasks();
 int main(int argCount, char* argValue[])
 {
     Attacks::init_masks();
+    Cuckoo::init();
 
     //  Benchmark
     //  appel : Zangdar bench [depth] [nbr_threads] [hash_size]

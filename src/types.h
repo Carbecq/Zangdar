@@ -15,7 +15,8 @@ constexpr int N_COLORS = 2;
 enum Color : U08
 {
     WHITE    = 0,
-    BLACK    = 1
+    BLACK    = 1,
+    NOCOLOR  = 2
 };
 
 const std::string side_name[N_COLORS] = {"White", "Black"};
@@ -221,6 +222,7 @@ enum File : int { FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H
 
 constexpr int N_RANKS = 8;
 constexpr int N_FILES = 8;
+
 
 // https://www.chessprogramming.org/General_Setwise_Operations#Shifting_Bitboards
 

@@ -1,6 +1,8 @@
 #ifndef ATTACKS_H
 #define ATTACKS_H
 
+#include "bitmask.h"
+#include <cassert>
 #if defined USE_PEXT
 #include "immintrin.h"
 #endif
@@ -266,6 +268,49 @@ template <Color C>
     return(Attacks::rook_moves(sq, occupied) | Attacks::bishop_moves(sq, occupied));
 }
 
+//! \brief attacks_bb(Square, Bitboard) returns the attacks by the given piece
+//! assuming the board is occupied according to the passed Bitboard.
+//! Sliding piece attacks do not continue passed an occupied square.
+
+template<PieceType Pt>
+inline Bitboard attacks_bb(int s, Bitboard occupied)
+{
+    assert((Pt != PieceType::PAWN) && (SQ::is_ok(s)));
+
+    if constexpr (Pt == PieceType::KNIGHT)
+        return Attacks::knight_moves(s);
+    else if constexpr (Pt == PieceType::BISHOP)
+        return Attacks::bishop_moves(s, occupied);
+    else if constexpr (Pt == PieceType::ROOK)
+        return Attacks::rook_moves(s, occupied);
+    else if constexpr (Pt == PieceType::QUEEN)
+        return Attacks::bishop_moves(s, occupied) | Attacks::rook_moves(s, occupied);
+    else if constexpr (Pt == PieceType::KING)
+        return Attacks::king_moves(s);
+    else
+        return 0;
+}
+
+inline Bitboard attacks_bb(PieceType pt, int s, Bitboard occupied)
+{
+    assert((pt != PieceType::PAWN) && (SQ::is_ok(s)));
+
+    switch (pt)
+    {
+    case PieceType::KNIGHT:
+        return Attacks::knight_moves(s);
+    case PieceType::BISHOP:
+        return Attacks::bishop_moves(s, occupied);
+    case PieceType::ROOK:
+        return Attacks::rook_moves(s, occupied);
+    case PieceType::QUEEN:
+        return Attacks::bishop_moves(s, occupied) | Attacks::rook_moves(s, occupied);
+    case PieceType::KING:
+        return Attacks::king_moves(s);
+    default:
+        return 0;
+    }
+}
 Bitboard set_occupancy(int index, int bits_in_mask, Bitboard attack_mask);
 Bitboard bishop_attacks_on_the_fly(int sq, Bitboard block);
 void     init_bishop_attacks();
