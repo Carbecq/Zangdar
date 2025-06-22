@@ -46,14 +46,24 @@ void Board::reset() noexcept
 //------------------------------------------
 [[nodiscard]] int Board::evaluate()
 {
+    int score;
+
     if (side_to_move == WHITE)
-        return nnue.evaluate<WHITE>(BB::count_bit(occupancy_all()));
+        score = nnue.evaluate<WHITE>(BB::count_bit(occupancy_all()));
     else
-        return nnue.evaluate<BLACK>(BB::count_bit(occupancy_all()));
+        score = nnue.evaluate<BLACK>(BB::count_bit(occupancy_all()));
 
-    //note : certains codes modifient la valeur retournée par nnue
-    //       soit avec une "phase", soit avec une valeur "random".
+    int phase =  3 * BB::count_bit(occupancy_p<PieceType::KNIGHT>())
+               + 3 * BB::count_bit(occupancy_p<PieceType::BISHOP>())
+               + 5 * BB::count_bit(occupancy_p<PieceType::ROOK>())
+               + 12 * BB::count_bit(occupancy_p<PieceType::QUEEN>());
 
+    score = score * (200 + phase) / 256;
+
+    // Make sure the evaluation does not mix with guaranteed win/loss scores
+    score = std::clamp(score, -TBWIN_IN_X + 1, TBWIN_IN_X - 1);
+
+    return score;
 }
 
 //===================================================
