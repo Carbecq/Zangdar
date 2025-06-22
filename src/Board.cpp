@@ -53,12 +53,21 @@ void Board::reset() noexcept
     else
         score = nnue.evaluate<BLACK>(BB::count_bit(occupancy_all()));
 
-    int phase =  3 * BB::count_bit(occupancy_p<PieceType::KNIGHT>())
-               + 3 * BB::count_bit(occupancy_p<PieceType::BISHOP>())
-               + 5 * BB::count_bit(occupancy_p<PieceType::ROOK>())
-               + 12 * BB::count_bit(occupancy_p<PieceType::QUEEN>());
+    constexpr int PawnScore    =   2;
+    constexpr int KnightScore  =   3;
+    constexpr int BishopScore  =   3;
+    constexpr int RookScore    =   5;
+    constexpr int QueenScore   =  12;
+    constexpr int ScoreBias    = 230;
+    constexpr int ScoreDivisor = 330;
 
-    score = score * (200 + phase) / 256;
+    int phase = PawnScore   * BB::count_bit(occupancy_p<PieceType::PAWN>())
+              + KnightScore * BB::count_bit(occupancy_p<PieceType::KNIGHT>())
+              + BishopScore * BB::count_bit(occupancy_p<PieceType::BISHOP>())
+              + RookScore   * BB::count_bit(occupancy_p<PieceType::ROOK>())
+              + QueenScore  * BB::count_bit(occupancy_p<PieceType::QUEEN>());
+
+    score = score * (ScoreBias + phase) / ScoreDivisor;
 
     // Make sure the evaluation does not mix with guaranteed win/loss scores
     score = std::clamp(score, -TBWIN_IN_X + 1, TBWIN_IN_X - 1);
@@ -344,7 +353,7 @@ void Board::calculate_nnue(int &eval)
 
 bool Board::upcoming_repetition(int ply) const
 {
-    // Adapted from Stockfish, Stormphrax
+    // Adapted from Obsidian
 
     const auto distance = std::min(get_fiftymove_counter(), static_cast<I32>(StatusHistory.size()));
 
