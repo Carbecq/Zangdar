@@ -1,2 +1,2 @@
-VERSION = 4.06.01
+VERSION = 4.06.02
 NETWORK = \"networks/768_ob8_hm.bin\"

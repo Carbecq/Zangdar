@@ -34,7 +34,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
     // prevent overflows
     const bool isInCheck = board.is_in_check();
     if (si->ply >= MAX_PLY)
-        return isInCheck ? 0 : board.evaluate();
+        return isInCheck ? VALUE_DRAW : board.evaluate();
 
     const int  old_alpha = alpha;
     const bool isPV      = ((beta - alpha) != 1);
