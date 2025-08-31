@@ -75,26 +75,9 @@ void TranspositionTable::init_size(int mbsize)
 
 
 #if defined DEBUG_LOG
-    sprintf(message, "TranspositionTable init complete with %d entries of %lu bytes for a total of %lu bytes (%lu MB) \n",
-            tt_size, sizeof(HashEntry), tt_size*sizeof(HashEntry), tt_size*sizeof(HashEntry)/1024/1024);
+    sprintf(message, "TranspositionTable::init complete : \n %s", info().c_str() );
     printlog(message);
 #endif
-}
-
-//========================================================
-//! \brief  Allocation uniquement de la Hash Table
-//--------------------------------------------------------
-void TranspositionTable::set_hash_size(int mbsize)
-{
-#if defined DEBUG_LOG
-    char message[100];
-    sprintf(message, "TranspositionTable::set_hash_size : %d ", mbsize);
-    printlog(message);
-#endif
-
-    delete [] tt_entries;
-    tt_entries = nullptr;
-    init_size(mbsize);
 }
 
 //========================================================
@@ -270,9 +253,11 @@ int TranspositionTable::hash_full() const
 }
 
 
-void TranspositionTable::info()
+std::string TranspositionTable::info()
 {
-    std::cout << "Nombre de clusters  : " << (nbr_cluster) << std::endl
+    std::stringstream sstr;
+
+    sstr <<      "Nombre de clusters  : " << std::to_string(nbr_cluster) << std::endl
               << "Taille d'un cluster : " << sizeof(HashCluster) << " octets" << std::endl
               << "Entrées par cluster : " << CLUSTER_SIZE << std::endl
               << "Taille d'une entrée : " << sizeof(HashEntry) << " octets" << std::endl
@@ -281,4 +266,5 @@ void TranspositionTable::info()
               << " (" << (nbr_cluster)*sizeof(HashCluster)/1024.0/1024.0 << ") Mo"
               << std::endl;
 
+    return sstr.str();
 }

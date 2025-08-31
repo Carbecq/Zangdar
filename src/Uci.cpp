@@ -163,7 +163,7 @@ void Uci::run()
         else if (token == "v")
         {
             std::cout << "Zangdar " << VERSION << " NNUE " << NETWORK << std::endl;
-            transpositionTable.info();
+            std::cout << transpositionTable.info();
         }
         else if (token == "s")
         {
@@ -490,7 +490,7 @@ setoption name <id> [value <x>]
             sprintf(message, "Uci::parse_options : Set Hash to %d MB", mb);
             printlog(message);
 #endif
-            transpositionTable.set_hash_size(mb);
+            transpositionTable.init_size(mb);
         }
 
         else if (option_name == "Clear")
@@ -887,7 +887,7 @@ void Uci::bench(int argCount, char* argValue[])
     if (nbr_threads > 1)
         threadPool.set_threads(nbr_threads);
     if (hash_size != HASH_SIZE)
-        transpositionTable.set_hash_size(hash_size);
+        transpositionTable.init_size(hash_size);
 
     // Boucle sur l'ensemble des positions de test
     for (const auto& line : bench_pos)

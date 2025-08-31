@@ -32,7 +32,7 @@ DEFINES += VERSION='\\"$${VERSION}\\"'
 
 #------------------------------------------------------
 # DEFINES +=  DEBUG_EVAL
-# DEFINES +=  DEBUG_LOG
+DEFINES +=  DEBUG_LOG
 # DEFINES +=  DEBUG_TIME
 # DEFINES += USE_PRETTY
 

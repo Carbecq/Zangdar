@@ -125,9 +125,8 @@ public:
     ~TranspositionTable();
 
     void init_size(int mbsize);
-    void set_hash_size(int mbsize);
     int  get_hash_size(void) const { return nbr_cluster; }
-    void info();
+    std::string info();
 
     void clear(void);
     inline auto update_age()
