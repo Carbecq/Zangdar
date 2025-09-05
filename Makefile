@@ -66,6 +66,7 @@ DEFS += -DSYZYGY=$(SYZYGY)
 #  NNUE
 #---------------------------------------------------
 CFLAGS_NNUE = -DNETWORK=$(NETWORK)
+SIMD        = -DUSE_SIMD
 
 #---------------------------------------------------------------------
 #   Architecture
@@ -88,7 +89,7 @@ ifeq ($(ARCH), avx2)
     CFLAGS_ARCH += -mmmx
     CFLAGS_ARCH += -mavx
     CFLAGS_ARCH += -mavx2 -mfma
-    CFLAGS_ARCH += -DUSE_SIMD
+    CFLAGS_ARCH += $(SIMD)
 
 else ifeq ($(ARCH), bmi2)
     DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
@@ -100,18 +101,18 @@ else ifeq ($(ARCH), bmi2)
     CFLAGS_ARCH += -mavx
     CFLAGS_ARCH += -mavx2 -mfma
     CFLAGS_ARCH += -mbmi -mbmi2
-    CFLAGS_ARCH += -DUSE_PEXT -DUSE_SIMD
+    CFLAGS_ARCH += -DUSE_PEXT $(SIMD)
 
 else ifeq ($(ARCH), native)
     DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-5950X
     CFLAGS_ARCH += -march=native
-    CFLAGS_ARCH += -DUSE_PEXT -DUSE_SIMD
+    CFLAGS_ARCH += -DUSE_PEXT $(SIMD)
 
 else
     ARCH = native
     DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-5950X
     CFLAGS_ARCH += -march=native
-    CFLAGS_ARCH += -DUSE_PEXT -DUSE_SIMD
+    CFLAGS_ARCH += -DUSE_PEXT $(SIMD)
 
 endif
 

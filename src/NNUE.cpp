@@ -412,7 +412,7 @@ I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
 
 I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
                      const std::array<I16, HIDDEN_LAYER_SIZE>& them,
-                     const std::array<I16, HIDDEN_LAYER_SIZE * N_COLORS * OUTPUT_BUCKET>& weights,
+                     const std::array<I16, HIDDEN_LAYER_SIZE * N_COLORS * OUTPUT_BUCKETS>& weights,
                      const int bucket)
 {
     I32 eval = 0;
