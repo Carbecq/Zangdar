@@ -118,13 +118,13 @@ bool Board::valid(const std::string &message) noexcept
     //        return false;
     //    }
     
-    if (square_king[WHITE] != king_square<WHITE>())
+    if (king_square[WHITE] != get_king_square<WHITE>())
     {
         std::cout << "erreur roi blanc" << std::endl;
         return(false);
     }
     
-    if (square_king[BLACK] != king_square<BLACK>())
+    if (king_square[BLACK] != get_king_square<BLACK>())
     {
         std::cout << "erreur roi noir" << std::endl;
         return(false);
@@ -132,12 +132,12 @@ bool Board::valid(const std::string &message) noexcept
 
     for (int i=0; i<64; i++)
     {
-        Piece p1 = pieceBoard[i] ;
+        Piece p1 = piece_square[i] ;
         auto n1  = pieceToChar(p1);
         Piece p2 =  piece_on(i) ;
         auto n2  = pieceToChar(p2);
 
-        if (pieceBoard[i] != piece_on(i))
+        if (piece_square[i] != piece_on(i))
         {
             std::cout << "erreur piece case " << i << " : " << square_name[i]
                          << " board : " << n1 << " pieceon : "<< n2 <<  std::endl;

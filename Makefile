@@ -123,11 +123,10 @@ $(info Network = $(NETWORK))
 
 ### Executable name
 ifeq ($(target_windows),yes)
-	ZSUF := .exe
+	SUF := .exe
 else
-	ZSUF :=
+	SUF :=
 endif
-EXE := $(DEFAULT_EXE)-$(COMP)$(ZSUF)
 
 #---------------------------------------------------------------------
 #   Options de compilation
@@ -201,16 +200,21 @@ ifeq ($(target_windows),yes)
     LDFLAGS_WIN = -static
 endif
 
+EXE  = $(DEFAULT_EXE)-$(COMP)
+
+release: EXEC    = $(EXE)-rel$(SUF)
 release: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL)
 release: LDFLAGS = $(LDFLAGS_REL) $(LDFLAGS_WIN) $(LDFLAGS_STA)
 
+debug: EXEC    = $(EXE)-dbg$(SUF)
 debug: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_WARN) $(CFLAGS_DBG)
 debug: LDFLAGS = $(LDFLAGS_DBG) $(LDFLAGS_WIN) $(LDFLAGS_STA)
 
+prof: EXEC    = $(EXE)-pro$(SUF)
 prof: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_PROF)
 prof: LDFLAGS = $(LDFLAGS_PROF) $(LDFLAGS_WIN) $(LDFLAGS_STA)
 
-pgo: EXE := $(DEFAULT_EXE)-$(COMP)-pgo$(ZSUF)
+pgo: EXEC    = $(EXE)-pgo$(SUF)
 pgo: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL)
 pgo: LDFLAGS = $(LDFLAGS_REL) $(LDFLAGS_WIN) $(LDFLAGS_STA)
 
@@ -227,11 +231,14 @@ endif
 #---------------------------------------------------------------------
 
 release: $(EXE)
-	$(info Génération en mode release)
+	mv $(EXE) $(EXEC)
+	$(info Génération en mode release : $(EXEC))
 prof: $(EXE)
-	$(info Génération en mode profile)
+	mv $(EXE) $(EXEC)
+	$(info Génération en mode profile : $(EXEC))
 debug: $(EXE)
-	$(info Génération en mode debug)
+	mv $(EXE) $(EXEC)
+	$(info Génération en mode debug : $(EXEC))
 
 #---------------------------------------------------------------------
 #	PGO (code venant d'Ethereal)
@@ -243,6 +250,8 @@ pgo:
 	$(PGO_MERGE)
 	$(CXX) $(PGO_USE) $(CFLAGS) $(PGO_FLAGS) $(SRC) $(LDFLAGS) -o $(EXE)
 	rm -f *.gcda *.profdata *.profraw
+	mv $(EXE) $(EXEC)
+	$(info Génération en mode pgo : $(EXEC))
 
 #----------------------------------------------------------------------
 
@@ -255,12 +264,9 @@ $(EXE): $(OBJ)
 #---------------------------------------------------------------------
 
 clean:
-	@rm -f $(OBJ) $(EXE)
+	@rm -f $(OBJ) $(EXE)*
 	@rm -f *.gcda *.profdata *.profraw
 
 mrproper: clean
-	@rm -rf $(EXE)
-
-install:
-	mv $(EXE) ../../BIN/Zangdar
+	@rm -rf $(EXE)*
 

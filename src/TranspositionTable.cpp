@@ -129,8 +129,6 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int boun
 
     for (auto & elem : cluster.entries)
     {
-        assert (tt_age >= elem.age());
-
         // always take an empty entry, or one from the same position
         // Question : But there are some entries with TtFlag=None , when it stores rawStaticEval.
         // >>>"empty" just means no search score in this case (I think), in which one with a search score is better
@@ -192,8 +190,6 @@ bool TranspositionTable::probe(U64 key, int ply, MOVE& move, int &score, int& ev
     const HashCluster& cluster = tt_entries[index(key)];
     for (const HashEntry& entry : cluster.entries)
     {
-        assert (tt_age >= entry.age());
-
         if (entry.key32 == key32)
         {
             move  = entry.move;

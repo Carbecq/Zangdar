@@ -17,7 +17,7 @@ template <Color C, MoveGenType MGType>
 void Board::legal_moves(MoveList& ml) noexcept
 {
     constexpr Color Them = ~C;
-    const int   K = king_square<C>();
+    const int   K = get_king_square<C>();
     
     const Bitboard occupiedBB = occupancy_all();     // toutes les pièces (Blanches + Noires)
     Bitboard emptyBB    = ~occupiedBB;
@@ -90,14 +90,14 @@ void Board::legal_moves(MoveList& ml) noexcept
                     if (SQ::is_on_seventh_rank<C>(from))
                         push_capture_promotion(ml, from, to, C);
                     else
-                        add_capture_move(ml, from, to, Move::make_piece(C, PieceType::PAWN), pieceBoard[to], Move::FLAG_NONE);
+                        add_capture_move(ml, from, to, Move::make_piece(C, PieceType::PAWN), piece_square[to], Move::FLAG_NONE);
                 }
                 else if (d == abs(pawn_right) && (SQ::square_BB(to = from + pawn_right) & Attacks::pawn_attacks<C>(from) & enemyBB))
                 {
                     if (SQ::is_on_seventh_rank<C>(from))
                         push_capture_promotion(ml, from, to, C);
                     else
-                        add_capture_move(ml, from, to, Move::make_piece(C, PieceType::PAWN), pieceBoard[to], Move::FLAG_NONE);
+                        add_capture_move(ml, from, to, Move::make_piece(C, PieceType::PAWN), piece_square[to], Move::FLAG_NONE);
                 }
             }
             
@@ -349,7 +349,7 @@ void Board::legal_moves(MoveList& ml) noexcept
         {
             to = BB::pop_lsb(maskn);
             if (!square_attacked<Them>(to))
-                add_capture_move(ml, K, to, Move::make_piece(C, PieceType::KING), pieceBoard[to], Move::FLAG_NONE);
+                add_capture_move(ml, K, to, Move::make_piece(C, PieceType::KING), piece_square[to], Move::FLAG_NONE);
         }
     }
 

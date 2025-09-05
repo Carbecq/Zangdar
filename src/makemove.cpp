@@ -27,10 +27,10 @@ void Board::make_move(const MOVE move) noexcept
     //    printf("promo = %d : %c (%d) \n", Move::is_promoting(move), pieceToChar(promoted), Move::promoted(move));
     //    printf("flags = %u \n", Move::flags(move));
 
-    assert(Move::type(pieceBoard[king_square<US>()]) == PieceType::KING);
+    assert(Move::type(piece_square[get_king_square<US>()]) == PieceType::KING);
     assert(dest     != from);
     assert(piece    != Piece::NONE);
-    assert(piece    == pieceBoard[from]);
+    assert(piece    == piece_square[from]);
     assert(Move::type(captured) != PieceType::KING);
     assert(Move::type(promoted) != PieceType::PAWN);
     assert(Move::type(promoted) != PieceType::KING);
@@ -69,8 +69,8 @@ void Board::make_move(const MOVE move) noexcept
         newStatus.key ^= ep_key[previousStatus.ep_square];
 
     // Position des rois
-    int wking = square_king[WHITE];
-    int bking = square_king[BLACK];
+    int wking = king_square[WHITE];
+    int bking = king_square[BLACK];
 
     // teste si le roi a changé de camp
     if constexpr (Update_NNUE)
@@ -91,7 +91,7 @@ void Board::make_move(const MOVE move) noexcept
 
     // Déplacement du roi
     if (Move::type(piece) == PieceType::KING)
-        square_king[US] = dest;
+        king_square[US] = dest;
 
     // Droit au roque, remove ancient value
     newStatus.key ^= castle_key[previousStatus.castling];
@@ -327,8 +327,8 @@ void Board::make_move(const MOVE move) noexcept
             assert(Move::type(piece) == PieceType::KING);
             assert(captured == Piece::NONE);
             assert(promoted == Piece::NONE);
-            assert(Move::type(pieceBoard[from]) == PieceType::KING);
-            assert(pieceBoard[dest] == Piece::NONE);
+            assert(Move::type(piece_square[from]) == PieceType::KING);
+            assert(piece_square[dest] == Piece::NONE);
 
             //====================================================================================
             //  Petit Roque
@@ -505,21 +505,21 @@ void Board::add_piece(const int square, const Color color, const Piece piece) no
 {
     colorPiecesBB[color] |= SQ::square_BB(square);
     typePiecesBB[static_cast<U32>(Move::type(piece))]  |= SQ::square_BB(square);
-    pieceBoard[square]    = piece;
+    piece_square[square]    = piece;
 }
 
 void Board::set_piece(const int square, const Color color, const Piece piece) noexcept
 {
     BB::toggle_bit(colorPiecesBB[color], square);
     BB::toggle_bit(typePiecesBB[static_cast<U32>(Move::type(piece))],  square);
-    pieceBoard[square] = piece;
+    piece_square[square] = piece;
 }
 
 void Board::remove_piece(const int square, const Color color, const Piece piece) noexcept
 {
     BB::toggle_bit(colorPiecesBB[color], square);
     BB::toggle_bit(typePiecesBB[static_cast<U32>(Move::type(piece))], square);
-    pieceBoard[square] = Piece::NONE;
+    piece_square[square] = Piece::NONE;
 }
 
 //=============================================================================
@@ -532,8 +532,8 @@ void Board::move_piece(const int from,
 {
     BB::toggle_bit2(colorPiecesBB[color], from, dest);
     BB::toggle_bit2(typePiecesBB[static_cast<U32>(Move::type(piece))], from, dest);
-    pieceBoard[from] = Piece::NONE;
-    pieceBoard[dest] = piece;
+    piece_square[from] = Piece::NONE;
+    piece_square[dest] = piece;
 }
 
 //=============================================================================
@@ -550,8 +550,8 @@ void Board::promotion_piece(const int from,
     BB::toggle_bit(typePiecesBB[static_cast<U32>(Move::type(promoted))], dest);         // Ajoute la pièce promue
     BB::toggle_bit(colorPiecesBB[color], dest);
 
-    pieceBoard[from] = Piece::NONE;
-    pieceBoard[dest] = promoted;
+    piece_square[from] = Piece::NONE;
+    piece_square[dest] = promoted;
 }
 
 void Board::promocapt_piece(const int from,
@@ -569,8 +569,8 @@ void Board::promocapt_piece(const int from,
     BB::toggle_bit(typePiecesBB[static_cast<U32>(Move::type(promoted))], dest); // Ajoute la pièce promue
     BB::toggle_bit(colorPiecesBB[color], dest);
 
-    pieceBoard[from] = Piece::NONE;
-    pieceBoard[dest] = promoted;
+    piece_square[from] = Piece::NONE;
+    piece_square[dest] = promoted;
 }
 
 //=============================================================================
@@ -588,8 +588,8 @@ void Board::capture_piece(const int from,
     BB::toggle_bit(colorPiecesBB[~color], dest);                        //  suppression de la pièce prise
     BB::toggle_bit(typePiecesBB[static_cast<U32>(Move::type(captured))], dest);
 
-    pieceBoard[from] = Piece::NONE;
-    pieceBoard[dest] = piece;
+    piece_square[from] = Piece::NONE;
+    piece_square[dest] = piece;
 }
 
 

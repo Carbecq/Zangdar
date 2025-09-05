@@ -175,7 +175,7 @@ public:
     template <Color US>void set_current_network(int king);
 
     //! \brief  Retourne la position du roi
-    template<Color C> [[nodiscard]] constexpr int king_square() const noexcept { return square_king[C]; }
+    template<Color C> [[nodiscard]] constexpr int get_king_square() const noexcept { return king_square[C]; }
 
     //! \brief Retourne le bitboard des cases attaquées
     template<Color C> [[nodiscard]] Bitboard squares_attacked() const noexcept;
@@ -188,7 +188,7 @@ public:
 
     //! \brief  Détermine si le camp "C" attaque le roi ennemi
     template<Color C>
-    [[nodiscard]] constexpr bool is_doing_check() const noexcept { return attackersButKing<C>(king_square<~C>()) > 0; }
+    [[nodiscard]] constexpr bool is_doing_check() const noexcept { return attackersButKing<C>(get_king_square<~C>()) > 0; }
 
     template<MoveGenType MGType> void legal_moves(MoveList &ml) noexcept
     {
@@ -342,7 +342,7 @@ public:
     [[nodiscard]] constexpr inline Piece piece_at(const int sq) const noexcept
     {
         assert(sq != SQUARE_NONE);
-        return pieceBoard[sq];
+        return piece_square[sq];
     }
 
     [[nodiscard]] constexpr inline bool empty(const int sq) const noexcept {
@@ -493,14 +493,13 @@ public:
 
     std::array<Bitboard, N_COLORS>     colorPiecesBB;   // bitboard des pièces pour chaque couleur
     std::array<Bitboard, N_PIECE_TYPE> typePiecesBB;    // bitboard des pièces pour chaque type de pièce
-    std::array<Piece, N_SQUARES>       pieceBoard;      // donne la pièce occupant la case indiquée (type + couleur)
-    std::array<int, N_COLORS>          square_king;     // position des rois
+    std::array<Piece, N_SQUARES>       piece_square;    // donne la pièce occupant la case indiquée (type + couleur)
+    std::array<int, N_COLORS>          king_square;     // position des rois
     Color side_to_move;                         // camp au trait
     std::vector<std::string> best_moves;        // meilleur coup (pour les tests tactiques)
     std::vector<std::string> avoid_moves;       // coup à éviter (pour les tests tactiques)
     NNUE nnue;                                  // réseau NNUE
-    std::vector<Status> StatusHistory;          // historique de la partie (coups déjà joués ET coups de la recherche)
-
+    std::vector<Status> StatusHistory;          // historique des positions de la partie (coups déjà joués ET coups de la recherche)
 
     //==============================================
     //  Status

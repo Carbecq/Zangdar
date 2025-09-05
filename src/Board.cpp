@@ -30,8 +30,8 @@ void Board::reset() noexcept
 {
     colorPiecesBB.fill(0ULL);
     typePiecesBB.fill(0ULL);
-    pieceBoard.fill(Piece::NONE);
-    square_king.fill(SquareType::SQUARE_NONE);
+    piece_square.fill(Piece::NONE);
+    king_square.fill(SquareType::SQUARE_NONE);
     side_to_move = Color::WHITE;
     avoid_moves.clear();
     best_moves.clear();
@@ -278,11 +278,8 @@ void Board::calculate_nnue(int &eval)
     nn.reserve_capacity();
     nn.reset();
 
-    bb = occupancy_cp<WHITE, PieceType::KING>();
-    int wking = BB::pop_lsb(bb);
-
-    bb = occupancy_cp<BLACK, PieceType::KING>();
-    int bking = BB::pop_lsb(bb);
+    int wking = get_king_square<WHITE>();
+    int bking = get_king_square<BLACK>();
 
     nn.add(Piece::WHITE_KING, wking, wking, bking);
     nn.add(Piece::BLACK_KING, bking, wking, bking);

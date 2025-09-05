@@ -8,7 +8,7 @@ template <Color US>
 void Board::calculate_checkers_pinned() noexcept
 {
     constexpr Color THEM    = ~US;
-    const int      K        = king_square<US>();
+    const int      K        = get_king_square<US>();
     const Bitboard enemyBB  = colorPiecesBB[THEM];
     const Bitboard usBB     = colorPiecesBB[US];
 
@@ -94,7 +94,7 @@ template <Color C>
     }
 
     // King
-    mask |= Attacks::king_moves(king_square<C>());
+    mask |= Attacks::king_moves(get_king_square<C>());
 
     return mask;
 }

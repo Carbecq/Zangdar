@@ -29,7 +29,7 @@ void Board::undo_move() noexcept
 
     // Déplacement du roi
     if (Move::type(piece) == PieceType::KING)
-        square_king[Us] = from;
+        king_square[Us] = from;
 
     //====================================================================================
     //  Coup normal (pas spécial)

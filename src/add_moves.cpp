@@ -82,7 +82,7 @@ void Board::push_quiet_moves(MoveList& ml, Bitboard attack, const int from)
 
     while (attack) {
         to = BB::pop_lsb(attack);
-        add_quiet_move(ml, from, to, pieceBoard[from], Move::FLAG_NONE);
+        add_quiet_move(ml, from, to, piece_square[from], Move::FLAG_NONE);
     }
 }
 void Board::push_piece_quiet_moves(MoveList& ml, Bitboard attack, const int from, Color color, PieceType piece)
@@ -101,7 +101,7 @@ void Board::push_capture_moves(MoveList& ml, Bitboard attack, const int from)
 
     while (attack) {
         to = BB::pop_lsb(attack);
-        add_capture_move(ml, from, to, pieceBoard[from], pieceBoard[to], Move::FLAG_NONE);
+        add_capture_move(ml, from, to, piece_square[from], piece_square[to], Move::FLAG_NONE);
     }
 }
 
@@ -112,7 +112,7 @@ void Board::push_piece_capture_moves(MoveList& ml, Bitboard attack, const int fr
 
     while (attack) {
         to = BB::pop_lsb(attack);
-        add_capture_move(ml, from, to, Move::make_piece(color, piece), pieceBoard[to], Move::FLAG_NONE);
+        add_capture_move(ml, from, to, Move::make_piece(color, piece), piece_square[to], Move::FLAG_NONE);
     }
 }
 
@@ -148,10 +148,10 @@ void Board::push_quiet_promotion(MoveList& ml, const int from, const int to, Col
 }
 void Board::push_capture_promotion(MoveList& ml, const int from, const int to,  Color color)
 {
-    add_capture_promotion(ml, from, to, color, pieceBoard[to], Move::make_piece(color, PieceType::QUEEN));
-    add_capture_promotion(ml, from, to, color, pieceBoard[to], Move::make_piece(color, PieceType::KNIGHT));
-    add_capture_promotion(ml, from, to, color, pieceBoard[to], Move::make_piece(color, PieceType::ROOK));
-    add_capture_promotion(ml, from, to, color, pieceBoard[to], Move::make_piece(color, PieceType::BISHOP));
+    add_capture_promotion(ml, from, to, color, piece_square[to], Move::make_piece(color, PieceType::QUEEN));
+    add_capture_promotion(ml, from, to, color, piece_square[to], Move::make_piece(color, PieceType::KNIGHT));
+    add_capture_promotion(ml, from, to, color, piece_square[to], Move::make_piece(color, PieceType::ROOK));
+    add_capture_promotion(ml, from, to, color, piece_square[to], Move::make_piece(color, PieceType::BISHOP));
 }
 
 //--------------------------------------
@@ -172,7 +172,7 @@ void Board::push_pawn_capture_moves(MoveList& ml, Bitboard attack, const int dir
 
     while (attack) {
         to = BB::pop_lsb(attack);
-        add_capture_move(ml, to - dir, to, Move::make_piece(color, PieceType::PAWN), pieceBoard[to], Move::FLAG_NONE);
+        add_capture_move(ml, to - dir, to, Move::make_piece(color, PieceType::PAWN), piece_square[to], Move::FLAG_NONE);
     }
 }
 
