@@ -10,9 +10,10 @@ DEFINES += STATIC
 QMAKE_LFLAGS += -flto=auto
 
 #------------------------------------------------------
-NETWORK = "/mnt/Datas/Echecs/Programmation/Zangdar/APP/networks/net-2-255.bin"
-QMAKE_CXXFLAGS_RELEASE += -DNETWORK='\\"$${NETWORK}\\"'
+DEFINES += NETWORK=\\\"/mnt/Datas/Echecs/Programmation/Zangdar/APP/networks/768_ob8_hm.bin\\\"
 DEFINES += USE_SIMD
+DEFINES += SYZYGY=\\\"/mnt/Datas/Echecs/Syzygy\\\"
+DEFINES += VERSION=\\\"0.00.00\\\"
 
 #------------------------------------------------------
 # ATTENTION : ne pas mettre "\" car ils sont reconnus comme caractères spéciaux
@@ -23,17 +24,12 @@ HOME_STR = "./"
 DEFINES += HOME='\\"$${HOME_STR}\\"'
 
 #------------------------------------------------------
-VERSION = "$$cat(VERSION.txt)"
-# message($$VERSION)
-DEFINES += VERSION='\\"$${VERSION}\\"'
-
-#------------------------------------------------------
 # DEFINES += USE_TUNE
 
 #------------------------------------------------------
-# DEFINES +=  DEBUG_EVAL
-DEFINES +=  DEBUG_LOG
-# DEFINES +=  DEBUG_TIME
+# DEFINES += DEBUG_EVAL
+# DEFINES += DEBUG_LOG
+# DEFINES += DEBUG_TIME
 # DEFINES += USE_PRETTY
 
 #------------------------------------------------------
@@ -47,11 +43,23 @@ QMAKE_CXXFLAGS_RELEASE -= -O2
 
 # si NDEBUG est défini, alors assert ne fait rien
 
-QMAKE_CXXFLAGS_RELEASE += -pipe -std=c++23 -O3 -flto=auto -DNDEBUG -fwhole-program
-QMAKE_CXXFLAGS_RELEASE += -pedantic -Wshadow -Wall -Wextra -Wcast-qual -Wuninitialized -Weffc++
+CFLAGS_REL1  = -O3 -flto=auto -ftree-vectorize -funroll-loops -fno-exceptions -DNDEBUG -pthread -Wdisabled-optimization -Wall -Wextra \
+               -finline-functions -fno-rtti -fstrict-aliasing -fomit-frame-pointer
+CFLAGS_DBG   = -g -O2
 
+CFLAGS_WARN1 = -Wmissing-declarations -Wredundant-decls -Wshadow -Wundef -Wuninitialized -pedantic
+CFLAGS_WARN2 = -Wcast-align -Wcast-qual -Wctor-dtor-privacy
+CFLAGS_WARN3 = -Wformat=2 -Winit-self
+CFLAGS_WARN4 = -Woverloaded-virtual -Wsign-promo
+CFLAGS_WARN5 = -Wstrict-overflow=5 -Wswitch-default -Wno-unused
+CFLAGS_WARN6 = -Wattributes -Waddress -Wmissing-prototypes -Wconditional-uninitialized
 
-# message($$DEFINES)
+CFLAGS_COM  = -pipe -std=c++23
+CFLAGS_REL  = $$CFLAGS_REL1 -DNDEBUG
+CFLAGS_WARN = $$CFLAGS_WARN1 $$CFLAGS_WARN2 $$CFLAGS_WARN3 $$CFLAGS_WARN4 $$CFLAGS_WARN5 $$CFLAGS_WARN6
+
+QMAKE_CXXFLAGS_RELEASE += $$CFLAGS_COM $$CFLAGS_WARN $$CFLAGS_REL
+
 TARGET  = native-pext
 
 ##------------------------------------------ 1) old
@@ -169,16 +177,15 @@ QMAKE_CXXFLAGS_RELEASE += -march=native -DUSE_PEXT
 
 #----------------------------------------------------------------------
 QMAKE_CXXFLAGS_DEBUG += -g
-QMAKE_CXXFLAGS_DEBUG -= -O
-QMAKE_CXXFLAGS_DEBUG += -O0
-QMAKE_CXXFLAGS_DEBUG -= -O1
-QMAKE_CXXFLAGS_DEBUG -= -O2
-QMAKE_CXXFLAGS_DEBUG -= -O3
+# QMAKE_CXXFLAGS_DEBUG -= -O
+# QMAKE_CXXFLAGS_DEBUG += -O0
+# QMAKE_CXXFLAGS_DEBUG -= -O1
+# QMAKE_CXXFLAGS_DEBUG -= -O2
+# QMAKE_CXXFLAGS_DEBUG -= -O3
 
-QMAKE_CXXFLAGS_DEBUG += -pipe -std=c++20 -Wshadow -Wall -Wextra -Wcast-qual -Wuninitialized -Wcast-align=strict
+QMAKE_CXXFLAGS_DEBUG += $$CFLAGS_COM $$CFLAGS_WARN $$CFLAGS_DBG
 QMAKE_CXXFLAGS_DEBUG += -march=native
 QMAKE_CXXFLAGS_DEBUG += -DUSE_PEXT
-QMAKE_CXXFLAGS_DEBUG += -DNETWORK='\\"$${NETWORK}\\"'
 
 
 DISTFILES += \
