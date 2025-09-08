@@ -1,8 +1,8 @@
 #include <cassert>
 #include "Board.h"
 #include "Move.h"
+#include "NNUE.h"
 #include "zobrist.h"
-
 
 template <Color US, bool Update_NNUE>
 void Board::make_move(const MOVE move) noexcept
@@ -34,7 +34,7 @@ void Board::make_move(const MOVE move) noexcept
     assert(Move::type(captured) != PieceType::KING);
     assert(Move::type(promoted) != PieceType::PAWN);
     assert(Move::type(promoted) != PieceType::KING);
-    assert(!StatusHistory.empty());
+    assert(!statusHistory.empty());
 
     /*
               0b0fff PPPP CCCC MMMM DDDDDD FFFFFF
@@ -46,14 +46,23 @@ void Board::make_move(const MOVE move) noexcept
      */
 
 
+    // Lazy Updates
+    // On ne stocke que les modifications à faire,
+    // mais on ne les applique pas.
+
     if constexpr (Update_NNUE == true)
+    {
         nnue.push();    // nouvel accumulateur
+    }
+    Accumulator& accum = get_accumulator();
+    DirtyPieces& dp = accum.dirtyPieces;
 
-    const Status& previousStatus = StatusHistory.back(); // précédent status (sous forme de référence)
+    dp.sub_1 = {from, piece};
+    dp.add_1 = {dest, piece};
 
-    StatusHistory.emplace_back(previousStatus);     // ajoute 1 élément à la fin
-
-    Status& newStatus = StatusHistory.back();
+    const Status& previousStatus = statusHistory.back(); // précédent status (sous forme de référence)
+    statusHistory.emplace_back(previousStatus);     // ajoute 1 élément à la fin
+    Status& newStatus = statusHistory.back();
 
     newStatus.key ^= side_key;
     newStatus.move = move;
@@ -68,28 +77,7 @@ void Board::make_move(const MOVE move) noexcept
     if (previousStatus.ep_square != SQUARE_NONE)
         newStatus.key ^= ep_key[previousStatus.ep_square];
 
-    // Position des rois
-    int wking = king_square[WHITE];
-    int bking = king_square[BLACK];
-
-    // teste si le roi a changé de camp
-    if constexpr (Update_NNUE)
-    {
-        PieceType ptype = Move::piece_type(move);
-
-        if (ptype == PieceType::KING && buckets[from] != buckets[dest])
-        {
-            if constexpr (US == WHITE) {
-                wking = dest;
-            } else {
-                bking = dest;
-            }
-            set_current_network<US>(dest);
-        }
-    }
-
-
-    // Déplacement du roi
+     // Déplacement du roi
     if (Move::type(piece) == PieceType::KING)
         king_square[US] = dest;
 
@@ -129,7 +117,10 @@ void Board::make_move(const MOVE move) noexcept
             }
 
             if constexpr (Update_NNUE == true)
-                    nnue.sub_add(piece, from, piece, dest, wking, bking);
+            {
+                dp.type  = DirtyPieces::NORMAL;
+                // nnue.sub_add(acc, acc, piece, from, piece, dest, wking, bking);
+            }
         }
 
         //====================================================================================
@@ -169,7 +160,10 @@ void Board::make_move(const MOVE move) noexcept
                     assert(US == Move::color(piece));
                     assert(THEM == Move::color(captured));
 
-                    nnue.sub_sub_add(piece, from, captured, promoted, dest, wking, bking);
+                    // nnue.sub_sub_add(acc, acc, piece, from, captured, promoted, dest, wking, bking);
+                    dp.type  = DirtyPieces::CAPTURE;
+                    dp.sub_2 = {dest, captured};
+                    dp.add_1.piece = promoted;
                 }
             }
 
@@ -202,7 +196,9 @@ void Board::make_move(const MOVE move) noexcept
                     assert(US   == Move::color(piece));
                     assert(THEM == Move::color(captured));
 
-                    nnue.sub_sub_add(piece, from, captured, piece, dest, wking, bking);
+                    dp.type  = DirtyPieces::CAPTURE;
+                    dp.sub_2 = {dest, captured};
+                    // nnue.sub_sub_add(acc, acc, piece, from, captured, piece, dest, wking, bking);
                 }
             }
         }
@@ -228,7 +224,11 @@ void Board::make_move(const MOVE move) noexcept
             newStatus.fiftymove_counter = 0;
 
             if constexpr (Update_NNUE == true)
-                    nnue.sub_add(piece, from, promoted, dest, wking, bking);
+            {
+                dp.type  = DirtyPieces::NORMAL;
+                dp.add_1.piece = promoted;
+                // nnue.sub_add(acc, acc, piece, from, promoted, dest, wking, bking);
+            }
         }
     }
 
@@ -257,7 +257,10 @@ void Board::make_move(const MOVE move) noexcept
             newStatus.fiftymove_counter = 0;
 
             if constexpr (Update_NNUE == true)
-                    nnue.sub_add(piece, from, piece, dest, wking, bking);
+            {
+                dp.type  = DirtyPieces::NORMAL;
+                // nnue.sub_add(acc, acc, piece, from, piece, dest, wking, bking);
+            }
 
             int new_ep;
             if constexpr (US == Color::WHITE)
@@ -306,7 +309,11 @@ void Board::make_move(const MOVE move) noexcept
                 newStatus.key      ^= piece_key[static_cast<U32>(captured)][SQ::south(dest)];
                 newStatus.pawn_key ^= piece_key[static_cast<U32>(captured)][SQ::south(dest)];
                 if constexpr (Update_NNUE == true)
-                        nnue.sub_sub_add(piece, from, captured, SQ::south(dest), piece, dest, wking, bking);
+                {
+                    dp.type = DirtyPieces::CAPTURE;
+                    dp.sub_2 = {SQ::south(dest), captured};
+                    // nnue.sub_sub_add(acc, acc, piece, from, captured, SQ::south(dest), piece, dest, wking, bking);
+                }
             }
             else
             {
@@ -315,7 +322,11 @@ void Board::make_move(const MOVE move) noexcept
                 newStatus.key      ^= piece_key[static_cast<U32>(captured)][SQ::north(dest)];
                 newStatus.pawn_key ^= piece_key[static_cast<U32>(captured)][SQ::north(dest)];
                 if constexpr (Update_NNUE == true)
-                        nnue.sub_sub_add(piece, from, captured, SQ::north(dest), piece, dest, wking, bking);
+                {
+                    dp.type = DirtyPieces::CAPTURE;
+                    dp.sub_2 = {SQ::north(dest), captured};
+                    // nnue.sub_sub_add(acc, acc, piece, from, captured, SQ::north(dest), piece, dest, wking, bking);
+                }
             }
         }
 
@@ -345,8 +356,8 @@ void Board::make_move(const MOVE move) noexcept
                 newStatus.key         ^= piece_key[static_cast<U32>(piece)][from] ^ piece_key[static_cast<U32>(piece)][dest];
                 newStatus.mat_key[US] ^= piece_key[static_cast<U32>(piece)][from] ^ piece_key[static_cast<U32>(piece)][dest];
 
-                if constexpr (Update_NNUE == true)
-                        nnue.sub_add(piece, from, piece, dest, wking, bking);
+                // if constexpr (Update_NNUE == true)
+                // nnue.sub_add(acc, acc, piece, from, piece, dest, wking, bking);
 
                 // Move the Rook
                 if constexpr (US == WHITE)
@@ -358,7 +369,12 @@ void Board::make_move(const MOVE move) noexcept
                     newStatus.key         ^= piece_key[static_cast<U32>(Piece::WHITE_ROOK)][H1] ^ piece_key[static_cast<U32>(Piece::WHITE_ROOK)][F1];
                     newStatus.mat_key[US] ^= piece_key[static_cast<U32>(Piece::WHITE_ROOK)][H1] ^ piece_key[static_cast<U32>(Piece::WHITE_ROOK)][F1];
                     if constexpr (Update_NNUE == true)
-                            nnue.sub_add(Piece::WHITE_ROOK, H1, Piece::WHITE_ROOK, F1, wking, bking);
+                    {
+                        dp.type = DirtyPieces::CASTLING;
+                        dp.add_2 = {F1, Piece::WHITE_ROOK};
+                        dp.sub_2 = {H1, Piece::WHITE_ROOK};
+                        // nnue.sub_add(acc, acc, Piece::WHITE_ROOK, H1, Piece::WHITE_ROOK, F1, wking, bking);
+                    }
                 }
                 else
                 {
@@ -369,7 +385,12 @@ void Board::make_move(const MOVE move) noexcept
                     newStatus.key         ^= piece_key[static_cast<U32>(Piece::BLACK_ROOK)][H8] ^ piece_key[static_cast<U32>(Piece::BLACK_ROOK)][F8];
                     newStatus.mat_key[US] ^= piece_key[static_cast<U32>(Piece::BLACK_ROOK)][H8] ^ piece_key[static_cast<U32>(Piece::BLACK_ROOK)][F8];
                     if constexpr (Update_NNUE == true)
-                            nnue.sub_add(Piece::BLACK_ROOK, H8, Piece::BLACK_ROOK, F8, wking, bking);
+                    {
+                        dp.type = DirtyPieces::CASTLING;
+                        dp.add_2 = {F8, Piece::BLACK_ROOK};
+                        dp.sub_2 = {H8, Piece::BLACK_ROOK};
+                        // nnue.sub_add(acc, acc, Piece::BLACK_ROOK, H8, Piece::BLACK_ROOK, F8, wking, bking);
+                    }
                 }
             }
 
@@ -387,8 +408,8 @@ void Board::make_move(const MOVE move) noexcept
 
                 newStatus.key         ^= piece_key[static_cast<U32>(piece)][from] ^ piece_key[static_cast<U32>(piece)][dest];
                 newStatus.mat_key[US] ^= piece_key[static_cast<U32>(piece)][from] ^ piece_key[static_cast<U32>(piece)][dest];
-                if constexpr (Update_NNUE == true)
-                        nnue.sub_add(piece, from, piece, dest, wking, bking);
+                // if constexpr (Update_NNUE == true)
+                // nnue.sub_add(acc, acc, piece, from, piece, dest, wking, bking);
 
                 // Move the Rook
                 if constexpr (US == WHITE)
@@ -400,7 +421,12 @@ void Board::make_move(const MOVE move) noexcept
                     newStatus.key         ^= piece_key[static_cast<U32>(Piece::WHITE_ROOK)][A1] ^ piece_key[static_cast<U32>(Piece::WHITE_ROOK)][D1];
                     newStatus.mat_key[US] ^= piece_key[static_cast<U32>(Piece::WHITE_ROOK)][A1] ^ piece_key[static_cast<U32>(Piece::WHITE_ROOK)][D1];
                     if constexpr (Update_NNUE == true)
-                            nnue.sub_add(Piece::WHITE_ROOK, A1, Piece::WHITE_ROOK, D1, wking, bking);
+                    {
+                        dp.type = DirtyPieces::CASTLING;
+                        dp.add_2 = {D1, Piece::WHITE_ROOK};
+                        dp.sub_2 = {A1, Piece::WHITE_ROOK};
+                        // nnue.sub_add(acc, acc, Piece::WHITE_ROOK, A1, Piece::WHITE_ROOK, D1, wking, bking);
+                    }
                 }
                 else
                 {
@@ -411,7 +437,12 @@ void Board::make_move(const MOVE move) noexcept
                     newStatus.key         ^= piece_key[static_cast<U32>(Piece::BLACK_ROOK)][A8] ^ piece_key[static_cast<U32>(Piece::BLACK_ROOK)][D8];
                     newStatus.mat_key[US] ^= piece_key[static_cast<U32>(Piece::BLACK_ROOK)][A8] ^ piece_key[static_cast<U32>(Piece::BLACK_ROOK)][D8];
                     if constexpr (Update_NNUE == true)
-                            nnue.sub_add(Piece::BLACK_ROOK, A8, Piece::BLACK_ROOK, D8, wking, bking);
+                    {
+                        dp.type = DirtyPieces::CASTLING;
+                        dp.add_2 = {D8, Piece::BLACK_ROOK};
+                        dp.sub_2 = {A8, Piece::BLACK_ROOK};
+                        // nnue.sub_add(acc, acc, Piece::BLACK_ROOK, A8, Piece::BLACK_ROOK, D8, wking, bking);
+                    }
                 }
             }
         } // Roques
@@ -424,9 +455,14 @@ void Board::make_move(const MOVE move) noexcept
     // attention : on a changé de camp !!!
     calculate_checkers_pinned<THEM>();
 
+    // Push the accumulator change
+    accum.updated[WHITE] = false;
+    accum.updated[BLACK] = false;
+    accum.king_square   = king_square;
+
 #ifndef NDEBUG
     // on ne passe ici qu'en debug
-    if (valid<Update_NNUE>(" après make_move") == false)
+    if (valid<false>(" après make_move") == false)
     {
         printf("------------------------------------------make move \n");
         std::cout << display() << std::endl << std::endl;
@@ -455,11 +491,10 @@ template <Color Us> void Board::make_nullmove() noexcept
 {
     constexpr Color Them     = ~Us;
 
-    const Status& previousStatus = StatusHistory.back();
+    const Status& previousStatus = statusHistory.back();
+    statusHistory.emplace_back(previousStatus);
 
-    StatusHistory.emplace_back(previousStatus);
-
-    // StatusHistory.emplace_back(
+    // statusHistory.emplace_back(
     //                             previousStatus.key ^ side_key,  // zobrist will be changed later
     //                             previousStatus.pawn_key,
     //                             Move::MOVE_NULL,
@@ -470,7 +505,7 @@ template <Color Us> void Board::make_nullmove() noexcept
     //                             0ULL,
     //                             0ULL);
 
-    Status& newStatus = StatusHistory.back();
+    Status& newStatus = statusHistory.back();
 
     newStatus.key ^= side_key;
     newStatus.move = Move::MOVE_NULL;

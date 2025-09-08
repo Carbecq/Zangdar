@@ -45,7 +45,7 @@ void Board::legal_moves(MoveList& ml) noexcept
     Bitboard pieceBB;
     Bitboard attackBB;
     int from, to, d, ep;
-    int x_checker = SquareType::SQUARE_NONE;
+    int x_checker = Square::SQUARE_NONE;
 
     //-------------------------------------------------------------------------------------------
 
@@ -200,7 +200,7 @@ void Board::legal_moves(MoveList& ml) noexcept
      */
     if constexpr (MGType & MoveGenType::NOISY)
     {
-        if (get_status().ep_square!=SquareType::SQUARE_NONE && (!checkersBB || x_checker == get_status().ep_square - pawn_push))
+        if (get_status().ep_square!=Square::SQUARE_NONE && (!checkersBB || x_checker == get_status().ep_square - pawn_push))
         {
             // file : a...h
 

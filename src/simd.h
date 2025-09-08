@@ -16,7 +16,7 @@
 
 #if defined USE_SIMD
 #include <immintrin.h>
-#endif
+
 
 namespace simd {
 
@@ -165,4 +165,5 @@ inline int ReduceAddEpi32(Vepi32 vector) {
 
 } // namespace simd
 
+#endif
 #endif // SIMD_H

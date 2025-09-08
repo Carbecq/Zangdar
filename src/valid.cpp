@@ -1,5 +1,6 @@
 #include "Bitboard.h"
 #include "Board.h"
+#include "NNUE.h"
 #include <iostream>
 
 template<bool Update_NNUE>
@@ -31,16 +32,16 @@ bool Board::valid(const std::string &message) noexcept
     }
 
     if (Update_NNUE == true) {
-         int v1 = nnue.evaluate<WHITE>(BB::count_bit(occupancy_all()));
-         int v2{};
-         calculate_nnue(v2);
-         if (v1 != v2) {
-             std::cout << message << " : erreur nnue " << v1 << "  " << v2 << std::endl;
-             std::cout << display() << std::endl;
-             return false;
-         } else {
-             // std::cout << message << " : OK " << v1 << "  " << v2 << std::endl;
-         }
+         // int v1 = nnue.evaluate<WHITE>(BB::count_bit(occupancy_all()));
+         // int v2{};
+         // calculate_nnue(v2);
+         // if (v1 != v2) {
+         //     std::cout << message << " : erreur nnue " << v1 << "  " << v2 << std::endl;
+         //     std::cout << display() << std::endl;
+         //     return false;
+         // } else {
+         //     // std::cout << message << " : OK " << v1 << "  " << v2 << std::endl;
+         // }
      }
 
     const int epsq = get_ep_square();

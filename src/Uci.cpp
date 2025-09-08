@@ -40,10 +40,10 @@ void Uci::run()
     std::string token;
     std::string line;
     std::string fen  = START_FEN;
-    int         dmax = 6;
-    int         tmax = 0;
-    int         nmax = 0;
-    int         nthreads = 1;
+    int         dmax = 6;       // depth
+    int         tmax = 0;       // time
+    int         nmax = 0;       // nodes
+    int         nthreads = 1;   // threads
 
     do
     {
@@ -156,6 +156,7 @@ void Uci::run()
             std::cout << "fen [str]                     : positionne la chaine fen"                             << std::endl;
             std::cout << "dmax [p]                      : positionne la profondeur de recherche"                << std::endl;
             std::cout << "tmax [ms]                     : positionne le temps de recherche en millisecondes"    << std::endl;
+            std::cout << "nmax [n]                      : positionne le nombre de nodes"                        << std::endl;
             std::cout << "display                       : affiche la position"                                  << std::endl;
             std::cout << "systeme                       : informe sur les minimums systeme"                     << std::endl;
         }
@@ -211,10 +212,10 @@ void Uci::run()
         {
             std::string str;
             iss >> str;
-            iss >> dmax;
-            iss >> tmax;
-            iss >> nmax;
-            iss >> nthreads;
+            iss >> dmax;        // depth
+            iss >> tmax;        // time
+            iss >> nmax;        // nodes
+            iss >> nthreads;    // threads
 
             if (nthreads > 1)
                 threadPool.set_threads(nthreads);
@@ -566,12 +567,17 @@ setoption name <id> [value <x>]
 
 //=================================================================
 //! \brief  Lancement d'une recherche sur une position
+//! \param[in]  dmax     = depth max
+//! \param[in]  tmax     = time max
+//! \param[in]  nmax     = nodes max
+//! \param[in]  nthreads = nombre de threads
+//!
 //-----------------------------------------------------------------
 void Uci::go_run(const std::string& abc, const std::string& fen, int dmax, int tmax, int nmax)
 {
     std::string auxi;
     std::string bug = "";
-    printf("go_run : abc=%s fen=%s dmax=%d tmax=%d nmax=%d \n", abc.c_str(), fen.c_str(), dmax, tmax, nmax);
+    printf("go_run : abc=%s fen=%s depth_max=%d time_max=%d node_max=%d \n", abc.c_str(), fen.c_str(), dmax, tmax, nmax);
     transpositionTable.clear();
     threadPool.reset();
 

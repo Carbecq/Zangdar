@@ -1,6 +1,7 @@
 #ifndef LIBCHESS_POSITION_HPP
 #define LIBCHESS_POSITION_HPP
 
+#include "NNUE.h"
 class Board;
 
 #include "MoveList.h"
@@ -11,7 +12,7 @@ class Board;
 #include <vector>
 #include "Move.h"
 #include "Attacks.h"
-#include "NNUE.h"
+#include "Accumulator.h"
 
 // Structure définissant une position.
 // Elle est destinée à stocker l'historique de make_move.
@@ -22,7 +23,7 @@ struct Status
     U64  pawn_key           = 0ULL;                     // nombre unique (?) correspondant à la position des pions
     U64  mat_key[2]         = {0ULL, 0ULL};             // nombre unique (?) correspondant à la position des pièces
     MOVE move               = Move::MOVE_NONE;
-    int  ep_square          = SquareType::SQUARE_NONE;  // case en-passant : si les blancs jouent e2-e4, la case est e3
+    int  ep_square          = Square::SQUARE_NONE;  // case en-passant : si les blancs jouent e2-e4, la case est e3
     U32  castling           = CASTLE_NONE;              // droit au roque
     int  fiftymove_counter  = 0;                        // nombre de demi-coups depuis la dernière capture ou le dernier mouvement de pion.
     int  fullmove_counter   = 1;                        // le nombre de coups complets. Il commence à 1 et est incrémenté de 1 après le coup des noirs.
@@ -170,11 +171,7 @@ public:
     [[nodiscard]] std::string get_fen() const noexcept;
     void mirror_fen(const std::string &fen, bool logTactics);
 
-    //! \brief  met à jour le réseau à partir de la position
-    void set_network();
-    template <Color US>void set_current_network(int king);
-
-    //! \brief  Retourne la position du roi
+      //! \brief  Retourne la position du roi
     template<Color C> [[nodiscard]] constexpr int get_king_square() const noexcept { return king_square[C]; }
 
     //! \brief Retourne le bitboard des cases attaquées
@@ -416,7 +413,7 @@ public:
     {
         int reps             = 0;
         U64 current_key      = get_status().key;
-        int gamemove_counter = StatusHistory.size() - 1;
+        int gamemove_counter = statusHistory.size() - 1;
         int halfmove_counter = get_status().fiftymove_counter;
 
         // Look through hash histories for our moves
@@ -428,7 +425,7 @@ public:
 
             // Check for matching hash with a two fold after the root,
             // or a three fold which occurs in part before the root move
-            if (    StatusHistory[i].key == current_key
+            if (    statusHistory[i].key == current_key
                     && (   i > gamemove_counter - ply   // 2-fold : on considère des positions dans l'arbre de recherche
                            || ++reps == 2) )               // 3-fold : on considère toutes les positions de la partie
                 return true;
@@ -498,13 +495,16 @@ public:
     Color side_to_move;                         // camp au trait
     std::vector<std::string> best_moves;        // meilleur coup (pour les tests tactiques)
     std::vector<std::string> avoid_moves;       // coup à éviter (pour les tests tactiques)
-    NNUE nnue;                                  // réseau NNUE
-    std::vector<Status> StatusHistory;          // historique des positions de la partie (coups déjà joués ET coups de la recherche)
+    std::vector<Status> statusHistory;          // historique des positions de la partie (coups déjà joués ET coups de la recherche)
+    NNUE nnue;
 
     //==============================================
     //  Status
-    inline const Status& get_status() const { return StatusHistory.back(); }
-    inline Status& get_status()             { return StatusHistory.back(); }
+    inline const Status& get_status() const { return statusHistory.back(); }
+    inline Status& get_status()             { return statusHistory.back(); }
+
+    inline const Accumulator& get_accumulator() const { return nnue.get_accumulator(); }
+    inline Accumulator& get_accumulator()             { return nnue.get_accumulator(); }
 
     [[nodiscard]] inline int get_fiftymove_counter() const noexcept { return get_status().fiftymove_counter; }
     [[nodiscard]] inline int get_fullmove_counter()  const noexcept { return get_status().fullmove_counter;  }
@@ -516,8 +516,7 @@ public:
     [[nodiscard]] inline Bitboard get_pinned()       const noexcept { return get_status().pinned;            }
 
     inline void reserve_capacity() {    // la capacité ne passe pas avec la copie
-        nnue.reserve_capacity();
-        StatusHistory.reserve(MAX_HISTO);
+        statusHistory.reserve(MAX_HISTO);
     }
 
 };  // class Board

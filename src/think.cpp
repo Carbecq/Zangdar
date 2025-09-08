@@ -347,7 +347,17 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         }
         else
         {
-            raw_eval = (tt_hit && tt_eval != VALUE_NONE) ? tt_eval : board.evaluate();
+            if (tt_hit && tt_eval != VALUE_NONE)
+            {
+                raw_eval = tt_eval;
+                if (isPV)
+                    board.nnue.lazy_updates(&board, board.get_accumulator());
+            }
+            else
+            {
+                raw_eval = board.evaluate();
+            }
+
             static_eval = si->static_eval = td->history.correct_eval(board, raw_eval);
 
             // Amélioration de static-eval, au cas où tt_score est assez bon
@@ -363,6 +373,11 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         // if (!ttHit)
         //     m_ttable.put(pos.key(), ScoreNone, rawStaticEval, NullMove, 0, 0, TtFlag::None, ttpv);
 
+    }
+    else
+    {
+        board.nnue.lazy_updates(&board, board.get_accumulator());
+        raw_eval = static_eval = si->static_eval;
     }
 
 

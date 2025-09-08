@@ -1,4 +1,5 @@
 #include <sstream>
+#include "NNUE.h"
 #include "zobrist.h"
 #include "Board.h"
 #include "Cuckoo.h"
@@ -8,7 +9,7 @@
 //---------------------------------------
 Board::Board()
 {
-    StatusHistory.reserve(MAX_HISTO);
+    statusHistory.reserve(MAX_HISTO);
     reset();
 }
 
@@ -17,7 +18,7 @@ Board::Board()
 //---------------------------------------
 Board::Board(const std::string& fen)
 {
-    StatusHistory.reserve(MAX_HISTO);
+    statusHistory.reserve(MAX_HISTO);
     reset();
 
     set_fen<false>(fen, false);
@@ -31,12 +32,12 @@ void Board::reset() noexcept
     colorPiecesBB.fill(0ULL);
     typePiecesBB.fill(0ULL);
     piece_square.fill(Piece::NONE);
-    king_square.fill(SquareType::SQUARE_NONE);
+    king_square.fill(Square::SQUARE_NONE);
     side_to_move = Color::WHITE;
     avoid_moves.clear();
     best_moves.clear();
-    StatusHistory.clear();
-    nnue.reset();
+    statusHistory.clear();
+    nnue.init();
 }
 
 //==========================================
@@ -47,11 +48,15 @@ void Board::reset() noexcept
 [[nodiscard]] int Board::evaluate()
 {
     int score;
+    Accumulator& acc = get_accumulator();
+
+    // Lazy Updates
+    nnue.lazy_updates(this, acc);
 
     if (side_to_move == WHITE)
-        score = nnue.evaluate<WHITE>(BB::count_bit(occupancy_all()));
+        score = nnue.evaluate<WHITE>(acc, BB::count_bit(occupancy_all()));
     else
-        score = nnue.evaluate<BLACK>(BB::count_bit(occupancy_all()));
+        score = nnue.evaluate<BLACK>(acc, BB::count_bit(occupancy_all()));
 
     constexpr int PawnScore    =   2;
     constexpr int KnightScore  =   3;
@@ -147,7 +152,7 @@ std::string Board::display() const noexcept
     ss << "Key          : " << std::hex << get_key() << "\n";
     ss << "Fen          : " << get_fen() << "\n";
     ss << "50 move      : " << std::dec << get_fiftymove_counter() << "\n";
-    ss << "game counter : " << StatusHistory.size() - 1 << "\n";
+    ss << "game counter : " << statusHistory.size() - 1 << "\n";
     ss << "full move    : " << get_fullmove_counter() << "\n";
 
     // std::cout << std::hex << (get_key())
@@ -275,41 +280,43 @@ void Board::calculate_nnue(int &eval)
     Bitboard bb;
 
     NNUE nn{};
-    nn.reserve_capacity();
-    nn.reset();
+    nnue.init();
 
     int wking = get_king_square<WHITE>();
     int bking = get_king_square<BLACK>();
+    nn.push();
 
-    nn.add(Piece::WHITE_KING, wking, wking, bking);
-    nn.add(Piece::BLACK_KING, bking, wking, bking);
+    Accumulator& accu = nn.get_accumulator();
+
+    nnue.add(accu, Piece::WHITE_KING, wking, wking, bking);
+    nnue.add(accu, Piece::BLACK_KING, bking, wking, bking);
 
     // Pieces Blanches
 
     bb = occupancy_cp<WHITE, PieceType::PAWN>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        nn.add(Piece::WHITE_PAWN, sq, wking, bking);
+        nnue.add(accu, Piece::WHITE_PAWN, sq, wking, bking);
     }
     bb = occupancy_cp<WHITE, PieceType::KNIGHT>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        nn.add(Piece::WHITE_KNIGHT, sq, wking, bking);
+        nnue.add(accu, Piece::WHITE_KNIGHT, sq, wking, bking);
     }
     bb = occupancy_cp<WHITE, PieceType::BISHOP>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        nn.add(Piece::WHITE_BISHOP, sq, wking, bking);
+        nnue.add(accu, Piece::WHITE_BISHOP, sq, wking, bking);
     }
     bb = occupancy_cp<WHITE, PieceType::ROOK>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        nn.add(Piece::WHITE_ROOK, sq, wking, bking);
+        nnue.add(accu, Piece::WHITE_ROOK, sq, wking, bking);
     }
     bb = occupancy_cp<WHITE, PieceType::QUEEN>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        nn.add(Piece::WHITE_QUEEN, sq, wking, bking);
+        nnue.add(accu, Piece::WHITE_QUEEN, sq, wking, bking);
     }
 
     // Pieces Noires
@@ -317,30 +324,30 @@ void Board::calculate_nnue(int &eval)
     bb = occupancy_cp<BLACK, PieceType::PAWN>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        nn.add(Piece::BLACK_PAWN, sq, wking, bking);
+        nnue.add(accu, Piece::BLACK_PAWN, sq, wking, bking);
     }
     bb = occupancy_cp<BLACK, PieceType::KNIGHT>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        nn.add(Piece::BLACK_KNIGHT, sq, wking, bking);
+        nnue.add(accu, Piece::BLACK_KNIGHT, sq, wking, bking);
     }
     bb = occupancy_cp<BLACK, PieceType::BISHOP>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        nn.add(Piece::BLACK_BISHOP, sq, wking, bking);
+        nnue.add(accu, Piece::BLACK_BISHOP, sq, wking, bking);
     }
     bb = occupancy_cp<BLACK, PieceType::ROOK>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        nn.add(Piece::BLACK_ROOK, sq, wking, bking);
+        nnue.add(accu, Piece::BLACK_ROOK, sq, wking, bking);
     }
     bb = occupancy_cp<BLACK, PieceType::QUEEN>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
-        nn.add(Piece::BLACK_QUEEN, sq, wking, bking);
+        nnue.add(accu, Piece::BLACK_QUEEN, sq, wking, bking);
     }
 
-    eval = nn.evaluate<WHITE>(BB::count_bit(occupancy_all()));
+    // eval = nnue.evaluate<WHITE>(BB::count_bit(occupancy_all()));
 }
 
 // Upcoming repetition detection
@@ -352,25 +359,25 @@ bool Board::upcoming_repetition(int ply) const
 {
     // Adapted from Obsidian
 
-    const auto distance = std::min(get_fiftymove_counter(), static_cast<I32>(StatusHistory.size()));
+    const auto distance = std::min(get_fiftymove_counter(), static_cast<I32>(statusHistory.size()-1));
 
     // Enough reversible moves played
     if (distance < 3)
         return false;
 
     U32 mk;
-    int index = StatusHistory.size() - 1;
+    int index = statusHistory.size() - 1;
 
     const Bitboard occupied = occupancy_all();
     const U64 originalKey   = get_key();      // StatusHistory[StatusHistory.size() - 1].key
 
     /* StatusHistory : array of board status, for all moves, including the last move played
      */
-    assert(originalKey == StatusHistory[index].key);
+    assert(originalKey == statusHistory[index].key);
 
     for (I32 d = 3; d <= distance; d += 2)
     {
-        U64 diff = originalKey ^ StatusHistory[index - d].key;
+        U64 diff = originalKey ^ statusHistory[index - d].key;
 
         if (   (mk = Cuckoo::h1(diff), Cuckoo::keys[mk] == diff)
                || (mk = Cuckoo::h2(diff), Cuckoo::keys[mk] == diff))

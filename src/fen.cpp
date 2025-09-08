@@ -4,6 +4,7 @@
 #include <string>
 #include <iomanip>
 #include "Board.h"
+#include "NNUE.h"
 
 //    rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 //                                                1 2    3 4 5
@@ -68,7 +69,7 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
         i=11 move=Rf8-e8 50=5
      */
 
-    StatusHistory.push_back(Status{});
+    statusHistory.push_back(Status{});
 
     // est-ce une notation FEN ou EPD ?
     bool epd = false;
@@ -325,7 +326,12 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
 
     //--------------------------------------------
     if constexpr (Update_NNUE)
-            set_network();
+    {
+        nnue.init();
+        Accumulator& head = get_accumulator();
+        nnue.set_accumulator(this, head);
+        head.king_square = king_square;
+    }
 
     //   std::cout << display() << std::endl;
 }
@@ -359,7 +365,7 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     best_moves.clear();
 
     // Il faut avoir au moins un élément
-    StatusHistory.push_back(Status{});
+    statusHistory.push_back(Status{});
 
     //-------------------------------------
 
@@ -669,46 +675,6 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     return fen;
 }
 
-//===========================================================
-//! \brief  met à jour le réseau à partir de la position
-//-----------------------------------------------------------
-void Board::set_network()
-{
-    nnue.reset();
-
-    int wking = king_square[WHITE];
-    int bking = king_square[BLACK];
-    int square;
-
-    Bitboard occupied = occupancy_all();
-    while (occupied)
-    {
-        square = BB::pop_lsb(occupied);
-        nnue.add(piece_square[square], square, wking, bking);
-    }
-}
-
-//===========================================================
-//! \brief  met à jour le réseau courant à partir de la position
-//!         de plus, on ne s'intéresse qu'à l'accumulateur "US"
-//! \param[in]  king    position du roi de couleur "US"
-//-----------------------------------------------------------
-template <Color US>
-void Board::set_current_network(int king)
-{
-    nnue.reset_current<US>();
-
-    // Bitboard bb;
-    int square;
-
-    Bitboard occupied = occupancy_all();
-    while (occupied)
-    {
-        square = BB::pop_lsb(occupied);
-        nnue.add<US>(piece_square[square], square, king);
-    }
-}
-
 //-----------------------------------------------------
 //! \brief Commande UCI : position
 //!         Entrée d'une position
@@ -789,5 +755,3 @@ void Board::apply_token(const std::string& token) noexcept
 template void Board::set_fen<true>(const std::string &fen, bool logTactics) noexcept;
 template void Board::set_fen<false>(const std::string &fen, bool logTactics) noexcept;
 
-template void Board::set_current_network<WHITE>(int king);
-template void Board::set_current_network<BLACK>(int king);

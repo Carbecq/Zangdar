@@ -12,7 +12,7 @@
 
 constexpr int N_COLORS = 2;
 
-enum Color : U08
+enum Color : int
 {
     WHITE    = 0,
     BLACK    = 1,
@@ -35,7 +35,7 @@ constexpr Color operator~(Color C) { return Color(C ^ Color::BLACK); }
 
 constexpr int N_PIECE     = 15;
 
-enum class Piece : U08
+enum class Piece : int
 {
     NONE           = 0, // 0000
 
@@ -64,7 +64,7 @@ constexpr std::initializer_list<Piece> all_PIECE = {
 
 constexpr int N_PIECE_TYPE = 7;
 
-enum class PieceType : U08
+enum class PieceType : int
 {
     NONE     = 0,
     PAWN     = 1,
@@ -194,7 +194,7 @@ constexpr int EGPieceValue[N_PIECE_TYPE] = {
 
 constexpr int N_SQUARES = 64;
 
-enum SquareType : int {
+enum Square : int {
     A1, B1, C1, D1, E1, F1, G1, H1,
     A2, B2, C2, D2, E2, F2, G2, H2,
     A3, B3, C3, D3, E3, F3, G3, H3,

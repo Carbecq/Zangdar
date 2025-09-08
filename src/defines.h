@@ -31,6 +31,9 @@ using MOVE      = U32;
 
 using TimePoint = std::chrono::high_resolution_clock;
 
+template <class T, std::size_t x, std::size_t y>
+using Array2D = std::array<std::array<T, y>, x>;
+
 //-----------------------------------------------------------------------------
 
 static constexpr int MAX_PLY    =  128;     // profondeur max de recherche (en demi-coups)

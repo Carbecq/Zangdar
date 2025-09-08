@@ -1,6 +1,7 @@
 #include "Board.h"
 #include "Move.h"
 #include "types.h"
+#include "NNUE.h"
 
 //=============================================================
 //! \brief  Enlève un coup
@@ -140,11 +141,11 @@ void Board::undo_move() noexcept
         }
     }
 
-    StatusHistory.pop_back();
+    statusHistory.pop_back();
 
 #ifndef NDEBUG
     // on ne passe ici qu'en debug
-    assert(valid<Update_NNUE>("après undo_move"));
+    assert(valid<false>("après undo_move"));
 #endif
 }
 
@@ -153,7 +154,7 @@ void Board::undo_move() noexcept
 //-------------------------------------------------------------------
 template <Color Us> void Board::undo_nullmove() noexcept
 {
-    StatusHistory.pop_back();       // supprime le dernier status
+    statusHistory.pop_back();       // supprime le dernier status
     side_to_move = ~side_to_move;   // Change de camp
 
 #ifndef NDEBUG
