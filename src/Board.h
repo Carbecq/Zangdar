@@ -12,7 +12,8 @@ class Board;
 #include <vector>
 #include "Move.h"
 #include "Attacks.h"
-#include "Accumulator.h"
+#include "NNUE.h"
+
 
 // Structure définissant une position.
 // Elle est destinée à stocker l'historique de make_move.

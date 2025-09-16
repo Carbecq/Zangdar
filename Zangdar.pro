@@ -197,7 +197,6 @@ DISTFILES += \
 
 
 HEADERS += \
-    src/Accumulator.h \
     src/Attacks.h \
     src/Bitboard.h \
     src/Board.h \

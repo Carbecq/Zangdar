@@ -5,7 +5,6 @@
 #include "simd.h"
 #include "Move.h"
 #include "Board.h"
-#include "Accumulator.h"
 
 namespace {
 
@@ -25,9 +24,9 @@ int NNUE::evaluate(const Accumulator& current, Usize count)
     const int bucket = get_bucket(count);
 
     if constexpr (color == Color::WHITE)
-            output = activation(current.white, current.black, network->output_weights, bucket);
+        output = activation(current.white, current.black, network->output_weights, bucket);
     else
-    output = activation(current.black, current.white, network->output_weights, bucket);
+        output = activation(current.black, current.white, network->output_weights, bucket);
 
     return output;
 }
@@ -40,7 +39,7 @@ void NNUE::init()
     head_idx = 0;
 
     for (int i = 0; i < 2; i++)
-        for (int j = 0; j < NNUE::N_KING_BUCKETS; j++)
+        for (int j = 0; j < KING_BUCKETS_COUNT; j++)
             finny[i][j].init();
 }
 
@@ -259,7 +258,7 @@ void NNUE::lazy_update(const Board* board, Accumulator& acc)
         iter--;
 
         // Recherche d'un accumulateur à raffraichir
-        if (NNUE::need_refresh(stack[iter].king_square[side], king) == true)
+        if (NNUE::need_refresh<side>(stack[iter].king_square[side], king) == true)
         {
             // Comme le cout d'un raffraichissement est important
             // autant le faire sur le dernier accumulateur : acc
@@ -284,15 +283,31 @@ void NNUE::lazy_update(const Board* board, Accumulator& acc)
     }
 }
 
+/*
+[[nodiscard]] constexpr inline int mirrorVertically(int sq) noexcept { return sq ^ 56; } // 0b111000
+
+// flip horizontally
+[[nodiscard]] constexpr inline int mirrorHorizontally(int sq) noexcept { return sq ^ 7; } // 0b111
+
+*/
+
 //======================================================
 //! \brief  Faut-il raffraichir l'accumulateur ?
 //------------------------------------------------------
+template <Color side>
 bool NNUE::need_refresh(int old_king, int new_king)
 {
     assert(old_king >= 0 && old_king < 64);
     assert(new_king >= 0 && new_king < 64);
 
-    return buckets[old_king] != buckets[new_king];
+    // 1) Horizontal Mirroring
+    //      est-ce qu'on a changé de côté ?
+    if ((old_king & 0b100) != (new_king & 0b100))
+        return true;
+
+    // 2) King Bucket
+    //      est-ce qu'on a change de bucket ?
+    return king_buckets_map[get_relative_square<side>(old_king)] != king_buckets_map[get_relative_square<side>(new_king)];
 }
 
 //==============================================================================
@@ -384,8 +399,16 @@ std::pair<Usize, Usize> NNUE::get_indices(Piece piece, int square, int wking, in
     //  NNUE : PAWN = 0
     const auto base_nnue = base - 1;
 
-    const auto white_indice =  color * color_stride + base_nnue * piece_stride + static_cast<Usize>(get_square(square, wking));
-    const auto black_indice = !color * color_stride + base_nnue * piece_stride + static_cast<Usize>(SQ::mirrorVertically(get_square(square, bking)));
+    const auto white_indice = king_buckets_map[wking] * INPUT_LAYER_SIZE
+            + color * color_stride
+            + base_nnue * piece_stride
+            + static_cast<Usize>(get_square(square, wking));
+
+
+    const auto black_indice = king_buckets_map[SQ::mirrorVertically(bking)] * INPUT_LAYER_SIZE
+            + !color * color_stride
+            + base_nnue * piece_stride
+            + static_cast<Usize>(SQ::mirrorVertically(get_square(square, bking)));
 
     return {white_indice, black_indice};
 }
@@ -410,9 +433,19 @@ Usize NNUE::get_indice(Piece piece, int square, int king)
     const auto base_nnue = base - 1;
 
     if (side == WHITE)
-        return  color * color_stride + base_nnue * piece_stride + static_cast<Usize>(get_square(square, king));
+    {
+        return king_buckets_map[king] * INPUT_LAYER_SIZE
+                + color * color_stride
+                + base_nnue * piece_stride
+                + static_cast<Usize>(get_square(square, king));
+    }
     else
-        return !color * color_stride + base_nnue * piece_stride + static_cast<Usize>(SQ::mirrorVertically(get_square(square, king)));
+    {
+        return king_buckets_map[SQ::mirrorVertically(king)] * INPUT_LAYER_SIZE
+                + !color * color_stride
+                + base_nnue * piece_stride
+                + static_cast<Usize>(SQ::mirrorVertically(get_square(square, king)));
+    }
 }
 
 //================================================================
@@ -693,11 +726,11 @@ void NNUE::sub_sub_add_add(const Accumulator& src, Accumulator& dst,
 template <Color side>
 void NNUE::refresh_accumulator(const Board* board, Accumulator& acc)
 {
-    const int    king     = board->get_king_square<side>();
-    const int    bucket   = 0;
-    const int    mirrored = SQ::file(king) > FILE_D;
+    const int    king_square = board->get_king_square<side>();
+    const int    king_bucket = king_buckets_map[get_relative_square<side>(king_square)];
+    const int    mirrored    = SQ::file(king_square) > FILE_D;
 
-    FinnyEntry& entry = finny[mirrored][bucket];
+    FinnyEntry& entry = finny[mirrored][king_bucket];
 
     int square;
 
@@ -717,7 +750,7 @@ void NNUE::refresh_accumulator(const Board* board, Accumulator& acc)
             while (to_remove)
             {
                 square = BB::pop_lsb(to_remove);
-                sub<side>(entry.accumulator, Move::make_piece(color, piece), square, king);
+                sub<side>(entry.accumulator, Move::make_piece(color, piece), square, king_square);
             }
 
             // rechreche des pièces à ajouter
@@ -725,7 +758,7 @@ void NNUE::refresh_accumulator(const Board* board, Accumulator& acc)
             while (to_add)
             {
                 square = BB::pop_lsb(to_add);
-                add<side>(entry.accumulator, Move::make_piece(color, piece), square, king);
+                add<side>(entry.accumulator, Move::make_piece(color, piece), square, king_square);
             }
         }
     }
@@ -736,9 +769,9 @@ void NNUE::refresh_accumulator(const Board* board, Accumulator& acc)
     entry.typePiecesBB[side]  = board->typePiecesBB;
 
     if constexpr (side == WHITE)
-            acc.white = entry.accumulator.white;
+        acc.white = entry.accumulator.white;
     else
-    acc.black = entry.accumulator.black;
+        acc.black = entry.accumulator.black;
 }
 
 template int NNUE::evaluate<WHITE>(const Accumulator& current, Usize count);

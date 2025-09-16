@@ -1,2 +1,2 @@
-VERSION = 4.08.04
-NETWORK = \"networks/768_ob8_hm.bin\"
+VERSION = 4.09.02
+NETWORK = \"networks/essai_kingbuckets_2.bin\"
