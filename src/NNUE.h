@@ -39,7 +39,7 @@
 // https://www.chessprogramming.org/NNUE#Output_Buckets
 
 constexpr Usize INPUT_LAYER_SIZE  = N_COLORS * 6 * N_SQUARES;   // = 768 : entrées (note : il n'y a que 6 pièces
-constexpr Usize HIDDEN_LAYER_SIZE = 768;                        // Hidden Layer : nombre de neuron(es) ; va de 16 à ... 1024 (plus ?)
+constexpr Usize HIDDEN_LAYER_SIZE = 1024;                        // Hidden Layer : nombre de neuron(es) ; va de 16 à ... 1024 (plus ?)
 constexpr Usize OUTPUT_BUCKETS    = 8;  //TODO à voir ?
 constexpr Usize BUCKET_DIVISOR    = (32 + OUTPUT_BUCKETS - 1) / OUTPUT_BUCKETS;   // 4.875 -> 4
 
