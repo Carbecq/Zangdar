@@ -1,2 +1,2 @@
-VERSION = 4.09.03
-NETWORK = \"networks/essai_kingbuckets_3.bin\"
+VERSION = 5
+NETWORK = \"networks/net_5.bin\"

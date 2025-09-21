@@ -283,14 +283,6 @@ void NNUE::lazy_update(const Board* board, Accumulator& acc)
     }
 }
 
-/*
-[[nodiscard]] constexpr inline int mirrorVertically(int sq) noexcept { return sq ^ 56; } // 0b111000
-
-// flip horizontally
-[[nodiscard]] constexpr inline int mirrorHorizontally(int sq) noexcept { return sq ^ 7; } // 0b111
-
-*/
-
 //======================================================
 //! \brief  Faut-il raffraichir l'accumulateur ?
 //------------------------------------------------------
