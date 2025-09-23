@@ -168,7 +168,7 @@ public:
     //!  du point de vue 'C'
     template <Color C> [[nodiscard]] constexpr bool is_on_semiopen_file(int sq) const { return !(occupancy_cp<C, PieceType::PAWN>() & FileMask64[sq]); }
 
-    template <bool Update_NNUE> void set_fen(const std::string &fen, bool logTactics) noexcept;
+    void set_fen(const std::string &fen, bool logTactics) noexcept;
     [[nodiscard]] std::string get_fen() const noexcept;
     void mirror_fen(const std::string &fen, bool logTactics);
 
@@ -376,7 +376,7 @@ public:
     }
 
 
-    template <bool Update_NNUE> bool valid(const std::string& message) noexcept;
+    bool valid() const noexcept;
     [[nodiscard]] std::string display() const noexcept;
 
     template<Color C> Bitboard getNonPawnMaterial() const noexcept
@@ -396,6 +396,7 @@ public:
     //==============================================
     //  Evaluation
     int  evaluate();
+    int  do_evaluate(Accumulator& acc);
     bool fast_see(const MOVE move, const int threshold) const;
 
     //====================================================================

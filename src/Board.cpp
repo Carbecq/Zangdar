@@ -21,7 +21,7 @@ Board::Board(const std::string& fen)
     statusHistory.reserve(MAX_HISTO);
     reset();
 
-    set_fen<false>(fen, false);
+    set_fen(fen, false);
 }
 
 //==========================================
@@ -40,6 +40,7 @@ void Board::reset() noexcept
     nnue.init();
 }
 
+
 //==========================================
 //! \brief  Evaluation de la position
 //! \return Evaluation statique de la position
@@ -47,12 +48,24 @@ void Board::reset() noexcept
 //------------------------------------------
 [[nodiscard]] int Board::evaluate()
 {
-    int score;
+    // Du fait de lazy Updates, on a découpé la routine en 2
+
     Accumulator& acc = get_accumulator();
 
-    // Lazy Updates
-    nnue.lazy_updates(this, acc);
+   // Lazy Updates
+   nnue.lazy_updates(this, acc);
 
+   return do_evaluate(acc);
+}
+
+//==========================================
+//! \brief  Evaluation de la position
+//! \return Evaluation statique de la position
+//! du point de vue du camp au trait.
+//------------------------------------------
+[[nodiscard]] int Board::do_evaluate(Accumulator& acc)
+{
+    int score;
     if (side_to_move == WHITE)
         score = nnue.evaluate<WHITE>(acc, BB::count_bit(occupancy_all()));
     else

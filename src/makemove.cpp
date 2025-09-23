@@ -462,7 +462,7 @@ void Board::make_move(const MOVE move) noexcept
 
 #ifndef NDEBUG
     // on ne passe ici qu'en debug
-    if (valid<false>(" après make_move") == false)
+    if (valid() == false)
     {
         printf("------------------------------------------make move \n");
         std::cout << display() << std::endl << std::endl;
@@ -529,7 +529,7 @@ template <Color Us> void Board::make_nullmove() noexcept
 
 #ifndef NDEBUG
     // on ne passe ici qu'en debug
-    assert(valid<false>("après make null_move"));
+    assert(valid());
 #endif
 }
 

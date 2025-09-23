@@ -145,7 +145,7 @@ void Board::undo_move() noexcept
 
 #ifndef NDEBUG
     // on ne passe ici qu'en debug
-    assert(valid<false>("après undo_move"));
+    assert(valid());
 #endif
 }
 
@@ -159,7 +159,7 @@ template <Color Us> void Board::undo_nullmove() noexcept
 
 #ifndef NDEBUG
     // on ne passe ici qu'en debug
-    assert(valid<false>("après undo_nullmove"));
+    assert(valid());
 #endif
 }
 

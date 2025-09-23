@@ -232,7 +232,7 @@ void Uci::run()
         {
             std::getline(iss, fen);
             uci_board.reset();
-            uci_board.set_fen<false>(fen, false);
+            uci_board.set_fen(fen, false);
             std::cout << uci_board.display() << std::endl;;
         }
         else if (token == "display")
@@ -607,7 +607,7 @@ void Uci::go_run(const std::string& abc, const std::string& fen, int dmax, int t
     if (abc != "n")
     {
         uci_board.reset();
-        uci_board.set_fen<true>(auxi, false);
+        uci_board.set_fen(auxi, false);
     }
     std::cout << uci_board.display() << std::endl;
     std::string strgo;
@@ -766,7 +766,7 @@ void Uci::go_tactics(const std::string& line, int dmax, int tmax, U64& total_nod
     threadPool.reset();
 
     uci_board.reset();
-    uci_board.set_fen<true>(line, true);
+    uci_board.set_fen(line, true);
 
     const auto start = TimePoint::now();
 
@@ -903,7 +903,7 @@ void Uci::bench(int argCount, char* argValue[])
         threadPool.reset();
 
         uci_board.reset();
-        uci_board.set_fen<true>(line, true);
+        uci_board.set_fen(line, true);
         std::cout << "[# " << total+1 << "] " << line << std::endl;
 
         const auto start = TimePoint::now();

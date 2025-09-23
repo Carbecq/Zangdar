@@ -24,6 +24,8 @@ void Search::think(Board board, Timer timer, int m_index)
     // capacity n'est pas conservé lors de la copie ...
     board.reserve_capacity();
 
+    board.nnue.start_search(board);
+
     ThreadData* td = &threadPool.threadData[m_index];
 
     // iterative deepening
@@ -659,9 +661,15 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         board.make_move<C, true>(move);
 
         if (isQuiet)
+        {
+            assert(quiet_count+1 < quiet_moves.size());
             quiet_moves[quiet_count++] = move;
+        }
         else
+        {
+            assert(capture_count+1 < capture_moves.size());
             capture_moves[capture_count++] = move;
+        }
 
         //------------------------------------------------------------------------------------
         //  LATE MOVE REDUCTION

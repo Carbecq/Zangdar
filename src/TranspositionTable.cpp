@@ -93,7 +93,8 @@ void TranspositionTable::clear(void)
 
     tt_age = 0;
 
-    std::memset(tt_entries, 0, sizeof(HashCluster) * (nbr_cluster));
+    // value-initialize each HashCluster element
+    std::fill(tt_entries, tt_entries + nbr_cluster, HashCluster{});
 }
 
 //========================================================

@@ -107,7 +107,7 @@ void test_suite(const std::string& abc, int dmax)
         for (int i=1; i<=nbr_prof; i++)
         {
             CB.reset();
-            CB.set_fen<false>(fen, false);
+            CB.set_fen(fen, false);
 
             aux     = liste1.at(i);                     // "D1 20"
             liste2  = split(aux, tag2);                  // 0= "D1"; 1= "20"
@@ -151,7 +151,7 @@ void test_suite(const std::string& abc, int dmax)
                     std::cout << line << std::endl;
                     Board board;
 
-                    board.set_fen<false>(fen, false);
+                    board.set_fen(fen, false);
                     failed_tests++;
                     std::cout << board.display() << std::endl;
                     return;
@@ -256,7 +256,7 @@ void test_perft(const std::string& str, const std::string& m_fen, int depth)
      * http://www.rocechess.ch/perft.html
      */
     Board CB;
-    CB.set_fen<false>(fen, false);
+    CB.set_fen(fen, false);
     std::cout << CB.display() << std::endl;
     std::cout << std::endl;
 
@@ -350,7 +350,7 @@ bool Board::test_mirror(const std::string& line)
 //    std::cout << line << std::endl;
 
     reset();
-    set_fen<false>(line, true);
+    set_fen(line, true);
 
 //    std::cout << display() << std::endl;
 
@@ -370,7 +370,7 @@ bool Board::test_mirror(const std::string& line)
     {
         std::cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> " << std::endl;
         reset();
-        set_fen<false>(line, true);
+        set_fen(line, true);
         std::cout << display() << std::endl;
         mirror_fen(line, true);
         std::cout << display() << std::endl;
@@ -387,16 +387,19 @@ bool Board::test_mirror(const std::string& line)
 //------------------------------------------------------
 void Board::test_value(const std::string& fen )
 {
-    reset();
-    set_fen<false>(fen, false);
+    set_fen(fen, false);
     std::cout << display() << std::endl;
 
     MoveList ml;
 
-    printf("side = %s : evaluation = %d \n", side_name[side_to_move].c_str(), evaluate());
+    Accumulator acc;
+    nnue.refresh_accumulator<WHITE>(this, acc);
+    nnue.refresh_accumulator<BLACK>(this, acc);
+    int eval = do_evaluate(acc);
+
+    printf("side = %s : evaluation = %d \n\n", side_name[side_to_move].c_str(), eval);
     BB::PrintBB(get_status().checkers, "checkers");
     BB::PrintBB(get_status().pinned, "pinned");
-
 
     MOVE move;
 
@@ -414,9 +417,8 @@ void Board::test_value(const std::string& fen )
 
        bool doCheck    = is_in_check();
 
-       printf("side = %s : %s : value=%d score=%d \n", side_name[side_to_move].c_str(),
-              Move::name(move).c_str(), ml.mlmoves[index].value, evaluate());
-
+       printf("\nside = %s : %s : value=%d \n", side_name[side_to_move].c_str(),
+              Move::name(move).c_str(), ml.mlmoves[index].value);
 
        printf("capturing ? %d \n", Move::is_capturing(move));
        printf("enpassant ? %d \n", Move::is_enpassant(move));
@@ -553,7 +555,7 @@ void test_see()
         score = std::stoi(liste1[2]);
 
         board.reset();
-        board.set_fen<false>(fen, false);
+        board.set_fen(fen, false);
 
         if (board.turn() == WHITE)
             board.legal_moves<WHITE, MoveGenType::QUIET>(ml);

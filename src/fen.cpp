@@ -34,14 +34,13 @@
 //-----------------------------------------------------
 //! \brief Initialisation depuis une position FEN
 //-----------------------------------------------------
-template <bool Update_NNUE>
 void Board::set_fen(const std::string &fen, bool logTactics) noexcept
 {
     assert(fen.length() > 0);
 
     if (fen == "startpos")
     {
-        set_fen<Update_NNUE>(START_FEN, logTactics);
+        set_fen(START_FEN, logTactics);
         return;
     }
 
@@ -324,17 +323,9 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
     get_status().mat_key[WHITE] = mat_key[WHITE];
     get_status().mat_key[BLACK] = mat_key[BLACK];
 
-    //--------------------------------------------
-    if constexpr (Update_NNUE)
-    {
-        nnue.init();
-        Accumulator& head = get_accumulator();
-        nnue.set_accumulator(this, head);
-        head.king_square = king_square;
-    }
-
     //   std::cout << display() << std::endl;
 }
+
 
 //=========================================================================
 //  Lecture d'une position fen, mais on va inverser l'Ã©chiquier
@@ -691,7 +682,7 @@ void Board::parse_position(std::istringstream &is)
 
     if (token == "startpos")
     {
-        set_fen<true>(START_FEN, logTactics);
+        set_fen(START_FEN, logTactics);
     }
     else
     {
@@ -701,7 +692,7 @@ void Board::parse_position(std::istringstream &is)
         {
             fen += token + " ";
         }
-        set_fen<true>(fen, logTactics);
+        set_fen(fen, logTactics);
     }
 
     while (is >> token)
@@ -736,7 +727,7 @@ void Board::apply_token(const std::string& token) noexcept
 #ifndef NDEBUG
             nbr++;
 #endif
-            make_move<C, true>(mlmove.move);
+            make_move<C, false>(mlmove.move);
             break;
         }
     }
@@ -752,6 +743,4 @@ void Board::apply_token(const std::string& token) noexcept
 
 }
 
-template void Board::set_fen<true>(const std::string &fen, bool logTactics) noexcept;
-template void Board::set_fen<false>(const std::string &fen, bool logTactics) noexcept;
 

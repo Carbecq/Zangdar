@@ -32,6 +32,39 @@ int NNUE::evaluate(const Accumulator& current, Usize count)
 }
 
 //====================================================
+//! \brief  Initialise NNUE pour une nouvelle recherche
+//----------------------------------------------------
+void NNUE::start_search(const Board& board)
+{
+    head_idx = 0;
+
+    for (int i = 0; i < 2; i++)
+        for (int j = 0; j < KING_BUCKETS_COUNT; j++)
+            finny[i][j].init();
+
+    Accumulator& head = stack[0];
+
+    init_accumulator(head);
+
+    const int wking = board.king_square[WHITE];
+    const int bking = board.king_square[BLACK];
+    int square;
+
+    Bitboard occupied = board.occupancy_all();
+    while (occupied)
+    {
+        square = BB::pop_lsb(occupied);
+        add(head, board.piece_square[square], square, wking, bking);
+    }
+
+    head.updated[WHITE] = true;
+    head.updated[BLACK] = true;
+
+    head.king_square = board.king_square;
+}
+
+
+//====================================================
 //! \brief  Remet à 0 la pile
 //----------------------------------------------------
 void NNUE::init()
@@ -300,28 +333,6 @@ bool NNUE::need_refresh(int old_king, int new_king)
     // 2) King Bucket
     //      est-ce qu'on a change de bucket ?
     return king_buckets_map[get_relative_square<side>(old_king)] != king_buckets_map[get_relative_square<side>(new_king)];
-}
-
-//==============================================================================
-//  on met l'accumulateur en foncion de la position
-//------------------------------------------------------------------------------
-void NNUE::set_accumulator(const Board* board, Accumulator& acc)
-{
-    init_accumulator(acc);
-
-    const int wking = board->king_square[WHITE];
-    const int bking = board->king_square[BLACK];
-    int square;
-
-    Bitboard occupied = board->occupancy_all();
-    while (occupied)
-    {
-        square = BB::pop_lsb(occupied);
-        add(acc, board->piece_square[square], square, wking, bking);
-    }
-
-    acc.updated[WHITE] = true;
-    acc.updated[BLACK] = true;
 }
 
 //===================================================================

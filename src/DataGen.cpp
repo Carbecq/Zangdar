@@ -170,7 +170,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
         // printf("-----nouvelle partie : id=%d  \n", thread_id);
 
         board.reset();
-        board.set_fen<true>(START_FEN, false);
+        board.set_fen(START_FEN, false);
         transpositionTable.clear();
         td->history.reset();
 
@@ -191,7 +191,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
                 {
                     current_ply = 0;
                     board.reset();
-                    board.set_fen<true>(START_FEN, false);
+                    board.set_fen(START_FEN, false);
                     continue;
                 }
                 std::uniform_int_distribution<> distribution{0, int(movelist.size() - 1)};
@@ -206,7 +206,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
                     {
                         current_ply = 0;
                         board.reset();
-                        board.set_fen<true>(START_FEN, false);
+                        board.set_fen(START_FEN, false);
                     }
                 }
             }
@@ -217,7 +217,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
                 {
                     current_ply = 0;
                     board.reset();
-                    board.set_fen<true>(START_FEN, false);
+                    board.set_fen(START_FEN, false);
                     continue;
                 }
                 std::uniform_int_distribution<> distribution{0, int(movelist.size() - 1)};
@@ -231,7 +231,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
                     {
                         current_ply = 0;
                         board.reset();
-                        board.set_fen<true>(START_FEN, false);
+                        board.set_fen(START_FEN, false);
                     }
                 }
             }

@@ -3,8 +3,7 @@
 #include "NNUE.h"
 #include <iostream>
 
-template<bool Update_NNUE>
-bool Board::valid(const std::string &message) noexcept
+bool Board::valid() const noexcept
 {
 //    std::cout << "valid debut" << std::endl;
 
@@ -31,20 +30,7 @@ bool Board::valid(const std::string &message) noexcept
         return false;
     }
 
-    if (Update_NNUE == true) {
-         // int v1 = nnue.evaluate<WHITE>(BB::count_bit(occupancy_all()));
-         // int v2{};
-         // calculate_nnue(v2);
-         // if (v1 != v2) {
-         //     std::cout << message << " : erreur nnue " << v1 << "  " << v2 << std::endl;
-         //     std::cout << display() << std::endl;
-         //     return false;
-         // } else {
-         //     // std::cout << message << " : OK " << v1 << "  " << v2 << std::endl;
-         // }
-     }
-
-    const int epsq = get_ep_square();
+     const int epsq = get_ep_square();
     Color color = turn();
     if (epsq != SQUARE_NONE) {
         if (color == Color::WHITE && SQ::rank(get_ep_square()) != 5) {
@@ -192,6 +178,4 @@ bool Board::valid(const std::string &message) noexcept
     return true;
 }
 
-template bool Board::valid<true>(const std::string &message) noexcept;
-template bool Board::valid<false>(const std::string &message) noexcept;
 

@@ -147,10 +147,10 @@ public:
     inline Accumulator& get_accumulator()             { return stack[head_idx]; }
 
     void init();
+    void start_search(const Board& board);
     void push();
     void pop();
     void init_accumulator(Accumulator &acc);
-    void set_accumulator(const Board* board, Accumulator& acc);
     template <Color side> void refresh_accumulator(const Board* board, Accumulator& acc);
 
     template<Color color> int  evaluate(const Accumulator& current, Usize count);
@@ -172,9 +172,9 @@ public:
 
 
 private:
-    std::array<Accumulator, MAX_PLY> stack = {Accumulator{}};   // pile des accumulateurs
-    Usize head_idx;                                               // accumulateur utilisé (= stack_size - 1)
-    FinnyEntry finny[N_COLORS][KING_BUCKETS_COUNT] = {};                // tables Finny
+    std::array<Accumulator, MAX_PLY> stack = {Accumulator{}};       // pile des accumulateurs
+    Usize head_idx;                                                 // accumulateur utilisé (= stack_size - 1)
+    FinnyEntry finny[N_COLORS][KING_BUCKETS_COUNT] = {};            // tables Finny
 
     template <Color side> void lazy_update(const Board* board, Accumulator& head);
     template <Color side> void update(const Accumulator &src, Accumulator& dst, int king);
