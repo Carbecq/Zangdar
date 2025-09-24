@@ -13,7 +13,7 @@
 //!
 //------------------------------------------------------
 template<Color C>
-void Search::think(Board board, Timer timer, int m_index)
+void Search::think(Board board, Timer timer, size_t m_index)
 {
 #if defined DEBUG_LOG
     char message[100];
@@ -480,7 +480,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             {
                 board.make_move<C, true>(pbMove);
                 si->move = pbMove;
-                si->cont_hist = &td->history.continuation_history[static_cast<U32>(Move::piece(pbMove))][Move::dest(pbMove)];
+                si->cont_hist = &td->history.continuation_history[Move::piece(pbMove)][Move::dest(pbMove)];
 
                 // Teste si une recherche de quiescence donne un score supérieur à betaCut
                 int pbScore = -quiescence<~C>(board, timer, -betaCut, -betaCut+1, td, si+1);
@@ -524,9 +524,9 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     int  bound = BOUND_UPPER;
     int  move_count = 0;
     std::array<MOVE, MAX_MOVES> quiet_moves;
-    int  quiet_count = 0;
+    size_t  quiet_count = 0;
     std::array<MOVE, MAX_MOVES> capture_moves;
-    int  capture_count = 0;
+    size_t  capture_count = 0;
     MOVE move;
     int  hist = 0, cmhist = 0, fuhist = 0;  // pas I16 !!
 
@@ -657,7 +657,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
         // execute current move
         si->move = move;
-        si->cont_hist = &td->history.continuation_history[static_cast<U32>(Move::piece(move))][Move::dest(move)];
+        si->cont_hist = &td->history.continuation_history[Move::piece(move)][Move::dest(move)];
         board.make_move<C, true>(move);
 
         if (isQuiet)
@@ -795,8 +795,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     return best_score;
 }
 
-template void Search::think<WHITE>(Board board, Timer timer, int _index);
-template void Search::think<BLACK>(Board board, Timer timer, int _index);
+template void Search::think<WHITE>(Board board, Timer timer, size_t _index);
+template void Search::think<BLACK>(Board board, Timer timer, size_t _index);
 
 template int Search::aspiration_window<WHITE>(Board& board, Timer& timer, ThreadData* td, SearchInfo* si);
 template int Search::aspiration_window<BLACK>(Board& board, Timer& timer, ThreadData* td, SearchInfo* si);

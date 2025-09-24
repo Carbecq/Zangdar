@@ -11,7 +11,7 @@ Timer::Timer(bool infinite,
              int binc,
              int movestogo,
              int depth,
-             int nodes,
+             U64 nodes,
              int movetime)
 {
     limits.infinite    = infinite;
@@ -130,7 +130,7 @@ void Timer::setup(Color color)
 //============================================================
 //! \brief  Impose des limites en mode "NODE"
 //------------------------------------------------------------
-void Timer::setup(const int soft_limit, const int hard_limit)
+void Timer::setup(U64 soft_limit, U64 hard_limit)
 {
     mode              = TimerMode::NODE;
     searchDepth       = MAX_PLY;

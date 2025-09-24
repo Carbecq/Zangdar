@@ -46,11 +46,11 @@ public:
     bool   is_legal(MOVE move);
     void   verify_MvvLva();
 
-    MLMove pop_move(MoveList &ml, int idx);
-    void   shift_move(MoveList& ml, int idx);
+    MLMove pop_move(MoveList &ml, size_t idx);
+    void   shift_move(MoveList& ml, size_t idx);
 
-    void shift_bad(int idx);
-    int  get_best(const MoveList &ml);
+    void shift_bad(size_t idx);
+    size_t get_best(const MoveList &ml);
     int  get_stage() const { return stage;}
 
     bool hasNext() const;

@@ -30,7 +30,7 @@ bool Board::valid() const noexcept
         return false;
     }
 
-     const int epsq = get_ep_square();
+    const SQUARE epsq = get_ep_square();
     Color color = turn();
     if (epsq != SQUARE_NONE) {
         if (color == Color::WHITE && SQ::rank(get_ep_square()) != 5) {
@@ -81,8 +81,8 @@ bool Board::valid() const noexcept
     }
 
     // Attention : ça marche car l'enum PieceType est consécutif
-    for (auto i = static_cast<U32>(PieceType::PAWN); i <= static_cast<U32>(PieceType::KING); ++i) {
-        for (auto j = i + 1; j <= static_cast<U32>(PieceType::KING); ++j) {
+    for (U32 i = PieceType::PAWN; i <= PieceType::KING; ++i) {
+        for (U32 j = i + 1; j <= PieceType::KING; ++j) {
             if (typePiecesBB[i] & typePiecesBB[j]) {
                 std::cout << "erreur 7 " << std::endl;
                 return false;
@@ -117,7 +117,7 @@ bool Board::valid() const noexcept
         return(false);
     }
 
-    for (int i=0; i<64; i++)
+    for (SQUARE i=A1; i<N_SQUARES; ++i)
     {
         Piece p1 = piece_square[i] ;
         auto n1  = pieceToChar(p1);

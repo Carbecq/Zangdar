@@ -408,7 +408,7 @@ void Board::test_value(const std::string& fen )
    sort_moves(ml);
 
     // look over all moves
-   for (Usize index=0; index<ml.count; index++)
+   for (size_t index=0; index<ml.count; index++)
    {
        move = ml.mlmoves[index].move;
 
@@ -450,7 +450,7 @@ static void sort_moves(MoveList& ml)
         {
             PieceType piece = Move::piece_type(m);
             PieceType capt  = Move::captured_type(m);
-            ml.mlmoves[i].value = MvvLvaScores[static_cast<U32>(capt)][static_cast<U32>(piece)];
+            ml.mlmoves[i].value = MvvLvaScores[capt][piece];
         }
         else
         {
@@ -564,7 +564,7 @@ void test_see()
 
         move = 0;
 
-        for (Usize i=0; i<ml.count; i++)
+        for (size_t i=0; i<ml.count; i++)
         {
             MOVE m = ml.mlmoves[i].move;
 
@@ -627,7 +627,7 @@ void test_see()
         {
             printf("coup non trouvé %s \n", strm.c_str());
             printf("%s \n", fen.c_str());
-            for (Usize i=0; i<ml.count; i++)
+            for (size_t i=0; i<ml.count; i++)
             {
                 MOVE m = ml.mlmoves[i].move;
 

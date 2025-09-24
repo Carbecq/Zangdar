@@ -16,8 +16,10 @@ enum Color : int
 {
     WHITE    = 0,
     BLACK    = 1,
-    NOCOLOR  = 2
 };
+
+//Inverts the color (WHITE -> BLACK) and (BLACK -> WHITE)
+constexpr Color operator~(Color C) { return Color(C ^ Color::BLACK); }
 
 const std::string side_name[N_COLORS] = {"White", "Black"};
 const std::string camp[2][N_COLORS] = {
@@ -26,8 +28,6 @@ const std::string camp[2][N_COLORS] = {
 
 const std::string bool_name[2] = { "false", "true" };
 
-//Inverts the color (WHITE -> BLACK) and (BLACK -> WHITE)
-constexpr Color operator~(Color C) { return Color(C ^ Color::BLACK); }
 
 /*******************************************************
  ** Les pièces
@@ -35,9 +35,9 @@ constexpr Color operator~(Color C) { return Color(C ^ Color::BLACK); }
 
 constexpr int N_PIECE     = 15;
 
-enum class Piece : int
+enum Piece : int
 {
-    NONE           = 0, // 0000
+    PIECE_NONE     = 0, // 0000
 
     WHITE_PAWN     = 1, // 0001
     WHITE_KNIGHT   ,
@@ -64,7 +64,7 @@ constexpr std::initializer_list<Piece> all_PIECE = {
 
 constexpr int N_PIECE_TYPE = 7;
 
-enum class PieceType : int
+enum PieceType : int
 {
     NONE     = 0,
     PAWN     = 1,
@@ -104,7 +104,7 @@ constexpr int EGPieceValue[N_PIECE_TYPE] = {
     case 'Q': return Piece:: WHITE_QUEEN;
     case 'k': return Piece::  BLACK_KING;
     case 'K': return Piece::  WHITE_KING;
-    default : return Piece::       NONE;
+    default : return Piece::       PIECE_NONE;
     }
 }
 
@@ -112,7 +112,7 @@ constexpr int EGPieceValue[N_PIECE_TYPE] = {
 {
     switch (piece)
     {
-    case Piece::        NONE: return ' ';
+    case Piece::        PIECE_NONE: return ' ';
     case Piece::  BLACK_PAWN: return 'p';
     case Piece::  WHITE_PAWN: return 'P';
     case Piece::BLACK_KNIGHT: return 'n';
@@ -191,39 +191,6 @@ constexpr int EGPieceValue[N_PIECE_TYPE] = {
 /*******************************************************
  ** Les cases
  **---------------------------------------------------*/
-
-constexpr int N_SQUARES = 64;
-
-enum Square : int {
-    A1, B1, C1, D1, E1, F1, G1, H1,
-    A2, B2, C2, D2, E2, F2, G2, H2,
-    A3, B3, C3, D3, E3, F3, G3, H3,
-    A4, B4, C4, D4, E4, F4, G4, H4,
-    A5, B5, C5, D5, E5, F5, G5, H5,
-    A6, B6, C6, D6, E6, F6, G6, H6,
-    A7, B7, C7, D7, E7, F7, G7, H7,
-    A8, B8, C8, D8, E8, F8, G8, H8,
-    SQUARE_NONE
-};
-
-const std::string square_name[N_SQUARES] = {
-    "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
-    "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
-    "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
-    "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
-    "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
-    "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
-    "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
-    "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
-};
-
-enum Rank : int { RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8, NO_RANK };
-enum File : int { FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, NO_FILE };
-
-constexpr int N_RANKS = 8;
-constexpr int N_FILES = 8;
-
-
 // https://www.chessprogramming.org/General_Setwise_Operations#Shifting_Bitboards
 
 enum Direction : int {
@@ -238,6 +205,72 @@ enum Direction : int {
     NORTH_NORTH =  16,
     SOUTH_SOUTH = -16,
 } ;
+
+enum Square  : SQUARE {
+    A1, B1, C1, D1, E1, F1, G1, H1,
+    A2, B2, C2, D2, E2, F2, G2, H2,
+    A3, B3, C3, D3, E3, F3, G3, H3,
+    A4, B4, C4, D4, E4, F4, G4, H4,
+    A5, B5, C5, D5, E5, F5, G5, H5,
+    A6, B6, C6, D6, E6, F6, G6, H6,
+    A7, B7, C7, D7, E7, F7, G7, H7,
+    A8, B8, C8, D8, E8, F8, G8, H8,
+    N_SQUARES,  // end/count sentinel
+    SQUARE_NONE
+};
+
+// // pre increment operator : ++sq
+// constexpr Square& operator++(Square& sq)
+// {
+//     sq = (static_cast<U32>(sq) + 1);
+//     return sq;
+// }
+
+// // post increment operator : sq++ (donné par IA)
+// constexpr Square operator++(Square& sq, int)
+// {
+//     Square old = sq;
+//     ++sq;
+//     return old;
+// }
+
+// constexpr inline Square operator+(Square s, Direction d) {
+//     return (static_cast<U32>(s) + static_cast<U32>(d));
+// }
+// constexpr inline Square operator+(Square s, int d) {
+//     return (static_cast<int>(s) + d);
+// }
+// constexpr inline Square operator-(Square s, int d) {
+//     return (static_cast<int>(s) - d);
+// }
+// constexpr inline Square& operator+=(Square& sq, Direction d) {
+//     return sq = (static_cast<U32>(sq) + static_cast<U32>(d));
+// }
+// constexpr inline Square& operator+=(Square& sq, U32 d) {
+//     return sq = (static_cast<U32>(sq) + d);
+// }
+// constexpr inline Square& operator-=(Square& sq, U32 d) {
+//     return sq = (static_cast<U32>(sq) - d);
+// }
+
+const std::string square_name[N_SQUARES] = {
+    "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
+    "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
+    "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
+    "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
+    "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
+    "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
+    "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
+    "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
+};
+
+enum Rank   { RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8, NO_RANK };
+enum File  { FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, NO_FILE };
+
+constexpr int N_RANKS = 8;
+constexpr int N_FILES = 8;
+
+
 
 struct PVariation {
     MOVE line[MAX_PLY+1];

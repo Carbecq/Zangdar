@@ -18,7 +18,7 @@ const Network *network = reinterpret_cast<const Network *>(gnetworkDataData);
 //! \brief  Retourne l'évaluation du réseau
 //------------------------------------------------------
 template<Color color>
-int NNUE::evaluate(const Accumulator& current, Usize count)
+int NNUE::evaluate(const Accumulator& current, size_t count)
 {
     auto output = 0;
     const int bucket = get_bucket(count);
@@ -46,9 +46,9 @@ void NNUE::start_search(const Board& board)
 
     init_accumulator(head);
 
-    const int wking = board.king_square[WHITE];
-    const int bking = board.king_square[BLACK];
-    int square;
+    const SQUARE wking = board.king_square[WHITE];
+    const SQUARE bking = board.king_square[BLACK];
+    SQUARE square;
 
     Bitboard occupied = board.occupancy_all();
     while (occupied)
@@ -115,7 +115,7 @@ void FinnyEntry::init()
 //========================================================================
 //! \brief  Ajout d'une feature
 //------------------------------------------------------------------------
-void NNUE::add(Accumulator& accu, Piece piece, int from, int wking, int bking)
+void NNUE::add(Accumulator& accu, Piece piece, SQUARE from, SQUARE wking, SQUARE bking)
 {
     const auto [white_idx, black_idx] = get_indices(piece, from, wking, bking);
 
@@ -140,7 +140,7 @@ void NNUE::add(Accumulator& accu, Piece piece, int from, int wking, int bking)
     //     }
     // #else
 
-    for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
+    for (size_t i = 0; i < HIDDEN_LAYER_SIZE; ++i)
     {
         accu.white[i] += network->feature_weights[white_idx * HIDDEN_LAYER_SIZE + i];
         accu.black[i] += network->feature_weights[black_idx * HIDDEN_LAYER_SIZE + i];
@@ -174,7 +174,7 @@ I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
     auto sum = simd::ZeroEpi32();
 
     // Compute evaluation from our perspective
-    for (Usize i = 0; i < HIDDEN_LAYER_SIZE; i += kChunkSize)
+    for (size_t i = 0; i < HIDDEN_LAYER_SIZE; i += kChunkSize)
     {
         const auto input  = simd::LoadEpi16(&us[i]);
         const auto weight = simd::LoadEpi16(&weights[adresse + i]);
@@ -199,7 +199,7 @@ I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
     }
 
     // Compute evaluation from their perspective
-    for (Usize i = 0; i < HIDDEN_LAYER_SIZE; i += kChunkSize)
+    for (size_t i = 0; i < HIDDEN_LAYER_SIZE; i += kChunkSize)
     {
         const auto input  = simd::LoadEpi16(&them[i]);
         const auto weight = simd::LoadEpi16(&weights[adresse + HIDDEN_LAYER_SIZE + i]);
@@ -284,7 +284,7 @@ void NNUE::lazy_update(const Board* board, Accumulator& acc)
         return;
 
     int iter       = head_idx;
-    const int king = acc.king_square[side];
+    const SQUARE king = acc.king_square[side];
 
     while (true)
     {
@@ -302,7 +302,7 @@ void NNUE::lazy_update(const Board* board, Accumulator& acc)
         // On a trouvé le dernier accumulateur updaté
         if (stack[iter].updated[side] == true)
         {
-            Usize last_updated = iter;
+            size_t last_updated = iter;
 
             // on va remonter les accumulateurs;
             // et les updater un par un
@@ -320,7 +320,7 @@ void NNUE::lazy_update(const Board* board, Accumulator& acc)
 //! \brief  Faut-il raffraichir l'accumulateur ?
 //------------------------------------------------------
 template <Color side>
-bool NNUE::need_refresh(int old_king, int new_king)
+bool NNUE::need_refresh(SQUARE old_king, SQUARE new_king)
 {
     assert(old_king >= 0 && old_king < 64);
     assert(new_king >= 0 && new_king < 64);
@@ -339,7 +339,7 @@ bool NNUE::need_refresh(int old_king, int new_king)
 //  Prise en compte des modifications apportées à la perspective
 //--------------------------------------------------------------------
 template <Color side>
-void NNUE::update(const Accumulator& src, Accumulator& dst, int king)
+void NNUE::update(const Accumulator& src, Accumulator& dst, SQUARE king)
 {
     const DirtyPieces& dp = dst.dirtyPieces;
 
@@ -375,7 +375,7 @@ void NNUE::update(const Accumulator& src, Accumulator& dst, int king)
 //! \brief  Calcule l'indece du triplet (couleur, piece, case)
 //! dans l'Input Layer
 //------------------------------------------------------------------------
-std::pair<Usize, Usize> NNUE::get_indices(Piece piece, int square, int wking, int bking)
+std::pair<size_t, size_t> NNUE::get_indices(Piece piece, SQUARE square, SQUARE wking, SQUARE bking)
 {
     // L'input Layer est rangée ainsi :
     //  + Les blancs
@@ -388,13 +388,13 @@ std::pair<Usize, Usize> NNUE::get_indices(Piece piece, int square, int wking, in
     //  Lorsque une entrée est modifiée par un coup, il faut retrouver
     //  son indice.
 
-    assert(piece  != Piece::NONE);
+    assert(piece  != Piece::PIECE_NONE);
     assert(square != Square::SQUARE_NONE);
 
-    constexpr Usize color_stride = N_SQUARES * 6;
-    constexpr Usize piece_stride = N_SQUARES;
+    constexpr U32 color_stride = N_SQUARES * 6;
+    constexpr U32 piece_stride = N_SQUARES;
 
-    const auto base  = static_cast<U32>(Move::type(piece));
+    const auto base  = Move::type(piece);
     const auto color = Move::color(piece);
 
     //TODO : refaire le codage des pièces ?
@@ -405,13 +405,13 @@ std::pair<Usize, Usize> NNUE::get_indices(Piece piece, int square, int wking, in
     const auto white_indice = king_buckets_map[wking] * INPUT_LAYER_SIZE
             + color * color_stride
             + base_nnue * piece_stride
-            + static_cast<Usize>(get_square(square, wking));
+            + get_square(square, wking);
 
 
     const auto black_indice = king_buckets_map[SQ::mirrorVertically(bking)] * INPUT_LAYER_SIZE
             + !color * color_stride
             + base_nnue * piece_stride
-            + static_cast<Usize>(SQ::mirrorVertically(get_square(square, bking)));
+            + SQ::mirrorVertically(get_square(square, bking));
 
     return {white_indice, black_indice};
 }
@@ -422,15 +422,15 @@ std::pair<Usize, Usize> NNUE::get_indices(Piece piece, int square, int wking, in
 //! \param[in] side     perspective
 //------------------------------------------------------------------------
 template <Color side>
-Usize NNUE::get_indice(Piece piece, int square, int king)
+U32 NNUE::get_indice(Piece piece, SQUARE square, SQUARE king)
 {
-    assert(piece  != Piece::NONE);
+    assert(piece  != Piece::PIECE_NONE);
     assert(square != Square::SQUARE_NONE);
 
-    constexpr Usize color_stride = N_SQUARES * 6;
-    constexpr Usize piece_stride = N_SQUARES;
+    constexpr U32 color_stride = N_SQUARES * 6;
+    constexpr U32 piece_stride = N_SQUARES;
 
-    const auto base  = static_cast<U32>(Move::type(piece));
+    const auto base  = Move::type(piece);
     const auto color = Move::color(piece);
 
     const auto base_nnue = base - 1;
@@ -440,14 +440,14 @@ Usize NNUE::get_indice(Piece piece, int square, int king)
         return king_buckets_map[king] * INPUT_LAYER_SIZE
                 + color * color_stride
                 + base_nnue * piece_stride
-                + static_cast<Usize>(get_square(square, king));
+                + get_square(square, king);
     }
     else
     {
         return king_buckets_map[SQ::mirrorVertically(king)] * INPUT_LAYER_SIZE
                 + !color * color_stride
                 + base_nnue * piece_stride
-                + static_cast<Usize>(SQ::mirrorVertically(get_square(square, king)));
+                + SQ::mirrorVertically(get_square(square, king));
     }
 }
 
@@ -459,14 +459,14 @@ Usize NNUE::get_indice(Piece piece, int square, int king)
 //! \param[in] king     position du roi de couleur "US"
 //----------------------------------------------------------------
 template <Color side>
-void NNUE::add(Accumulator& accu, Piece piece, int from, int king)
+void NNUE::add(Accumulator& accu, Piece piece, SQUARE from, SQUARE king)
 {
     const auto idx = get_indice<side>(piece, from, king);
 
 #if defined USE_SIMD
     constexpr int simd_width = sizeof(simd::Vepi16) / sizeof(I16);
 
-    for (Usize i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
+    for (size_t i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
     {
         if constexpr (side == WHITE)
         {
@@ -493,14 +493,14 @@ void NNUE::add(Accumulator& accu, Piece piece, int from, int king)
 }
 
 template <Color side>
-void NNUE::sub(Accumulator& accu, Piece piece, int from, int king)
+void NNUE::sub(Accumulator& accu, Piece piece, SQUARE from, SQUARE king)
 {
     const auto idx = get_indice<side>(piece, from, king);
 
 #if defined USE_SIMD
     constexpr int simd_width = sizeof(simd::Vepi16) / sizeof(I16);
 
-    for (Usize i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
+    for (size_t i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
     {
         if constexpr (side == WHITE)
         {
@@ -532,9 +532,9 @@ void NNUE::sub(Accumulator& accu, Piece piece, int from, int king)
 //---------------------------------------------------------------------------------
 template <Color side>
 void NNUE::sub_add(const Accumulator& src, Accumulator& dst,
-                   Piece sub_piece, int sub,
-                   Piece add_piece, int add,
-                   int king)
+                   Piece sub_piece, SQUARE sub,
+                   Piece add_piece, SQUARE add,
+                   SQUARE king)
 {
     // Optimisations de : https://cosmo.tardis.ac/files/2024-06-01-nnue.html
 
@@ -544,7 +544,7 @@ void NNUE::sub_add(const Accumulator& src, Accumulator& dst,
 #if defined USE_SIMD
     constexpr int simd_width = sizeof(simd::Vepi16) / sizeof(I16);
 
-    for (Usize i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
+    for (size_t i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
     {
         if constexpr (side == WHITE)
         {
@@ -597,10 +597,10 @@ void NNUE::sub_add(const Accumulator& src, Accumulator& dst,
 //---------------------------------------------------------------------------------
 template <Color side>
 void NNUE::sub_sub_add(const Accumulator& src, Accumulator& dst,
-                       Piece sub_piece_1, int sub_1,
-                       Piece sub_piece_2, int sub_2,
-                       Piece add_piece_1, int add_1,
-                       int king)
+                       Piece sub_piece_1, SQUARE sub_1,
+                       Piece sub_piece_2, SQUARE sub_2,
+                       Piece add_piece_1, SQUARE add_1,
+                       SQUARE king)
 {
     const auto white_sub1_idx = get_indice<side>(sub_piece_1, sub_1, king);
     const auto white_sub2_idx = get_indice<side>(sub_piece_2, sub_2, king);
@@ -611,7 +611,7 @@ void NNUE::sub_sub_add(const Accumulator& src, Accumulator& dst,
 
     if constexpr (side == WHITE)
     {
-        for (Usize i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
+        for (size_t i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
         {
             auto cur_w = simd::LoadEpi16(&src.white[i]);
             cur_w      = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_add1_idx * HIDDEN_LAYER_SIZE + i]));
@@ -622,7 +622,7 @@ void NNUE::sub_sub_add(const Accumulator& src, Accumulator& dst,
     }
     else
     {
-        for (Usize i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
+        for (size_t i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
         {
             auto cur_w = simd::LoadEpi16(&src.black[i]);
             cur_w      = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_add1_idx * HIDDEN_LAYER_SIZE + i]));
@@ -657,11 +657,11 @@ void NNUE::sub_sub_add(const Accumulator& src, Accumulator& dst,
 
 template <Color side>
 void NNUE::sub_sub_add_add(const Accumulator& src, Accumulator& dst,
-                           Piece sub_piece_1, int sub_1,
-                           Piece sub_piece_2, int sub_2,
-                           Piece add_piece_1, int add_1,
-                           Piece add_piece_2, int add_2,
-                           int king)
+                           Piece sub_piece_1, SQUARE sub_1,
+                           Piece sub_piece_2, SQUARE sub_2,
+                           Piece add_piece_1, SQUARE add_1,
+                           Piece add_piece_2, SQUARE add_2,
+                           SQUARE king)
 {
     const auto white_sub1_idx = get_indice<side>(sub_piece_1, sub_1, king);
     const auto white_sub2_idx = get_indice<side>(sub_piece_2, sub_2, king);
@@ -673,7 +673,7 @@ void NNUE::sub_sub_add_add(const Accumulator& src, Accumulator& dst,
 
     if constexpr (side == WHITE)
     {
-        for (Usize i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
+        for (size_t i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
         {
             auto cur_w = simd::LoadEpi16(&src.white[i]);
             cur_w      = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_add1_idx * HIDDEN_LAYER_SIZE + i]));
@@ -685,7 +685,7 @@ void NNUE::sub_sub_add_add(const Accumulator& src, Accumulator& dst,
     }
     else
     {
-        for (Usize i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
+        for (size_t i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
         {
             auto cur_w = simd::LoadEpi16(&src.black[i]);
             cur_w      = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_add1_idx * HIDDEN_LAYER_SIZE + i]));
@@ -729,24 +729,23 @@ void NNUE::sub_sub_add_add(const Accumulator& src, Accumulator& dst,
 template <Color side>
 void NNUE::refresh_accumulator(const Board* board, Accumulator& acc)
 {
-    const int    king_square = board->get_king_square<side>();
+    const SQUARE king_square = board->get_king_square<side>();
     const int    king_bucket = king_buckets_map[get_relative_square<side>(king_square)];
     const int    mirrored    = SQ::file(king_square) > FILE_D;
 
     FinnyEntry& entry = finny[mirrored][king_bucket];
 
-    int square;
+    SQUARE square;
 
     for (Color color : {Color::WHITE, Color::BLACK})
     {
         for (PieceType piece : {PieceType::PAWN, PieceType::KNIGHT, PieceType::BISHOP, PieceType::ROOK,
              PieceType::QUEEN, PieceType::KING })
         {
-            int pt = static_cast<int>(piece);
             const Bitboard old_pieces = entry.colorPiecesBB[side][color]
-                    & entry.typePiecesBB[side][pt];
+                    & entry.typePiecesBB[side][piece];
             const Bitboard new_pieces = board->colorPiecesBB[color]
-                    & board->typePiecesBB[pt];
+                    & board->typePiecesBB[piece];
 
             // rechreche des pièces à supprimer
             Bitboard to_remove = ~new_pieces & old_pieces;
@@ -777,8 +776,8 @@ void NNUE::refresh_accumulator(const Board* board, Accumulator& acc)
         acc.black = entry.accumulator.black;
 }
 
-template int NNUE::evaluate<WHITE>(const Accumulator& current, Usize count);
-template int NNUE::evaluate<BLACK>(const Accumulator& current, Usize count);
+template int NNUE::evaluate<WHITE>(const Accumulator& current, size_t count);
+template int NNUE::evaluate<BLACK>(const Accumulator& current, size_t count);
 
 
 

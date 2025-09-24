@@ -16,18 +16,18 @@ bool Board::fast_see(const MOVE move, const int threshold) const
 
     // Cette routine n'est appelée qu'en cas de capture
 
-    const int from = Move::from(move);
-    const int dest = Move::dest(move);
+    const SQUARE from = Move::from(move);
+    const SQUARE dest = Move::dest(move);
 
     // si la valeur de la pièce prise est inférieure au threshold,
     // ce n'est pas la peine de continuer
-    int v = SEE_VALUE[static_cast<U32>(Move::captured_type(move))] - threshold;
+    int v = SEE_VALUE[Move::captured_type(move)] - threshold;
     if (v < 0)
         return false;
 
     // Le pire cas est celui où on perd la pièce prenante.
     // SAUF si la pièce qui va reprendre est un pion qui va être promu !!
-    v -= SEE_VALUE[static_cast<U32>(Move::piece_type(move))];
+    v -= SEE_VALUE[Move::piece_type(move)];
 
     // Si la valeur est positive même après avoir perdu la pièce se déplaçant,
     // alors l'échange est garanti de battre le threshold.
@@ -49,8 +49,8 @@ bool Board::fast_see(const MOVE move, const int threshold) const
     Bitboard all_attackersBB = all_attackers(dest, occupiedBB);
 
     // Bitboards des sliders
-    const Bitboard bqBB = typePiecesBB[static_cast<U32>(PieceType::BISHOP)] | typePiecesBB[static_cast<U32>(PieceType::QUEEN)];
-    const Bitboard rqBB = typePiecesBB[static_cast<U32>(PieceType::ROOK)]   | typePiecesBB[static_cast<U32>(PieceType::QUEEN)];
+    const Bitboard bqBB = typePiecesBB[PieceType::BISHOP] | typePiecesBB[PieceType::QUEEN];
+    const Bitboard rqBB = typePiecesBB[PieceType::ROOK]   | typePiecesBB[PieceType::QUEEN];
 
     // C'est au tour de l'adversaire de jouer
     Color color = ~turn();
@@ -71,7 +71,7 @@ bool Board::fast_see(const MOVE move, const int threshold) const
         // Recherche de la pièce de moindre valeur qui attaque
         PieceType piece = PieceType::PAWN;
         for (PieceType pt : all_PIECE_TYPE) {
-            if (my_attackers & typePiecesBB[static_cast<U32>(pt)])
+            if (my_attackers & typePiecesBB[pt])
             {
                 piece = pt;
                 break;
@@ -91,7 +91,7 @@ bool Board::fast_see(const MOVE move, const int threshold) const
         //
         //      (balance, balance+1) -> (-balance-1, -balance)
         //
-        v = -v - 1 - SEE_VALUE[static_cast<U32>(piece)];
+        v = -v - 1 - SEE_VALUE[piece];
 
         // Si la valeur est positive après avoir donné notre pièce
         // alors on a gagné
@@ -107,7 +107,7 @@ bool Board::fast_see(const MOVE move, const int threshold) const
         }
 
         // Supprime l'attaquant "piece" des occupants
-        occupiedBB ^= SQ::square_BB(BB::get_lsb(my_attackers & typePiecesBB[static_cast<U32>(piece)]));
+        occupiedBB ^= SQ::square_BB(BB::get_lsb(my_attackers & typePiecesBB[piece]));
 
         // Si l'attaque était diagonale, il peut y avoir
         // des attaquants fou ou dame cachés derrière

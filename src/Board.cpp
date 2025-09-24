@@ -31,7 +31,7 @@ void Board::reset() noexcept
 {
     colorPiecesBB.fill(0ULL);
     typePiecesBB.fill(0ULL);
-    piece_square.fill(Piece::NONE);
+    piece_square.fill(Piece::PIECE_NONE);
     king_square.fill(Square::SQUARE_NONE);
     side_to_move = Color::WHITE;
     avoid_moves.clear();
@@ -100,7 +100,7 @@ std::string Board::display() const noexcept
 {
     std::stringstream ss;
 
-    int sq;
+    U32 sq;
     Bitboard bb;
 
     ss << "\n\n";
@@ -291,12 +291,13 @@ void Board::calculate_nnue(int &eval)
     eval = 0;
 
     Bitboard bb;
+    SQUARE   sq;
 
     NNUE nn{};
     nnue.init();
 
-    int wking = get_king_square<WHITE>();
-    int bking = get_king_square<BLACK>();
+    SQUARE wking = get_king_square<WHITE>();
+    SQUARE bking = get_king_square<BLACK>();
     nn.push();
 
     Accumulator& accu = nn.get_accumulator();
@@ -308,27 +309,27 @@ void Board::calculate_nnue(int &eval)
 
     bb = occupancy_cp<WHITE, PieceType::PAWN>();
     while (bb) {
-        int sq = BB::pop_lsb(bb);
+        sq = BB::pop_lsb(bb);
         nnue.add(accu, Piece::WHITE_PAWN, sq, wking, bking);
     }
     bb = occupancy_cp<WHITE, PieceType::KNIGHT>();
     while (bb) {
-        int sq = BB::pop_lsb(bb);
+        sq = BB::pop_lsb(bb);
         nnue.add(accu, Piece::WHITE_KNIGHT, sq, wking, bking);
     }
     bb = occupancy_cp<WHITE, PieceType::BISHOP>();
     while (bb) {
-        int sq = BB::pop_lsb(bb);
+        sq = BB::pop_lsb(bb);
         nnue.add(accu, Piece::WHITE_BISHOP, sq, wking, bking);
     }
     bb = occupancy_cp<WHITE, PieceType::ROOK>();
     while (bb) {
-        int sq = BB::pop_lsb(bb);
+        sq = BB::pop_lsb(bb);
         nnue.add(accu, Piece::WHITE_ROOK, sq, wking, bking);
     }
     bb = occupancy_cp<WHITE, PieceType::QUEEN>();
     while (bb) {
-        int sq = BB::pop_lsb(bb);
+        sq = BB::pop_lsb(bb);
         nnue.add(accu, Piece::WHITE_QUEEN, sq, wking, bking);
     }
 
@@ -336,27 +337,27 @@ void Board::calculate_nnue(int &eval)
 
     bb = occupancy_cp<BLACK, PieceType::PAWN>();
     while (bb) {
-        int sq = BB::pop_lsb(bb);
+        sq = BB::pop_lsb(bb);
         nnue.add(accu, Piece::BLACK_PAWN, sq, wking, bking);
     }
     bb = occupancy_cp<BLACK, PieceType::KNIGHT>();
     while (bb) {
-        int sq = BB::pop_lsb(bb);
+        sq = BB::pop_lsb(bb);
         nnue.add(accu, Piece::BLACK_KNIGHT, sq, wking, bking);
     }
     bb = occupancy_cp<BLACK, PieceType::BISHOP>();
     while (bb) {
-        int sq = BB::pop_lsb(bb);
+        sq = BB::pop_lsb(bb);
         nnue.add(accu, Piece::BLACK_BISHOP, sq, wking, bking);
     }
     bb = occupancy_cp<BLACK, PieceType::ROOK>();
     while (bb) {
-        int sq = BB::pop_lsb(bb);
+        sq = BB::pop_lsb(bb);
         nnue.add(accu, Piece::BLACK_ROOK, sq, wking, bking);
     }
     bb = occupancy_cp<BLACK, PieceType::QUEEN>();
     while (bb) {
-        int sq = BB::pop_lsb(bb);
+        sq = BB::pop_lsb(bb);
         nnue.add(accu, Piece::BLACK_QUEEN, sq, wking, bking);
     }
 
@@ -395,9 +396,9 @@ bool Board::upcoming_repetition(int ply) const
         if (   (mk = Cuckoo::h1(diff), Cuckoo::keys[mk] == diff)
                || (mk = Cuckoo::h2(diff), Cuckoo::keys[mk] == diff))
         {
-            const MOVE move = Cuckoo::moves[mk];
-            const int  from = Move::from(move);
-            const int  dest = Move::dest(move);
+            const MOVE    move = Cuckoo::moves[mk];
+            const SQUARE  from = Move::from(move);
+            const SQUARE  dest = Move::dest(move);
 
             // Test if the squares between a and b are all empty (a and b themselves excluded)
             if (BB::empty(occupied & squares_between(from, dest)))

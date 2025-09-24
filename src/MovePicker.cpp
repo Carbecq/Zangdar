@@ -161,7 +161,7 @@ MLMove MovePicker::next_move(bool skipQuiets)
         // Check to see if there are still more noisy moves
         if (mln.count != 0)
         {
-            int  best     = get_best(mln);
+            size_t  best     = get_best(mln);
 
             // Don't play the table move twice
             if (mln.mlmoves[best].move == tt_move)
@@ -261,7 +261,7 @@ MLMove MovePicker::next_move(bool skipQuiets)
         // Check to see if there are still more quiet moves
         if (mlq.count != 0 && !skipQuiets)
         {
-            int  best     = get_best(mlq);
+            size_t  best     = get_best(mlq);
             MLMove bestMove = pop_move(mlq, best);
 
             if (   bestMove.move == tt_move
@@ -282,7 +282,7 @@ MLMove MovePicker::next_move(bool skipQuiets)
 
         if (mlb.count > 0)
         {
-            int  best     = get_best(mlb);
+            size_t  best     = get_best(mlb);
             MLMove bestMove = pop_move(mlb, best);
 
             // Don't play the table move twice
@@ -329,15 +329,15 @@ void MovePicker::score_noisy()
 
 
         //    value = mg_value[dest_type] - Move::piece(move);
-        value = MvvLvaScores[static_cast<U32>(Move::captured_type(move))][static_cast<U32>(Move::piece_type(move))];
+        value = MvvLvaScores[Move::captured_type(move)][Move::piece_type(move)];
 
         // A bonus is in order for queen promotions
         if (Move::is_promoting(move))
-            value += EGPieceValue[static_cast<U32>(Move::promoted_type(move))];
+            value += EGPieceValue[Move::promoted_type(move)];
 
         // Enpass is a special case of MVV-LVA
         else if (Move::is_enpassant(move))
-            value = MvvLvaScores[static_cast<U32>(PieceType::PAWN)][static_cast<U32>(PieceType::PAWN)];
+            value = MvvLvaScores[PieceType::PAWN][PieceType::PAWN];
         // eg_value[PAWN] -PieceType::PAWN;
 
         mln.mlmoves[i].value = value + history.get_capture_history(move) ; //TODO à modérer ??
@@ -357,8 +357,8 @@ void MovePicker::score_quiet()
     {
         move = mlq.mlmoves[i].move;
 
-        U32 piece = static_cast<U32>(Move::piece(move));
-        int dest  = Move::dest(move);
+        Piece piece = Move::piece(move);
+        SQUARE dest = Move::dest(move);
 
         value  = 2 * history.get_main_history(board->turn(), move);
 
@@ -376,9 +376,9 @@ void MovePicker::score_quiet()
 //====================================================
 //! \brief  Retourne l'indice du meilleur élément
 //-----------------------------------------------------
-int MovePicker::get_best(const MoveList& ml)
+size_t MovePicker::get_best(const MoveList& ml)
 {
-    int best_index = 0;
+    size_t best_index = 0;
 
     // Find highest scoring move
     for (size_t i = 1; i < ml.count; i++)
@@ -395,7 +395,7 @@ int MovePicker::get_best(const MoveList& ml)
 //! puis déplace le dernier élément à la position
 //! du coup indiqué
 //--------------------------------------------------------
-MLMove MovePicker::pop_move(MoveList& ml, int idx)
+MLMove MovePicker::pop_move(MoveList& ml, size_t idx)
 {
     /*
     ---------------+-----------------+
@@ -414,7 +414,7 @@ MLMove MovePicker::pop_move(MoveList& ml, int idx)
 //========================================================
 //! \brief  Déplace le dernier élément à la position indiquée
 //--------------------------------------------------------
-void MovePicker::shift_move(MoveList& ml, int idx)
+void MovePicker::shift_move(MoveList& ml, size_t idx)
 {
     ml.count--;
     std::memcpy(&ml.mlmoves[idx], &ml.mlmoves[ml.count], sizeof(MLMove));
@@ -424,7 +424,7 @@ void MovePicker::shift_move(MoveList& ml, int idx)
 //! \brief  Déplace le coup indiqué dans la liste mlb
 //! Puis enlève le coup de la liste mln
 //------------------------------------------------------
-void MovePicker::shift_bad(int idx)
+void MovePicker::shift_bad(size_t idx)
 {
     // Put the bad capture in the "bad" list
     std::memcpy(&mlb.mlmoves[mlb.count], &mln.mlmoves[idx], sizeof(MLMove));
@@ -468,9 +468,9 @@ bool MovePicker::is_legal(MOVE move)
 std::string pchar[N_PIECE_TYPE] = {"NoPiece", "Pion", "Cavalier", "Fou", "Tour", "Dame", "Roi"};
 void MovePicker::verify_MvvLva()
 {
-    for(U32 Victim = static_cast<U32>(PieceType::PAWN); Victim <= static_cast<U32>(PieceType::KING); ++Victim)
+    for(size_t Victim = PieceType::PAWN; Victim <= PieceType::KING; ++Victim)
     {
-        for(U32 Attacker = static_cast<U32>(PieceType::PAWN); Attacker <= static_cast<U32>(PieceType::KING); ++Attacker)
+        for(size_t Attacker = PieceType::PAWN; Attacker <= PieceType::KING; ++Attacker)
         {
             printf("%10s prend %10s = %d\n", pchar[Attacker].c_str(), pchar[Victim].c_str(), MvvLvaScores[Victim][Attacker]);
         }

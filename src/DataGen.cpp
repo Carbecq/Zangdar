@@ -29,16 +29,16 @@
 //! \param[in]  _max_fens       nombre de fens demandé, en millions
 //! \param[in]  _output         répertoire de sortie des fichers
 //---------------------------------------------------------------------------
-DataGen::DataGen(const int _nbr_threads, const int _max_fens, const std::string& _output)
+DataGen::DataGen(const U32 _nbr_threads, const U32 _max_fens, const std::string& _output)
 {
-    Usize max_fens = std::clamp(_max_fens, 1, 1000) * 1000000;
+    const U32 max_fens = std::clamp(_max_fens, 1U, 1000U) * 1000000U;
 
-    printf("DataGen : nbr_threads=%d ; max_fens=%zu millions ; output=%s \n", _nbr_threads, max_fens/1000000, _output.c_str());
+    printf("DataGen : nbr_threads=%d ; max_fens=%d millions ; output=%s \n", _nbr_threads, max_fens/1000000, _output.c_str());
 
     //================================================
     //  Initialisations
     //================================================
-    int nbr_threads = set_threads(_nbr_threads);
+    U32 nbr_threads = set_threads(_nbr_threads);
 
     // 1) évite d'avoir des positions avec 2 rois seuls
     // 2) évite d'avoir une partie nulle avec R+T/R sans
@@ -50,11 +50,11 @@ DataGen::DataGen(const int _nbr_threads, const int _max_fens, const std::string&
     //  Lancement de la génération par thread
     //================================================
     std::vector<std::thread> threads{};
-    std::atomic<Usize> total_fens{0};           // nombre total de fens pour toutes les threads
+    std::atomic<size_t> total_fens{0};           // nombre total de fens pour toutes les threads
     std::atomic<bool> run{true};
     auto start_time = TimePoint::now();
 
-    for (auto i = 0; i < nbr_threads; i++)
+    for (size_t i = 0; i < nbr_threads; i++)
     {
         std::string str_file(_output);
         str_file += "/data" + std::to_string(i) + ".txt";
@@ -118,7 +118,7 @@ DataGen::DataGen(const int _nbr_threads, const int _max_fens, const std::string&
 //! \param[in]  run         indique que l'on veut arrêter
 //--------------------------------------------------------------------
 void DataGen::genfens(int thread_id, const std::string& str_file,
-                      std::atomic<Usize>& total_fens,
+                      std::atomic<size_t>& total_fens,
                       std::atomic<bool>& run)
 {
     printf("thread id = %d : out = %s \n", thread_id, str_file.c_str());
@@ -151,7 +151,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
     td->index  = 0;
 
     MoveList movelist;
-    Usize    nbr_moves;
+    size_t    nbr_moves;
     Board    board;
     int      drawCount = 0;
     int      winCount = 0;
@@ -180,7 +180,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
         // printf("-------------------------------------------init random  \n");
 
-        Usize current_ply = 0;
+        size_t current_ply = 0;
         while (current_ply < MAX_RANDOM_PLIES)
         {
             if (board.turn() == WHITE)
@@ -221,7 +221,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
                     continue;
                 }
                 std::uniform_int_distribution<> distribution{0, int(movelist.size() - 1)};
-                const auto index = distribution(generator);
+                const int index = distribution(generator);
                 board.make_move<BLACK, true>(movelist.mlmoves[index].move);
 
                 if (++current_ply == MAX_RANDOM_PLIES)
@@ -483,18 +483,18 @@ void DataGen::data_search(Board& board, Timer& timer,
 //===================================================
 //  Calcul du nombre de threads
 //---------------------------------------------------
-int DataGen::set_threads(const int nbr)
+U32 DataGen::set_threads(const U32 nbr)
 {
-    int nbr_threads = nbr;
+    U32 nbr_threads = nbr;
 
-    int processorCount = static_cast<int>(std::thread::hardware_concurrency());
+    U32 processorCount = static_cast<U32>(std::thread::hardware_concurrency());
     // Check if the number of processors can be determined
     if (processorCount == 0)
         processorCount = MAX_THREADS;
 
     // Clamp the number of threads to the number of processors
     nbr_threads     = std::min(nbr, processorCount);
-    nbr_threads     = std::max(nbr_threads, 1);
+    nbr_threads     = std::max(nbr_threads, 1U);
     nbr_threads     = std::min(nbr_threads, MAX_THREADS);
 
     return nbr_threads;

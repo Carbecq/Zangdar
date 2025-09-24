@@ -8,7 +8,7 @@ template <Color US>
 void Board::calculate_checkers_pinned() noexcept
 {
     constexpr Color THEM    = ~US;
-    const int      K        = get_king_square<US>();
+    const U32       K     = get_king_square<US>();
     const Bitboard enemyBB  = colorPiecesBB[THEM];
     const Bitboard usBB     = colorPiecesBB[US];
 
@@ -18,7 +18,7 @@ void Board::calculate_checkers_pinned() noexcept
     //  Calcul des pièces clouées, et des échecs
     //  algorithme de Surge
 
-    int s;
+    U32 s;
     Bitboard b1;
 
     //Checkers of each piece type are identified by:
@@ -51,8 +51,10 @@ void Board::calculate_checkers_pinned() noexcept
 
 //! \brief Retourne le Bitboard des cases attaquées
 template <Color C>
-[[nodiscard]] Bitboard Board::squares_attacked() const noexcept {
+[[nodiscard]] Bitboard Board::squares_attacked() const noexcept
+{
     Bitboard mask = 0ULL;
+    U32 fr;
 
     // Pawns
     if constexpr (C == Color::WHITE) {
@@ -68,28 +70,28 @@ template <Color C>
     // Knights
     Bitboard bb = occupancy_cp<C, PieceType::KNIGHT>();
     while (bb) {
-        int fr = BB::pop_lsb(bb);
+        fr = BB::pop_lsb(bb);
         mask |= Attacks::knight_moves(fr);
     }
 
     // Bishops
     bb = occupancy_cp<C, PieceType::BISHOP>();
     while (bb) {
-        int fr = BB::pop_lsb(bb);
+        fr = BB::pop_lsb(bb);
         mask |= Attacks::bishop_moves(fr, ~occupancy_none());
     }
 
     // Rooks
     bb = occupancy_cp<C, PieceType::ROOK>();
     while (bb) {
-        int fr = BB::pop_lsb(bb);
+        fr = BB::pop_lsb(bb);
         mask |= Attacks::rook_moves(fr, ~occupancy_none());
     }
 
     // Queens
     bb = occupancy_cp<C, PieceType::QUEEN>();
     while (bb) {
-        int fr = BB::pop_lsb(bb);
+        fr = BB::pop_lsb(bb);
         mask |= Attacks::queen_moves(fr, ~occupancy_none());
     }
 
@@ -99,25 +101,6 @@ template <Color C>
     return mask;
 }
 
-//===================================================================
-//! \brief  Retourne le bitboard des attaques à la découverte
-//! sur la case donnée
-//-------------------------------------------------------------------
-template <Color C>
-[[nodiscard]] Bitboard Board::discoveredAttacks(const int sq) const noexcept
-{
-    Bitboard enemy      = colorPiecesBB[~C];
-    Bitboard occupiedBB = occupancy_all();
-
-    Bitboard rAttacks = Attacks::rook_moves(sq, occupiedBB);
-    Bitboard bAttacks = Attacks::bishop_moves(sq, occupiedBB);
-
-    Bitboard rooks   = (enemy & typePiecesBB[static_cast<U32>(PieceType::ROOK)]) & ~rAttacks;
-    Bitboard bishops = (enemy & typePiecesBB[static_cast<U32>(PieceType::BISHOP)]) & ~bAttacks;
-
-    return (  rooks &   Attacks::rook_moves(sq, occupiedBB & ~rAttacks))
-           | (bishops & Attacks::bishop_moves(sq, occupiedBB & ~bAttacks));
-}
 
 // Explicit instantiations.
 template Bitboard Board::squares_attacked<WHITE>() const noexcept ;
@@ -126,5 +109,3 @@ template Bitboard Board::squares_attacked<BLACK>() const noexcept ;
 template void Board::calculate_checkers_pinned<WHITE>() noexcept;
 template void Board::calculate_checkers_pinned<BLACK>() noexcept;
 
-template Bitboard Board::discoveredAttacks<WHITE>(const int sq) const noexcept;
-template Bitboard Board::discoveredAttacks<BLACK>(const int sq) const noexcept;

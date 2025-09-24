@@ -20,7 +20,7 @@ Bitboard set_occupancy(int index, int bits_in_mask, Bitboard attack_mask)
     {
         // get LS1B index of attacks mask
         // pop LS1B in attack map
-        int sq = BB::pop_lsb(attack_mask);
+        SQUARE sq = BB::pop_lsb(attack_mask);
 
         // make sure occupancy is on board
         if (index & (1 << count))
@@ -35,7 +35,7 @@ Bitboard set_occupancy(int index, int bits_in_mask, Bitboard attack_mask)
 //======================================================
 //! \brief  generate bishop attacks on the fly
 //------------------------------------------------------
-Bitboard bishop_attacks_on_the_fly(int sq, Bitboard block)
+Bitboard bishop_attacks_on_the_fly(SQUARE sq, Bitboard block)
 {
     // result attacks bitboard
     Bitboard attacks = 0;
@@ -48,25 +48,25 @@ Bitboard bishop_attacks_on_the_fly(int sq, Bitboard block)
     for (int r = sr + 1, f = sf + 1; r <= 7 && f <= 7; r++, f++)
     {
         attacks |= (1ULL << (r * 8 + f));
-        if (BB::get_bit(block, r * 8 + f))
+        if (BB::get_bit(block, SQ::square(f, r)))
             break;
     }
 
     for (int r = sr - 1, f = sf + 1; r >= 0 && f <= 7; r--, f++) {
         attacks |= (1ULL << (r * 8 + f));
-        if (BB::get_bit(block, r * 8 + f))
+        if (BB::get_bit(block, SQ::square(f, r)))
             break;
     }
 
     for (int r = sr + 1, f = sf - 1; r <= 7 && f >= 0; r++, f--) {
         attacks |= (1ULL << (r * 8 + f));
-        if (BB::get_bit(block, r * 8 + f))
+        if (BB::get_bit(block, SQ::square(f, r)))
             break;
     }
 
     for (int r = sr - 1, f = sf - 1; r >= 0 && f >= 0; r--, f--) {
         attacks |= (1ULL << (r * 8 + f));
-        if (BB::get_bit(block, r * 8 + f))
+        if (BB::get_bit(block, SQ::square(f, r)))
             break;
     }
 
@@ -78,7 +78,7 @@ Bitboard bishop_attacks_on_the_fly(int sq, Bitboard block)
 void init_bishop_attacks()
 {
     // loop over 64 board squares
-    for (int sq = 0; sq < 64; sq++)
+    for (SQUARE sq = A1; sq < N_SQUARES; ++sq)
     {
         // init current mask
         Bitboard mask = bishop_masks[sq];
@@ -109,7 +109,7 @@ void init_bishop_attacks()
 //======================================================
 //! \brief  generate rook attacks on the fly
 //------------------------------------------------------
-Bitboard rook_attacks_on_the_fly(int sq, Bitboard block)
+Bitboard rook_attacks_on_the_fly(SQUARE sq, Bitboard block)
 {
     // result attacks bitboard
     Bitboard attacks = 0;
@@ -121,25 +121,25 @@ Bitboard rook_attacks_on_the_fly(int sq, Bitboard block)
     // generate rook attacks
     for (int r = sr + 1; r <= 7; r++) {
         attacks |= (1ULL << (r * 8 + sf));
-        if (BB::get_bit(block, r * 8 + sf))
+        if (BB::get_bit(block, SQ::square(sf, r)))
             break;
     }
 
     for (int r = sr - 1; r >= 0; r--) {
         attacks |= (1ULL << (r * 8 + sf));
-        if (BB::get_bit(block, r * 8 + sf))
+        if (BB::get_bit(block, SQ::square(sf, r)))
             break;
     }
 
     for (int f = sf + 1; f <= 7; f++) {
         attacks |= (1ULL << (sr * 8 + f));
-        if (BB::get_bit(block, sr * 8 + f))
+        if (BB::get_bit(block, SQ::square(f, sr)))
             break;
     }
 
     for (int f = sf - 1; f >= 0; f--) {
         attacks |= (1ULL << (sr * 8 + f));
-        if (BB::get_bit(block, sr * 8 + f))
+        if (BB::get_bit(block, SQ::square(f, sr)))
             break;
     }
 
@@ -151,7 +151,7 @@ Bitboard rook_attacks_on_the_fly(int sq, Bitboard block)
 void init_rook_attacks()
 {
     // loop over 64 board squares
-    for (int sq = 0; sq < 64; sq++)
+    for (SQUARE sq = A1; sq < N_SQUARES; ++sq)
     {
         // init current mask
         Bitboard mask = rook_masks[sq];

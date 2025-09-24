@@ -81,58 +81,58 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
     std::string word;
 
     ss >> word;
-    int i = 56;
+    U32 sq = A8;
     for (const auto &c : word) {
         switch (c) {
         case 'P':
-            add_piece(i, Color::WHITE, Piece::WHITE_PAWN);
-            i++;
+            add_piece(sq, Color::WHITE, Piece::WHITE_PAWN);
+            sq++;
             break;
         case 'p':
-            add_piece(i, Color::BLACK, Piece::BLACK_PAWN);
-            i++;
+            add_piece(sq, Color::BLACK, Piece::BLACK_PAWN);
+            sq++;
             break;
         case 'N':
-            add_piece(i, Color::WHITE, Piece::WHITE_KNIGHT);
-            i++;
+            add_piece(sq, Color::WHITE, Piece::WHITE_KNIGHT);
+            sq++;
             break;
         case 'n':
-            add_piece(i, Color::BLACK, Piece::BLACK_KNIGHT);
-            i++;
+            add_piece(sq, Color::BLACK, Piece::BLACK_KNIGHT);
+            sq++;
             break;
         case 'B':
-            add_piece(i, Color::WHITE, Piece::WHITE_BISHOP);
-            i++;
+            add_piece(sq, Color::WHITE, Piece::WHITE_BISHOP);
+            sq++;
             break;
         case 'b':
-            add_piece(i, Color::BLACK, Piece::BLACK_BISHOP);
-            i++;
+            add_piece(sq, Color::BLACK, Piece::BLACK_BISHOP);
+            sq++;
             break;
         case 'R':
-            add_piece(i, Color::WHITE, Piece::WHITE_ROOK);
-            i++;
+            add_piece(sq, Color::WHITE, Piece::WHITE_ROOK);
+            sq++;
             break;
         case 'r':
-            add_piece(i, Color::BLACK, Piece::BLACK_ROOK);
-            i++;
+            add_piece(sq, Color::BLACK, Piece::BLACK_ROOK);
+            sq++;
             break;
         case 'Q':
-            add_piece(i, Color::WHITE, Piece::WHITE_QUEEN);
-            i++;
+            add_piece(sq, Color::WHITE, Piece::WHITE_QUEEN);
+            sq++;
             break;
         case 'q':
-            add_piece(i, Color::BLACK, Piece::BLACK_QUEEN);
-            i++;
+            add_piece(sq, Color::BLACK, Piece::BLACK_QUEEN);
+            sq++;
             break;
         case 'K':
-            add_piece(i, Color::WHITE, Piece::WHITE_KING);
-            king_square[Color::WHITE] = i;
-            i++;
+            add_piece(sq, Color::WHITE, Piece::WHITE_KING);
+            king_square[Color::WHITE] = sq;
+            sq++;
             break;
         case 'k':
-            add_piece(i, Color::BLACK, Piece::BLACK_KING);
-            king_square[Color::BLACK] = i;
-            i++;
+            add_piece(sq, Color::BLACK, Piece::BLACK_KING);
+            king_square[Color::BLACK] = sq;
+            sq++;
             break;
         case '1':
         case '2':
@@ -142,10 +142,10 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
         case '6':
         case '7':
         case '8':
-            i += c - '1' + 1;
+            sq += (c - '1' + 1);
             break;
         case '/':
-            i -= 16;
+            sq -= 16;
             break;
         default:
             break;
@@ -197,9 +197,9 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
     {
         char file = ep.at(0);
         char rank = ep.at(1);
-        int s = (rank - '1') * 8 + file - 'a';
+        SQUARE s = ((rank - '1') * 8 + file - 'a');
         assert(s>=A1 && s<=H8);
-        get_status().ep_square = s;
+        get_status().ep_square = (s);
     }
 
     //-----------------------------------------
@@ -365,7 +365,7 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
 
     // Parse board positions
     ss >> word;
-    int i = 56;
+    SQUARE i = A8; // 56;
     for (const auto &c : word) {
         switch (c) {
         case 'P':
@@ -482,7 +482,7 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     {
         char file = ep.at(0);
         char rank = ep.at(1);
-        int s = (rank - '1') * 8 + file - 'a';
+        SQUARE s = ((rank - '1') * 8 + file - 'a');
         assert(s>=A1 && s<=H8);
         get_status().ep_square = SQ::mirrorVertically(s);
     }
@@ -600,7 +600,7 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
         {
             const auto sq = SQ::square(x, y);
             const Piece piece = piece_at(sq);
-            if (piece == Piece::NONE) {
+            if (piece == Piece::PIECE_NONE) {
                 num_empty++;
             } else {
                 // Add the number of empty squares so far

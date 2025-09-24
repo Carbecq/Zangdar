@@ -486,7 +486,7 @@ static PyrrhicMove* pyrrhic_gen_captures(const PyrrhicPosition *pos, PyrrhicMove
     // Generate captures for the Pawns
     for (b = us & pos->pawns; b; PYRRHIC_POPLSB(&b)) {
 
-        unsigned from = PYRRHIC_LSB(b);
+        U32 from = PYRRHIC_LSB(b);
 
         // Generate Enpassant Captures
         if (pos->ep && pyrrhic_test_bit(PYRRHIC_PAWN_ATTACKS(from, pos->turn), pos->ep))
@@ -502,7 +502,7 @@ static PyrrhicMove* pyrrhic_gen_captures(const PyrrhicPosition *pos, PyrrhicMove
 
 static PyrrhicMove* pyrrhic_gen_moves(const PyrrhicPosition *pos, PyrrhicMove *moves) {
 
-    const unsigned Forward = (pos->turn == PYRRHIC_WHITE ? 8 : -8);
+    const unsigned Forward = (pos->turn == PYRRHIC_WHITE ? 8 : -8); //TODO ?????
 
     uint64_t us   = pos->turn ? pos->white : pos->black;
     uint64_t them = pos->turn ? pos->black : pos->white;

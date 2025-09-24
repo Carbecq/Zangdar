@@ -10,7 +10,7 @@ DEFINES += STATIC
 QMAKE_LFLAGS += -flto=auto
 
 #------------------------------------------------------
-DEFINES += NETWORK=\\\"/mnt/Datas/Echecs/Programmation/Zangdar/APP/networks/768_ob8_hm.bin\\\"
+DEFINES += NETWORK=\\\"/mnt/Datas/Echecs/Programmation/Zangdar/APP/networks/net_5.bin\\\"
 DEFINES += USE_SIMD
 DEFINES += SYZYGY=\\\"/mnt/Datas/Echecs/Syzygy\\\"
 DEFINES += VERSION=\\\"0.00.00\\\"
@@ -35,37 +35,47 @@ DEFINES += HOME='\\"$${HOME_STR}\\"'
 #------------------------------------------------------
 # https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html
 
-QMAKE_CXXFLAGS_RELEASE -= -g
-QMAKE_CXXFLAGS_RELEASE -= -O
-QMAKE_CXXFLAGS_RELEASE -= -O0
-QMAKE_CXXFLAGS_RELEASE -= -O1
-QMAKE_CXXFLAGS_RELEASE -= -O2
 
 # si NDEBUG est défini, alors assert ne fait rien
 
+linux-clang {
 CFLAGS_REL1  = -O3 -flto=auto -ftree-vectorize -funroll-loops -fno-exceptions -DNDEBUG -pthread -Wdisabled-optimization -Wall -Wextra \
                -finline-functions -fno-rtti -fstrict-aliasing -fomit-frame-pointer
-CFLAGS_DBG   = -g -O2
-
 CFLAGS_WARN1 = -Wmissing-declarations -Wredundant-decls -Wshadow -Wundef -Wuninitialized -pedantic
-CFLAGS_WARN2 = -Wcast-align -Wcast-qual -Wctor-dtor-privacy
-CFLAGS_WARN3 = -Wformat=2 -Winit-self
-CFLAGS_WARN4 = -Woverloaded-virtual -Wsign-promo
-CFLAGS_WARN5 = -Wstrict-overflow=5 -Wswitch-default -Wno-unused
-CFLAGS_WARN6 = -Wattributes -Waddress -Wmissing-prototypes -Wconditional-uninitialized
 
-CFLAGS_COM  = -pipe -std=c++23
-CFLAGS_REL  = $$CFLAGS_REL1 -DNDEBUG
-CFLAGS_WARN = $$CFLAGS_WARN1 $$CFLAGS_WARN2 $$CFLAGS_WARN3 $$CFLAGS_WARN4 $$CFLAGS_WARN5 $$CFLAGS_WARN6
+CFLAGS_WARN2 = -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wswitch -Wswitch-enum -Wenum-compare -Wenum-conversion
+CFLAGS_WARN3 = -Wformat=2 -Winit-self -Wmissing-include-dirs
+CFLAGS_WARN4 = -Woverloaded-virtual -Warray-bounds
+CFLAGS_WARN5 = -Wsign-promo -Wstrict-overflow=5 -Wno-unused
+CFLAGS_WARN6 = -Wswitch-default -Wattributes -Waddress -Wfloat-equal -Wmissing-prototypes -Wconditional-uninitialized
+CFLAGS_WARN7 = -Wsign-conversion
+}
 
-QMAKE_CXXFLAGS_RELEASE += $$CFLAGS_COM $$CFLAGS_WARN $$CFLAGS_REL
+#------------------------------------------------------
+# https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html
+
+linux-g++ {
+CFLAGS_REL1  = -O3 -flto=auto -ftree-vectorize -funroll-loops -fno-exceptions -DNDEBUG -pthread -fwhole-program -Wdisabled-optimization -Wall -Wextra \
+               -finline-functions -fno-rtti -fstrict-aliasing -fomit-frame-pointer
+CFLAGS_WARN1 = -Wmissing-declarations -Wredundant-decls -Wshadow -Wundef -Wuninitialized -pedantic
+
+CFLAGS_WARN2 = -Wcast-align=strict -Wcast-qual -Wctor-dtor-privacy -Wswitch -Wswitch-enum -Wenum-compare -Wenum-conversion
+CFLAGS_WARN3 = -Wformat=2 -Winit-self -Wlogical-op -Wmissing-include-dirs
+CFLAGS_WARN4 = -Wnoexcept -Woverloaded-virtual -Warray-bounds=2
+CFLAGS_WARN5 = -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5 -Wno-unused
+CFLAGS_WARN6 = -Wswitch-default -Wattributes -Waddress -Wfloat-equal -Wbidi-chars -Warray-compare -Wuninitialized
+# CFLAGS_WARN7 = -Wsign-conversion
+}
+
+# https://devblogs.microsoft.com/cppblog/even-more-new-safety-rules-in-c-code-analysis/
 
 TARGET  = native-pext
+CFLAGS_ARCH =
 
 ##------------------------------------------ 1) old
 equals(TARGET, "old"){
 TARGET = Zangdar-$${VERSION}-old
-QMAKE_CXXFLAGS_RELEASE +=
+CFLAGS_ARCH +=
 }
 
 ##------------------------------------------ 2) x86-64
@@ -73,7 +83,7 @@ equals(TARGET, "x86-64"){
 TARGET = Zangdar-$${VERSION}-x86-64
 
 ## x86-64
-QMAKE_CXXFLAGS_RELEASE += -msse -msse2
+CFLAGS_ARCH += -msse -msse2
 }
 
 ##------------------------------------------ 3) popcnt
@@ -81,17 +91,17 @@ equals(TARGET, "popcnt"){
 TARGET = Zangdar-$${VERSION}-popcnt
 
 ## x86-64
-QMAKE_CXXFLAGS_RELEASE += -msse -msse2
+CFLAGS_ARCH += -msse -msse2
 ## popcount
-QMAKE_CXXFLAGS_RELEASE += -msse3 -mpopcnt
+CFLAGS_ARCH += -msse3 -mpopcnt
 ##sse 4.1
-QMAKE_CXXFLAGS_RELEASE += -msse4.1 -msse4.2 -msse4a
+CFLAGS_ARCH += -msse4.1 -msse4.2 -msse4a
 ## ssse3
-QMAKE_CXXFLAGS_RELEASE += -mssse3
+CFLAGS_ARCH += -mssse3
 ## mmx
-QMAKE_CXXFLAGS_RELEASE += -mmmx
+CFLAGS_ARCH += -mmmx
 ## avx
-QMAKE_CXXFLAGS_RELEASE += -mavx
+CFLAGS_ARCH += -mavx
 }
 
 ##------------------------------------------ 4) avx2 (2013)
@@ -99,19 +109,19 @@ equals(TARGET, "avx2"){
 TARGET = Zangdar-$${VERSION}-avx2
 
 ## x86-64
-QMAKE_CXXFLAGS_RELEASE += -msse -msse2
+CFLAGS_ARCH += -msse -msse2
 ## popcount
-QMAKE_CXXFLAGS_RELEASE += -msse3 -mpopcnt
+CFLAGS_ARCH += -msse3 -mpopcnt
 ##sse 4.1
-QMAKE_CXXFLAGS_RELEASE += -msse4.1 -msse4.2 -msse4a
+CFLAGS_ARCH += -msse4.1 -msse4.2 -msse4a
 ## ssse3
-QMAKE_CXXFLAGS_RELEASE += -mssse3
+CFLAGS_ARCH += -mssse3
 ## mmx
-QMAKE_CXXFLAGS_RELEASE += -mmmx
+CFLAGS_ARCH += -mmmx
 ## avx
-QMAKE_CXXFLAGS_RELEASE += -mavx
+CFLAGS_ARCH += -mavx
 ## avx2
-QMAKE_CXXFLAGS_RELEASE += -mavx2 -mfma
+CFLAGS_ARCH += -mavx2 -mfma
 }
 
 ##------------------------------------------ 5) bmi2-nopext
@@ -119,21 +129,21 @@ equals(TARGET, "bmi2-nopext"){
 TARGET = Zangdar-$${VERSION}-bmi2-nopext
 
 ## x86-64
-QMAKE_CXXFLAGS_RELEASE += -msse -msse2
+CFLAGS_ARCH += -msse -msse2
 ## popcount
-QMAKE_CXXFLAGS_RELEASE += -msse3 -mpopcnt
+CFLAGS_ARCH += -msse3 -mpopcnt
 ##sse 4.1
-QMAKE_CXXFLAGS_RELEASE += -msse4.1 -msse4.2 -msse4a
+CFLAGS_ARCH += -msse4.1 -msse4.2 -msse4a
 ## ssse3
-QMAKE_CXXFLAGS_RELEASE += -mssse3
+CFLAGS_ARCH += -mssse3
 ## mmx
-QMAKE_CXXFLAGS_RELEASE += -mmmx
+CFLAGS_ARCH += -mmmx
 ## avx
-QMAKE_CXXFLAGS_RELEASE += -mavx
+CFLAGS_ARCH += -mavx
 ## avx2
-QMAKE_CXXFLAGS_RELEASE += -mavx2 -mfma
+CFLAGS_ARCH += -mavx2 -mfma
 ## bmi2
-QMAKE_CXXFLAGS_RELEASE += -mbmi -mbmi2
+CFLAGS_ARCH += -mbmi -mbmi2
 }
 
 ##------------------------------------------ 6) bmi2-pext
@@ -141,52 +151,64 @@ equals(TARGET, "bmi2-pext"){
 TARGET = Zangdar-$${VERSION}-bmi2-pext
 
 ## x86-64
-QMAKE_CXXFLAGS_RELEASE += -msse -msse2
+CFLAGS_ARCH += -msse -msse2
 ## popcount
-QMAKE_CXXFLAGS_RELEASE += -msse3 -mpopcnt
+CFLAGS_ARCH += -msse3 -mpopcnt
 ##sse 4.1
-QMAKE_CXXFLAGS_RELEASE += -msse4.1 -msse4.2 -msse4a
+CFLAGS_ARCH += -msse4.1 -msse4.2 -msse4a
 ## ssse3
-QMAKE_CXXFLAGS_RELEASE += -mssse3
+CFLAGS_ARCH += -mssse3
 ## mmx
-QMAKE_CXXFLAGS_RELEASE += -mmmx
+CFLAGS_ARCH += -mmmx
 ## avx
-QMAKE_CXXFLAGS_RELEASE += -mavx
+CFLAGS_ARCH += -mavx
 ## avx2
-QMAKE_CXXFLAGS_RELEASE += -mavx2 -mfma
+CFLAGS_ARCH += -mavx2 -mfma
 ## bmi2
-QMAKE_CXXFLAGS_RELEASE += -mbmi -mbmi2 -DUSE_PEXT
+CFLAGS_ARCH += -mbmi -mbmi2 -DUSE_PEXT
 }
 
 ##------------------------------------------ 7) native-nopext
 equals(TARGET, "native-nopext"){
 TARGET = Zangdar-$${VERSION}-5950X-nopext
 
-QMAKE_CXXFLAGS_RELEASE += -march=native
+CFLAGS_ARCH += -march=native
 }
 
 ##------------------------------------------ 8) native-pext
 equals(TARGET, "native-pext"){
 TARGET = Zangdar-$${VERSION}-5950X-pext
 
-QMAKE_CXXFLAGS_RELEASE += -march=native -DUSE_PEXT
+CFLAGS_ARCH += -march=native -DUSE_PEXT
 }
 
 
+#----------------------------------------------------------------------
+CFLAGS_COM  = -pipe -std=c++23
+CFLAGS_REL  = $$CFLAGS_REL1 $$CFLAGS_WARN1
+CFLAGS_WARN = $$CFLAGS_WARN1 $$CFLAGS_WARN2 $$CFLAGS_WARN3 $$CFLAGS_WARN4 $$CFLAGS_WARN5 $$CFLAGS_WARN6 $$CFLAGS_WARN7
+CFLAGS_DBG  = -g -O2
 
+#----------------------------------------------------------------------
+QMAKE_CXXFLAGS_RELEASE -= -g
+QMAKE_CXXFLAGS_RELEASE -= -O
+QMAKE_CXXFLAGS_RELEASE -= -O0
+QMAKE_CXXFLAGS_RELEASE -= -O1
+QMAKE_CXXFLAGS_RELEASE -= -O2
+
+QMAKE_CXXFLAGS_RELEASE += $$CFLAGS_COM $$CFLAGS_ARCH $$CFLAGS_REL
 
 #----------------------------------------------------------------------
 QMAKE_CXXFLAGS_DEBUG += -g
-# QMAKE_CXXFLAGS_DEBUG -= -O
-# QMAKE_CXXFLAGS_DEBUG += -O0
-# QMAKE_CXXFLAGS_DEBUG -= -O1
-# QMAKE_CXXFLAGS_DEBUG -= -O2
-# QMAKE_CXXFLAGS_DEBUG -= -O3
+QMAKE_CXXFLAGS_DEBUG -= -O
+QMAKE_CXXFLAGS_DEBUG += -O0
+QMAKE_CXXFLAGS_DEBUG -= -O1
+QMAKE_CXXFLAGS_DEBUG -= -O2
+QMAKE_CXXFLAGS_DEBUG -= -O3
 
-QMAKE_CXXFLAGS_DEBUG += $$CFLAGS_COM $$CFLAGS_WARN $$CFLAGS_DBG
-QMAKE_CXXFLAGS_DEBUG += -march=native
-QMAKE_CXXFLAGS_DEBUG += -DUSE_PEXT
+QMAKE_CXXFLAGS_DEBUG += $$CFLAGS_COM $$CFLAGS_ARCH $$CFLAGS_WARN $$CFLAGS_DBG
 
+#----------------------------------------------------------------------
 
 DISTFILES += \
     Makefile \

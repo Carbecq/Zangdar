@@ -31,7 +31,7 @@ public:
     ~Search();
 
     // Point de départ de la recherche
-    template <Color C> void think(Board board, Timer timer, int _index);
+    template <Color C> void think(Board board, Timer timer, size_t _index);
     template <Color C> int  aspiration_window(Board& board, Timer& timer, ThreadData* td, SearchInfo* si);
 
 private:
@@ -48,8 +48,8 @@ private:
     static constexpr int AspirationWindowsDelta    = 16;
     static constexpr int AspirationWindowsExpand   = 6667;
 
-    static constexpr int LateMovePruningDepth = 7;
-    static constexpr int LateMovePruningCount[2][8] = {
+    static constexpr U32 LateMovePruningDepth = 7;
+    static constexpr U32 LateMovePruningCount[2][8] = {
         {0, 2, 3, 4, 6, 8, 13, 18},
         {0, 3, 4, 6, 8, 12, 20, 30}
     };

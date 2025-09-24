@@ -11,14 +11,14 @@ class ThreadPool;
 class ThreadPool
 {
 public:
-    explicit ThreadPool(int _nbr, bool _tb, bool _log);
-    void set_threads(int nbr);
+    explicit ThreadPool(U32 _nbr, bool _tb, bool _log);
+    void set_threads(U32 nbr);
     void reset();
 
     void start_thinking(const Board &board, const Timer &timer);
     void main_thread_stopped();
     void stop();
-    void wait(int start);
+    void wait(size_t start);
     void quit();
 
     U64  get_all_nodes() const;
@@ -30,13 +30,13 @@ public:
     void set_useSyzygy(bool f)  { useSyzygy = f;    }
 
     bool get_logUci() const { return logUci; }
-    int  get_nbrThreads() const { return nbrThreads; }
+    U32  get_nbrThreads() const { return nbrThreads; }
     bool get_useSyzygy() const { return useSyzygy; }
 
     std::array<ThreadData, MAX_THREADS> threadData;
 
 private:
-    int     nbrThreads;
+    U32     nbrThreads;
     bool    useSyzygy;
     bool    logUci;
 

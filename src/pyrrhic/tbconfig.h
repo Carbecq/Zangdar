@@ -47,10 +47,10 @@
 #define PYRRHIC_LSB(x)                    (BB::get_lsb(x))
 #define PYRRHIC_POPLSB(x)                 (BB::PYRRHIC_pop_lsb(x))
 
-#define PYRRHIC_PAWN_ATTACKS(sq, c)     (Attacks::pawn_attacks(!c, sq))
-#define PYRRHIC_KNIGHT_ATTACKS(sq)      (Attacks::knight_moves(sq))
-#define PYRRHIC_BISHOP_ATTACKS(sq, occ) (Attacks::bishop_moves(sq, occ))
-#define PYRRHIC_ROOK_ATTACKS(sq, occ)   (Attacks::rook_moves(sq, occ))
-#define PYRRHIC_QUEEN_ATTACKS(sq, occ)  (Attacks::queen_moves(sq, occ))
-#define PYRRHIC_KING_ATTACKS(sq)        (Attacks::king_moves(sq))
+#define PYRRHIC_PAWN_ATTACKS(sq, c)     (Attacks::pawn_attacks(!c, (sq)))
+#define PYRRHIC_KNIGHT_ATTACKS(sq)      (Attacks::knight_moves((sq)))
+#define PYRRHIC_BISHOP_ATTACKS(sq, occ) (Attacks::bishop_moves((sq), occ))
+#define PYRRHIC_ROOK_ATTACKS(sq, occ)   (Attacks::rook_moves((sq), occ))
+#define PYRRHIC_QUEEN_ATTACKS(sq, occ)  (Attacks::queen_moves((sq), occ))
+#define PYRRHIC_KING_ATTACKS(sq)        (Attacks::king_moves((sq)))
 

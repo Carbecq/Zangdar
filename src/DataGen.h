@@ -16,14 +16,14 @@ struct fenData {
 class DataGen
 {
 public:
-    DataGen(const int _nbr_threads=4, const int _max_fens=-1, const std::string &_output="./fens");
+    DataGen(const U32 _nbr_threads=4, const U32 _max_fens=1, const std::string &_output="./fens");
     ~DataGen() {}
 
 private:
     void genfens(int thread_id, const std::string& str_file,
-                 std::atomic<Usize>& sum_fens,
+                 std::atomic<size_t>& sum_fens,
                  std::atomic<bool>& run);
-    int  set_threads(const int nbr);
+    U32 set_threads(const U32 nbr);
     template <Color color> void data_search(Board& board, Timer& timer,
                      // Search* search,
                      std::unique_ptr<Search>& search,

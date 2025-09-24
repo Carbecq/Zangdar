@@ -97,12 +97,12 @@ constexpr U32 MOVE_NULL           = 65; // 1000001
 
 
 [[nodiscard]] constexpr MOVE CODE(
-    const int   _from,
-    const int   _dest,
-    const Piece _piece,
-    const Piece _captured,
-    const Piece _promotion,
-    const U32   _flags)
+    const SQUARE _from,
+    const SQUARE _dest,
+    const Piece  _piece,
+    const Piece  _captured,
+    const Piece  _promotion,
+    const U32    _flags)
 {
     return( static_cast<U32>(_from)      << SHIFT_FROM  |
             static_cast<U32>(_dest)      << SHIFT_DEST  |
@@ -114,18 +114,18 @@ constexpr U32 MOVE_NULL           = 65; // 1000001
 }
 
 //! \brief  Retourne la case de départ
-[[nodiscard]] constexpr inline int from(const MOVE move) noexcept {
+[[nodiscard]] constexpr inline SQUARE from(const MOVE move) noexcept {
     return (move & MOVE_FROM_MASK);
 }
 
 //! \brief  Retourne la case d'arrivée
-[[nodiscard]] constexpr inline int dest(const MOVE move) noexcept {
+[[nodiscard]] constexpr inline SQUARE dest(const MOVE move) noexcept {
     return ((move & MOVE_DEST_MASK) >> SHIFT_DEST);
 }
 
 //! \brief  Retourne la case d'arrivée et de départ combinées
 //! Est utilisé comme indice
-[[nodiscard]] constexpr inline int fromdest(const MOVE move) noexcept {
+[[nodiscard]] constexpr inline size_t fromdest(const MOVE move) noexcept {
     return (move & MOVE_FROMDEST_MASK);
 }
 
@@ -180,7 +180,7 @@ constexpr U32 MOVE_NULL           = 65; // 1000001
 //! \brief  retourne une pièce à partir de son type et de sa couleur
 [[nodiscard]] constexpr inline Piece make_piece(Color color, PieceType pt)
 {
-    return static_cast<Piece>((color << 3) + static_cast<U32>(pt));
+    return static_cast<Piece>(static_cast<U32>(color << 3) + static_cast<U32>(pt));
 }
 
 
@@ -271,11 +271,11 @@ constexpr U32 MOVE_NULL           = 65; // 1000001
     //    }
     //    else
     {
-        int file_from = SQ::file(Move::from(move));
-        int file_to   = SQ::file(Move::dest(move));
+        U32 file_from = SQ::file(Move::from(move));
+        U32 file_to   = SQ::file(Move::dest(move));
 
-        int rank_from = SQ::rank(Move::from(move));
-        int rank_to   = SQ::rank(Move::dest(move));
+        U32 rank_from = SQ::rank(Move::from(move));
+        U32 rank_to   = SQ::rank(Move::dest(move));
 
         char cfile_from = 'a' + file_from;
         char crank_from = '1' + rank_from;

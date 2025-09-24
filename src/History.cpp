@@ -29,7 +29,7 @@ MOVE History::get_counter_move(const SearchInfo* info) const
     MOVE previous_move = (info-1)->move;
 
     return (Move::is_ok(previous_move))
-            ? counter_move[static_cast<U32>(Move::piece(previous_move))][Move::dest(previous_move)]
+            ? counter_move[Move::piece(previous_move)][Move::dest(previous_move)]
               : Move::MOVE_NONE;
 }
 
@@ -39,9 +39,9 @@ MOVE History::get_counter_move(const SearchInfo* info) const
 int History::get_quiet_history(Color color, const SearchInfo* info, const MOVE move, int& cm_hist, int& fm_hist) const
 {
     // Main History
-    U32 piece = static_cast<U32>(Move::piece(move));
-    int from  = Move::from(move);
-    int dest  = Move::dest(move);
+    Piece piece  = Move::piece(move);
+    SQUARE from  = Move::from(move);
+    SQUARE dest  = Move::dest(move);
 
     int score = main_history[color][from][dest];
 
@@ -66,7 +66,7 @@ int History::get_quiet_history(Color color, const SearchInfo* info, const MOVE m
 }
 
 void History::update_quiet_history(Color color, SearchInfo* info, MOVE best_move, I16 depth,
-                                   int quiet_count, std::array<MOVE, MAX_MOVES>& quiet_moves)
+                                   size_t quiet_count, std::array<MOVE, MAX_MOVES>& quiet_moves)
 {
     // Counter Move
     if (Move::piece_type(best_move) != PieceType::QUEEN)
@@ -74,7 +74,7 @@ void History::update_quiet_history(Color color, SearchInfo* info, MOVE best_move
         MOVE previous_move = (info-1)->move;
 
         if (Move::is_ok(previous_move))
-            counter_move[static_cast<U32>(Move::piece(previous_move))][Move::dest(previous_move)] = best_move;
+            counter_move[Move::piece(previous_move)][Move::dest(previous_move)] = best_move;
 
         // Killer Moves
         if (info->killer1 != best_move)
@@ -98,7 +98,7 @@ void History::update_quiet_history(Color color, SearchInfo* info, MOVE best_move
     update_cont(info, best_move, bonus);
 
     // Malus pour les autres coups quiets
-    for (int i = 0; i < quiet_count; i++)
+    for (size_t i = 0; i < quiet_count; i++)
     {
         move = quiet_moves[i];
         if (move != best_move)
@@ -121,7 +121,7 @@ void History::update_cont(SearchInfo* info, MOVE move, int bonus)
     {
         if (Move::is_ok((info - delta)->move))
         {
-            I16* histo = &(*(info - delta)->cont_hist)[static_cast<int>(Move::piece(move))][Move::dest(move)];
+            I16* histo = &(*(info - delta)->cont_hist)[Move::piece(move)][Move::dest(move)];
             gravity(histo, bonus);
         }
     }
@@ -129,7 +129,7 @@ void History::update_cont(SearchInfo* info, MOVE move, int bonus)
 
 void History::update_capt(MOVE move, int malus)
 {
-    I16* histo = &(capture_history[static_cast<U32>(Move::piece(move))][Move::dest(move)][static_cast<U32>(Move::captured_type(move))]);
+    I16* histo = &(capture_history[Move::piece(move)][Move::dest(move)][Move::captured_type(move)]);
     gravity(histo, malus);
 }
 
@@ -138,7 +138,7 @@ void History::update_capt(MOVE move, int malus)
 //! \param[in] move
 //-----------------------------------------------------------------
 void History::update_capture_history(MOVE best_move, I16 depth,
-                                     int capture_count, std::array<MOVE, MAX_MOVES>& capture_moves)
+                                     size_t capture_count, std::array<MOVE, MAX_MOVES>& capture_moves)
 {
     int bonus = stat_bonus(depth);
     int malus = stat_malus(depth);
@@ -147,7 +147,7 @@ void History::update_capture_history(MOVE best_move, I16 depth,
     update_capt(best_move, bonus);
 
     // Malus pour les autres coups
-    for (int i = 0; i < capture_count; i++)
+    for (size_t i = 0; i < capture_count; i++)
     {
         MOVE move = capture_moves[i];
         if (move == best_move)

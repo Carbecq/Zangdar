@@ -159,9 +159,9 @@ MOVE Board::convertPyrrhicMove(unsigned result) const
 
     // Convert the move notation. Care that Pyrrhic's promotion flags are inverted
     if (ep == 0u && promo == 0u)
-        return Move::CODE(from, to, piece_square[from], piece_square[to], Piece::NONE, Move::FLAG_NONE); // MoveMake(from, to, NORMAL_MOVE);
+        return Move::CODE(from, to, piece_square[from], piece_square[to], Piece::PIECE_NONE, Move::FLAG_NONE); // MoveMake(from, to, NORMAL_MOVE);
     else if (ep != 0u)
-        return Move::CODE(from, get_status().ep_square, piece, Move::make_piece(~color, PieceType::PAWN), Piece::NONE, Move::FLAG_ENPASSANT_MASK);
+        return Move::CODE(from, get_status().ep_square, piece, Move::make_piece(~color, PieceType::PAWN), Piece::PIECE_NONE, Move::FLAG_ENPASSANT_MASK);
     else /* if (promo != 0u) */
     {
         PieceType p = static_cast<PieceType>(6-promo);

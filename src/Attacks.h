@@ -229,23 +229,23 @@ extern Bitboard ROOK_ATTACKS[64][4096];
 
 // donne l'attaque du pion, pas le déplacement
 template <Color C>
-[[nodiscard]] constexpr Bitboard pawn_attacks(const int sq) {
+[[nodiscard]] constexpr Bitboard pawn_attacks(const SQUARE sq) {
     return(PAWN_ATTACKS[C][sq]);
 }
-[[nodiscard]] constexpr Bitboard pawn_attacks(const int C, const int sq) {
+[[nodiscard]] constexpr Bitboard pawn_attacks(const int C, const SQUARE sq) {
     return(PAWN_ATTACKS[C][sq]);
 }
 
 
-[[nodiscard]] constexpr Bitboard knight_moves(const int sq) {
+[[nodiscard]] constexpr Bitboard knight_moves(const SQUARE sq) {
     return(KNIGHT_ATTACKS[sq]);
 }
 
-[[nodiscard]] constexpr Bitboard king_moves(const int sq) {
+[[nodiscard]] constexpr Bitboard king_moves(const SQUARE sq) {
     return(KING_ATTACKS[sq]);
 }
 
-[[nodiscard]] inline U64 bishop_moves(const int sq, const U64 occupied) {
+[[nodiscard]] inline U64 bishop_moves(const SQUARE sq, const U64 occupied) {
 #if defined USE_PEXT
     return BISHOP_ATTACKS[sq][static_cast<int>(_pext_u64(occupied, bishop_masks[sq]))];
 #else
@@ -254,7 +254,7 @@ template <Color C>
 #endif
 }
 
-[[nodiscard]] inline U64 rook_moves(const int sq, const U64 occupied) {
+[[nodiscard]] inline U64 rook_moves(const SQUARE sq, const U64 occupied) {
 #if defined USE_PEXT
     return ROOK_ATTACKS[sq][static_cast<int>(_pext_u64(occupied, rook_masks[sq]))];
 #else
@@ -264,7 +264,7 @@ template <Color C>
 }
 
 
-[[nodiscard]] inline U64 queen_moves(const int sq, const U64 occupied) {
+[[nodiscard]] inline U64 queen_moves(const SQUARE sq, const U64 occupied) {
     return(Attacks::rook_moves(sq, occupied) | Attacks::bishop_moves(sq, occupied));
 }
 
@@ -273,7 +273,7 @@ template <Color C>
 //! Sliding piece attacks do not continue passed an occupied square.
 
 template<PieceType Pt>
-inline Bitboard attacks_bb(int s, Bitboard occupied)
+inline Bitboard attacks_bb(SQUARE s, Bitboard occupied)
 {
     assert((Pt != PieceType::PAWN) && (SQ::is_ok(s)));
 
@@ -291,7 +291,7 @@ inline Bitboard attacks_bb(int s, Bitboard occupied)
         return 0;
 }
 
-inline Bitboard attacks_bb(PieceType pt, int s, Bitboard occupied)
+inline Bitboard attacks_bb(PieceType pt, SQUARE s, Bitboard occupied)
 {
     assert((pt != PieceType::PAWN) && (SQ::is_ok(s)));
 
@@ -307,14 +307,19 @@ inline Bitboard attacks_bb(PieceType pt, int s, Bitboard occupied)
         return Attacks::bishop_moves(s, occupied) | Attacks::rook_moves(s, occupied);
     case PieceType::KING:
         return Attacks::king_moves(s);
+
+    case PieceType::PAWN:
+    case PieceType::NONE:
+        return 0;
+
     default:
         return 0;
     }
 }
 Bitboard set_occupancy(int index, int bits_in_mask, Bitboard attack_mask);
-Bitboard bishop_attacks_on_the_fly(int sq, Bitboard block);
+Bitboard bishop_attacks_on_the_fly(SQUARE sq, Bitboard block);
 void     init_bishop_attacks();
-Bitboard rook_attacks_on_the_fly(int sq, Bitboard block);
+Bitboard rook_attacks_on_the_fly(SQUARE sq, Bitboard block);
 void     init_rook_attacks();
 
 void init_masks();

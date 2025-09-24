@@ -83,7 +83,7 @@ Taille totale       : 134217696  134217696 (128) Mo
 
 };
 
-static constexpr Usize CLUSTER_SIZE = 4;
+static constexpr size_t CLUSTER_SIZE = 4;
 
 struct HashCluster {
     std::array<HashEntry, CLUSTER_SIZE> entries{};
@@ -99,9 +99,9 @@ class TranspositionTable
 private:
     static constexpr U64 ONE = 1ULL;
 
-    Usize          nbr_cluster{};
-    U32            tt_age{};
-    HashCluster*   tt_entries{};
+    size_t                       nbr_cluster{};
+    U32                         tt_age{};
+    std::vector<HashCluster>    tt_entries = {};
 
 
     // https://lemire.me/blog/2016/06/27/a-fast-alternative-to-the-modulo-reduction/

@@ -8,7 +8,7 @@
 //=================================================
 //! \brief  Constructeur avec arguments
 //-------------------------------------------------
-ThreadPool::ThreadPool(int _nbr, bool _tb, bool _log) :
+ThreadPool::ThreadPool(U32 _nbr, bool _tb, bool _log) :
     nbrThreads(_nbr),
     useSyzygy(_tb),
     logUci(_log)
@@ -19,7 +19,7 @@ ThreadPool::ThreadPool(int _nbr, bool _tb, bool _log) :
     printlog(message);
 #endif
 
-    for (int i = 0; i < MAX_THREADS; i++)
+    for (size_t i = 0; i < MAX_THREADS; i++)
     {
         threadData[i].search = nullptr;
         threadData[i].index  = i;
@@ -31,7 +31,7 @@ ThreadPool::ThreadPool(int _nbr, bool _tb, bool _log) :
 //=================================================
 //! \brief  Initialisation du nombre de threads
 //-------------------------------------------------
-void ThreadPool::set_threads(int nbr)
+void ThreadPool::set_threads(U32 nbr)
 {
 #if defined DEBUG_LOG
     char message[200];
@@ -39,14 +39,14 @@ void ThreadPool::set_threads(int nbr)
     printlog(message);
 #endif
 
-    int processorCount = static_cast<int>(std::thread::hardware_concurrency());
+    U32 processorCount = static_cast<U32>(std::thread::hardware_concurrency());
     // Check if the number of processors can be determined
     if (processorCount == 0)
         processorCount = MAX_THREADS;
 
     // Clamp the number of threads to the number of processors
     nbrThreads     = std::min(nbr, processorCount);
-    nbrThreads     = std::max(nbrThreads, 1);
+    nbrThreads     = std::max(nbrThreads, 1U);
     nbrThreads     = std::min(nbrThreads, MAX_THREADS);
 
 #if defined DEBUG_LOG
@@ -62,7 +62,7 @@ void ThreadPool::set_threads(int nbr)
 void ThreadPool::reset()
 {
     // Libère toute la mémoire
-    for (int i = 0; i < nbrThreads; i++)
+    for (size_t i = 0; i < nbrThreads; i++)
     {
         threadData[i].history.reset();
     }
@@ -97,7 +97,7 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
         printlog(message);
 #endif
 
-        for (int i = 0; i < nbrThreads; i++)
+        for (size_t i = 0; i < nbrThreads; i++)
         {
             threadData[i].depth    = 0;
             threadData[i].seldepth = 0;
@@ -117,7 +117,7 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
         // Il faut mettre le lancement des threads dans une boucle séparée
         // car il faut être sur que la Search soit bien créée
         // board et timer sont passés par valeur.
-        for (int i = 0; i < nbrThreads; i++)
+        for (size_t i = 0; i < nbrThreads; i++)
         {
             if (board.side_to_move == WHITE)
                 threadData[i].thread = std::thread(&Search::think<WHITE>, threadData[i].search, board, timer, i);
@@ -136,7 +136,7 @@ void ThreadPool::main_thread_stopped()
 {
     // envoie à toutes les autres threads
     // le signal d'arrêter
-    for (int i = 1; i < nbrThreads; i++)
+    for (size_t i = 1; i < nbrThreads; i++)
         threadData[i].stopped = true;
 }
 
@@ -144,9 +144,9 @@ void ThreadPool::main_thread_stopped()
 //! \brief  Blocage du programme en attendant
 //! les threads.
 //-------------------------------------------------
-void ThreadPool::wait(int start)
+void ThreadPool::wait(size_t start)
 {
-    for (int i = start; i < nbrThreads; i++)
+    for (size_t i = start; i < nbrThreads; i++)
     {
         if (threadData[i].thread.joinable())
             threadData[i].thread.join();
@@ -174,7 +174,7 @@ void ThreadPool::quit()
 {
     stop();
 
-    for (int i = 0; i < nbrThreads; i++)
+    for (size_t i = 0; i < nbrThreads; i++)
     {
         delete threadData[i].search;
         threadData[i].search = nullptr;
@@ -187,7 +187,7 @@ void ThreadPool::quit()
 U64 ThreadPool::get_all_nodes() const
 {
     U64 total = 0;
-    for (int i=0; i<nbrThreads; i++)
+    for (size_t i=0; i<nbrThreads; i++)
     {
         total += threadData[i].nodes;
     }
@@ -200,7 +200,7 @@ U64 ThreadPool::get_all_nodes() const
 int ThreadPool::get_all_depths() const
 {
     int total = 0;
-    for (int i=0; i<nbrThreads; i++)
+    for (size_t i=0; i<nbrThreads; i++)
     {
         total += threadData[i].best_depth;
     }
@@ -213,7 +213,7 @@ int ThreadPool::get_all_depths() const
 U64 ThreadPool::get_all_tbhits() const
 {
     U64 total = 0;
-    for (int i=0; i<nbrThreads; i++)
+    for (size_t i=0; i<nbrThreads; i++)
     {
         total += threadData[i].tbhits;
     }

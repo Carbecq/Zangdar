@@ -38,10 +38,10 @@
 
 // https://www.chessprogramming.org/NNUE#Output_Buckets
 
-constexpr Usize INPUT_LAYER_SIZE  = N_COLORS * 6 * N_SQUARES;   // = 768 : entrées (note : il n'y a que 6 pièces
-constexpr Usize HIDDEN_LAYER_SIZE = 1024;                        // Hidden Layer : nombre de neuron(es) ; va de 16 à ... 1024 (plus ?)
-constexpr Usize OUTPUT_BUCKETS    = 8;  //TODO à voir ?
-constexpr Usize BUCKET_DIVISOR    = (32 + OUTPUT_BUCKETS - 1) / OUTPUT_BUCKETS;   // 4.875 -> 4
+constexpr size_t INPUT_LAYER_SIZE  = N_COLORS * 6 * N_SQUARES;   // = 768 : entrées (note : il n'y a que 6 pièces
+constexpr size_t HIDDEN_LAYER_SIZE = 1024;                        // Hidden Layer : nombre de neuron(es) ; va de 16 à ... 1024 (plus ?)
+constexpr size_t OUTPUT_BUCKETS    = 8;  //TODO à voir ?
+constexpr size_t BUCKET_DIVISOR    = (32 + OUTPUT_BUCKETS - 1) / OUTPUT_BUCKETS;   // 4.875 -> 4
 
 constexpr I32 SCALE = 400;
 constexpr I32 QA    = 255;      /// Hidden Layer Quantisation Factor
@@ -81,8 +81,8 @@ struct Network {
 //------------------------------------------------------------------------------
 // Lazy Updates
 struct SquarePiece {
-    int   square = Square::SQUARE_NONE;
-    Piece  piece = Piece::NONE;
+    SQUARE square = Square::SQUARE_NONE;
+    Piece  piece  = Piece::PIECE_NONE;
 };
 
 struct DirtyPieces {
@@ -109,7 +109,7 @@ public:
     // Lazy Updates
     bool updated[N_COLORS]      = {false, false};
     DirtyPieces dirtyPieces     = DirtyPieces{};
-    std::array<int, N_COLORS> king_square = {SQUARE_NONE, SQUARE_NONE};     // position des rois
+    std::array<SQUARE, N_COLORS> king_square = {SQUARE_NONE, SQUARE_NONE};     // position des rois
 
     void init_biases(std::span<const I16, HIDDEN_LAYER_SIZE> biases)
     {
@@ -153,11 +153,11 @@ public:
     void init_accumulator(Accumulator &acc);
     template <Color side> void refresh_accumulator(const Board* board, Accumulator& acc);
 
-    template<Color color> int  evaluate(const Accumulator& current, Usize count);
+    template<Color color> int  evaluate(const Accumulator& current, size_t count);
 
     void add(Accumulator &accu,
-             Piece piece, int from,
-             int wking, int bking);
+             Piece piece, SQUARE from,
+             SQUARE wking, SQUARE bking);
 
     void lazy_updates(const Board *board, Accumulator &acc);
 
@@ -168,51 +168,51 @@ public:
                    const int bucket);
 
 
-    template <Color side> void add(Accumulator& accu, Piece piece, int from, int king);
+    template <Color side> void add(Accumulator& accu, Piece piece, SQUARE from, SQUARE king);
 
 
 private:
     std::array<Accumulator, MAX_PLY> stack = {Accumulator{}};       // pile des accumulateurs
-    Usize head_idx;                                                 // accumulateur utilisé (= stack_size - 1)
+    size_t head_idx;                                                 // accumulateur utilisé (= stack_size - 1)
     FinnyEntry finny[N_COLORS][KING_BUCKETS_COUNT] = {};            // tables Finny
 
     template <Color side> void lazy_update(const Board* board, Accumulator& head);
-    template <Color side> void update(const Accumulator &src, Accumulator& dst, int king);
-    template <Color side> bool need_refresh(int oldKing, int newKing) ;
+    template <Color side> void update(const Accumulator &src, Accumulator& dst, SQUARE king);
+    template <Color side> bool need_refresh(SQUARE oldKing, SQUARE newKing) ;
 
     template <Color side>
-    void sub(Accumulator& accu, Piece piece, int from, int king);
+    void sub(Accumulator& accu, Piece piece, SQUARE from, SQUARE king);
 
     template <Color side>
     void sub_add(const Accumulator& src, Accumulator& dst,
-                       Piece sub_piece, int sub,
-                       Piece add_piece, int add,
-                       int king);
+                       Piece sub_piece, SQUARE sub,
+                       Piece add_piece, SQUARE add,
+                       SQUARE king);
 
     template <Color side>
     void sub_sub_add(const Accumulator &src, Accumulator &dst,
-                     Piece sub_piece_1, int sub_1,
-                     Piece sub_piece_2, int sub_2,
-                     Piece add_piece_1, int add_1,
-                     int king);
+                     Piece sub_piece_1, SQUARE sub_1,
+                     Piece sub_piece_2, SQUARE sub_2,
+                     Piece add_piece_1, SQUARE add_1,
+                     SQUARE king);
 
     template <Color side>
     void sub_sub_add_add(const Accumulator &src, Accumulator &dst,
-                         Piece sub_piece_1, int sub_1,
-                         Piece sub_piece_2, int sub_2,
-                         Piece add_piece_1, int add_1,
-                         Piece add_piece_2, int add_2,
-                         int king);
+                         Piece sub_piece_1, SQUARE sub_1,
+                         Piece sub_piece_2, SQUARE sub_2,
+                         Piece add_piece_1, SQUARE add_1,
+                         Piece add_piece_2, SQUARE add_2,
+                         SQUARE king);
 
     // count = 32 : b = 7.5
     //          2 :     0
-    inline int get_bucket(Usize count) const {
+    inline int get_bucket(size_t count) const {
         return (count - 2) / BUCKET_DIVISOR;
     }
 
      //! \brief Retourne la case relative à la perspective
     template <Color side>
-    inline int get_relative_square(int square) const {
+    inline SQUARE get_relative_square(SQUARE square) const {
         if constexpr (side == WHITE)
             return square;
         else
@@ -221,13 +221,13 @@ private:
 
     //  Retourne la case, en tenant compte du Horizontal Mirroring
     //  Curieusement, le test inverse est pire (en elo)
-    //      king_square & 0b100 = 0 [FILE_A ... FILE_D] , 4 [FILE_D ... FILE_H]
-    inline int get_square(int square, int king_square) const {
+    //      king_SQUARE & 0b100 = 0 [FILE_A ... FILE_D] , 4 [FILE_D ... FILE_H]
+    inline SQUARE get_square(SQUARE square, SQUARE king_square) const {
         return king_square & 0b100 ? SQ::mirrorHorizontally(square) : square;
     }
 
-    std::pair<Usize, Usize> get_indices(Piece piece, int square, int wking, int bking);
-    template <Color side>Usize get_indice(Piece piece, int square, int king);
+    std::pair<size_t, size_t> get_indices(Piece piece, SQUARE square, SQUARE wking, SQUARE bking);
+    template <Color side>U32 get_indice(Piece piece, SQUARE square, SQUARE king);
 
 
     constexpr inline I32 screlu(I16 x) {

@@ -74,14 +74,14 @@ public:
     MOVE get_counter_move(const SearchInfo *info) const;
 
     inline I16 get_capture_history(MOVE move) const {
-        return capture_history[static_cast<U32>(Move::piece(move))][Move::dest(move)][static_cast<U32>(Move::captured_type(move))];
+        return capture_history[Move::piece(move)][Move::dest(move)][Move::captured_type(move)];
     }
     void update_capture_history(MOVE best_move, I16 depth,
-                                         int capture_count, std::array<MOVE, MAX_MOVES>& capture_moves);
+                                size_t capture_count, std::array<MOVE, MAX_MOVES>& capture_moves);
 
     int  get_quiet_history(Color color, const SearchInfo *info, const MOVE move, int &cm_hist, int &fm_hist) const;
     void update_quiet_history(Color color, SearchInfo *info, MOVE move, I16 depth,
-                              int quiet_count, std::array<MOVE, MAX_MOVES>& quiet_moves);
+                              size_t quiet_count, std::array<MOVE, MAX_MOVES>& quiet_moves);
 
 
     void update_correction_history(const Board &board, int depth, int best_score, int static_eval);

@@ -29,14 +29,14 @@ class Timer
 {
 public:
     Timer(bool infinite,
-                 int wtime,
-                 int btime,
-                 int winc,
-                 int binc,
-                 int movestogo,
-                 int depth,
-                 int nodes,
-                 int movetime);
+          int wtime,
+          int btime,
+          int winc,
+          int binc,
+          int movestogo,
+          int depth,
+          U64 nodes,
+          int movetime);
 
     Timer() : Timer(false,
                0,
@@ -52,7 +52,7 @@ public:
 
     void start();
     void setup(Color color);
-    void setup(int soft_limit, int hard_limit);
+    void setup(U64 soft_limit, U64 hard_limit);
     bool check_limits(const int depth, const int index, const U64 total_nodes);
     bool finishOnThisDepth(int elapsed, int depth, MOVE best_move, U64 total_nodes);
 

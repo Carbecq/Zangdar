@@ -24,15 +24,15 @@ public:
 
     std::thread thread;
     Search*     search;     // pointeur sur la classe de recherche
+    U64         nodes;
+    U64         tbhits;
     History     history;
 
     int         index;
     int         depth;
     int         seldepth;
     int         score;
-    U64         nodes;
     bool        stopped;
-    U64         tbhits;
 
     MOVE        best_move;
     int         best_score;

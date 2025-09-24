@@ -1,10 +1,10 @@
 CXX = clang++
-#CXX = g++
+# CXX = /bin/g++-14
 
 ifeq ($(CXX),clang++)
 	COMP := clang
 else
-	COMP := gcc
+	COMP := g++
 endif
 
 SRC1 = src
@@ -142,11 +142,12 @@ CFLAGS_REL1  = -O3 -flto=auto -ftree-vectorize -funroll-loops -fno-exceptions -D
                -finline-functions -fno-rtti -fstrict-aliasing -fomit-frame-pointer
 CFLAGS_WARN1 = -Wmissing-declarations -Wredundant-decls -Wshadow -Wundef -Wuninitialized -pedantic
 
-CFLAGS_WARN2 = -Wcast-align=strict -Wcast-qual -Wctor-dtor-privacy
-CFLAGS_WARN3 = -Wformat=2 -Winit-self
-CFLAGS_WARN4 = -Woverloaded-virtual -Wsign-promo
-CFLAGS_WARN5 = -Wstrict-overflow=5 -Wswitch-default -Wno-unused
-CFLAGS_WARN6 = -Wattributes -Waddress -Wmissing-prototypes -Wconditional-uninitialized
+CFLAGS_WARN2 = -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wswitch -Wswitch-default -Wswitch-enum -Wenum-compare -Wenum-conversion
+CFLAGS_WARN3 = -Wformat=2 -Winit-self -Wmissing-include-dirs
+CFLAGS_WARN4 = -Woverloaded-virtual -Warray-bounds
+CFLAGS_WARN5 = -Wsign-promo -Wstrict-overflow=5 -Wno-unused
+CFLAGS_WARN6 = -Wattributes -Waddress -Wfloat-equal -Wmissing-prototypes -Wconditional-uninitialized
+# CFLAGS_WARN7 = -Wsign-conversion
 
 ifeq ($(target_windows),yes)
 	LDFLAGS_STA = -Wl,--stack,16777216	# 16*1014*1024 = 16 Mo
@@ -165,11 +166,12 @@ CFLAGS_REL1  = -O3 -flto=auto -ftree-vectorize -funroll-loops -fno-exceptions -D
                -finline-functions -fno-rtti -fstrict-aliasing -fomit-frame-pointer
 CFLAGS_WARN1 = -Wmissing-declarations -Wredundant-decls -Wshadow -Wundef -Wuninitialized -pedantic
 
-CFLAGS_WARN2 = -Wcast-align=strict -Wcast-qual -Wctor-dtor-privacy
+CFLAGS_WARN2 = -Wcast-align=strict -Wcast-qual -Wctor-dtor-privacy -Wswitch -Wswitch-default -Wswitch-enum -Wenum-compare -Wenum-conversion
 CFLAGS_WARN3 = -Wformat=2 -Winit-self -Wlogical-op -Wmissing-include-dirs
 CFLAGS_WARN4 = -Wnoexcept -Woverloaded-virtual -Warray-bounds=2
-CFLAGS_WARN5 = -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5
-CFLAGS_WARN6 = -Wswitch-default -Wfloat-equal -Wbidi-chars -Warray-compare -Wattributes -Waddress
+CFLAGS_WARN5 = -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5 -Wno-unused
+CFLAGS_WARN6 = -Wattributes -Waddress -Wfloat-equal -Wbidi-chars -Warray-compare -Wuninitialized
+# CFLAGS_WARN7 = -Wsign-conversion
 
 PGO_GEN   = -fprofile-generate
 PGO_USE   = -fprofile-use

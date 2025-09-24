@@ -20,16 +20,15 @@
 //========================================================
 //! \brief  Constructeur avec argument
 //--------------------------------------------------------
-TranspositionTable::TranspositionTable(int MB)
+TranspositionTable::TranspositionTable(int MB) :
+    nbr_cluster(0),
+    tt_age(0)
 {
 #if defined DEBUG_LOG
     char message[100];
     sprintf(message, "TranspositionTable::constructeur MB : %d ", MB);
     printlog(message);
 #endif
-
-    tt_entries = nullptr;
-    tt_age     = 0;
 
     init_size(MB);
 }
@@ -39,7 +38,6 @@ TranspositionTable::TranspositionTable(int MB)
 //--------------------------------------------------------
 TranspositionTable::~TranspositionTable()
 {
-    delete [] tt_entries;
 }
 
 //========================================================
@@ -53,7 +51,7 @@ void TranspositionTable::init_size(int mbsize)
     printlog(message);
 #endif
 
-    Usize size  = (mbsize * 1024 * 1024) / sizeof(HashCluster);
+    size_t size  = (mbsize * 1024 * 1024) / sizeof(HashCluster);
 
     // L'index est calculé par : key & tt_mask
     // if faut que le nombre de clusters soit un multiple de 2
@@ -61,14 +59,8 @@ void TranspositionTable::init_size(int mbsize)
 
     if (size != nbr_cluster)
     {
-        if (tt_entries != nullptr)
-        {
-            delete [] tt_entries;
-            tt_entries = nullptr;
-        }
-
         nbr_cluster = size;
-        tt_entries  = new HashCluster[nbr_cluster];
+        tt_entries.resize(nbr_cluster);
     }
 
     clear();
@@ -94,7 +86,7 @@ void TranspositionTable::clear(void)
     tt_age = 0;
 
     // value-initialize each HashCluster element
-    std::fill(tt_entries, tt_entries + nbr_cluster, HashCluster{});
+    std::fill(tt_entries.begin(), tt_entries.end(), HashCluster{});
 }
 
 //========================================================
@@ -237,7 +229,7 @@ int TranspositionTable::hash_full() const
 
     for (int i = 0; i < 1000; i++)
     {
-        for (Usize j=0; j<CLUSTER_SIZE; j++)
+        for (size_t j=0; j<CLUSTER_SIZE; j++)
         {
             if (   tt_entries[i].entries[j].move != Move::MOVE_NONE
                    && tt_entries[i].entries[j].age() == tt_age
@@ -258,9 +250,9 @@ std::string TranspositionTable::info()
               << "Taille d'un cluster : " << sizeof(HashCluster) << " octets" << std::endl
               << "Entrées par cluster : " << CLUSTER_SIZE << std::endl
               << "Taille d'une entrée : " << sizeof(HashEntry) << " octets" << std::endl
-              << "Total entrées       : " << (nbr_cluster) * CLUSTER_SIZE << std::endl
-              << "Taille totale       : " << (nbr_cluster)*sizeof(HashCluster) << "  " << (nbr_cluster) * CLUSTER_SIZE*sizeof(HashEntry)
-              << " (" << (nbr_cluster)*sizeof(HashCluster)/1024.0/1024.0 << ") Mo"
+              << "Total entrées       : " << nbr_cluster * CLUSTER_SIZE << std::endl
+              << "Taille totale       : " << nbr_cluster*sizeof(HashCluster) << "  " << nbr_cluster*CLUSTER_SIZE*sizeof(HashEntry)
+              << " (" << nbr_cluster*sizeof(HashCluster)/1024.0/1024.0 << ") Mo"
               << std::endl;
 
     return sstr.str();

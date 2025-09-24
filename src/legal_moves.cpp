@@ -17,14 +17,14 @@ template <Color C, MoveGenType MGType>
 void Board::legal_moves(MoveList& ml) noexcept
 {
     constexpr Color Them = ~C;
-    const int   K = get_king_square<C>();
+    const U32     K = get_king_square<C>();
     
     const Bitboard occupiedBB = occupancy_all();     // toutes les pièces (Blanches + Noires)
     Bitboard emptyBB    = ~occupiedBB;
     Bitboard enemyBB    = colorPiecesBB[Them];
 
-    const Bitboard bq         = typePiecesBB[static_cast<U32>(PieceType::BISHOP)] | typePiecesBB[static_cast<U32>(PieceType::QUEEN)];
-    const Bitboard rq         = typePiecesBB[static_cast<U32>(PieceType::ROOK)]   | typePiecesBB[static_cast<U32>(PieceType::QUEEN)];
+    const Bitboard bq         = typePiecesBB[PieceType::BISHOP] | typePiecesBB[PieceType::QUEEN];
+    const Bitboard rq         = typePiecesBB[PieceType::ROOK]   | typePiecesBB[PieceType::QUEEN];
 
     //-----------------------------------------------------------------------------------------
     //  Calcul des pièces clouées, et des échecs
@@ -37,15 +37,17 @@ void Board::legal_moves(MoveList& ml) noexcept
 
     //-----------------------------------------------------------------------------------------
 
-    constexpr int pawn_left = PUSH[C] - 1;
+    constexpr int pawn_left  = PUSH[C] - 1;
     constexpr int pawn_right = PUSH[C] + 1;
-    constexpr int pawn_push = PUSH[C];
+    constexpr int pawn_push  = PUSH[C];
     const int *dir = DirectionMask[K].direction;
 
     Bitboard pieceBB;
     Bitboard attackBB;
-    int from, to, d, ep;
-    int x_checker = Square::SQUARE_NONE;
+    U32 from, to;
+    int d;
+    U32 ep;
+    U32 x_checker = Square::SQUARE_NONE;
 
     //-------------------------------------------------------------------------------------------
 
@@ -77,7 +79,7 @@ void Board::legal_moves(MoveList& ml) noexcept
         }
 
         // pawn (pinned)
-        pieceBB = typePiecesBB[static_cast<U32>(PieceType::PAWN)] & pinnedBB;
+        pieceBB = typePiecesBB[PieceType::PAWN] & pinnedBB;
 
         while (pieceBB) {
             from = BB::pop_lsb(pieceBB);
@@ -237,7 +239,7 @@ void Board::legal_moves(MoveList& ml) noexcept
     }
 
     // pawn
-    pieceBB = typePiecesBB[static_cast<U32>(PieceType::PAWN)] & unpinnedBB;
+    pieceBB = typePiecesBB[PieceType::PAWN] & unpinnedBB;
 
     if constexpr (MGType & MoveGenType::NOISY)
     {
@@ -282,7 +284,7 @@ void Board::legal_moves(MoveList& ml) noexcept
 
     // knight
 
-    pieceBB = typePiecesBB[static_cast<U32>(PieceType::KNIGHT)] & unpinnedBB;
+    pieceBB = typePiecesBB[PieceType::KNIGHT] & unpinnedBB;
     while (pieceBB)
     {
         from = BB::pop_lsb(pieceBB);

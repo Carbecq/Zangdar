@@ -351,7 +351,7 @@ void Uci::parse_go(std::istringstream& iss)
     int binc        = 0;
     int movestogo   = 0;
     int depth       = 0;
-    int nodes       = 0;
+    U64 nodes       = 0;
     int movetime    = 0;
 
     // Stop any running search

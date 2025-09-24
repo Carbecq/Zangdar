@@ -24,10 +24,9 @@ using U128  = unsigned __int128;
 using CHAR  = char;
 using UCHAR = unsigned char;
 
-using Usize = size_t;
-
 using Bitboard  = U64;
 using MOVE      = U32;
+using SQUARE    = U32;  // pour la clarté du code
 
 using TimePoint = std::chrono::high_resolution_clock;
 
@@ -35,6 +34,7 @@ template <class T, std::size_t x, std::size_t y>
 using Array2D = std::array<std::array<T, y>, x>;
 
 //-----------------------------------------------------------------------------
+// 33.554.432
 
 static constexpr int MAX_PLY    =  128;     // profondeur max de recherche (en demi-coups)
 static constexpr int MAX_HISTO  = 1024;     // longueur max de l'historique (partie + recherche) (en demi-coups)
@@ -47,7 +47,7 @@ static constexpr int MAX_HASH_SIZE  = 1024;
 
 static constexpr int PAWN_HASH_SIZE = 16384;
 
-static constexpr int MAX_THREADS    = 32;
+static constexpr U32 MAX_THREADS    = 32;
 
 static constexpr int VALUE_DRAW     = 0;
 static constexpr int MATE           = 31000;
