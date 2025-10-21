@@ -99,7 +99,7 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int boun
 
     // extract the 32-bit key from the 64-bit zobrist hash
     // U32 key32 = (key >> 32);
-    U32 key32 = static_cast<U32>(key);
+    const U32 key32 = static_cast<U32>(key);
     //  static_cast<U16>(key);
     // key & 0xFFFF;
 
@@ -110,34 +110,27 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int boun
     autre   = 88ed2307
     */
 
-    const auto entryValue = [this](const auto &entry)
-    {
-        const I32 relativeAge = (HashEntry::AgeCycle + tt_age - entry.age()) & HashEntry::AgeMask;
-        return entry.depth - relativeAge * 2;
-    };
-
     HashCluster& cluster = tt_entries[index(key)];
     HashEntry *replace = nullptr;
     auto minValue = std::numeric_limits<I32>::max();
 
-    for (auto & elem : cluster.entries)
+    for (auto & entry : cluster.entries)
     {
         // always take an empty entry, or one from the same position
         // Question : But there are some entries with TtFlag=None , when it stores rawStaticEval.
         // >>>"empty" just means no search score in this case (I think), in which one with a search score is better
         // >>> in other words caching a static eval score and not a search score, to avoid calling eval
-        if (elem.key32 == key32 || elem.bound() == BOUND_NONE)
+        if (entry.key32 == key32 || entry.bound() == BOUND_NONE)
         {
-            replace = &elem;
+            replace = &entry;
             break;
         }
 
         // otherwise, take the lowest-weighted entry by depth and age
-        const auto value = entryValue(elem);
-
+        I32 value = entry.depth - 2 * entry.relative_age(tt_age);
         if (value < minValue)
         {
-            replace  = &elem;
+            replace  = &entry;
             minValue = value;
         }
     }
@@ -147,22 +140,23 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int boun
     // Roughly the SF replacement scheme
     // Don't overwrite an entry from the same position, unless we have
     // an exact bound or depth that is nearly as good as the old one
-    if (!(bound == BOUND_EXACT
-          || key32 != replace->key32
-          || replace->age() != tt_age
-          || depth + 4 + pv * 2 > replace->depth))
-        return;
+    if ((bound == BOUND_EXACT
+         || key32 != replace->key32
+         || replace->relative_age(tt_age)           // replace->age() != tt_age
+         || depth + 3 + 2*pv > replace->depth))
+    {
+        // idea from Sirius, Stockfish and Ethereal
+        // Preserve any existing move for the same position
+        // Do not overwrite the move if there was no new best move
+        if (move != Move::MOVE_NONE || replace->key32 != key32)
+            replace->move = move;
 
-    // idea from Sirius, Stockfish and Ethereal
-    // Preserve any existing move for the same position
-    if (move != Move::MOVE_NONE || replace->key32 != key32)
-        replace->move = move;
-
-    replace->key32  = key32;
-    replace->score  = static_cast<I16>(ScoreToTT(score, ply));
-    replace->eval   = static_cast<I16>(eval);
-    replace->depth  = static_cast<I08>(depth);
-    replace->setAgePvBound(tt_age, pv, bound);
+        replace->key32  = key32;
+        replace->score  = static_cast<I16>(ScoreToTT(score, ply));
+        replace->eval   = static_cast<I16>(eval);
+        replace->depth  = static_cast<U08>(depth);
+        replace->setAgePvBound(tt_age, pv, bound);
+    }
 }
 
 //========================================================
@@ -179,7 +173,6 @@ bool TranspositionTable::probe(U64 key, int ply, MOVE& move, int &score, int& ev
 {
     // extract the 32-bit key from the 64-bit zobrist hash
     const U32 key32 = static_cast<U32>(key);
-
     const HashCluster& cluster = tt_entries[index(key)];
     for (const HashEntry& entry : cluster.entries)
     {

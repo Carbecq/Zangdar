@@ -1,2 +1,2 @@
-VERSION = 5.01.00
+VERSION = 5.2.4
 NETWORK = \"networks/net_5.bin\"

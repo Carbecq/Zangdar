@@ -18,17 +18,16 @@ class TranspositionTable;
 #include "defines.h"
 
 struct HashEntry {
-    static constexpr U32 AgeBits = 5;
+    static constexpr U32 AgeBits  = 5;
     static constexpr U32 AgeCycle = 1 << AgeBits;       // 32
-    static constexpr U32 AgeMask = AgeCycle - 1;        // 31
+    static constexpr U32 AgeMask  = AgeCycle - 1;       // 31
 
-    U32   key32;    // 32 bits
-    MOVE  move;     // 32 bits  (seuls 24 bits sont utilisés)
-    I16   score;    // 16 bits
-    I16   eval;     // 16 bits
-    U08   depth;    //  8 bits
-    U08   agePvBound;    //  8 bits  (5 bits age : 1 bit pv ; 2 bits bound)
-                         //           0-31
+    U32   key32;        // 32 bits
+    MOVE  move;         // 32 bits  (seuls 24 bits sont utilisés)
+    I16   score;        // 16 bits
+    I16   eval;         // 16 bits
+    U08   depth;        //  8 bits
+    U08   agePvBound;   //  8 bits  (5 bits age : 1 bit pv ; 2 bits bound)      : 0-31
 
     [[nodiscard]] inline auto age() const
     {
@@ -45,10 +44,15 @@ struct HashEntry {
         return static_cast<U08>(agePvBound & 0x3);
     }
 
-    inline auto setAgePvBound(U32 age, bool pv, U08 bound)
+    inline void setAgePvBound(U32 age, bool pv, U08 bound)
     {
         assert(age < (1 << AgeBits));
         agePvBound = (age << 3) | (static_cast<U32>(pv) << 2) | static_cast<U32>(bound);
+    }
+
+    [[nodiscard]] inline auto relative_age(U32 tt_age) const
+    {
+        return (HashEntry::AgeCycle + tt_age - age()) & HashEntry::AgeMask;
     }
 
     /* hash32 :
@@ -56,7 +60,6 @@ struct HashEntry {
      * total = 112 bits = 14 octets
      * le compilateur ajoute un padding de 16 bits pour avoir un alignement mémoire de 32 bits : 128 = 32*4
      *  donc sizeof(HashEntry) = 16
-     *
      *
 
 Nombre de clusters  : 2097152
@@ -85,10 +88,11 @@ Taille totale       : 134217696  134217696 (128) Mo
 
 static constexpr size_t CLUSTER_SIZE = 4;
 
-struct HashCluster {
+struct alignas(64) HashCluster {
     std::array<HashEntry, CLUSTER_SIZE> entries{};
 };
 
+static_assert(sizeof(HashCluster) == 64);
 
 
 //----------------------------------------------------------
@@ -99,7 +103,7 @@ class TranspositionTable
 private:
     static constexpr U64 ONE = 1ULL;
 
-    size_t                       nbr_cluster{};
+    size_t                      nbr_cluster{};
     U32                         tt_age{};
     std::vector<HashCluster>    tt_entries = {};
 
@@ -113,7 +117,7 @@ private:
     //      return &tt_entries[ mul_hi(key, tt_size) ];
     // }
 
-    inline U64 index(U64 key) {
+    inline U64 index(U64 key) const noexcept {
         // this emits a single mul on both x64 and arm64
         return static_cast<U64>((static_cast<U128>(key) * static_cast<U128>(nbr_cluster)) >> 64);
         // return key & tt_mask;
@@ -129,9 +133,8 @@ public:
     std::string info();
 
     void clear(void);
-    inline auto update_age()
-    {
-        tt_age = (tt_age + 1) % (1 << HashEntry::AgeBits);
+    inline void update_age() noexcept {
+        tt_age = (tt_age + 1) & HashEntry::AgeMask;
     }
 
     void store(U64 hash, MOVE move, int score, int eval, int bound, int depth, int ply, bool pv);
