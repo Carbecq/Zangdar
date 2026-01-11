@@ -360,7 +360,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 raw_eval = board.evaluate();
             }
 
-            static_eval = si->static_eval = td->history.correct_eval(board, raw_eval);
+            static_eval = si->static_eval = td->history.corrected_eval(board, raw_eval);
 
             // Amélioration de static-eval, au cas où tt_score est assez bon
             if(tt_hit
@@ -528,7 +528,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     std::array<MOVE, MAX_MOVES> capture_moves;
     size_t  capture_count = 0;
     MOVE move;
-    int  hist = 0, cmhist = 0, fuhist = 0;  // pas I16 !!
+    int  hist = 0;  // pas I16 !!
 
     // Static Exchange Evaluation Pruning Margins
     int  seeMargin[2] = {
@@ -551,7 +551,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         move_count++;
 
         if (isQuiet)
-            hist   = td->history.get_quiet_history(C, si, move, cmhist, fuhist);
+            hist = td->history.get_quiet_history(C, si, move, board.get_pawn_key());
         else
             hist = td->history.get_capture_history(move);
 
@@ -583,13 +583,13 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
         //-------------------------------------------------
         // History Pruning.
+        // Prune moves with a low history score moves at near-leaf nodes
         //-------------------------------------------------
         if (   !isRoot
                &&  isQuiet
                &&  best_score > -TBWIN_IN_X
                &&  depth <= (Tunable::HistoryPruningDepth - improving)
-               &&  std::min(cmhist, fuhist) <
-               (Tunable::HistoryPruningLimit - improving*Tunable::HistoryPruningLimitImproving) )
+               && hist < -Tunable::HistoryPruningLimit * depth)
         {
             continue;
         }
@@ -749,7 +749,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 // If score beats beta we have a cutoff
                 if (score >= beta)
                 {
-                    td->history.update_quiet_history(C, si, best_move, depth, quiet_count, quiet_moves);
+                    td->history.update_quiet_history(C, si, best_move, board.get_pawn_key(), depth, quiet_count, quiet_moves);
                     td->history.update_capture_history(best_move, depth, capture_count, capture_moves);
 
                     // non, ce coup est trop bon pour l'adversaire

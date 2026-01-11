@@ -360,7 +360,12 @@ void MovePicker::score_quiet()
         Piece piece = Move::piece(move);
         SQUARE dest = Move::dest(move);
 
+        //TODO essayer d'autres coefficients
+        //TODO ajouter info-6 (attention au décalage dans SearchInfo
+
         value  = 2 * history.get_main_history(board->turn(), move);
+
+        value += history.get_pawn_history(board, move);
 
         if (Move::is_ok((info-1)->move))
             value += 2 * (int)(*(info - 1)->cont_hist)[piece][dest];

@@ -27,6 +27,7 @@ using UCHAR = unsigned char;
 using Bitboard  = U64;
 using MOVE      = U32;
 using SQUARE    = U32;  // pour la clarté du code
+using KEY       = U64;
 
 using TimePoint = std::chrono::high_resolution_clock;
 

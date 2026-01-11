@@ -20,9 +20,9 @@ class Board;
 // celle-ci sera nécessaire pour effectuer un unmake_move
 struct Status
 {
-    U64  key                = 0ULL;                     // nombre unique (?) correspondant à la position
-    U64  pawn_key           = 0ULL;                     // nombre unique (?) correspondant à la position des pions
-    U64  mat_key[2]         = {0ULL, 0ULL};             // nombre unique (?) correspondant à la position des pièces
+    KEY  key                = 0ULL;                     // nombre unique (?) correspondant à la position
+    KEY  pawn_key           = 0ULL;                     // nombre unique (?) correspondant à la position des pions
+    KEY  mat_key[N_COLORS]  = {0ULL, 0ULL};             // nombre unique (?) correspondant à la position des pièces
     MOVE move               = Move::MOVE_NONE;
     SQUARE   ep_square          = Square::SQUARE_NONE;      // case en-passant : si les blancs jouent e2-e4, la case est e3
     U32      castling           = CASTLE_NONE;              // droit au roque
@@ -502,10 +502,10 @@ public:
 
     [[nodiscard]] inline int get_fiftymove_counter()  const noexcept { return get_status().fiftymove_counter; }
     [[nodiscard]] inline int get_fullmove_counter()   const noexcept { return get_status().fullmove_counter;  }
-    [[nodiscard]] inline SQUARE get_ep_square()          const noexcept { return get_status().ep_square;         }
-    [[nodiscard]] inline U64 get_key()                const noexcept { return get_status().key;               }
-    [[nodiscard]] inline U64 get_pawn_key()           const noexcept { return get_status().pawn_key;          }
-    [[nodiscard]] inline U64 get_mat_key(Color color) const noexcept { return get_status().mat_key[color];   }
+    [[nodiscard]] inline SQUARE get_ep_square()       const noexcept { return get_status().ep_square;         }
+    [[nodiscard]] inline KEY get_key()                const noexcept { return get_status().key;               }
+    [[nodiscard]] inline KEY get_pawn_key()           const noexcept { return get_status().pawn_key;          }
+    [[nodiscard]] inline KEY get_mat_key(Color color) const noexcept { return get_status().mat_key[color];   }
     [[nodiscard]] inline Bitboard get_checkers()      const noexcept { return get_status().checkers;          }
     [[nodiscard]] inline Bitboard get_pinned()        const noexcept { return get_status().pinned;            }
 

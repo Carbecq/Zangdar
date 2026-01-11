@@ -12,10 +12,11 @@ History::History()
 //*********************************************************************
 void History::reset()
 {
-    std::memset(main_history,          0, sizeof(MainHistoryTable));
-    std::memset(counter_move,          0, sizeof(CounterMoveTable));
-    std::memset(continuation_history,  0, sizeof(ContinuationHistoryTable));
-    std::memset(capture_history,       0, sizeof(CaptureHistory));
+    std::memset(main_history,           0, sizeof(MainHistoryTable));
+    std::memset(pawn_history,           0, sizeof(PawnHistoryTable));
+    std::memset(counter_move,           0, sizeof(CounterMoveTable));
+    std::memset(continuation_history,   0, sizeof(ContinuationHistoryTable));
+    std::memset(capture_history,        0, sizeof(CaptureHistory));
     std::memset(pawn_correction_history,     0, sizeof(PawnCorrectionHistoryTable));
     std::memset(material_correction_history, 0, 2*sizeof(MaterialCorrectionHistoryTable));
 }
@@ -35,8 +36,9 @@ MOVE History::get_counter_move(const SearchInfo* info) const
 
 //==============================================================
 //! \brief  Retourne la somme de tous les history "quiet"
+//! Utilisé pour la recherche
 //--------------------------------------------------------------
-int History::get_quiet_history(Color color, const SearchInfo* info, const MOVE move, int& cm_hist, int& fm_hist) const
+int History::get_quiet_history(Color color, const SearchInfo* info, const MOVE move, KEY pawnkey) const
 {
     // Main History
     Piece piece  = Move::piece(move);
@@ -45,27 +47,35 @@ int History::get_quiet_history(Color color, const SearchInfo* info, const MOVE m
 
     int score = main_history[color][from][dest];
 
+    score += pawn_history[get_index(pawnkey)][piece][dest];
+
+    /*
+     * Continuation History
+
+        Continuation History is a generalization of Counter Moves History and Follow Up History.
+        An n-ply Continuation History is the history score indexed by the move played
+        n-ply ago and the current move.
+        1-ply and 2-ply continuation histories are most popular and correspond
+        to Counter Moves History and Follow Up History respectively.
+        Many programs, notably Stockfish, also makes use of 3, 4, 5, and 6-ply continuation histories.
+     */
+
     if (Move::is_ok((info-1)->move))
-    {
-        cm_hist =  (*(info - 1)->cont_hist)[piece][dest];
-        score += cm_hist;
-    }
+        score += (*(info - 1)->cont_hist)[piece][dest];
 
     if (Move::is_ok((info-2)->move))
-    {
-        fm_hist =  (*(info - 2)->cont_hist)[piece][dest];
-        score += fm_hist;
-    }
+        score +=  (*(info - 2)->cont_hist)[piece][dest];
 
     if (Move::is_ok((info-4)->move))
-    {
         score += (*(info - 4)->cont_hist)[piece][dest];
-    }
 
     return score;
 }
 
-void History::update_quiet_history(Color color, SearchInfo* info, MOVE best_move, I16 depth,
+//==============================================================
+//! \brief  Mise à jour de tous les history "quiet"
+//--------------------------------------------------------------
+void History::update_quiet_history(Color color, SearchInfo* info, MOVE best_move, KEY pawnkey, I16 depth,
                                    size_t quiet_count, std::array<MOVE, MAX_MOVES>& quiet_moves)
 {
     // Counter Move
@@ -95,6 +105,7 @@ void History::update_quiet_history(Color color, SearchInfo* info, MOVE best_move
 
     // Bonus pour le coup quiet ayant provoqué un cutoff (fail-high)
     update_main(color, best_move, bonus);
+    update_pawn(pawnkey, best_move, bonus);
     update_cont(info, best_move, bonus);
 
     // Malus pour les autres coups quiets
@@ -104,7 +115,8 @@ void History::update_quiet_history(Color color, SearchInfo* info, MOVE best_move
         if (move != best_move)
         {
             update_main(color, move, malus);
-            update_cont(info, move, malus);
+            update_pawn(pawnkey, move,  malus);
+            update_cont(info, move,  malus);
         }
     }
 }
@@ -113,6 +125,12 @@ void History::update_main(Color color, MOVE move, int bonus)
 {
     I16* histo = &(main_history[color][Move::from(move)][Move::dest(move)]);
     gravity(histo, bonus);
+}
+
+void History::update_pawn(KEY pawnkey, MOVE move, int bonus)
+{
+    I16* pawn = &(pawn_history[get_index(pawnkey)][Move::piece(move)][Move::dest(move)]);
+    gravity(pawn, bonus);
 }
 
 void History::update_cont(SearchInfo* info, MOVE move, int bonus)
@@ -127,12 +145,6 @@ void History::update_cont(SearchInfo* info, MOVE move, int bonus)
     }
 }
 
-void History::update_capt(MOVE move, int malus)
-{
-    I16* histo = &(capture_history[Move::piece(move)][Move::dest(move)][Move::captured_type(move)]);
-    gravity(histo, malus);
-}
-
 //=================================================================
 //! \brief  Capture History : [moved piece][target square][captured piece type]
 //! \param[in] move
@@ -144,7 +156,7 @@ void History::update_capture_history(MOVE best_move, I16 depth,
     int malus = stat_malus(depth);
 
     // Bonus pour le coup ayant provoqué un cutoff (fail-high)
-    update_capt(best_move, bonus);
+    update_capture(best_move, bonus);
 
     // Malus pour les autres coups
     for (size_t i = 0; i < capture_count; i++)
@@ -152,10 +164,15 @@ void History::update_capture_history(MOVE best_move, I16 depth,
         MOVE move = capture_moves[i];
         if (move == best_move)
             continue;
-        update_capt(move, malus);
+        update_capture(move, malus);
     }
 }
 
+void History::update_capture(MOVE move, int malus)
+{
+    I16* histo = &(capture_history[Move::piece(move)][Move::dest(move)][Move::captured_type(move)]);
+    gravity(histo, malus);
+}
 
 //=================================================================
 //! \brief  Correction History : [color][pawn_key_index]
@@ -194,7 +211,7 @@ void History::update_correction(int& entry, int scaled_bonus, int weight)
 //! en fonction de Correction_History
 //!
 //---------------------------------------------------------
-int History::correct_eval(const Board& board, int raw_eval)
+int History::corrected_eval(const Board& board, int raw_eval)
 {
     // règle des 50 coups
     //TODO raw_eval = (raw_eval * (200 - board.get_fiftymove_counter())) / 200;

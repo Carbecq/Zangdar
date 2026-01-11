@@ -14,6 +14,15 @@ class History;
 using MainHistoryTable = I16[N_COLORS][N_SQUARES][N_SQUARES];
 
 //============================================================================
+//  Pawn History
+//      pawn_history[pawn_key & mask][piece][dest]
+//============================================================================
+static constexpr int PAWNHIST_SIZE = PAWN_HASH_SIZE;
+static constexpr int PAWNHIST_MASK = PAWNHIST_SIZE - 1;
+
+using PawnHistoryTable = I16[PAWNHIST_SIZE][N_PIECE][N_SQUARES];
+
+//============================================================================
 //  Capture History
 //      https://www.chessprogramming.org/History_Heuristic#Capture_History
 //
@@ -45,6 +54,7 @@ using CounterMoveTable = MOVE[N_PIECE][N_SQUARES];
 //============================================================================
 using ContinuationHistoryTable = I16[N_PIECE][N_SQUARES][N_PIECE][N_SQUARES];
 
+
 //============================================================================
 //  Correction History
 //
@@ -66,6 +76,9 @@ public:
     inline I16 get_main_history(Color color, MOVE move) const {
         return main_history[color][Move::from(move)][Move::dest(move)];
     }
+    inline I16 get_pawn_history(Board* board, MOVE move) const {
+        return pawn_history[get_index(board->get_pawn_key())][Move::piece(move)][Move::dest(move)];
+    }
 
     ContinuationHistoryTable continuation_history {{{{0}}}};
 
@@ -79,14 +92,15 @@ public:
     void update_capture_history(MOVE best_move, I16 depth,
                                 size_t capture_count, std::array<MOVE, MAX_MOVES>& capture_moves);
 
-    int  get_quiet_history(Color color, const SearchInfo *info, const MOVE move, int &cm_hist, int &fm_hist) const;
-    void update_quiet_history(Color color, SearchInfo *info, MOVE move, I16 depth,
+    int  get_quiet_history(Color color, const SearchInfo *info, const MOVE move, KEY pawnkey) const;
+    void update_quiet_history(Color color, SearchInfo *info, MOVE move, KEY pawnkey, I16 depth,
                               size_t quiet_count, std::array<MOVE, MAX_MOVES>& quiet_moves);
 
+    void update_pawn(KEY pawnkey, MOVE move, int bonus);
 
     void update_correction_history(const Board &board, int depth, int best_score, int static_eval);
 
-    int correct_eval(const Board& board, int raw_eval);
+    int corrected_eval(const Board& board, int raw_eval);
 
 
 private:
@@ -119,12 +133,14 @@ private:
         return -stat_bonus(depth);
     }
 
+    [[nodiscard]] inline int get_index(const KEY pawnkey) const {
+        return pawnkey & PAWNHIST_MASK;
+    }
 
     void update_main(Color color, MOVE move, int bonus);
     void update_cont(SearchInfo* info, MOVE move, int bonus);
-    void update_capt(MOVE move, int malus);
+    void update_capture(MOVE move, int malus);
     void update_correction(int& entry, int scaled_bonus, int weight);
-
 
     //*********************************************************************
     //  Données initialisées une seule fois au début d'une nouvelle partie
@@ -133,6 +149,10 @@ private:
     // tableau donnant le bonus/malus d'un coup quiet ayant provoqué un cutoff
     MainHistoryTable  main_history = {{{0}}};
 
+    //
+    PawnHistoryTable pawn_history = {{{0}}};
+
+
     // tableau des coups qui ont causé un cutoff au ply précédent
     CounterMoveTable counter_move = {{0}};
 
@@ -140,6 +160,7 @@ private:
     CaptureHistory capture_history = {{{0}}};
 
     // Correction History
+    // Utilisé pour la correction de l'évaluation
     PawnCorrectionHistoryTable     pawn_correction_history = {{0}};
     MaterialCorrectionHistoryTable material_correction_history[N_COLORS] = {{{0}}};
 };

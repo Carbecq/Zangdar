@@ -70,7 +70,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
     if (!isInCheck)
     {
         raw_eval = (tt_hit && tt_eval != VALUE_NONE) ? tt_eval : board.evaluate();
-        static_eval = si->static_eval = td->history.correct_eval(board, raw_eval);
+        static_eval = si->static_eval = td->history.corrected_eval(board, raw_eval);
 
 
         // if (!tt_hit)
