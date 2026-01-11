@@ -7,8 +7,10 @@ test/
 ignore_src/
 .vs/
 x64/
-fens/
-fens_1/
+gen/
+WeatherFactory/
+clang.txt
+
 
 
 
