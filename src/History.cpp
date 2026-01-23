@@ -106,7 +106,7 @@ void History::update_quiet_history(Color color, SearchInfo* info, MOVE best_move
     // Bonus pour le coup quiet ayant provoqué un cutoff (fail-high)
     update_main(color, best_move, bonus);
     update_pawn(pawnkey, best_move, bonus);
-    update_cont(info, best_move, bonus);
+    update_continuation(info, best_move, bonus);
 
     // Malus pour les autres coups quiets
     for (size_t i = 0; i < quiet_count; i++)
@@ -116,33 +116,38 @@ void History::update_quiet_history(Color color, SearchInfo* info, MOVE best_move
         {
             update_main(color, move, malus);
             update_pawn(pawnkey, move,  malus);
-            update_cont(info, move,  malus);
+            update_continuation(info, move,  malus);
         }
     }
 }
 
 void History::update_main(Color color, MOVE move, int bonus)
 {
-    I16* histo = &(main_history[color][Move::from(move)][Move::dest(move)]);
-    gravity(histo, bonus);
+    gravity(main_history[color][Move::from(move)][Move::dest(move)], bonus);
 }
 
 void History::update_pawn(KEY pawnkey, MOVE move, int bonus)
 {
-    I16* pawn = &(pawn_history[get_index(pawnkey)][Move::piece(move)][Move::dest(move)]);
-    gravity(pawn, bonus);
+    gravity(pawn_history[get_index(pawnkey)][Move::piece(move)][Move::dest(move)], bonus);
 }
 
-void History::update_cont(SearchInfo* info, MOVE move, int bonus)
+void History::update_continuation(SearchInfo* info, MOVE move, int bonus)
 {
-    for (int delta : {1, 2, 4})    //TODO essayer aussi 4 et 6 : attention info-delta dans _info ?
-    {
-        if (Move::is_ok((info - delta)->move))
-        {
-            I16* histo = &(*(info - delta)->cont_hist)[Move::piece(move)][Move::dest(move)];
-            gravity(histo, bonus);
-        }
-    }
+    if (Move::is_ok((info - 1)->move))
+        gravity( (*(info - 1)->cont_hist)[Move::piece(move)][Move::dest(move)], bonus);
+    if (Move::is_ok((info - 2)->move))
+        gravity( (*(info - 2)->cont_hist)[Move::piece(move)][Move::dest(move)], bonus);
+    if (Move::is_ok((info - 4)->move))
+        gravity( (*(info - 4)->cont_hist)[Move::piece(move)][Move::dest(move)], bonus);
+}
+
+void History::update_continuation_history(SearchInfo* info, MOVE move, int score, int alpha, int beta, int depth)
+{
+    int bonus = score <= alpha ? stat_malus(depth)
+              : score >= beta ? stat_bonus(depth)
+              : 0;
+
+    update_continuation(info, move, bonus);
 }
 
 //=================================================================
@@ -170,8 +175,7 @@ void History::update_capture_history(MOVE best_move, I16 depth,
 
 void History::update_capture(MOVE move, int malus)
 {
-    I16* histo = &(capture_history[Move::piece(move)][Move::dest(move)][Move::captured_type(move)]);
-    gravity(histo, malus);
+    gravity(capture_history[Move::piece(move)][Move::dest(move)][Move::captured_type(move)], malus);
 }
 
 //=================================================================

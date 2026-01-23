@@ -99,6 +99,7 @@ public:
     void update_pawn(KEY pawnkey, MOVE move, int bonus);
 
     void update_correction_history(const Board &board, int depth, int best_score, int static_eval);
+    void update_continuation_history(SearchInfo* info, MOVE move, int score, int alpha, int beta, int depth);
 
     int corrected_eval(const Board& board, int raw_eval);
 
@@ -114,13 +115,13 @@ private:
     //  Ajoute un bonus à l'historique
     //      history gravity
     //-----------------------------------------------------
-    inline void gravity(I16* entry, int bonus)
+    inline void gravity(I16& entry, int bonus)
     {
         // Formulation du WIKI :
         // int clamped_bonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
         // entry += clamped_bonus - (*entry) * abs(clamped_bonus) / MAX_HISTORY;
 
-        *entry += bonus - *entry * abs(bonus) / MAX_HISTORY;
+        entry += bonus - static_cast<int>(entry) * abs(bonus) / MAX_HISTORY;
     }
 
     inline int stat_bonus(int depth)
@@ -138,7 +139,7 @@ private:
     }
 
     void update_main(Color color, MOVE move, int bonus);
-    void update_cont(SearchInfo* info, MOVE move, int bonus);
+    void update_continuation(SearchInfo* info, MOVE move, int bonus);
     void update_capture(MOVE move, int malus);
     void update_correction(int& entry, int scaled_bonus, int weight);
 

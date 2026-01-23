@@ -98,7 +98,10 @@ PARAM(SEENoisyMargin, -19, -50, 50, 10);
 PARAM(SEDepth, 8, 5, 10, 1);
 
 //  LATE MOVE REDUCTION
-PARAM(HistReductionDivisor, 5000, 3000, 8000, 200);
+PARAM(LMR_HistReductionDivisor, 5000, 3000, 8000, 200);
+PARAM(LMR_DeeperMargin, 43, 20, 60, 5);
+PARAM(LMR_DeeperScale, 2, 0, 10, 1);
+PARAM(LMR_ShallowerMargin, 11, 0, 20, 2);
 
 // History
 PARAM(HistoryBonusMargin, 364,  128,  512,  32);

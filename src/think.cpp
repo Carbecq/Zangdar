@@ -678,7 +678,6 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         //  LATE MOVE REDUCTION
         //------------------------------------------------------------------------------------
         int newDepth = depth - 1 + extension;
-        bool doFullDepthSearch;
 
         if (   depth > 2
                && move_count > (2 + isPV) )
@@ -702,29 +701,44 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             R += board.getNonPawnMaterialCount<THEM>() < 2;
 
             // Adjust based on history
-            R -= std::max(-2, std::min(2, hist / Tunable::HistReductionDivisor));
+            R -= std::max(-2, std::min(2, hist / Tunable::LMR_HistReductionDivisor));
 
             // Depth after reductions, avoiding going straight to quiescence
-            int lmrDepth = std::clamp(newDepth - R, 1, newDepth);
+            int lmrDepth = std::clamp(newDepth - R, 1, newDepth + 1);
 
             // Search this move with reduced depth:
             score = -alpha_beta<~C>(board, timer, -alpha-1, -alpha, lmrDepth, true, td, si+1);
 
-            doFullDepthSearch = score > alpha && lmrDepth < newDepth;
+            // Do full depth search when reduced LMR search fails high
+            if (score > alpha && lmrDepth < newDepth)
+            {
+                // Credit to Viz (and lonfom) for the following modification of the zws
+                // re-search depth. They can be found in SF as doDeeperSearch + doShallowerSearch
+
+                // ZWS = zero window search
+
+                // Adjust full depth search based on LMR results - if result
+                // was good enough search deeper, if it was bad enough search shallower
+                newDepth += (score > best_score + Tunable::LMR_DeeperMargin + Tunable::LMR_DeeperScale*newDepth);
+                newDepth -= (score < best_score + Tunable::LMR_ShallowerMargin|);
+
+                if (lmrDepth < newDepth)
+                {
+                    score = -alpha_beta<~C>(board, timer, -alpha-1, -alpha, newDepth, !cut_node, td, si+1);
+                }
+
+                td->history.update_continuation_history(si, move, score, alpha, beta, newDepth);
+            }
         }
-        else
+        else if (!isPV || move_count > 1)
         {
-            doFullDepthSearch = !isPV || move_count > 1;
+            score = -alpha_beta<~C>(board, timer, -alpha-1, -alpha, newDepth, !cut_node, td, si+1);
         }
 
-        // Full depth zero-window search
-        if (doFullDepthSearch)
-            score = -alpha_beta<~C>(board, timer, -alpha-1, -alpha, newDepth, !cut_node, td, si+1);
-
-        // Full depth alpha-beta window search
-        if (isPV && ((score > alpha && score < beta) || move_count == 1))
+        if (isPV && (move_count == 1 || score > alpha))
+        {
             score = -alpha_beta<~C>(board, timer, -beta, -alpha, newDepth, false, td, si+1);
-
+        }
 
         // retract current move
         board.undo_move<C, true>();
