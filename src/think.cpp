@@ -142,7 +142,7 @@ int Search::aspiration_window(Board& board, Timer& timer, ThreadData* td, Search
 
     while (true)
     {
-        score = alpha_beta<C>(board, timer, alpha, beta, std::max(1, depth), td, si);
+        score = alpha_beta<C>(board, timer, alpha, beta, std::max(1, depth), false, td, si);
 
         if (td->stopped)
             break;
@@ -190,7 +190,7 @@ int Search::aspiration_window(Board& board, Timer& timer, ThreadData* td, Search
 //! \return Valeur du score
 //-----------------------------------------------------
 template<Color C>
-int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int depth, ThreadData* td, SearchInfo* si)
+int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int depth, bool cut_node, ThreadData* td, SearchInfo* si)
 {
     assert(beta > alpha);
 
@@ -449,7 +449,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             si->move = Move::MOVE_NULL;
             si->cont_hist = &td->history.continuation_history[0][0];
             board.make_nullmove<C>();
-            int null_score = -alpha_beta<~C>(board, timer, -beta, -beta + 1, depth - 1 - R, td, si+1);
+            int null_score = -alpha_beta<~C>(board, timer, -beta, -beta + 1, depth - 1 - R, !cut_node, td, si+1);
             board.undo_nullmove<C>();
 
             if (td->stopped)
@@ -487,7 +487,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
                 // Si oui, alors on effectue une recherche normale, avec une profondeur réduite
                 if (pbScore >= betaCut)
-                    pbScore = -alpha_beta<~C>(board, timer, -betaCut, -betaCut+1, depth-Tunable::ProbcutReduction, td, si+1);
+                    pbScore = -alpha_beta<~C>(board, timer, -betaCut, -betaCut+1, depth-Tunable::ProbcutReduction, cut_node, td, si+1);
 
                 board.undo_move<C, true>();
 
@@ -505,8 +505,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     //---------------------------------------------------------------------
     // Internal Iterative Deepening.
     //---------------------------------------------------------------------
-    if (   tt_move == Move::MOVE_NONE
-           && depth >= 4)
+    if ((isPV || cut_node) && depth >= 2+2*cut_node && tt_move == Move::MOVE_NONE)
     {
         depth--;
     }
@@ -625,13 +624,13 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             int sing_depth = (depth-1)/2;
 
             si->excluded = move;
-            score = alpha_beta<C>(board, timer, sing_beta-1, sing_beta, sing_depth, td, si); //TODO si ou si+1 ?
+            int SE_score = alpha_beta<C>(board, timer, sing_beta-1, sing_beta, sing_depth, cut_node, td, si);
             si->excluded = Move::MOVE_NONE;
 
-            if (score < sing_beta)
+            if (SE_score < sing_beta)
             {
                 if (   !isPV
-                       && score < sing_beta - 50
+                       && SE_score < sing_beta - 50
                        && si->doubleExtensions <= 20)  // Avoid search explosion by limiting the number of double extensions
                 {
                     extension = 2;
@@ -650,6 +649,10 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             else if (tt_score >= beta)
             {
                 // negative extension!
+                extension = -3 + isPV;
+            }
+            else if (cut_node)
+            {
                 extension = -2;
             }
         }
@@ -684,9 +687,13 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             int R = Reductions[isQuiet][std::min(31, depth)][std::min(31, move_count)];
 
             // Reduce less in pv nodes
-            R -= ttPV;
+            R -= ttPV + isPV;
+
             // Reduce less when improving
-            R -= improving;
+            R += !improving;
+
+            if (cut_node)
+                R += 2 - ttPV;
 
             // Reduce quiets more if ttMove is a capture
             R += Move::is_capturing(tt_move);
@@ -701,7 +708,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             int lmrDepth = std::clamp(newDepth - R, 1, newDepth);
 
             // Search this move with reduced depth:
-            score = -alpha_beta<~C>(board, timer, -alpha-1, -alpha, lmrDepth, td, si+1);
+            score = -alpha_beta<~C>(board, timer, -alpha-1, -alpha, lmrDepth, true, td, si+1);
 
             doFullDepthSearch = score > alpha && lmrDepth < newDepth;
         }
@@ -712,11 +719,11 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
         // Full depth zero-window search
         if (doFullDepthSearch)
-            score = -alpha_beta<~C>(board, timer, -alpha-1, -alpha, newDepth, td, si+1);
+            score = -alpha_beta<~C>(board, timer, -alpha-1, -alpha, newDepth, !cut_node, td, si+1);
 
         // Full depth alpha-beta window search
         if (isPV && ((score > alpha && score < beta) || move_count == 1))
-            score = -alpha_beta<~C>(board, timer, -beta, -alpha, newDepth, td, si+1);
+            score = -alpha_beta<~C>(board, timer, -beta, -alpha, newDepth, false, td, si+1);
 
 
         // retract current move

@@ -36,7 +36,7 @@ public:
 
 private:
     template <Color C> void iterative_deepening(Board& board, Timer& timer, ThreadData* td);
-    template <Color C> int  alpha_beta(Board& board, Timer& timer, int alpha, int beta, int depth, ThreadData* td, SearchInfo* si);
+    template <Color C> int  alpha_beta(Board& board, Timer& timer, int alpha, int beta, int depth, bool cut_node, ThreadData* td, SearchInfo* si);
     template <Color C> int  quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadData* td, SearchInfo* si);
 
     void show_uci_result(const ThreadData *td, I64 elapsed, const PVariation &pv) const;
