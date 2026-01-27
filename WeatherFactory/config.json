@@ -114,15 +114,9 @@
     "step": 1
   },
   "HistoryPruningLimit": {
-    "value": -1000,
-    "min_value": -2000,
-    "max_value": 0,
-    "step": 100
-  },
-  "HistoryPruningLimitImproving": {
-    "value": 1500,
+    "value": 4500,
     "min_value": 0,
-    "max_value": 2000,
+    "max_value": 8000,
     "step": 100
   },
   "SEEPruningDepth": {
@@ -149,11 +143,23 @@
     "max_value": 10,
     "step": 1
   },
-  "HistReductionDivisor": {
+  "LMR_HistReductionDivisor": {
     "value": 5000,
     "min_value": 3000,
     "max_value": 8000,
     "step": 200
+  },
+  "LMR_DeeperMargin": {
+    "value": 43,
+    "min_value": 30,
+    "max_value": 60,
+    "step": 4
+  },
+  "LMR_ShallowerMargin": {
+    "value": 11,
+    "min_value": 0,
+    "max_value": 20,
+    "step": 4
   },
   "HistoryBonusMargin": {
     "value": 364,

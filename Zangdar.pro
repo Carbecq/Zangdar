@@ -24,7 +24,7 @@ HOME_STR = "./"
 DEFINES += HOME='\\"$${HOME_STR}\\"'
 
 #------------------------------------------------------
-# DEFINES += USE_TUNE
+DEFINES += USE_TUNE
 
 #------------------------------------------------------
 # DEFINES += DEBUG_EVAL

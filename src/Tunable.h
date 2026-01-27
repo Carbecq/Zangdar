@@ -1,9 +1,12 @@
 #ifndef TUNABLE_H
 #define TUNABLE_H
 
-//  le tuning est fait en utilisant "Weather Factory"
+//  Tuning is done with "Weather Factory"
 //  https://github.com/jnlt3/weather-factory
 
+// I don't have the necessary equipment,
+// nor can I hog my machine for entire days.
+// So if someone could do it, I would be delighted!
 
 #include <vector>
 #include <string>

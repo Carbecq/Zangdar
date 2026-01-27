@@ -712,15 +712,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             // Do full depth search when reduced LMR search fails high
             if (score > alpha && lmrDepth < newDepth)
             {
-                // Credit to Viz (and lonfom) for the following modification of the zws
-                // re-search depth. They can be found in SF as doDeeperSearch + doShallowerSearch
-
-                // ZWS = zero window search
-
-                // Adjust full depth search based on LMR results - if result
-                // was good enough search deeper, if it was bad enough search shallower
                 newDepth += (score > best_score + Tunable::LMR_DeeperMargin + Tunable::LMR_DeeperScale*newDepth);
-                newDepth -= (score < best_score + Tunable::LMR_ShallowerMargin|);
+                newDepth -= (score < best_score + Tunable::LMR_ShallowerMargin);
 
                 if (lmrDepth < newDepth)
                 {
