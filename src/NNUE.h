@@ -48,16 +48,17 @@ constexpr I32 QA    = 255;      /// Hidden Layer Quantisation Factor
 constexpr I32 QB    =  64;      /// Output Layer Quantisation Factor
 constexpr I32 QAB   = QA * QB;
 
-constexpr int KING_BUCKETS_COUNT = 4;    // max king bucket
+constexpr int KING_BUCKETS_COUNT = 5;    // max king bucket
 constexpr std::array<int, N_SQUARES> king_buckets_map = {    // tableau servant à connaitre si la roi a changé de bucket
-                                                  0, 0, 1, 1, 1, 1, 0, 0,
-                                                  2, 2, 2, 2, 2, 2, 2, 2,
-                                                  3, 3, 3, 3, 3, 3, 3, 3,
-                                                  3, 3, 3, 3, 3, 3, 3, 3,
-                                                  3, 3, 3, 3, 3, 3, 3, 3,
-                                                  3, 3, 3, 3, 3, 3, 3, 3,
-                                                  3, 3, 3, 3, 3, 3, 3, 3,
-                                                  3, 3, 3, 3, 3, 3, 3, 3,
+                                                             0, 0, 1, 1, 1, 1, 0, 0,
+                                                             2, 2, 2, 2, 2, 2, 2, 2,
+                                                             3, 3, 3, 3, 3, 3, 3, 3,
+                                                             3, 3, 3, 3, 3, 3, 3, 3,
+                                                             4, 4, 4, 4, 4, 4, 4, 4,
+                                                             4, 4, 4, 4, 4, 4, 4, 4,
+                                                             4, 4, 4, 4, 4, 4, 4, 4,
+                                                             4, 4, 4, 4, 4, 4, 4, 4,
+
 };
 
 
