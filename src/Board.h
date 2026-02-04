@@ -113,7 +113,6 @@ public:
     template <Color C>
     void calculate_checkers_pinned() noexcept;
     void calculate_hash(U64& key, U64& pawn_key, U64 mat_key[2]) const;
-    void calculate_nnue(int& eval) ;
 
     //! \brief  Retourne le Bitboard de TOUS les attaquants (Blancs et Noirs) de la case "sq"
     [[nodiscard]] Bitboard all_attackers(const SQUARE sq, const Bitboard occ) const noexcept
