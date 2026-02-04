@@ -25,12 +25,12 @@ void Board::calculate_checkers_pinned() noexcept
     //1. Projecting attacks FROM the king square
     //2. Intersecting this bitboard with the enemy bitboard of that piece type
     get_status().checkers = (Attacks::knight_moves(K)     & occupancy_cp<THEM, PieceType::KNIGHT>())
-             | (Attacks::pawn_attacks<US>(K) & occupancy_cp<THEM, PieceType::PAWN>());
+            | (Attacks::pawn_attacks<US>(K) & occupancy_cp<THEM, PieceType::PAWN>());
 
     //Here, we identify slider checkers and pinners simultaneously, and candidates for such pinners
     //and checkers are represented by the bitboard <candidates>
     Bitboard candidates = (Attacks::rook_moves(K, enemyBB)   & their_orth_sliders) |
-                          (Attacks::bishop_moves(K, enemyBB) & their_diag_sliders);
+            (Attacks::bishop_moves(K, enemyBB) & their_diag_sliders);
 
     get_status().pinned = 0ULL;
     while (candidates)
@@ -53,54 +53,44 @@ void Board::calculate_checkers_pinned() noexcept
 template <Color C>
 [[nodiscard]] Bitboard Board::squares_attacked() const noexcept
 {
+    constexpr Color THEM = ~C;
+
     Bitboard mask = 0ULL;
-    U32 fr;
+
+    const Bitboard friendly = colorPiecesBB[C];
+    const Bitboard occupied = colorPiecesBB[THEM] | friendly;
+
+    Bitboard pawns   = friendly &  typePiecesBB[PieceType::PAWN];
+    Bitboard knights = friendly &  typePiecesBB[PieceType::KNIGHT];
+    Bitboard bishops = friendly & (typePiecesBB[PieceType::BISHOP] | typePiecesBB[PieceType::QUEEN]);
+    Bitboard rooks   = friendly & (typePiecesBB[PieceType::ROOK]   | typePiecesBB[PieceType::QUEEN]);
 
     // Pawns
     if constexpr (C == Color::WHITE) {
-        const auto pawns = occupancy_cp<C, PieceType::PAWN>();
         mask |= BB::north_east(pawns);
         mask |= BB::north_west(pawns);
     } else {
-        const auto pawns = occupancy_cp<C, PieceType::PAWN>();
         mask |= BB::south_east(pawns);
         mask |= BB::south_west(pawns);
     }
 
     // Knights
-    Bitboard bb = occupancy_cp<C, PieceType::KNIGHT>();
-    while (bb) {
-        fr = BB::pop_lsb(bb);
-        mask |= Attacks::knight_moves(fr);
-    }
+    while (knights)
+        mask |= Attacks::knight_moves(BB::pop_lsb(knights));
 
-    // Bishops
-    bb = occupancy_cp<C, PieceType::BISHOP>();
-    while (bb) {
-        fr = BB::pop_lsb(bb);
-        mask |= Attacks::bishop_moves(fr, ~occupancy_none());
-    }
+    // Bishops and Queens
+    while (bishops)
+        mask |= Attacks::bishop_moves(BB::pop_lsb(bishops), occupied);
 
-    // Rooks
-    bb = occupancy_cp<C, PieceType::ROOK>();
-    while (bb) {
-        fr = BB::pop_lsb(bb);
-        mask |= Attacks::rook_moves(fr, ~occupancy_none());
-    }
-
-    // Queens
-    bb = occupancy_cp<C, PieceType::QUEEN>();
-    while (bb) {
-        fr = BB::pop_lsb(bb);
-        mask |= Attacks::queen_moves(fr, ~occupancy_none());
-    }
+    // Rooks and Queens
+    while (rooks)
+        mask |= Attacks::rook_moves(BB::pop_lsb(rooks), occupied);
 
     // King
     mask |= Attacks::king_moves(get_king_square<C>());
 
     return mask;
 }
-
 
 // Explicit instantiations.
 template Bitboard Board::squares_attacked<WHITE>() const noexcept ;

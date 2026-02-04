@@ -45,7 +45,7 @@ int History::get_quiet_history(Color color, const SearchInfo* info, const MOVE m
     SQUARE from  = Move::from(move);
     SQUARE dest  = Move::dest(move);
 
-    int score = main_history[color][from][dest];
+    int score = main_history[color][BB::test_bit(info->threats, from)][BB::test_bit(info->threats, dest)][from][dest];
 
     score += pawn_history[get_index(pawnkey)][piece][dest];
 
@@ -104,7 +104,7 @@ void History::update_quiet_history(Color color, SearchInfo* info, MOVE best_move
     int malus = stat_malus(depth);
 
     // Bonus pour le coup quiet ayant provoqué un cutoff (fail-high)
-    update_main(color, best_move, bonus);
+    update_main(color, info, best_move, bonus);
     update_pawn(pawnkey, best_move, bonus);
     update_continuation(info, best_move, bonus);
 
@@ -114,16 +114,19 @@ void History::update_quiet_history(Color color, SearchInfo* info, MOVE best_move
         move = quiet_moves[i];
         if (move != best_move)
         {
-            update_main(color, move, malus);
+            update_main(color, info, move, malus);
             update_pawn(pawnkey, move,  malus);
             update_continuation(info, move,  malus);
         }
     }
 }
 
-void History::update_main(Color color, MOVE move, int bonus)
+void History::update_main(Color color, SearchInfo* info, MOVE move, int bonus)
 {
-    gravity(main_history[color][Move::from(move)][Move::dest(move)], bonus);
+    const SQUARE from = Move::from(move);
+    const SQUARE dest = Move::dest(move);
+
+    gravity(main_history[color][BB::test_bit(info->threats, from)][BB::test_bit(info->threats, dest)][from][dest], bonus);
 }
 
 void History::update_pawn(KEY pawnkey, MOVE move, int bonus)

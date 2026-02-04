@@ -14,6 +14,7 @@ const Network *network = reinterpret_cast<const Network *>(gnetworkDataData);
 
 }
 
+
 //======================================================
 //! \brief  Retourne l'évaluation du réseau
 //------------------------------------------------------
@@ -81,7 +82,7 @@ void NNUE::init()
 //----------------------------------------------------
 void NNUE::push()
 {
-    assert(head_idx+1 < stack.size());
+    assert(head_idx < stack.size()-1);
     head_idx++;
 }
 

@@ -204,6 +204,15 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         return 0;
     }
 
+    // Ensure a fresh PV
+    si->pv.length     = 0;
+
+    /* On a atteint la fin de la recherche
+        Certains codes n'appellent la quiescence que si on n'est pas en échec
+        ceci amène à une explosion des coups recherchés */
+    if (depth <= 0)
+        return (quiescence<C>(board, timer, alpha, beta, td, si));
+
     // If the position has a move that causes a repetition, and we are losing,
     // then we can cut off early since we can secure a draw
     if (   !isRoot
@@ -216,12 +225,30 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             return alpha;
     }
 
+    //  Position nulle ?
+    if (!isRoot && board.is_draw(si->ply))
+        return VALUE_DRAW;
+
+    // On a atteint la limite en profondeur de recherche ?
+    if (si->ply >= MAX_PLY)
+        return board.evaluate();
+
+    // Mate distance pruning
+    if (!isRoot)
+    {
+        alpha = std::max(alpha, -MATE + si->ply);
+        beta  = std::min(beta,   MATE - si->ply - 1);
+        if (alpha >= beta)
+            return alpha;
+    }
+
     // Prefetch La table de transposition aussitôt que possible
     transpositionTable.prefetch(board.get_key());
 
     //  Caractéristiques de la position
     const bool isInCheck  = board.is_in_check();
     const bool isExcluded = si->excluded != Move::MOVE_NONE;
+    si->threats           = board.squares_attacked<THEM>();
 
     // For PVS, the node is a PV node if beta - alpha != 1 (full-window = not a null window)
     // We do not want to do most pruning techniques on PV nodes
@@ -229,28 +256,9 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     // Utiliser plutôt la notation : EXACT
     const bool isPV = ((beta - alpha) != 1);
 
-    // Ensure a fresh PV
-    si->pv.length     = 0;
-
-
-    /* On a atteint la fin de la recherche
-        Certains codes n'appellent la quiescence que si on n'est pas en échec
-        ceci amène à une explosion des coups recherchés */
-    if (depth <= 0)
-    {
-        return (quiescence<C>(board, timer, alpha, beta, td, si));
-    }
-
-
-    // Update node count and selective depth
+     // Update node count and selective depth
     td->nodes++;
     td->seldepth = isRoot ? 0 : std::max(td->seldepth, si->ply);
-
-
-    // On a atteint la limite en profondeur de recherche ?
-    if (si->ply >= MAX_PLY)
-        return board.evaluate();
-
 
     int  score      = -INFINITE;
     int  best_score = -INFINITE;        // initially assume the worst case
@@ -262,18 +270,6 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         depth++;
 
 
-    if (!isRoot)
-    {
-        //  Position nulle ?
-        if (board.is_draw(si->ply))
-            return VALUE_DRAW;
-
-        // Mate distance pruning
-        alpha = std::max(alpha, -MATE + si->ply);
-        beta  = std::min(beta,   MATE - si->ply - 1);
-        if (alpha >= beta)
-            return alpha;
-    }
 
 
     //  Recherche de la position actuelle dans la table de transposition

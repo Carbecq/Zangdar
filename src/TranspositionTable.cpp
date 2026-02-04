@@ -94,7 +94,7 @@ void TranspositionTable::clear(void)
 //--------------------------------------------------------
 void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int bound, int depth, int ply, bool pv)
 {
-    assert(0 <= depth && depth <= MAX_PLY);
+    assert(0 <= depth && depth < MAX_PLY);
     assert(move != Move::MOVE_NULL);
 
     // extract the 32-bit key from the 64-bit zobrist hash

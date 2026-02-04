@@ -349,15 +349,16 @@ constexpr static Bitboard C8D8_BB = 0xC00000000000000;
 using PieceTo = I16[N_PIECE][N_SQUARES];
 
 struct SearchInfo {
-    MOVE        excluded{};   // coup à éviter
-    int         static_eval{};       // évaluation statique
-    MOVE        move{};       // coup cherché
-    int         ply{};        // profondeur de recherche
-    PVariation  pv{};         // Principale Variation
+    MOVE        excluded{};         // coup à éviter
+    int         static_eval{};      // évaluation statique
+    MOVE        move{};             // coup cherché
+    int         ply{};              // profondeur de recherche
+    PVariation  pv{};               // Principale Variation
     int         doubleExtensions{};
-    PieceTo*    cont_hist{};    // pointeur sur History::continuation_history[piece(info-x)][dest(info-x)]
-    MOVE        killer1{};      //TODO vérifier initialisation
+    PieceTo*    cont_hist{};        // pointeur sur History::continuation_history[piece(info-x)][dest(info-x)]
+    MOVE        killer1{};          // TODO vérifier initialisation
     MOVE        killer2{};
+    Bitboard    threats = 0ULL;     // menaces du camp ennemi
 }__attribute__((aligned(64)));
 
 

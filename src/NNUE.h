@@ -173,7 +173,7 @@ public:
 
 
 private:
-    std::array<Accumulator, 256> stack = {Accumulator{}};       // pile des accumulateurs
+    std::array<Accumulator, MAX_PLY> stack = {Accumulator{}};       // pile des accumulateurs
     size_t head_idx;                                                 // accumulateur utilisé (= stack_size - 1)
     FinnyEntry finny[N_COLORS][KING_BUCKETS_COUNT] = {};            // tables Finny
 

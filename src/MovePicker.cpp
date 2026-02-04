@@ -363,7 +363,7 @@ void MovePicker::score_quiet()
         //TODO essayer d'autres coefficients
         //TODO ajouter info-6 (attention au décalage dans SearchInfo
 
-        value  = 2 * history.get_main_history(board->turn(), move);
+        value  = 2 * history.get_main_history(board->turn(), info, move);
 
         value += history.get_pawn_history(board, move);
 

@@ -10,8 +10,9 @@ class History;
 #include "Tunable.h"
 #include "Board.h"
 
-// Quiet History, aussi appelée Main History : side_to_move, from, to
-using MainHistoryTable = I16[N_COLORS][N_SQUARES][N_SQUARES];
+// Quiet History, aussi appelée Main History, ou Butterfly History :
+//  side_to_move, threat, threat, from, to
+using MainHistoryTable = I16[N_COLORS][2][2][N_SQUARES][N_SQUARES];
 
 //============================================================================
 //  Pawn History
@@ -73,8 +74,10 @@ class History
 public:
     History();
     void reset();
-    inline I16 get_main_history(Color color, MOVE move) const {
-        return main_history[color][Move::from(move)][Move::dest(move)];
+    inline I16 get_main_history(Color color, const SearchInfo *info, MOVE move) const {
+        SQUARE from = Move::from(move);
+        SQUARE dest = Move::dest(move);
+        return main_history[color][BB::test_bit(info->threats, from)][BB::test_bit(info->threats, dest)][from][move];
     }
     inline I16 get_pawn_history(Board* board, MOVE move) const {
         return pawn_history[get_index(board->get_pawn_key())][Move::piece(move)][Move::dest(move)];
@@ -138,7 +141,7 @@ private:
         return pawnkey & PAWNHIST_MASK;
     }
 
-    void update_main(Color color, MOVE move, int bonus);
+    void update_main(Color color, SearchInfo *info, MOVE move, int bonus);
     void update_continuation(SearchInfo* info, MOVE move, int bonus);
     void update_capture(MOVE move, int malus);
     void update_correction(int& entry, int scaled_bonus, int weight);
@@ -148,7 +151,7 @@ private:
 
 
     // tableau donnant le bonus/malus d'un coup quiet ayant provoqué un cutoff
-    MainHistoryTable  main_history = {{{0}}};
+    MainHistoryTable  main_history = {{{{{0}}}}};
 
     //
     PawnHistoryTable pawn_history = {{{0}}};

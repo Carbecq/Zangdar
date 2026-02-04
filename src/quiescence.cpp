@@ -19,9 +19,27 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
         return 0;
     }
 
+    // If the position has a move that causes a repetition, and we are losing,
+    // then we can cut off early since we can secure a draw
+    if (
+           board.get_fiftymove_counter() >= 3
+           && alpha < VALUE_DRAW
+           && board.upcoming_repetition(si->ply))
+    {
+        alpha = VALUE_DRAW;
+        if (alpha >= beta)
+            return alpha;
+    }
+
     // partie nulle ?
     if(board.is_draw(si->ply))
         return VALUE_DRAW;
+
+    // profondeur de recherche max atteinte
+    // prevent overflows
+    const bool isInCheck = board.is_in_check();
+    if (si->ply >= MAX_PLY)
+        return isInCheck ? VALUE_DRAW : board.evaluate();
 
     // Prefetch La table de transposition aussitôt que possible
     transpositionTable.prefetch(board.get_key());
@@ -29,12 +47,6 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
     // Update node count and selective depth
     td->nodes++;
     td->seldepth = std::max(td->seldepth, si->ply);
-
-    // profondeur de recherche max atteinte
-    // prevent overflows
-    const bool isInCheck = board.is_in_check();
-    if (si->ply >= MAX_PLY)
-        return isInCheck ? VALUE_DRAW : board.evaluate();
 
     const int  old_alpha = alpha;
     const bool isPV      = ((beta - alpha) != 1);
