@@ -143,7 +143,7 @@ endif
 
 ifeq ($(findstring clang, $(CXX)), clang)
 
-CFLAGS_REL1  = -O3 -flto=auto -ftree-vectorize -funroll-loops -fno-exceptions -DNDEBUG -pthread -Wdisabled-optimization -Wall -Wextra \
+CFLAGS_REL1  = -O3 -flto -ftree-vectorize -funroll-loops -fno-exceptions -DNDEBUG -pthread -Wdisabled-optimization -Wall -Wextra \
                -finline-functions -fno-rtti -fstrict-aliasing -fomit-frame-pointer
 CFLAGS_WARN1 = -Wmissing-declarations -Wredundant-decls -Wshadow -Wundef -Wuninitialized -pedantic
 
