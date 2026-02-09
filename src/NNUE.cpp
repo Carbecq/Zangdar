@@ -82,7 +82,7 @@ void NNUE::init()
 //----------------------------------------------------
 void NNUE::push()
 {
-    assert(head_idx < stack.size()-1);
+    assert(head_idx < stack.size()-1);  // < 128
     head_idx++;
 }
 

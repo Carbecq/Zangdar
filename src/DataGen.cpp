@@ -151,7 +151,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
     td->index  = 0;
 
     MoveList movelist;
-    size_t    nbr_moves;
+    size_t   nbr_moves;
     Board    board;
     int      drawCount = 0;
     int      winCount = 0;
@@ -432,6 +432,8 @@ void DataGen::data_search(Board& board, Timer& timer,
     //==================================================
     // iterative deepening
     //==================================================
+
+    board.nnue.start_search(board);
 
     std::array<SearchInfo, STACK_SIZE> _info{};
     SearchInfo* si  = &(_info[STACK_OFFSET]);

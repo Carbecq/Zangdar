@@ -141,7 +141,7 @@ class Board;
 class NNUE
 {
 public:
-    explicit NNUE() : head_idx(0) {}
+    explicit NNUE() : stack(MAX_PLY+1), head_idx(0) {}
     ~NNUE() = default;
 
     inline const Accumulator& get_accumulator() const { return stack[head_idx]; }
@@ -173,7 +173,8 @@ public:
 
 
 private:
-    std::array<Accumulator, MAX_PLY> stack = {Accumulator{}};       // pile des accumulateurs
+    std::vector<Accumulator> stack;                                     // pile des accumulateurs
+
     size_t head_idx;                                                 // accumulateur utilisé (= stack_size - 1)
     FinnyEntry finny[N_COLORS][KING_BUCKETS_COUNT] = {};            // tables Finny
 
