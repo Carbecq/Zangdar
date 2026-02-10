@@ -11,18 +11,18 @@
 #include <immintrin.h>
 #endif
 
-#include "types.h"
-#include "bitmask.h"
-
 #if defined(__AVX512F__)
-#define ALIGN   64
+  #define ALIGN   64
 #elif defined(__AVX2__)
-#define ALIGN   32
+  #define ALIGN   32
 #elif defined(__SSE2__) || defined(__AVX__)
-#define ALIGN   16
+  #define ALIGN   16
 #elif defined(__ARM_NEON)
-#define ALIGN   16
+  #define ALIGN   16
+#else
+  #define ALIGN 16
 #endif
+
 
 //------------------------------------------------------------------------------
 //  Description du réseau : (768x4hm -> 768)x2 -> 1x8  SquaredClippedReLU
@@ -141,7 +141,7 @@ class Board;
 class NNUE
 {
 public:
-    explicit NNUE() : stack(MAX_PLY+1), head_idx(0) {}
+    explicit NNUE() : head_idx(0) {}
     ~NNUE() = default;
 
     inline const Accumulator& get_accumulator() const { return stack[head_idx]; }
@@ -165,7 +165,7 @@ public:
 
     I32 activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
                    const std::array<I16, HIDDEN_LAYER_SIZE>& them,
-                   const std::array<I16, N_COLORS * HIDDEN_LAYER_SIZE * OUTPUT_BUCKETS>& weights,
+                   const std::array<I16, HIDDEN_LAYER_SIZE * N_COLORS * OUTPUT_BUCKETS>& weights,
                    const int bucket);
 
 
@@ -173,9 +173,9 @@ public:
 
 
 private:
-    std::vector<Accumulator> stack;                                     // pile des accumulateurs
+    std::array<Accumulator, MAX_PLY+1> stack;                       // pile des accumulateurs
 
-    size_t head_idx;                                                 // accumulateur utilisé (= stack_size - 1)
+    size_t head_idx;                                                // accumulateur utilisé (= stack_size - 1)
     FinnyEntry finny[N_COLORS][KING_BUCKETS_COUNT] = {};            // tables Finny
 
     template <Color side> void lazy_update(const Board* board, Accumulator& head);
@@ -209,6 +209,7 @@ private:
     // count = 32 : b = 7.5
     //          2 :     0
     inline int get_bucket(size_t count) const {
+        assert(count >= 2);
         return (count - 2) / BUCKET_DIVISOR;
     }
 
@@ -232,7 +233,7 @@ private:
     template <Color side>U32 get_indice(Piece piece, SQUARE square, SQUARE king);
 
 
-    constexpr inline I32 screlu(I16 x) {
+    inline I32 screlu(I16 x) {
         auto clamped = std::clamp(static_cast<I32>(x), 0, QA);
         return clamped * clamped;
     }

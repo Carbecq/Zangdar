@@ -284,7 +284,9 @@ void NNUE::lazy_update(const Board* board, Accumulator& acc)
     if (acc.updated[side])
         return;
 
-    int iter       = head_idx;
+    assert(head_idx > 0);
+
+    int iter          = head_idx;
     const SQUARE king = acc.king_square[side];
 
     while (true)
@@ -373,7 +375,7 @@ void NNUE::update(const Accumulator& src, Accumulator& dst, SQUARE king)
 }
 
 //========================================================================
-//! \brief  Calcule l'indece du triplet (couleur, piece, case)
+//! \brief  Calcule l'indice du triplet (couleur, piece, case)
 //! dans l'Input Layer
 //------------------------------------------------------------------------
 std::pair<size_t, size_t> NNUE::get_indices(Piece piece, SQUARE square, SQUARE wking, SQUARE bking)
@@ -418,7 +420,7 @@ std::pair<size_t, size_t> NNUE::get_indices(Piece piece, SQUARE square, SQUARE w
 }
 
 //========================================================================
-//! \brief  Calcule l'indece du triplet (couleur, piece, case)
+//! \brief  Calcule l'indice du triplet (couleur, piece, case)
 //!         pour une perspective
 //! \param[in] side     perspective
 //------------------------------------------------------------------------
