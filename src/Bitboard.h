@@ -12,10 +12,6 @@
 
 namespace BB {
 
-
-
-//------------
-
 //! \brief  récupère le bit à la position donnée
 [[nodiscard]] constexpr bool get_bit(Bitboard b, const SQUARE sq)  noexcept { return (b & (1ULL << sq)) ; }
 
@@ -26,7 +22,7 @@ constexpr void set_bit(Bitboard& b, const SQUARE sq) noexcept      { b |= (1ULL 
 constexpr void clear_bit(Bitboard& b, const SQUARE sq) noexcept    { b &= ~(1ULL << sq);     }
 
 //! \brief teste si le bit est mis
-constexpr bool test_bit(const Bitboard b, const SQUARE sq) noexcept    { return ( b & (1ULL << sq));     }
+[[nodiscard]] constexpr bool test_bit(const Bitboard b, const SQUARE sq) noexcept    { return ( b & (1ULL << sq));     }
 
 //! \brief change le bit en son opposé
 constexpr void toggle_bit(Bitboard& b, const SQUARE sq) noexcept     { b ^= (1ULL << sq);    }
@@ -80,20 +76,16 @@ constexpr U32 PYRRHIC_pop_lsb(Bitboard* b) noexcept {
 
 
 //! \brief Teste si le bitboard a plus d'un set à 1
-[[nodiscard]] constexpr bool multiple(Bitboard b) {
-    return (b & (b - 1));
-}
+[[nodiscard]] constexpr bool multiple(Bitboard b) noexcept { return (b & (b - 1)); }
 
 //! \brief Teste si le bitboard n'a qu'un seul bit à 1
-[[nodiscard]] constexpr bool single(Bitboard b) {
-    return (b && !multiple(b));
-}
+[[nodiscard]] constexpr bool single(Bitboard b) noexcept { return (b && !multiple(b)); }
 
 
 
 
 /* Byte swap (= vertical mirror) */
-constexpr Bitboard byte_swap(Bitboard b)
+[[nodiscard]] constexpr Bitboard byte_swap(Bitboard b) noexcept
 {
 #if defined(__GNUC__)
     return __builtin_bswap64(b);
@@ -108,7 +100,7 @@ constexpr Bitboard byte_swap(Bitboard b)
 #endif
 }
 
-[[nodiscard]] constexpr Bitboard squaresOfMatchingColour(SQUARE sq) {
+[[nodiscard]] constexpr Bitboard squaresOfMatchingColour(SQUARE sq) noexcept {
     assert(A1 <= sq && sq < N_SQUARES);
     return BB::test_bit(LightSquares, sq) ? LightSquares : DarkSquares;
 }
@@ -141,7 +133,7 @@ constexpr Bitboard byte_swap(Bitboard b)
 
 //! \brief Décale d'une case dans la direction donnée
 template <Direction D>
-[[nodiscard]] constexpr Bitboard shift(const Bitboard b)
+[[nodiscard]] constexpr Bitboard shift(const Bitboard b) noexcept
 {
     switch (D)
     {

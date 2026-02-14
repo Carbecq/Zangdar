@@ -48,8 +48,8 @@ private:
     static constexpr int AspirationWindowsDelta    = 16;
     static constexpr int AspirationWindowsExpand   = 6667;
 
-    static constexpr U32 LateMovePruningDepth = 7;
-    static constexpr U32 LateMovePruningCount[2][8] = {
+    static constexpr int LateMovePruningDepth = 7;
+    static constexpr int LateMovePruningCount[2][8] = {
         {0, 2, 3, 4, 6, 8, 13, 18},
         {0, 3, 4, 6, 8, 12, 20, 30}
     };

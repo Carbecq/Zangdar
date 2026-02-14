@@ -519,9 +519,9 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     int  bound = BOUND_UPPER;
     int  move_count = 0;
     std::array<MOVE, MAX_MOVES> quiet_moves;
-    size_t  quiet_count = 0;
+    int  quiet_count = 0;
     std::array<MOVE, MAX_MOVES> capture_moves;
-    size_t  capture_count = 0;
+    int  capture_count = 0;
     MOVE move;
     int  hist = 0;  // pas I16 !!
 

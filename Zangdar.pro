@@ -48,7 +48,7 @@ CFLAGS_WARN3 = -Wformat=2 -Winit-self -Wmissing-include-dirs
 CFLAGS_WARN4 = -Woverloaded-virtual -Warray-bounds
 CFLAGS_WARN5 = -Wsign-promo -Wstrict-overflow=5 -Wno-unused
 CFLAGS_WARN6 = -Wswitch-default -Wattributes -Waddress -Wfloat-equal -Wmissing-prototypes -Wconditional-uninitialized
-CFLAGS_WARN7 = -Wsign-conversion
+# CFLAGS_WARN7 = -Wsign-conversion
 }
 
 #------------------------------------------------------

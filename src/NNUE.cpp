@@ -266,20 +266,16 @@ void NNUE::lazy_updates(const Board& board, Accumulator& acc)
 template <Color side>
 void NNUE::lazy_update(const Board &board, Accumulator& acc)
 {
-    // assert (board != nullptr);
-
     if (acc.updated[side])
         return;
 
+    assert(!BB::empty(board));
     assert(head_idx > 0);
 
-    int iter          = head_idx;
     const SQUARE king = acc.king_square[side];
 
-    while (true)
+    for (int iter = int(head_idx) - 1; iter >= 0; --iter)
     {
-        iter--;
-
         // Recherche d'un accumulateur à raffraichir
         if (NNUE::need_refresh<side>(stack[iter].king_square[side], king) == true)
         {
@@ -312,8 +308,8 @@ void NNUE::lazy_update(const Board &board, Accumulator& acc)
 template <Color side>
 bool NNUE::need_refresh(SQUARE old_king, SQUARE new_king)
 {
-    assert(old_king >= 0 && old_king < 64);
-    assert(new_king >= 0 && new_king < 64);
+    assert(SQ::is_ok(old_king));
+    assert(SQ::is_ok(new_king));
 
     // 1) Horizontal Mirroring
     //      est-ce qu'on a changé de côté ?

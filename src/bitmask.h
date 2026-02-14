@@ -82,9 +82,9 @@ namespace SQ {
     return (rank * 8 + file);
 }
 
-inline bool is_ok(SQUARE s) { return s >= A1 && s <= H8; }
+[[nodiscard]] constexpr inline bool is_ok(SQUARE sq) noexcept { return sq >= A1 && sq <= H8; }
 
-inline std::ostream &operator<<(std::ostream &os, const int square) noexcept {
+[[nodiscard]] inline std::ostream &operator<<(std::ostream &os, const int square) noexcept {
     os << square_name[square];
     return os;
 }
@@ -127,19 +127,19 @@ template <Color C>
 
 //! \brief Contrôle si la case "sq" est sur la rangée précédant la promotion (7ème/2ème)
 template <Color C>
-[[nodiscard]] constexpr bool is_on_seventh_rank(const SQUARE sq) {
+[[nodiscard]] constexpr bool is_on_seventh_rank(const SQUARE sq) noexcept {
     return (PromotingRank[C] & square_BB(sq));
 }
 
 //! \brief Contrôle si la case "sq" est sur la rangée de promotion (8ème, 1ère)
 template <Color C>
-[[nodiscard]] constexpr bool is_promotion(const SQUARE sq) {
+[[nodiscard]] constexpr bool is_promotion(const SQUARE sq) noexcept {
     return (PromotionRank[C] & square_BB(sq));
 }
 
 //! \brief Contrôle si la case "sq" est sur la rangée de départ (2ème/7ème)
 template <Color C>
-[[nodiscard]] constexpr bool is_on_second_rank(const SQUARE sq) {
+[[nodiscard]] constexpr bool is_on_second_rank(const SQUARE sq) noexcept {
     return(StartingRank[C] & square_BB(sq));
 }
 
@@ -244,7 +244,7 @@ struct Mask
 
 
 /* Make a square from file & rank if inside the board */
-constexpr int square_safe(const int f, const int r) {
+[[nodiscard]] constexpr int square_safe(const int f, const int r) {
     if (0 <= f && f < 8 && 0 <= r && r < 8)
         return SQ::square(f, r);
     else
@@ -288,7 +288,7 @@ constexpr std::array<Mask, N_SQUARES> DirectionMask = [] {
 //  Fonctions
 //------------------------------------------------------------------------
 
-[[nodiscard]] constexpr Bitboard squares_between(size_t sq1, size_t sq2) noexcept {
+[[nodiscard]] constexpr Bitboard squares_between(size_t sq1, size_t sq2) {
     return SQUARES_BETWEEN_MASK[sq1][sq2];
 }
 

@@ -13,7 +13,7 @@ constexpr int PUSH[] = {8, -8};
 //! algorithme de Mperft
 //-----------------------------------------------------------------
 template <Color US, MoveGenType MGType>
-void Board::legal_moves(MoveList& ml) noexcept
+void Board::legal_moves(MoveList& ml)
 {
     constexpr Color THEM = ~US;
     constexpr bool GenNoisy = (MGType & MoveGenType::NOISY) != 0;
@@ -341,11 +341,11 @@ void Board::legal_moves(MoveList& ml) noexcept
 }
 
 // Explicit instantiations.
-template void Board::legal_moves<WHITE, MoveGenType::NOISY>(MoveList& ml)  noexcept;
-template void Board::legal_moves<BLACK, MoveGenType::NOISY>(MoveList& ml)  noexcept;
+template void Board::legal_moves<WHITE, MoveGenType::NOISY>(MoveList& ml)  ;
+template void Board::legal_moves<BLACK, MoveGenType::NOISY>(MoveList& ml)  ;
 
-template void Board::legal_moves<WHITE, MoveGenType::QUIET>(MoveList& ml)  noexcept;
-template void Board::legal_moves<BLACK, MoveGenType::QUIET>(MoveList& ml)  noexcept;
+template void Board::legal_moves<WHITE, MoveGenType::QUIET>(MoveList& ml)  ;
+template void Board::legal_moves<BLACK, MoveGenType::QUIET>(MoveList& ml)  ;
 
-template void Board::legal_moves<WHITE, MoveGenType::ALL>(MoveList& ml)  noexcept;
-template void Board::legal_moves<BLACK, MoveGenType::ALL>(MoveList& ml)  noexcept;
+template void Board::legal_moves<WHITE, MoveGenType::ALL>(MoveList& ml)  ;
+template void Board::legal_moves<BLACK, MoveGenType::ALL>(MoveList& ml)  ;

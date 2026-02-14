@@ -229,23 +229,28 @@ extern Bitboard ROOK_ATTACKS[64][4096];
 
 // donne l'attaque du pion, pas le déplacement
 template <Color C>
-[[nodiscard]] constexpr Bitboard pawn_attacks(const SQUARE sq) {
+[[nodiscard]] constexpr Bitboard pawn_attacks(const SQUARE sq) noexcept {
+    assert(SQ::is_ok(sq));
     return(PAWN_ATTACKS[C][sq]);
 }
-[[nodiscard]] constexpr Bitboard pawn_attacks(const int C, const SQUARE sq) {
+[[nodiscard]] constexpr Bitboard pawn_attacks(const int C, const SQUARE sq) noexcept {
+    assert(SQ::is_ok(sq));
     return(PAWN_ATTACKS[C][sq]);
 }
 
 
-[[nodiscard]] constexpr Bitboard knight_moves(const SQUARE sq) {
+[[nodiscard]] constexpr Bitboard knight_moves(const SQUARE sq) noexcept {
+    assert(SQ::is_ok(sq));
     return(KNIGHT_ATTACKS[sq]);
 }
 
-[[nodiscard]] constexpr Bitboard king_moves(const SQUARE sq) {
+[[nodiscard]] constexpr Bitboard king_moves(const SQUARE sq) noexcept {
+    assert(SQ::is_ok(sq));
     return(KING_ATTACKS[sq]);
 }
 
-[[nodiscard]] inline U64 bishop_moves(const SQUARE sq, const U64 occupied) {
+[[nodiscard]] inline U64 bishop_moves(const SQUARE sq, const U64 occupied) noexcept {
+    assert(SQ::is_ok(sq));
 #if defined USE_PEXT
     return BISHOP_ATTACKS[sq][static_cast<int>(_pext_u64(occupied, bishop_masks[sq]))];
 #else
@@ -254,7 +259,8 @@ template <Color C>
 #endif
 }
 
-[[nodiscard]] inline U64 rook_moves(const SQUARE sq, const U64 occupied) {
+[[nodiscard]] inline U64 rook_moves(const SQUARE sq, const U64 occupied) noexcept {
+    assert(SQ::is_ok(sq));
 #if defined USE_PEXT
     return ROOK_ATTACKS[sq][static_cast<int>(_pext_u64(occupied, rook_masks[sq]))];
 #else
@@ -264,7 +270,8 @@ template <Color C>
 }
 
 
-[[nodiscard]] inline U64 queen_moves(const SQUARE sq, const U64 occupied) {
+[[nodiscard]] inline U64 queen_moves(const SQUARE sq, const U64 occupied) noexcept {
+    assert(SQ::is_ok(sq));
     return(Attacks::rook_moves(sq, occupied) | Attacks::bishop_moves(sq, occupied));
 }
 
@@ -273,40 +280,40 @@ template <Color C>
 //! Sliding piece attacks do not continue passed an occupied square.
 
 template<PieceType Pt>
-inline Bitboard attacks_bb(SQUARE s, Bitboard occupied)
+inline Bitboard attacks_bb(SQUARE sq, Bitboard occupied) noexcept
 {
-    assert((Pt != PieceType::PAWN) && (SQ::is_ok(s)));
+    assert((Pt != PieceType::PAWN) && (SQ::is_ok(sq)));
 
     if constexpr (Pt == PieceType::KNIGHT)
-        return Attacks::knight_moves(s);
+        return Attacks::knight_moves(sq);
     else if constexpr (Pt == PieceType::BISHOP)
-        return Attacks::bishop_moves(s, occupied);
+        return Attacks::bishop_moves(sq, occupied);
     else if constexpr (Pt == PieceType::ROOK)
-        return Attacks::rook_moves(s, occupied);
+        return Attacks::rook_moves(sq, occupied);
     else if constexpr (Pt == PieceType::QUEEN)
-        return Attacks::bishop_moves(s, occupied) | Attacks::rook_moves(s, occupied);
+        return Attacks::bishop_moves(sq, occupied) | Attacks::rook_moves(sq, occupied);
     else if constexpr (Pt == PieceType::KING)
-        return Attacks::king_moves(s);
+        return Attacks::king_moves(sq);
     else
         return 0;
 }
 
-inline Bitboard attacks_bb(PieceType pt, SQUARE s, Bitboard occupied)
+inline Bitboard attacks_bb(PieceType pt, SQUARE sq, Bitboard occupied) noexcept
 {
-    assert((pt != PieceType::PAWN) && (SQ::is_ok(s)));
+    assert((pt != PieceType::PAWN) && (SQ::is_ok(sq)));
 
     switch (pt)
     {
     case PieceType::KNIGHT:
-        return Attacks::knight_moves(s);
+        return Attacks::knight_moves(sq);
     case PieceType::BISHOP:
-        return Attacks::bishop_moves(s, occupied);
+        return Attacks::bishop_moves(sq, occupied);
     case PieceType::ROOK:
-        return Attacks::rook_moves(s, occupied);
+        return Attacks::rook_moves(sq, occupied);
     case PieceType::QUEEN:
-        return Attacks::bishop_moves(s, occupied) | Attacks::rook_moves(s, occupied);
+        return Attacks::bishop_moves(sq, occupied) | Attacks::rook_moves(sq, occupied);
     case PieceType::KING:
-        return Attacks::king_moves(s);
+        return Attacks::king_moves(sq);
 
     case PieceType::PAWN:
     case PieceType::NONE:

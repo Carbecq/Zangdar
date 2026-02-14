@@ -52,12 +52,10 @@ public:
     [[nodiscard]] constexpr Color turn() const noexcept { return side_to_move; }
 
     //! \brief  Retourne le bitboard des pièces de la couleur indiquée
-    template<Color C>
-    [[nodiscard]] constexpr Bitboard occupancy_c() const noexcept { return colorPiecesBB[C]; }
+    template<Color C> [[nodiscard]] constexpr Bitboard occupancy_c() const noexcept { return colorPiecesBB[C]; }
 
     //! \brief  Retourne le bitboard des pièces du type indiqué
-    template<PieceType P>
-    [[nodiscard]] constexpr Bitboard occupancy_p() const noexcept { return typePiecesBB[P]; }
+    template<PieceType P> [[nodiscard]] constexpr Bitboard occupancy_p() const noexcept { return typePiecesBB[P]; }
 
     //! \brief  Retourne le bitboard des pièces de la couleur indiquée
     //! et du type indiqué
@@ -71,14 +69,15 @@ public:
     [[nodiscard]] constexpr Bitboard occupancy_none() const noexcept { return ~occupancy_all(); }
 
     //! \brief  Retourne le bitboard des Fous et des Dames
-    template<Color C> constexpr Bitboard diagonal_sliders() const { return occupancy_cp<C, PieceType::BISHOP>() | occupancy_cp<C, PieceType::QUEEN>(); }
+    template<Color C> [[nodiscard]] constexpr Bitboard diagonal_sliders() const noexcept { return occupancy_cp<C, PieceType::BISHOP>() | occupancy_cp<C, PieceType::QUEEN>(); }
 
     //! \brief  Retourne le bitboard des Tours et des Dames
-    template<Color C> constexpr Bitboard orthogonal_sliders() const { return occupancy_cp<C, PieceType::ROOK>() | occupancy_cp<C, PieceType::QUEEN>(); }
+    template<Color C> [[nodiscard]] constexpr Bitboard orthogonal_sliders() const noexcept { return occupancy_cp<C, PieceType::ROOK>() | occupancy_cp<C, PieceType::QUEEN>(); }
 
     //! \brief Retourne le bitboard de toutes les pièces du camp "C" attaquant la case "sq"
     template <Color C> [[nodiscard]] constexpr Bitboard attackers(const SQUARE sq) const noexcept
     {
+        assert(SQ::is_ok(sq));
         // il faut regarder les attaques de pions depuis l'autre camp
         return( (Attacks::pawn_attacks<~C>(sq)         & occupancy_cp<C, PieceType::PAWN>())                                           |
                 (Attacks::knight_moves(sq)             & occupancy_cp<C, PieceType::KNIGHT>())                                         |
@@ -90,6 +89,7 @@ public:
     //! \brief Retourne le bitboard de toutes les pièces du camp "C", sauf le roi, attaquant la case "sq"
     template <Color C> [[nodiscard]] constexpr Bitboard attackersButKing(const SQUARE sq) const noexcept
     {
+        assert(SQ::is_ok(sq));
         // il faut regarder les attaques de pions depuis l'autre camp
         return( (Attacks::pawn_attacks<~C>(sq)         & occupancy_cp<C, PieceType::PAWN>())                                     |
                 (Attacks::knight_moves(sq)             & occupancy_cp<C, PieceType::KNIGHT>())                                   |
@@ -100,19 +100,20 @@ public:
     //! \brief Retourne le bitboard de tous les pions du camp "C" attaquant la case "sq"
     template <Color C> [[nodiscard]] constexpr Bitboard pawn_attackers(const SQUARE sq) const noexcept
     {
+        assert(SQ::is_ok(sq));
         // il faut regarder les attaques de pions depuis l'autre camp
         return( Attacks::pawn_attacks<~C>(sq) & occupancy_cp<C, PieceType::PAWN>() );
     }
 
 
 
-    template <Color C>
-    void calculate_checkers_pinned() noexcept;
+    template <Color C> void calculate_checkers_pinned() noexcept;
     void calculate_hash(U64& key, U64& pawn_key, U64 mat_key[2]) const;
 
     //! \brief  Retourne le Bitboard de TOUS les attaquants (Blancs et Noirs) de la case "sq"
     [[nodiscard]] Bitboard all_attackers(const SQUARE sq, const Bitboard occ) const noexcept
     {
+        assert(SQ::is_ok(sq));
         return( (Attacks::pawn_attacks(BLACK, sq) & occupancy_cp<WHITE, PieceType::PAWN>())             |
                 (Attacks::pawn_attacks(WHITE, sq) & occupancy_cp<BLACK, PieceType::PAWN>())             |
                 (Attacks::knight_moves(sq)        & typePiecesBB[PieceType::KNIGHT]) |
@@ -124,18 +125,21 @@ public:
     //! \brief Returns an attack bitboard where sliders are allowed
     //! to xray other sliders moving the same directions
     //  code venant de Weiss
-    template<Color C> [[nodiscard]] Bitboard XRayBishopAttack(const SQUARE sq)
+    template<Color C> [[nodiscard]] Bitboard XRayBishopAttack(const SQUARE sq) const noexcept
     {
+        assert(SQ::is_ok(sq));
         Bitboard occ = occupancy_all() ^ occupancy_p<PieceType::QUEEN>() ^ occupancy_cp<C, PieceType::BISHOP>();
         return(Attacks::bishop_moves(sq, occ));
     }
-    template<Color C> [[nodiscard]] Bitboard XRayRookAttack(const SQUARE sq)
+    template<Color C> [[nodiscard]] Bitboard XRayRookAttack(const SQUARE sq) const noexcept
     {
+        assert(SQ::is_ok(sq));
         Bitboard occ = occupancy_all() ^ occupancy_p<PieceType::QUEEN>() ^ occupancy_cp<C, PieceType::ROOK>();
         return(Attacks::rook_moves(sq, occ));
     }
-    template<Color C> [[nodiscard]] Bitboard XRayQueenAttack(const SQUARE sq)
+    template<Color C> [[nodiscard]] Bitboard XRayQueenAttack(const SQUARE sq) const noexcept
     {
+        assert(SQ::is_ok(sq));
         Bitboard occ = occupancy_all() ^ occupancy_p<PieceType::QUEEN>() ^ occupancy_cp<C, PieceType::ROOK>() ^ occupancy_cp<C, PieceType::BISHOP>();
         return(Attacks::queen_moves(sq, occ));
     }
@@ -168,25 +172,28 @@ public:
     template<Color C> [[nodiscard]] Bitboard squares_attacked() const noexcept;
 
     //! \brief  Détermine si la case sq est attaquée par le camp C
-    template<Color C> [[nodiscard]] constexpr bool square_attacked(const SQUARE sq) const noexcept { return attackers<C>(sq) != 0; }
+    template<Color C> [[nodiscard]] constexpr bool square_attacked(const SQUARE sq) const noexcept {
+        assert(SQ::is_ok(sq));
+        return attackers<C>(sq) != 0;
+    }
 
     //! \brief  Détermine si le camp au trait est en échec dans la position actuelle
-    [[nodiscard]] inline bool is_in_check() const noexcept { return get_status().checkers > 0; }
+    [[nodiscard]] inline bool is_in_check() const noexcept { return get_status().checkers != 0; }
 
     //! \brief  Détermine si le camp "C" attaque le roi ennemi
     template<Color C>
-    [[nodiscard]] constexpr bool is_doing_check() const noexcept { return attackersButKing<C>(get_king_square<~C>()) > 0; }
+    [[nodiscard]] constexpr bool is_doing_check() const noexcept { return attackersButKing<C>(get_king_square<~C>()) != 0; }
 
-    template<MoveGenType MGType> void legal_moves(MoveList &ml) noexcept
+    template<MoveGenType MGType> void legal_moves(MoveList &ml)
     {
         if (turn() == WHITE)
             legal_moves<WHITE, MGType>(ml);
         else
             legal_moves<BLACK, MGType>(ml);
     }
-    template<Color C, MoveGenType MGType> void legal_moves(MoveList &ml) noexcept;
+    template<Color C, MoveGenType MGType> void legal_moves(MoveList &ml) ;
 
-    template<Color C> void apply_token(const std::string &token) noexcept;
+    template<Color C> void apply_token(const std::string &token) ;
 
     void verify_MvvLva();
 
@@ -263,19 +270,19 @@ public:
     //===================================================================
     //! \brief  Ajoute une série de coups
     //-------------------------------------------------------------------
-    inline void push_quiet_moves(MoveList& ml, Bitboard attack, const SQUARE from)
+    inline void push_quiet_moves(MoveList& ml, Bitboard attack, const SQUARE from) const noexcept
     {
         while (attack) {
             add_quiet_move(ml, from, BB::pop_lsb(attack), piece_square[from], Move::FLAG_NONE);
         }
     }
-    inline void push_piece_quiet_moves(MoveList& ml, Bitboard attack, const SQUARE from, Color color, PieceType piece)
+    inline void push_piece_quiet_moves(MoveList& ml, Bitboard attack, const SQUARE from, Color color, PieceType piece) const noexcept
     {
         while (attack) {
             add_quiet_move(ml, from, BB::pop_lsb(attack), Move::make_piece(color, piece), Move::FLAG_NONE);
         }
     }
-    inline void push_capture_moves(MoveList& ml, Bitboard attack, const SQUARE from)
+    inline void push_capture_moves(MoveList& ml, Bitboard attack, const SQUARE from) const noexcept
     {
         SQUARE to;
         while (attack) {
@@ -283,7 +290,7 @@ public:
             add_capture_move(ml, from, to, piece_square[from], piece_square[to], Move::FLAG_NONE);
         }
     }
-    inline void push_piece_capture_moves(MoveList& ml, Bitboard attack, const SQUARE from, Color color, PieceType piece)
+    inline void push_piece_capture_moves(MoveList& ml, Bitboard attack, const SQUARE from, Color color, PieceType piece) const noexcept
     {
         SQUARE to;
         while (attack) {
@@ -294,7 +301,7 @@ public:
 
     //--------------------------------------------------------------------
     //  Promotions
-    inline void push_quiet_promotions(MoveList& ml, Bitboard attack, const int dir, Color color)
+    inline void push_quiet_promotions(MoveList& ml, Bitboard attack, const int dir, Color color) const noexcept
     {
         SQUARE to;
         while (attack) {
@@ -302,7 +309,7 @@ public:
             push_quiet_promotion(ml, to - dir, to, color);
         }
     }
-    inline void push_capture_promotions(MoveList& ml, Bitboard attack, const int dir, Color color)
+    inline void push_capture_promotions(MoveList& ml, Bitboard attack, const int dir, Color color) const noexcept
     {
         SQUARE to;
         while (attack) {
@@ -313,7 +320,7 @@ public:
 
     //--------------------------------------
     //  Coups de pions
-    inline void push_pawn_quiet_moves(MoveList& ml, Bitboard attack, const int dir, Color color, U32 flags)
+    inline void push_pawn_quiet_moves(MoveList& ml, Bitboard attack, const int dir, Color color, U32 flags) const noexcept
     {
         SQUARE to;
         while (attack) {
@@ -332,14 +339,14 @@ public:
 
     //--------------------------------------
     //  Promotions générales
-    inline void push_quiet_promotion(MoveList& ml, const SQUARE from, const U32 to, Color color)
+    inline void push_quiet_promotion(MoveList& ml, const SQUARE from, const U32 to, Color color) const noexcept
     {
         add_quiet_promotion(ml, from, to, color, Move::make_piece(color, PieceType::QUEEN));
         add_quiet_promotion(ml, from, to, color, Move::make_piece(color, PieceType::KNIGHT));
         add_quiet_promotion(ml, from, to, color, Move::make_piece(color, PieceType::ROOK));
         add_quiet_promotion(ml, from, to, color, Move::make_piece(color, PieceType::BISHOP));
     }
-    inline void push_capture_promotion(MoveList& ml, const SQUARE from, const U32 to,  Color color)
+    inline void push_capture_promotion(MoveList& ml, const SQUARE from, const U32 to,  Color color) const noexcept
     {
         add_capture_promotion(ml, from, to, color, piece_square[to], Move::make_piece(color, PieceType::QUEEN));
         add_capture_promotion(ml, from, to, color, piece_square[to], Move::make_piece(color, PieceType::KNIGHT));
@@ -350,7 +357,7 @@ public:
     //------------------------------------------------------------
     //  le Roque
 
-    template<Color C> constexpr bool can_castle() const
+    template<Color C> [[nodiscard]] constexpr bool can_castle() const
     {
         if constexpr (C == WHITE)
             return get_status().castling & (CASTLE_WK | CASTLE_WQ);
@@ -358,7 +365,7 @@ public:
             return get_status().castling & (CASTLE_BK | CASTLE_BQ);
     }
 
-    template<Color C, CastleSide side> constexpr bool can_castle() const
+    template<Color C, CastleSide side> [[nodiscard]] constexpr bool can_castle() const
     {
         if constexpr      (C == WHITE && side == CastleSide::KING_SIDE)
                 return get_status().castling & CASTLE_WK;
@@ -372,7 +379,7 @@ public:
                 static_assert(sizeof(C) == 0, "can_castle : Invalid Color/CastleSide");
     }
 
-    template <Color C, CastleSide side> constexpr Bitboard get_king_path()   // cases ne devant pas être attaquées
+    template <Color C, CastleSide side> [[nodiscard]] constexpr Bitboard get_king_path() const noexcept  // cases ne devant pas être attaquées
     {
         if constexpr      (C == WHITE && side == CastleSide::KING_SIDE)
             return F1G1_BB;
@@ -386,7 +393,7 @@ public:
             static_assert(sizeof(C) == 0, "get_king_path : Invalid Color/CastleSide");
     }
 
-    template <Color C, CastleSide side> constexpr Bitboard get_rook_path()   // cases devant être libres
+    template <Color C, CastleSide side> [[nodiscard]] constexpr Bitboard get_rook_path() const  noexcept // cases devant être libres
     {
         if constexpr      (C == WHITE && side == CastleSide::KING_SIDE)
             return F1G1_BB;
@@ -400,7 +407,7 @@ public:
             static_assert(sizeof(C) == 0, "get_rook_path : Invalid Color/CastleSide");
     }
 
-    template <Color C> constexpr SQUARE get_king_from()
+    template <Color C> [[nodiscard]] constexpr SQUARE get_king_from() const noexcept
     {
         if constexpr (C == WHITE)
             return (E1);
@@ -408,7 +415,7 @@ public:
             return (E8);
     }
 
-    template <Color C, CastleSide side> constexpr SQUARE get_king_dest()
+    template <Color C, CastleSide side> [[nodiscard]] constexpr SQUARE get_king_dest() const noexcept
     {
         if constexpr      (C == WHITE && side == CastleSide::KING_SIDE)
             return (G1);
@@ -446,7 +453,7 @@ public:
     //=======================================================================
     //! \brief  Ajoute les coups du roque
     //-----------------------------------------------------------------------
-    template <Color C, CastleSide side> constexpr void gen_castle(MoveList& ml)
+    template <Color C, CastleSide side> constexpr void gen_castle(MoveList& ml) const
     {
         if (   can_castle<C, side>()
             && BB::empty(get_rook_path<C, side>() & occupancy_all())
@@ -513,21 +520,21 @@ public:
     bool valid() const noexcept;
     [[nodiscard]] std::string display() const noexcept;
 
-    template<Color C> Bitboard getNonPawnMaterial() const noexcept
+    template<Color C> [[nodiscard]] Bitboard getNonPawnMaterial() const noexcept
     {
         return (  colorPiecesBB[C]
                   ^ occupancy_cp<C, PieceType::PAWN>()
                   ^ occupancy_cp<C, PieceType::KING>() ) ;
     }
 
-    template<Color C> int getNonPawnMaterialCount() const noexcept
+    template<Color C> [[nodiscard]] int getNonPawnMaterialCount() const noexcept
     {
         return (BB::count_bit(colorPiecesBB[C]
                               ^ occupancy_cp<C, PieceType::PAWN>()
                               ^ occupancy_cp<C, PieceType::KING>() ) );
     }
 
-    bool fast_see(const MOVE move, const int threshold) const;
+    [[nodiscard]] bool fast_see(const MOVE move, const int threshold) const;
 
     //====================================================================
     //! \brief  Détermine s'il y a eu 50 coups sans prise ni coup de pion
@@ -629,8 +636,8 @@ public:
 
     //==============================================
     //  Status
-    inline const Status& get_status() const { return statusHistory.back(); }
-    inline Status& get_status()             { return statusHistory.back(); }
+    [[nodiscard]] inline const Status& get_status() const { return statusHistory.back(); }
+    [[nodiscard]] inline Status& get_status()             { return statusHistory.back(); }
 
     [[nodiscard]] inline int get_fiftymove_counter()  const noexcept { return get_status().fiftymove_counter; }
     [[nodiscard]] inline int get_fullmove_counter()   const noexcept { return get_status().fullmove_counter;  }

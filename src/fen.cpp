@@ -713,7 +713,7 @@ void Board::parse_position(std::istringstream &is)
 //!         puis l'exécute
 //--------------------------------------------------------------------------
 template <Color C>
-void Board::apply_token(const std::string& token) noexcept
+void Board::apply_token(const std::string& token)
 {
     Accumulator accum;  // ne sert pas
     MoveList ml;
