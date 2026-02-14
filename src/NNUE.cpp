@@ -64,19 +64,6 @@ void NNUE::start_search(const Board& board)
     head.king_square = board.king_square;
 }
 
-
-//====================================================
-//! \brief  Remet à 0 la pile
-//----------------------------------------------------
-void NNUE::init()
-{
-    head_idx = 0;
-
-    for (int i = 0; i < 2; i++)
-        for (int j = 0; j < KING_BUCKETS_COUNT; j++)
-            finny[i][j].init();
-}
-
 //====================================================
 //! \brief  Ajoute 1 nouvel accumulateur
 //----------------------------------------------------
@@ -268,18 +255,18 @@ I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
 //! \brief  Utilisation de l'optimisation Lazy Updates
 //! https://www.chessprogramming.org/NNUE#Lazy_Updates
 //------------------------------------------------------------
-void NNUE::lazy_updates(const Board *board, Accumulator& acc)
+void NNUE::lazy_updates(const Board& board, Accumulator& acc)
 {
-    assert (board != nullptr);
+    // assert (board != nullptr);
 
     lazy_update<WHITE>(board, acc);
     lazy_update<BLACK>(board, acc);
 }
 
 template <Color side>
-void NNUE::lazy_update(const Board* board, Accumulator& acc)
+void NNUE::lazy_update(const Board &board, Accumulator& acc)
 {
-    assert (board != nullptr);
+    // assert (board != nullptr);
 
     if (acc.updated[side])
         return;
@@ -730,9 +717,9 @@ void NNUE::sub_sub_add_add(const Accumulator& src, Accumulator& dst,
 //! De façon à minimiser le travail, on utilise les finny tables
 //--------------------------------------------------------------------------
 template <Color side>
-void NNUE::refresh_accumulator(const Board* board, Accumulator& acc)
+void NNUE::refresh_accumulator(const Board &board, Accumulator& acc)
 {
-    const SQUARE king_square = board->get_king_square<side>();
+    const SQUARE king_square = board.get_king_square<side>();
     const int    king_bucket = king_buckets_map[get_relative_square<side>(king_square)];
     const int    mirrored    = SQ::file(king_square) > FILE_D;
 
@@ -747,8 +734,8 @@ void NNUE::refresh_accumulator(const Board* board, Accumulator& acc)
         {
             const Bitboard old_pieces = entry.colorPiecesBB[side][color]
                     & entry.typePiecesBB[side][piece];
-            const Bitboard new_pieces = board->colorPiecesBB[color]
-                    & board->typePiecesBB[piece];
+            const Bitboard new_pieces = board.colorPiecesBB[color]
+                    & board.typePiecesBB[piece];
 
             // rechreche des pièces à supprimer
             Bitboard to_remove = ~new_pieces & old_pieces;
@@ -770,8 +757,8 @@ void NNUE::refresh_accumulator(const Board* board, Accumulator& acc)
 
     acc.updated[side] = true;
 
-    entry.colorPiecesBB[side] = board->colorPiecesBB;
-    entry.typePiecesBB[side]  = board->typePiecesBB;
+    entry.colorPiecesBB[side] = board.colorPiecesBB;
+    entry.typePiecesBB[side]  = board.typePiecesBB;
 
     if constexpr (side == WHITE)
         acc.white = entry.accumulator.white;

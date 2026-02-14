@@ -98,6 +98,9 @@ const std::string FINE_70         = "8/k7/3p4/p2P1p2/P2P1P2/8/8/K7 w - -";
 const std::string WAC_2           = "8/7p/5k2/5p2/p1p2P2/Pr1pPK2/1P1R3P/8 b - -";
 const std::string POS_21          = "r1b2k1r/5n2/p4q2/1ppn1Pp1/3pp1p1/NP2P3/P1PPBK2/1RQN2R1 w - - 0 22";
 
+const std::string BUG_1          = "5rr1/4n2k/4q2P/P1P2n2/3B1p2/4pP2/2N1P3/1RR1K2Q w - - 1 49";     // plante à depth 26
+const std::string BUG_2          = "8/1R6/1p1K1kp1/p6p/P1p2P1P/6P1/1Pn5/8 w - - 0 67";              // plante à depth 28 , 29
+
 //=========================================================
 
 extern void printlog(const std::string& message);

@@ -102,7 +102,7 @@ void Uci::run()
         else if (token == "position")
         {
             // set up the position described in fenstring
-            uci_board.reset();
+            uci_board.initialisation();
             uci_board.parse_position(iss);
         }
 
@@ -151,7 +151,7 @@ void Uci::run()
             std::cout << "test                          : test de recherche sur un ensemble de positions"       << std::endl;
             std::cout << "eval                          : test evaluation"                                      << std::endl;
             std::cout << "see                           : test see"                                             << std::endl;
-            std::cout << "run <s/k/q/f/w/b> [dmax]      : test de recherche <Silver2/Kiwipete/Quies/Fine70/WAC2/BUG/REF>"           << std::endl;
+            std::cout << "run <fen> [dmax][tmax][nmax][thread]      : test de recherche <Silver2/Kiwipete/Quies/Fine70/WAC2/BUG/REF>"           << std::endl;
             std::cout << "mirror                        : test mirror"                                          << std::endl;
             std::cout << "fen [str]                     : positionne la chaine fen"                             << std::endl;
             std::cout << "dmax [p]                      : positionne la profondeur de recherche"                << std::endl;
@@ -231,7 +231,7 @@ void Uci::run()
         else if (token == "fen")
         {
             std::getline(iss, fen);
-            uci_board.reset();
+            uci_board.initialisation();
             uci_board.set_fen(fen, false);
             std::cout << uci_board.display() << std::endl;;
         }
@@ -576,7 +576,6 @@ setoption name <id> [value <x>]
 void Uci::go_run(const std::string& abc, const std::string& fen, int dmax, int tmax, int nmax)
 {
     std::string auxi;
-    std::string bug = "";
     printf("go_run : abc=%s fen=%s depth_max=%d time_max=%d node_max=%d \n", abc.c_str(), fen.c_str(), dmax, tmax, nmax);
     transpositionTable.clear();
     threadPool.reset();
@@ -596,17 +595,19 @@ void Uci::go_run(const std::string& abc, const std::string& fen, int dmax, int t
         auxi = WAC_2;
     else if (abc == "r")
         auxi = START_FEN;
-    else if (abc == "b")
-        auxi = bug;
     else if (abc == "p21")
         auxi = POS_21;
+    else if (abc == "b1")
+        auxi = BUG_1;
+    else if (abc == "b2")
+        auxi = BUG_2;
     else
         auxi = fen;
 
     //    Options.log_uci = true;
     if (abc != "n")
     {
-        uci_board.reset();
+        uci_board.initialisation();
         uci_board.set_fen(auxi, false);
     }
     std::cout << uci_board.display() << std::endl;
@@ -765,7 +766,7 @@ void Uci::go_tactics(const std::string& line, int dmax, int tmax, U64& total_nod
     transpositionTable.clear();
     threadPool.reset();
 
-    uci_board.reset();
+    uci_board.initialisation();
     uci_board.set_fen(line, true);
 
     const auto start = TimePoint::now();
@@ -902,7 +903,7 @@ void Uci::bench(int argCount, char* argValue[])
         transpositionTable.clear();
         threadPool.reset();
 
-        uci_board.reset();
+        uci_board.initialisation();
         uci_board.set_fen(line, true);
         std::cout << "[# " << total+1 << "] " << line << std::endl;
 

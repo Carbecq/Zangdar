@@ -38,7 +38,19 @@ public:
     int         best_score;
     int         best_depth;
 
+    NNUE*       nnue;
+
+    //==============================================
+    //  Evaluation
+    [[nodiscard]] int evaluate(const Board &board);
+    [[nodiscard]] int do_evaluate(const Board &board, Accumulator& acc);
+
+    template <Color US, bool Update_NNUE> void make_move(Board& board, const MOVE move) noexcept;
+    template <Color US, bool Update_NNUE> void undo_move(Board& board) noexcept;
+
 private:
+    inline const Accumulator& get_accumulator() const { return nnue->get_accumulator(); }
+    inline       Accumulator& get_accumulator()       { return nnue->get_accumulator(); }
 
 }__attribute__((aligned(64)));
 

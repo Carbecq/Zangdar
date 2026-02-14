@@ -10,7 +10,7 @@
 Board::Board()
 {
     statusHistory.reserve(MAX_HISTO);
-    reset();
+    initialisation();
 }
 
 //=======================================
@@ -19,7 +19,7 @@ Board::Board()
 Board::Board(const std::string& fen)
 {
     statusHistory.reserve(MAX_HISTO);
-    reset();
+    initialisation();
 
     set_fen(fen, false);
 }
@@ -27,7 +27,7 @@ Board::Board(const std::string& fen)
 //==========================================
 //! \brief  Initialisation de l'échiquier
 //------------------------------------------
-void Board::reset() noexcept
+void Board::initialisation() noexcept
 {
     colorPiecesBB.fill(0ULL);
     typePiecesBB.fill(0ULL);
@@ -37,60 +37,6 @@ void Board::reset() noexcept
     avoid_moves.clear();
     best_moves.clear();
     statusHistory.clear();
-    nnue.init();
-}
-
-
-//==========================================
-//! \brief  Evaluation de la position
-//! \return Evaluation statique de la position
-//! du point de vue du camp au trait.
-//------------------------------------------
-[[nodiscard]] int Board::evaluate()
-{
-    // Du fait de lazy Updates, on a découpé la routine en 2
-
-    Accumulator& acc = get_accumulator();
-
-   // Lazy Updates
-   nnue.lazy_updates(this, acc);
-
-   return do_evaluate(acc);
-}
-
-//==========================================
-//! \brief  Evaluation de la position
-//! \return Evaluation statique de la position
-//! du point de vue du camp au trait.
-//------------------------------------------
-[[nodiscard]] int Board::do_evaluate(Accumulator& acc)
-{
-    int score;
-    if (side_to_move == WHITE)
-        score = nnue.evaluate<WHITE>(acc, BB::count_bit(occupancy_all()));
-    else
-        score = nnue.evaluate<BLACK>(acc, BB::count_bit(occupancy_all()));
-
-    constexpr int PawnScore    =   2;
-    constexpr int KnightScore  =   3;
-    constexpr int BishopScore  =   3;
-    constexpr int RookScore    =   5;
-    constexpr int QueenScore   =  12;
-    constexpr int ScoreBias    = 230;
-    constexpr int ScoreDivisor = 330;
-
-    int phase = PawnScore   * BB::count_bit(occupancy_p<PieceType::PAWN>())
-              + KnightScore * BB::count_bit(occupancy_p<PieceType::KNIGHT>())
-              + BishopScore * BB::count_bit(occupancy_p<PieceType::BISHOP>())
-              + RookScore   * BB::count_bit(occupancy_p<PieceType::ROOK>())
-              + QueenScore  * BB::count_bit(occupancy_p<PieceType::QUEEN>());
-
-    score = score * (ScoreBias + phase) / ScoreDivisor;
-
-    // Make sure the evaluation does not mix with guaranteed win/loss scores
-    score = std::clamp(score, -TBWIN_IN_X + 1, TBWIN_IN_X - 1);
-
-    return score;
 }
 
 //===================================================

@@ -2,20 +2,18 @@
 #include "Move.h"
 #include "types.h"
 #include "NNUE.h"
+#include "ThreadData.h"
 
 //=============================================================
 //! \brief  Enlève un coup
 //-------------------------------------------------------------
-template <Color Us, bool Update_NNUE>
+template <Color Us>
 void Board::undo_move() noexcept
 {
     constexpr Color Them     = ~Us;
 
     // printf("------------------------------------------undo move \n");
     // std::cout << display() << std::endl << std::endl;
-
-    if constexpr (Update_NNUE == true)
-        nnue.pop(); // retourne a l'accumulateur précédent
 
     const MOVE move = get_status().move;
 
@@ -167,10 +165,8 @@ template <Color Us> void Board::undo_nullmove() noexcept
 
 // Explicit instantiations.
 
-template void Board::undo_move<WHITE, true>() noexcept ;
-template void Board::undo_move<BLACK, true>() noexcept ;
-template void Board::undo_move<WHITE, false>() noexcept ;
-template void Board::undo_move<BLACK, false>() noexcept ;
+template void Board::undo_move<WHITE>() noexcept ;
+template void Board::undo_move<BLACK>() noexcept ;
 
 template void Board::undo_nullmove<WHITE>() noexcept ;
 template void Board::undo_nullmove<BLACK>() noexcept ;

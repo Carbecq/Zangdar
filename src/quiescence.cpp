@@ -39,7 +39,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
     // prevent overflows
     const bool isInCheck = board.is_in_check();
     if (si->ply >= MAX_PLY)
-        return isInCheck ? VALUE_DRAW : board.evaluate();
+        return isInCheck ? VALUE_DRAW : td->evaluate(board);
 
     // Prefetch La table de transposition aussitôt que possible
     transpositionTable.prefetch(board.get_key());
@@ -81,7 +81,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
 
     if (!isInCheck)
     {
-        raw_eval = (tt_hit && tt_eval != VALUE_NONE) ? tt_eval : board.evaluate();
+        raw_eval = (tt_hit && tt_eval != VALUE_NONE) ? tt_eval : td->evaluate(board);
         static_eval = si->static_eval = td->history.corrected_eval(board, raw_eval);
 
 
@@ -114,7 +114,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
     MOVE best_move  = Move::MOVE_NONE;  // meilleur coup local
     int  score;
     MOVE move;
-    MovePicker movePicker(&board, td->history, si, Move::MOVE_NONE,
+    MovePicker movePicker(board, td->history, si, Move::MOVE_NONE,
                           Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, 0);
 
     // Boucle sur tous les coups
@@ -141,11 +141,11 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
             }
         }
 
-        board.make_move<C, true>(move);
+        td->make_move<C, true>(board, move);
         si->move = move;
         si->cont_hist = &td->history.continuation_history[Move::piece(move)][Move::dest(move)];
         score = -quiescence<~C>(board, timer, -beta, -alpha, td, si+1);
-        board.undo_move<C, true>();
+        td->undo_move<C, true>(board);
 
         if (td->stopped)
             return 0;

@@ -22,6 +22,7 @@ ThreadPool::ThreadPool(U32 _nbr, bool _tb, bool _log) :
     for (size_t i = 0; i < MAX_THREADS; i++)
     {
         threadData[i].search = nullptr;
+        threadData[i].nnue   = nullptr;
         threadData[i].index  = i;
     }
 
@@ -112,6 +113,9 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
 
             delete threadData[i].search;
             threadData[i].search = new Search();
+
+            delete threadData[i].nnue;
+            threadData[i].nnue = new NNUE();
         }
 
         // Il faut mettre le lancement des threads dans une boucle séparée
@@ -178,6 +182,8 @@ void ThreadPool::quit()
     {
         delete threadData[i].search;
         threadData[i].search = nullptr;
+        delete threadData[i].nnue;
+        threadData[i].nnue   = nullptr;
     }
 }
 

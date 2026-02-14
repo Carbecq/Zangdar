@@ -169,7 +169,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
     {
         // printf("-----nouvelle partie : id=%d  \n", thread_id);
 
-        board.reset();
+        board.initialisation();
         board.set_fen(START_FEN, false);
         transpositionTable.clear();
         td->history.reset();
@@ -190,13 +190,13 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
                 if (movelist.size() == 0)
                 {
                     current_ply = 0;
-                    board.reset();
+                    board.initialisation();
                     board.set_fen(START_FEN, false);
                     continue;
                 }
                 std::uniform_int_distribution<> distribution{0, int(movelist.size() - 1)};
                 const auto index = distribution(generator);
-                board.make_move<WHITE, true>(movelist.mlmoves[index].move);
+                td->make_move<WHITE, true>(board, movelist.mlmoves[index].move);
 
                 // Prevent the last ply being checkmate/stalemate
                 if (++current_ply == MAX_RANDOM_PLIES)
@@ -205,7 +205,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
                     if (movelist.size() == 0)
                     {
                         current_ply = 0;
-                        board.reset();
+                        board.initialisation();
                         board.set_fen(START_FEN, false);
                     }
                 }
@@ -216,13 +216,13 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
                 if (movelist.size() == 0)
                 {
                     current_ply = 0;
-                    board.reset();
+                    board.initialisation();
                     board.set_fen(START_FEN, false);
                     continue;
                 }
                 std::uniform_int_distribution<> distribution{0, int(movelist.size() - 1)};
                 const int index = distribution(generator);
-                board.make_move<BLACK, true>(movelist.mlmoves[index].move);
+                td->make_move<BLACK, true>(board, movelist.mlmoves[index].move);
 
                 if (++current_ply == MAX_RANDOM_PLIES)
                 {
@@ -230,7 +230,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
                     if (movelist.size() == 0)
                     {
                         current_ply = 0;
-                        board.reset();
+                        board.initialisation();
                         board.set_fen(START_FEN, false);
                     }
                 }
@@ -362,9 +362,9 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
             // Exécution du coup trouvé lors de la recherche
             if (board.turn() == WHITE)
-                board.make_move<WHITE, true>(move);
+                td->make_move<WHITE, true>(board, move);
             else
-                board.make_move<BLACK, true>(move);
+                td->make_move<BLACK, true>(board, move);
         }
         // printf("------------------fin de la partie \n");
 
@@ -433,7 +433,7 @@ void DataGen::data_search(Board& board, Timer& timer,
     // iterative deepening
     //==================================================
 
-    board.nnue.start_search(board);
+    td->nnue->start_search(board);
 
     std::array<SearchInfo, STACK_SIZE> _info{};
     SearchInfo* si  = &(_info[STACK_OFFSET]);

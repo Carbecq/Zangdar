@@ -24,9 +24,8 @@ void Search::think(Board board, Timer timer, size_t m_index)
     // capacity n'est pas conservé lors de la copie ...
     board.reserve_capacity();
 
-    board.nnue.start_search(board);
-
     ThreadData* td = &threadPool.threadData[m_index];
+    td->nnue->start_search(board);
 
     // iterative deepening
     iterative_deepening<C>(board, timer, td);
@@ -56,6 +55,7 @@ void Search::think(Board board, Timer timer, size_t m_index)
 
         transpositionTable.update_age();
     }
+
     // transpositionTable.stats();
 }
 
@@ -231,7 +231,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
     // On a atteint la limite en profondeur de recherche ?
     if (si->ply >= MAX_PLY)
-        return board.evaluate();
+        return td->evaluate(board);
 
     // Mate distance pruning
     if (!isRoot)
@@ -349,11 +349,11 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             {
                 raw_eval = tt_eval;
                 if (isPV)
-                    board.nnue.lazy_updates(&board, board.get_accumulator());
+                    td->nnue->lazy_updates(board, td->nnue->get_accumulator());
             }
             else
             {
-                raw_eval = board.evaluate();
+                raw_eval = td->evaluate(board);
             }
 
             static_eval = si->static_eval = td->history.corrected_eval(board, raw_eval);
@@ -374,7 +374,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     }
     else
     {
-        board.nnue.lazy_updates(&board, board.get_accumulator());
+        td->nnue->lazy_updates(board, td->nnue->get_accumulator());
         raw_eval = static_eval = si->static_eval;
     }
 
@@ -469,12 +469,12 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                && depth >= Tunable::ProbCutDepth
                && !(tt_hit && tt_depth >= depth - 3 && tt_score < betaCut))
         {
-            MovePicker movePicker(&board, td->history, si, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, 0);
+            MovePicker movePicker(board, td->history, si, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, 0);
             MOVE pbMove;
 
             while ( (pbMove = movePicker.next_move(true).move ) != Move::MOVE_NONE )
             {
-                board.make_move<C, true>(pbMove);
+                td->make_move<C, true>(board, pbMove);
                 si->move = pbMove;
                 si->cont_hist = &td->history.continuation_history[Move::piece(pbMove)][Move::dest(pbMove)];
 
@@ -485,7 +485,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 if (pbScore >= betaCut)
                     pbScore = -alpha_beta<~C>(board, timer, -betaCut, -betaCut+1, depth-Tunable::ProbcutReduction, cut_node, td, si+1);
 
-                board.undo_move<C, true>();
+                td->undo_move<C, true>(board);
 
                 // Coupure si cette dernière recherche bat betaCut
                 if (pbScore >= betaCut)
@@ -513,7 +513,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     //------------------------------------------------------------------------------------
     bool skipQuiets = false;
 
-    MovePicker movePicker(&board, td->history, si, tt_move,
+    MovePicker movePicker(board, td->history, si, tt_move,
                           si->killer1, si->killer2, td->history.get_counter_move(si), 0);
 
     int  bound = BOUND_UPPER;
@@ -657,7 +657,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         // execute current move
         si->move = move;
         si->cont_hist = &td->history.continuation_history[Move::piece(move)][Move::dest(move)];
-        board.make_move<C, true>(move);
+        td->make_move<C, true>(board, move);
 
         if (isQuiet)
         {
@@ -730,7 +730,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         }
 
         // retract current move
-        board.undo_move<C, true>();
+        td->undo_move<C, true>(board);
 
         // Track where nodes were spent in the Main thread at the Root
         if (isRoot && td->index==0)

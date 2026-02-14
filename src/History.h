@@ -79,8 +79,8 @@ public:
         SQUARE dest = Move::dest(move);
         return main_history[color][BB::test_bit(info->threats, from)][BB::test_bit(info->threats, dest)][from][dest];
     }
-    inline I16 get_pawn_history(Board* board, MOVE move) const {
-        return pawn_history[get_index(board->get_pawn_key())][Move::piece(move)][Move::dest(move)];
+    inline I16 get_pawn_history(const Board& board, MOVE move) const {
+        return pawn_history[get_index(board.get_pawn_key())][Move::piece(move)][Move::dest(move)];
     }
 
     ContinuationHistoryTable continuation_history {{{{0}}}};

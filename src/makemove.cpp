@@ -3,9 +3,13 @@
 #include "Move.h"
 #include "NNUE.h"
 #include "zobrist.h"
+#include "ThreadData.h"
 
+//==================================================
+//! \brief  Réalise un coup sur la position
+//--------------------------------------------------
 template <Color US, bool Update_NNUE>
-void Board::make_move(const MOVE move) noexcept
+void Board::make_move(Accumulator& accum, const MOVE move) noexcept
 {
     constexpr Color THEM     = ~US;
 
@@ -45,20 +49,13 @@ void Board::make_move(const MOVE move) noexcept
      *
      */
 
-
-    // Lazy Updates
-    // On ne stocke que les modifications à faire,
-    // mais on ne les applique pas.
-
+    // On se sert des DirtyPieces pour accélérer la mise à niveau du réseau
+    DirtyPieces& dp  = accum.dirtyPieces;
     if constexpr (Update_NNUE == true)
     {
-        nnue.push();    // nouvel accumulateur
+        dp.sub_1 = {from, piece};
+        dp.add_1 = {dest, piece};
     }
-    Accumulator& accum = get_accumulator();
-    DirtyPieces& dp = accum.dirtyPieces;
-
-    dp.sub_1 = {from, piece};
-    dp.add_1 = {dest, piece};
 
     const Status& previousStatus = statusHistory.back(); // précédent status (sous forme de référence)
     statusHistory.emplace_back(previousStatus);     // ajoute 1 élément à la fin
@@ -119,7 +116,6 @@ void Board::make_move(const MOVE move) noexcept
             if constexpr (Update_NNUE == true)
             {
                 dp.type  = DirtyPieces::NORMAL;
-                // nnue.sub_add(acc, acc, piece, from, piece, dest, wking, bking);
             }
         }
 
@@ -160,7 +156,6 @@ void Board::make_move(const MOVE move) noexcept
                     assert(US == Move::color(piece));
                     assert(THEM == Move::color(captured));
 
-                    // nnue.sub_sub_add(acc, acc, piece, from, captured, promoted, dest, wking, bking);
                     dp.type  = DirtyPieces::CAPTURE;
                     dp.sub_2 = {dest, captured};
                     dp.add_1.piece = promoted;
@@ -198,7 +193,6 @@ void Board::make_move(const MOVE move) noexcept
 
                     dp.type  = DirtyPieces::CAPTURE;
                     dp.sub_2 = {dest, captured};
-                    // nnue.sub_sub_add(acc, acc, piece, from, captured, piece, dest, wking, bking);
                 }
             }
         }
@@ -227,7 +221,6 @@ void Board::make_move(const MOVE move) noexcept
             {
                 dp.type  = DirtyPieces::NORMAL;
                 dp.add_1.piece = promoted;
-                // nnue.sub_add(acc, acc, piece, from, promoted, dest, wking, bking);
             }
         }
     }
@@ -259,7 +252,6 @@ void Board::make_move(const MOVE move) noexcept
             if constexpr (Update_NNUE == true)
             {
                 dp.type  = DirtyPieces::NORMAL;
-                // nnue.sub_add(acc, acc, piece, from, piece, dest, wking, bking);
             }
 
             SQUARE new_ep;
@@ -312,7 +304,6 @@ void Board::make_move(const MOVE move) noexcept
                 {
                     dp.type = DirtyPieces::CAPTURE;
                     dp.sub_2 = {SQ::south(dest), captured};
-                    // nnue.sub_sub_add(acc, acc, piece, from, captured, SQ::south(dest), piece, dest, wking, bking);
                 }
             }
             else
@@ -325,7 +316,6 @@ void Board::make_move(const MOVE move) noexcept
                 {
                     dp.type = DirtyPieces::CAPTURE;
                     dp.sub_2 = {SQ::north(dest), captured};
-                    // nnue.sub_sub_add(acc, acc, piece, from, captured, SQ::north(dest), piece, dest, wking, bking);
                 }
             }
         }
@@ -356,9 +346,6 @@ void Board::make_move(const MOVE move) noexcept
                 newStatus.key         ^= piece_key[piece][from] ^ piece_key[piece][dest];
                 newStatus.mat_key[US] ^= piece_key[piece][from] ^ piece_key[piece][dest];
 
-                // if constexpr (Update_NNUE == true)
-                // nnue.sub_add(acc, acc, piece, from, piece, dest, wking, bking);
-
                 // Move the Rook
                 if constexpr (US == WHITE)
                 {
@@ -373,7 +360,6 @@ void Board::make_move(const MOVE move) noexcept
                         dp.type = DirtyPieces::CASTLING;
                         dp.add_2 = {F1, Piece::WHITE_ROOK};
                         dp.sub_2 = {H1, Piece::WHITE_ROOK};
-                        // nnue.sub_add(acc, acc, Piece::WHITE_ROOK, H1, Piece::WHITE_ROOK, F1, wking, bking);
                     }
                 }
                 else
@@ -389,7 +375,6 @@ void Board::make_move(const MOVE move) noexcept
                         dp.type = DirtyPieces::CASTLING;
                         dp.add_2 = {F8, Piece::BLACK_ROOK};
                         dp.sub_2 = {H8, Piece::BLACK_ROOK};
-                        // nnue.sub_add(acc, acc, Piece::BLACK_ROOK, H8, Piece::BLACK_ROOK, F8, wking, bking);
                     }
                 }
             }
@@ -408,8 +393,6 @@ void Board::make_move(const MOVE move) noexcept
 
                 newStatus.key         ^= piece_key[piece][from] ^ piece_key[piece][dest];
                 newStatus.mat_key[US] ^= piece_key[piece][from] ^ piece_key[piece][dest];
-                // if constexpr (Update_NNUE == true)
-                // nnue.sub_add(acc, acc, piece, from, piece, dest, wking, bking);
 
                 // Move the Rook
                 if constexpr (US == WHITE)
@@ -425,7 +408,6 @@ void Board::make_move(const MOVE move) noexcept
                         dp.type = DirtyPieces::CASTLING;
                         dp.add_2 = {D1, Piece::WHITE_ROOK};
                         dp.sub_2 = {A1, Piece::WHITE_ROOK};
-                        // nnue.sub_add(acc, acc, Piece::WHITE_ROOK, A1, Piece::WHITE_ROOK, D1, wking, bking);
                     }
                 }
                 else
@@ -441,7 +423,6 @@ void Board::make_move(const MOVE move) noexcept
                         dp.type = DirtyPieces::CASTLING;
                         dp.add_2 = {D8, Piece::BLACK_ROOK};
                         dp.sub_2 = {A8, Piece::BLACK_ROOK};
-                        // nnue.sub_add(acc, acc, Piece::BLACK_ROOK, A8, Piece::BLACK_ROOK, D8, wking, bking);
                     }
                 }
             }
@@ -455,10 +436,7 @@ void Board::make_move(const MOVE move) noexcept
     // attention : on a changé de camp !!!
     calculate_checkers_pinned<THEM>();
 
-    // Push the accumulator change
-    accum.updated[WHITE] = false;
-    accum.updated[BLACK] = false;
-    accum.king_square   = king_square;
+
 
 #ifndef NDEBUG
     // on ne passe ici qu'en debug
@@ -629,10 +607,10 @@ void Board::capture_piece(const SQUARE from,
 
 
 // Explicit instantiations.
-template void Board::make_move<WHITE, true>(const U32 move) noexcept;
-template void Board::make_move<BLACK, true>(const U32 move) noexcept;
-template void Board::make_move<WHITE, false>(const U32 move) noexcept;
-template void Board::make_move<BLACK, false>(const U32 move) noexcept;
+template void Board::make_move<WHITE, true>(Accumulator& accum, const U32 move) noexcept;
+template void Board::make_move<BLACK, true>(Accumulator& accum, const U32 move) noexcept;
+template void Board::make_move<WHITE, false>(Accumulator& accum, const U32 move) noexcept;
+template void Board::make_move<BLACK, false>(Accumulator& accum, const U32 move) noexcept;
 
 template void Board::make_nullmove<WHITE>() noexcept;
 template void Board::make_nullmove<BLACK>() noexcept;

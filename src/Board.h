@@ -14,7 +14,6 @@ class Board;
 #include "Attacks.h"
 #include "NNUE.h"
 
-
 // Structure définissant une position.
 // Elle est destinée à stocker l'historique de make_move.
 // celle-ci sera nécessaire pour effectuer un unmake_move
@@ -49,7 +48,7 @@ public:
     Board();
     Board(const std::string& fen);
 
-    void reset() noexcept;
+    void initialisation() noexcept;
     void parse_position(std::istringstream &is);
 
     //! \brief  Retourne le camp à jouer
@@ -317,8 +316,8 @@ public:
 
     //=========================================================================
 
-    template<Color C, bool Update_NNUE> void make_move(const MOVE move) noexcept;
-    template<Color C, bool Update_NNUE> void undo_move() noexcept;
+    template<Color C, bool Update_NNUE> void make_move(Accumulator& accum, const MOVE move) noexcept;
+    template<Color C>                   void undo_move() noexcept;
     template<Color C> void make_nullmove() noexcept;
     template<Color C> void undo_nullmove() noexcept;
 
@@ -386,10 +385,6 @@ public:
                               ^ occupancy_cp<C, PieceType::KING>() ) );
     }
 
-    //==============================================
-    //  Evaluation
-    int  evaluate();
-    int  do_evaluate(Accumulator& acc);
     bool fast_see(const MOVE move, const int threshold) const;
 
     //====================================================================
@@ -481,23 +476,19 @@ public:
     //===========================================================================
     //  Données
 
-    std::array<Bitboard, N_COLORS>     colorPiecesBB;   // bitboard des pièces pour chaque couleur
-    std::array<Bitboard, N_PIECE_TYPE> typePiecesBB;    // bitboard des pièces pour chaque type de pièce
-    std::array<Piece, N_SQUARES>       piece_square;    // donne la pièce occupant la case indiquée (type + couleur)
-    std::array<SQUARE, N_COLORS>       king_square;     // position des rois
-    Color side_to_move;                         // camp au trait
-    std::vector<std::string> best_moves;        // meilleur coup (pour les tests tactiques)
-    std::vector<std::string> avoid_moves;       // coup à éviter (pour les tests tactiques)
-    std::vector<Status> statusHistory;          // historique des positions de la partie (coups déjà joués ET coups de la recherche)
-    NNUE nnue;
+    std::array<Bitboard, N_COLORS>      colorPiecesBB;  // bitboard des pièces pour chaque couleur
+    std::array<Bitboard, N_PIECE_TYPE>  typePiecesBB;   // bitboard des pièces pour chaque type de pièce
+    std::array<Piece, N_SQUARES>        piece_square;   // donne la pièce occupant la case indiquée (type + couleur)
+    std::array<SQUARE, N_COLORS>        king_square;    // position des rois
+    Color                               side_to_move;   // camp au trait
+    std::vector<std::string>            best_moves;     // meilleur coup (pour les tests tactiques)
+    std::vector<std::string>            avoid_moves;    // coup à éviter (pour les tests tactiques)
+    std::vector<Status>                 statusHistory;  // historique des positions de la partie (coups déjà joués ET coups de la recherche)
 
     //==============================================
     //  Status
     inline const Status& get_status() const { return statusHistory.back(); }
     inline Status& get_status()             { return statusHistory.back(); }
-
-    inline const Accumulator& get_accumulator() const { return nnue.get_accumulator(); }
-    inline Accumulator& get_accumulator()             { return nnue.get_accumulator(); }
 
     [[nodiscard]] inline int get_fiftymove_counter()  const noexcept { return get_status().fiftymove_counter; }
     [[nodiscard]] inline int get_fullmove_counter()   const noexcept { return get_status().fullmove_counter;  }

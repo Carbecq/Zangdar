@@ -6,6 +6,7 @@
 #include "Board.h"
 #include "NNUE.h"
 
+
 //    rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 //                                                1 2    3 4 5
 //
@@ -714,6 +715,7 @@ void Board::parse_position(std::istringstream &is)
 template <Color C>
 void Board::apply_token(const std::string& token) noexcept
 {
+    Accumulator accum;  // ne sert pas
     MoveList ml;
     legal_moves<C, MoveGenType::ALL>(ml);
 #ifndef NDEBUG
@@ -727,7 +729,7 @@ void Board::apply_token(const std::string& token) noexcept
 #ifndef NDEBUG
             nbr++;
 #endif
-            make_move<C, false>(mlmove.move);
+            make_move<C, false>(accum, mlmove.move);
             break;
         }
     }

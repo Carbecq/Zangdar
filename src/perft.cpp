@@ -2,6 +2,7 @@
 #include "Board.h"
 #include "defines.h"
 #include "Move.h"
+#include "ThreadData.h"
 
 template <Color C, bool divide=false>
 [[nodiscard]] std::uint64_t Board::perft(const int depth) noexcept
@@ -11,6 +12,7 @@ template <Color C, bool divide=false>
 
     U64 nodes  = 0ULL;
     MOVE move;
+    Accumulator accum;  // ne sert pas
 
     MoveList ml;
     legal_moves<C, MoveGenType::ALL>(ml);
@@ -48,15 +50,15 @@ template <Color C, bool divide=false>
 
         if constexpr (divide == false)
         {
-            make_move<C, false>(move);
+            make_move<C, false>(accum, move);
             nodes += perft<~C, false>(depth - 1);
-            undo_move<C, false>();
+            undo_move<C>();
         }
         else
         {
-            make_move<C, false>(move);
+            make_move<C, false>(accum, move);
             auto child = perft<~C, false>(depth - 1);
-            undo_move<C, false>();
+            undo_move<C>();
             std::cout << Move::name(move) << " : " << child << std::endl;
             nodes += child;
         }

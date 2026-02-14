@@ -36,7 +36,7 @@ class MovePicker
 {
 public:
 
-    MovePicker(Board *_board, const History& _history, const SearchInfo* _info,
+    MovePicker(Board& _board, const History& _history, const SearchInfo* _info,
                MOVE _ttMove, MOVE _killer1, MOVE _killer2, MOVE _counter,
                int _threshold) ;
 
@@ -58,7 +58,7 @@ public:
 
 
 private:
-    Board*          board;
+          Board&    board;
     const History&  history;  // pour les différents history
     const SearchInfo* info;
 

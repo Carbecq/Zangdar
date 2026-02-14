@@ -6,7 +6,7 @@
 //=====================================================
 //! \brief  Constructeur
 //-----------------------------------------------------
-MovePicker::MovePicker(Board* _board, const History& _history, const SearchInfo *_info,
+MovePicker::MovePicker(Board& _board, const History& _history, const SearchInfo *_info,
                        MOVE _ttMove, MOVE _killer1, MOVE _killer2, MOVE _counter, int _threshold) :
     board(_board),
     history(_history),
@@ -29,17 +29,17 @@ MovePicker::MovePicker(Board* _board, const History& _history, const SearchInfo 
     int nbr_pep = 0;
     int nbr_cas = 0;
 
-    if (board->turn() == WHITE)
+    if (board.turn() == WHITE)
     {
-        board->legal_moves<WHITE, MoveGenType::ALL>(mll);
-        board->legal_noisy<WHITE>(mln);
-        board->legal_quiet<WHITE>(mlq);
+        board.legal_moves<WHITE, MoveGenType::ALL>(mll);
+        board.legal_noisy<WHITE>(mln);
+        board.legal_quiet<WHITE>(mlq);
     }
     else
     {
-        board->legal_moves<BLACK, MoveGenType::ALL>(mll);
-        board->legal_noisy<BLACK>(mln);
-        board->legal_quiet<BLACK>(mlq);
+        board.legal_moves<BLACK, MoveGenType::ALL>(mll);
+        board.legal_noisy<BLACK>(mln);
+        board.legal_quiet<BLACK>(mlq);
     }
 
     for (int i=0; i<mll.count; i++)
@@ -147,10 +147,10 @@ MLMove MovePicker::next_move(bool skipQuiets)
         // split in the array to store quiet and noisy moves. Also,
         // this stage is only a helper. Advance to the next one.
 
-        if (board->turn() == WHITE)
-            board->legal_moves<WHITE, MoveGenType::NOISY>(mln);
+        if (board.turn() == WHITE)
+            board.legal_moves<WHITE, MoveGenType::NOISY>(mln);
         else
-            board->legal_moves<BLACK, MoveGenType::NOISY>(mln);
+            board.legal_moves<BLACK, MoveGenType::NOISY>(mln);
         score_noisy();
         stage = STAGE_GOOD_NOISY ;
 
@@ -170,7 +170,7 @@ MLMove MovePicker::next_move(bool skipQuiets)
                 return next_move(skipQuiets);
             }
 
-            if (!board->fast_see(mln.mlmoves[best].move, threshold))
+            if (!board.fast_see(mln.mlmoves[best].move, threshold))
             {
                 shift_bad(best);
                 return next_move(skipQuiets);
@@ -244,10 +244,10 @@ MLMove MovePicker::next_move(bool skipQuiets)
         {
             if (gen_quiet == false)
             {
-                if (board->turn() == WHITE)
-                    board->legal_moves<WHITE, MoveGenType::QUIET>(mlq);
+                if (board.turn() == WHITE)
+                    board.legal_moves<WHITE, MoveGenType::QUIET>(mlq);
                 else
-                    board->legal_moves<BLACK, MoveGenType::QUIET>(mlq);
+                    board.legal_moves<BLACK, MoveGenType::QUIET>(mlq);
                 gen_quiet = true;
                 score_quiet();
             }
@@ -320,7 +320,7 @@ void MovePicker::score_noisy()
         move     = mln.mlmoves[i].move;
 
         // Use the standard MVV-LVA
-        // PieceType dest_type = board->piece_on(Move::dest(move));  // pièce prise ou promotion
+        // PieceType dest_type = board.piece_on(Move::dest(move));  // pièce prise ou promotion
 
         // std::cout << "i= " << i << "  " << Move::name(move) << std::endl;
         // std::cout << "captured = " << piece_name[Move::captured(move)] << " value = " << MvvLvaScores[Move::captured(move)][Move::piece(move)] << std::endl;
@@ -363,7 +363,7 @@ void MovePicker::score_quiet()
         //TODO essayer d'autres coefficients
         //TODO ajouter info-6 (attention au décalage dans SearchInfo
 
-        value  = 2 * history.get_main_history(board->turn(), info, move);
+        value  = 2 * history.get_main_history(board.turn(), info, move);
 
         value += history.get_pawn_history(board, move);
 
@@ -456,10 +456,10 @@ bool MovePicker::is_legal(MOVE move)
 
     if (gen_legal == false)
     {
-        if (board->turn() == WHITE)
-            board->legal_moves<WHITE, MoveGenType::ALL>(mll);
+        if (board.turn() == WHITE)
+            board.legal_moves<WHITE, MoveGenType::ALL>(mll);
         else
-            board->legal_moves<BLACK, MoveGenType::ALL>(mll);
+            board.legal_moves<BLACK, MoveGenType::ALL>(mll);
         gen_legal = true;
     }
 

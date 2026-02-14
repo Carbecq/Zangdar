@@ -8,6 +8,7 @@
 #include "defines.h"
 #include "Board.h"
 #include "Move.h"
+#include "ThreadData.h"
 
 static void sort_moves(MoveList& ml);
 
@@ -106,7 +107,7 @@ void test_suite(const std::string& abc, int dmax)
         // boucle sur les profondeurs de test
         for (int i=1; i<=nbr_prof; i++)
         {
-            CB.reset();
+            CB.initialisation();
             CB.set_fen(fen, false);
 
             aux     = liste1.at(i);                     // "D1 20"
@@ -288,7 +289,7 @@ void test_perft(const std::string& str, const std::string& m_fen, int depth)
 void test_eval(const std::string& fen)
 {
     Board b;
-    b.reset();
+    b.initialisation();
 
     b.test_value(fen);
 }
@@ -349,12 +350,13 @@ bool Board::test_mirror(const std::string& line)
 //    std::cout << "********************************************************" << std::endl;
 //    std::cout << line << std::endl;
 
-    reset();
+
+    initialisation();
     set_fen(line, true);
 
 //    std::cout << display() << std::endl;
 
-    ev1 = evaluate();
+ //AFAIRE   ev1 = evaluate();
 //    std::cout << "side = " << side_to_move << " : ev1 = " << ev1 << std::endl;
 
     mirror_fen(line, true);
@@ -363,13 +365,13 @@ bool Board::test_mirror(const std::string& line)
     //        soit faire "Transtable.clear();" pour chaque évaluation
 
 //    std::cout << display() << std::endl;
-    ev2 = evaluate();
+  //AFAIRE  ev2 = evaluate();
 //    std::cout << "side = " << side_to_move << " : ev2 = " << ev2 <<  std::endl;
 
     if(ev1 != ev2)
     {
         std::cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> " << std::endl;
-        reset();
+        initialisation();
         set_fen(line, true);
         std::cout << display() << std::endl;
         mirror_fen(line, true);
@@ -393,9 +395,11 @@ void Board::test_value(const std::string& fen )
     MoveList ml;
 
     Accumulator acc;
-    nnue.refresh_accumulator<WHITE>(this, acc);
-    nnue.refresh_accumulator<BLACK>(this, acc);
-    int eval = do_evaluate(acc);
+    ThreadData td;
+    td.nnue->start_search(*this);
+    td.nnue->refresh_accumulator<WHITE>(*this, acc);
+    td.nnue->refresh_accumulator<BLACK>(*this, acc);
+    int eval = td.do_evaluate(*this, acc);
 
     printf("side = %s : evaluation = %d \n\n", side_name[side_to_move].c_str(), eval);
     BB::PrintBB(get_status().checkers, "checkers");
@@ -413,7 +417,7 @@ void Board::test_value(const std::string& fen )
        move = ml.mlmoves[index].move;
 
        // execute current move
-       make_move<WHITE, false>(move);
+       make_move<WHITE, false>(acc, move);
 
        bool doCheck    = is_in_check();
 
@@ -431,7 +435,7 @@ void Board::test_value(const std::string& fen )
            printf("blanc ne fait pas échec \n");
 
        // retract current move
-       undo_move<WHITE, false>();
+       undo_move<WHITE>();
    }
 
 }
@@ -554,7 +558,7 @@ void test_see()
         strm  = aux.substr(1, aux.size());
         score = std::stoi(liste1[2]);
 
-        board.reset();
+        board.initialisation();
         board.set_fen(fen, false);
 
         if (board.turn() == WHITE)
