@@ -307,8 +307,8 @@ public:
     template <Color C, CastleSide side> constexpr void gen_castle(MoveList& ml)
     {
         if (   can_castle<C, side>()
-               && BB::empty(get_rook_path<C, side>() & occupancy_all())
-               && !(squares_attacked<~C>() & get_king_path<C, side>()) )
+            && BB::empty(get_rook_path<C, side>() & occupancy_all())
+            && BB::empty(squares_attacked<~C>() & get_king_path<C, side>()) )
         {
             add_quiet_move(ml, get_king_from<C>(), get_king_dest<C, side>(), Move::make_piece(C, PieceType::KING), Move::FLAG_CASTLE_MASK);
         }
