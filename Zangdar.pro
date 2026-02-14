@@ -264,7 +264,6 @@ SOURCES += \
     src/TranspositionTable.cpp \
     src/Tunable.cpp \
     src/Uci.cpp \
-    src/add_moves.cpp \
     src/attackers.cpp \
     src/fen.cpp \
     src/legal_moves.cpp \

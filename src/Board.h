@@ -1,9 +1,6 @@
 #ifndef LIBCHESS_POSITION_HPP
 #define LIBCHESS_POSITION_HPP
 
-#include "NNUE.h"
-class Board;
-
 #include "MoveList.h"
 #include "Bitboard.h"
 #include "types.h"
@@ -171,7 +168,7 @@ public:
     template<Color C> [[nodiscard]] Bitboard squares_attacked() const noexcept;
 
     //! \brief  Détermine si la case sq est attaquée par le camp C
-    template<Color C> [[nodiscard]] constexpr bool square_attacked(const SQUARE sq) const noexcept { return attackers<C>(sq) > 0; }
+    template<Color C> [[nodiscard]] constexpr bool square_attacked(const SQUARE sq) const noexcept { return attackers<C>(sq) != 0; }
 
     //! \brief  Détermine si le camp au trait est en échec dans la position actuelle
     [[nodiscard]] inline bool is_in_check() const noexcept { return get_status().checkers > 0; }
@@ -196,22 +193,159 @@ public:
     //==============================================
     //  Génération des coups
 
-    void add_quiet_move(  MoveList &ml, const SQUARE from, const SQUARE dest, Piece piece, U32 flags) const noexcept;
-    void add_capture_move(MoveList &ml, const SQUARE from, const SQUARE dest, Piece piece, Piece captured, U32 flags) const noexcept;
-    void add_quiet_promotion(  MoveList &ml, const SQUARE from, const SQUARE dest, Color color, Piece promoted) const noexcept;
-    void add_capture_promotion(MoveList &ml, const SQUARE from, const SQUARE dest, Color color, Piece captured, Piece promoted) const noexcept;
+    //=================================================================
+    //! \brief  Ajoute un coup tranquille à la liste des coups
+    //!
+    //! \param[in]  ml      MoveList de stockage des coups
+    //! \param[in]  from    position de départ de la pièce
+    //! \param[in]  dest    position d'arrivée de la pièce
+    //! \param[in]  piece   type de la pièce jouant
+    //! \param[in]  flags   flags du coup (avance double, prise en-passant, roque)
+    //-----------------------------------------------------------------
+    inline void add_quiet_move(MoveList& ml, const SQUARE from, const SQUARE dest, Piece piece, U32 flags)  const noexcept
+    {
+        ml.mlmoves[ml.count++].move = Move::CODE(from, dest, piece, Piece::PIECE_NONE, Piece::PIECE_NONE, flags);
+    }
 
-    void push_quiet_moves(MoveList &ml, Bitboard attack, const SQUARE from);
-    void push_capture_moves(MoveList &ml, Bitboard attack, const SQUARE from);
-    void push_piece_quiet_moves(MoveList &ml, Bitboard attack, const SQUARE from, Color color, PieceType piece);
-    void push_piece_capture_moves(MoveList &ml, Bitboard attack, const SQUARE from, Color color, PieceType piece);
+    //=================================================================
+    //! \brief  Ajoute un coup de capture à la liste des coups
+    //!
+    //! \param[in]  ml      MoveList de stockage des coups
+    //! \param[in]  from    position de départ de la pièce
+    //! \param[in]  dest    position d'arrivée de la pièce
+    //! \param[in]  piece   type de la pièce jouant
+    //! \param[in]  captured   type de la pièce capturée
+    //! \param[in]  flags   flags du coup (avance double, prise en-passant, roque)
+    //-----------------------------------------------------------------
+    inline void add_capture_move(MoveList& ml, const SQUARE from, const SQUARE dest, Piece piece, Piece captured, U32 flags) const noexcept
+    {
+        ml.mlmoves[ml.count++].move  = Move::CODE(from, dest, piece, captured, Piece::PIECE_NONE, flags);
+    }
 
-    void push_quiet_promotions(MoveList &ml, Bitboard attack, const int dir, Color color);
-    void push_capture_promotions(MoveList &ml, Bitboard attack, const int dir, Color color);
-    void push_quiet_promotion(MoveList &ml, const SQUARE from, const SQUARE to, Color color);
-    void push_capture_promotion(MoveList &ml, const SQUARE from, const SQUARE to, Color color);
-    void push_pawn_quiet_moves(MoveList &ml, Bitboard attack, const int dir, Color color, U32 flags);
-    void push_pawn_capture_moves(MoveList &ml, Bitboard attack, const int dir, Color color);
+    //=================================================================
+    //! \brief  Ajoute un coup tranquille de promotion à la liste des coups
+    //!
+    //! \param[in]  ml      MoveList de stockage des coups
+    //! \param[in]  from    position de départ de la pièce
+    //! \param[in]  dest    position d'arrivée de la pièce
+    //! \param[in]  promo   type de la pièce promue
+    //! \param[in]  flags   flags du coup (avance double, prise en-passant, roque)
+    //-----------------------------------------------------------------
+    inline void add_quiet_promotion(MoveList& ml, const SQUARE from, const SQUARE dest, Color color, Piece promoted) const noexcept
+    {
+        ml.mlmoves[ml.count++].move = Move::CODE(from, dest,
+                                                 Move::make_piece(color, PieceType::PAWN),
+                                                 Piece::PIECE_NONE,
+                                                 promoted,
+                                                 Move::FLAG_NONE);
+    }
+
+    //=================================================================
+    //! \brief  Ajoute un coup de capture et de promotion à la liste des coups
+    //!
+    //! \param[in]  ml      MoveList de stockage des coups
+    //! \param[in]  from    position de départ de la pièce
+    //! \param[in]  dest    position d'arrivée de la pièce
+    //! \param[in]  piece   type de la pièce jouant
+    //! \param[in]  captured   type de la pièce capturée
+    //! \param[in]  promo   type de la pièce promue
+    //! \param[in]  flags   flags du coup (avance double, prise en-passant, roque)
+    //-----------------------------------------------------------------
+    inline void add_capture_promotion(MoveList& ml, const SQUARE from, const SQUARE dest, Color color, Piece captured, Piece promoted) const noexcept
+    {
+        ml.mlmoves[ml.count++].move  = Move::CODE(from, dest,
+                                                  Move::make_piece(color, PieceType::PAWN),
+                                                  captured,
+                                                  promoted,
+                                                  Move::FLAG_NONE);
+    }
+
+    //===================================================================
+    //! \brief  Ajoute une série de coups
+    //-------------------------------------------------------------------
+    inline void push_quiet_moves(MoveList& ml, Bitboard attack, const SQUARE from)
+    {
+        while (attack) {
+            add_quiet_move(ml, from, BB::pop_lsb(attack), piece_square[from], Move::FLAG_NONE);
+        }
+    }
+    inline void push_piece_quiet_moves(MoveList& ml, Bitboard attack, const SQUARE from, Color color, PieceType piece)
+    {
+        while (attack) {
+            add_quiet_move(ml, from, BB::pop_lsb(attack), Move::make_piece(color, piece), Move::FLAG_NONE);
+        }
+    }
+    inline void push_capture_moves(MoveList& ml, Bitboard attack, const SQUARE from)
+    {
+        SQUARE to;
+        while (attack) {
+            to = BB::pop_lsb(attack);
+            add_capture_move(ml, from, to, piece_square[from], piece_square[to], Move::FLAG_NONE);
+        }
+    }
+    inline void push_piece_capture_moves(MoveList& ml, Bitboard attack, const SQUARE from, Color color, PieceType piece)
+    {
+        SQUARE to;
+        while (attack) {
+            to = BB::pop_lsb(attack);
+            add_capture_move(ml, from, to, Move::make_piece(color, piece), piece_square[to], Move::FLAG_NONE);
+        }
+    }
+
+    //--------------------------------------------------------------------
+    //  Promotions
+    inline void push_quiet_promotions(MoveList& ml, Bitboard attack, const int dir, Color color)
+    {
+        SQUARE to;
+        while (attack) {
+            to = BB::pop_lsb(attack);
+            push_quiet_promotion(ml, to - dir, to, color);
+        }
+    }
+    inline void push_capture_promotions(MoveList& ml, Bitboard attack, const int dir, Color color)
+    {
+        SQUARE to;
+        while (attack) {
+            to = BB::pop_lsb(attack);
+            push_capture_promotion(ml, to - dir, to, color);
+        }
+    }
+
+    //--------------------------------------
+    //  Coups de pions
+    inline void push_pawn_quiet_moves(MoveList& ml, Bitboard attack, const int dir, Color color, U32 flags)
+    {
+        SQUARE to;
+        while (attack) {
+            to = BB::pop_lsb(attack);
+            add_quiet_move(ml, to - dir, to, Move::make_piece(color, PieceType::PAWN), flags);
+        }
+    }
+    inline void push_pawn_capture_moves(MoveList& ml, Bitboard attack, const int dir, Color color)
+    {
+        SQUARE to;
+        while (attack) {
+            to = BB::pop_lsb(attack);
+            add_capture_move(ml, to - dir, to, Move::make_piece(color, PieceType::PAWN), piece_square[to], Move::FLAG_NONE);
+        }
+    }
+
+    //--------------------------------------
+    //  Promotions générales
+    inline void push_quiet_promotion(MoveList& ml, const SQUARE from, const U32 to, Color color)
+    {
+        add_quiet_promotion(ml, from, to, color, Move::make_piece(color, PieceType::QUEEN));
+        add_quiet_promotion(ml, from, to, color, Move::make_piece(color, PieceType::KNIGHT));
+        add_quiet_promotion(ml, from, to, color, Move::make_piece(color, PieceType::ROOK));
+        add_quiet_promotion(ml, from, to, color, Move::make_piece(color, PieceType::BISHOP));
+    }
+    inline void push_capture_promotion(MoveList& ml, const SQUARE from, const U32 to,  Color color)
+    {
+        add_capture_promotion(ml, from, to, color, piece_square[to], Move::make_piece(color, PieceType::QUEEN));
+        add_capture_promotion(ml, from, to, color, piece_square[to], Move::make_piece(color, PieceType::KNIGHT));
+        add_capture_promotion(ml, from, to, color, piece_square[to], Move::make_piece(color, PieceType::ROOK));
+        add_capture_promotion(ml, from, to, color, piece_square[to], Move::make_piece(color, PieceType::BISHOP));
+    }
 
     //------------------------------------------------------------
     //  le Roque
@@ -219,9 +353,9 @@ public:
     template<Color C> constexpr bool can_castle() const
     {
         if constexpr (C == WHITE)
-                return get_status().castling & (CASTLE_WK | CASTLE_WQ);
+            return get_status().castling & (CASTLE_WK | CASTLE_WQ);
         else
-        return get_status().castling & (CASTLE_BK | CASTLE_BQ);
+            return get_status().castling & (CASTLE_BK | CASTLE_BQ);
     }
 
     template<Color C, CastleSide side> constexpr bool can_castle() const
@@ -234,30 +368,36 @@ public:
                 return get_status().castling & CASTLE_BK;
         else if constexpr (C == BLACK && side == CastleSide::QUEEN_SIDE)
                 return get_status().castling & CASTLE_BQ;
+        else
+                static_assert(sizeof(C) == 0, "can_castle : Invalid Color/CastleSide");
     }
 
     template <Color C, CastleSide side> constexpr Bitboard get_king_path()   // cases ne devant pas être attaquées
     {
         if constexpr      (C == WHITE && side == CastleSide::KING_SIDE)
-                return F1G1_BB;
+            return F1G1_BB;
         else if constexpr (C == WHITE && side == CastleSide::QUEEN_SIDE)
-                return C1D1_BB;
+            return C1D1_BB;
         else if constexpr (C == BLACK && side == CastleSide::KING_SIDE)
-                return F8G8_BB;
+            return F8G8_BB;
         else if constexpr (C == BLACK && side == CastleSide::QUEEN_SIDE)
-                return C8D8_BB;
+            return C8D8_BB;
+        else
+            static_assert(sizeof(C) == 0, "get_king_path : Invalid Color/CastleSide");
     }
 
     template <Color C, CastleSide side> constexpr Bitboard get_rook_path()   // cases devant être libres
     {
         if constexpr      (C == WHITE && side == CastleSide::KING_SIDE)
-                return F1G1_BB;
+            return F1G1_BB;
         else if constexpr (C == WHITE && side == CastleSide::QUEEN_SIDE)
-                return B1D1_BB;
+            return B1D1_BB;
         else if constexpr (C == BLACK && side == CastleSide::KING_SIDE)
-                return F8G8_BB;
+            return F8G8_BB;
         else if constexpr (C == BLACK && side == CastleSide::QUEEN_SIDE)
-                return B8D8_BB;
+            return B8D8_BB;
+        else
+            static_assert(sizeof(C) == 0, "get_rook_path : Invalid Color/CastleSide");
     }
 
     template <Color C> constexpr SQUARE get_king_from()
@@ -271,13 +411,15 @@ public:
     template <Color C, CastleSide side> constexpr SQUARE get_king_dest()
     {
         if constexpr      (C == WHITE && side == CastleSide::KING_SIDE)
-                return (G1);
+            return (G1);
         else if constexpr (C == WHITE && side == CastleSide::QUEEN_SIDE)
-                return (C1);
+            return (C1);
         else if constexpr (C == BLACK && side == CastleSide::KING_SIDE)
-                return (G8);
+            return (G8);
         else if constexpr (C == BLACK && side == CastleSide::QUEEN_SIDE)
-                return (C8);
+            return (C8);
+        else
+            static_assert(sizeof(C) == 0, "get_king_dest : Invalid Color/CastleSide");
     }
 
     /* Le roque nécessite plusieurs conditions :
