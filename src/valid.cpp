@@ -119,13 +119,13 @@ bool Board::valid() const noexcept
 
     for (SQUARE i=A1; i<N_SQUARES; ++i)
     {
-        Piece p1 = piece_square[i] ;
-        auto n1  = pieceToChar(p1);
-        Piece p2 =  piece_on(i) ;
-        auto n2  = pieceToChar(p2);
-
         if (piece_square[i] != piece_on(i))
         {
+            Piece p1 = piece_square[i] ;
+            auto n1  = pieceToChar(p1);
+            Piece p2 =  piece_on(i) ;
+            auto n2  = pieceToChar(p2);
+
             std::cout << "erreur piece case " << i << " : " << square_name[i]
                          << " board : " << n1 << " pieceon : "<< n2 <<  std::endl;
             return(false);

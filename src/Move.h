@@ -44,7 +44,6 @@ constexpr int     SHIFT_CAPT  = 16;
 constexpr int     SHIFT_PROMO = 20;
 constexpr int     SHIFT_FLAGS = 24;
 
-constexpr U32 MOVE_NONE = 0;
 
 // Fields
 //                                                dest  from
@@ -94,6 +93,7 @@ constexpr U32 MOVE_DEPL_MASK      = 0b0111111111110000000000000000;
 // flags = 0
 
 constexpr U32 MOVE_NULL           = 65; // 1000001
+constexpr U32 MOVE_NONE           = 0;
 
 
 [[nodiscard]] constexpr MOVE CODE(
@@ -186,7 +186,7 @@ constexpr U32 MOVE_NULL           = 65; // 1000001
 
 //! \brief Détermine si le coup est un déplacement simple
 [[nodiscard]] constexpr inline bool is_depl(const MOVE move) noexcept {
-    return ((move & MOVE_DEPL_MASK)==MOVE_NONE);
+    return ((move & MOVE_DEPL_MASK)==Move::MOVE_NONE);
 }
 
 //! \brief Détermine si le coup est une poussée double de pion
@@ -223,7 +223,7 @@ constexpr U32 MOVE_NULL           = 65; // 1000001
 }
 
 [[nodiscard]] constexpr inline bool is_ok(const MOVE m) noexcept {
-  return m != MOVE_NONE && m != MOVE_NULL;
+  return m != Move::MOVE_NONE && m != Move::MOVE_NULL;
 }
 
 //=================================================

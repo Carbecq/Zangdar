@@ -9,6 +9,7 @@ class History;
 #include "Move.h"
 #include "Tunable.h"
 #include "Board.h"
+#include "SearchInfo.h"
 
 // Quiet History, aussi appelée Main History, ou Butterfly History :
 //  side_to_move, threat, threat, from, to
@@ -158,7 +159,7 @@ private:
 
 
     // tableau des coups qui ont causé un cutoff au ply précédent
-    CounterMoveTable counter_move = {{0}};
+    CounterMoveTable counter_move = {{Move::MOVE_NONE}};
 
     // capture history  : [moved piece][target square][captured piece type]
     CaptureHistory capture_history = {{{0}}};

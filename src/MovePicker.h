@@ -67,10 +67,10 @@ private:
     bool    gen_legal;
     int     threshold;
 
-    MOVE tt_move;
-    MOVE killer1;
-    MOVE killer2;
-    MOVE counter;
+    MOVE tt_move = Move::MOVE_NONE;
+    MOVE killer1 = Move::MOVE_NONE;
+    MOVE killer2 = Move::MOVE_NONE;
+    MOVE counter = Move::MOVE_NONE;
 
     MoveList mlq;
     MoveList mln;

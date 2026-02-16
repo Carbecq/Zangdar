@@ -141,8 +141,8 @@ void Board::undo_move() noexcept
 
     statusHistory.pop_back();
 
-#ifndef NDEBUG
-    // on ne passe ici qu'en debug
+#if !defined NDEBUG && !defined USE_PROF
+    // on ne passe ici qu'en debug, et sans voulir le profiling
     assert(valid());
 #endif
 }
@@ -155,8 +155,8 @@ template <Color Us> void Board::undo_nullmove() noexcept
     statusHistory.pop_back();       // supprime le dernier status
     side_to_move = ~side_to_move;   // Change de camp
 
-#ifndef NDEBUG
-    // on ne passe ici qu'en debug
+#if !defined NDEBUG && !defined USE_PROF
+    // on ne passe ici qu'en debug, et sans voulir le profiling
     assert(valid());
 #endif
 }

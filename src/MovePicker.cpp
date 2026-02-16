@@ -446,14 +446,31 @@ void MovePicker::shift_bad(size_t idx)
 //------------------------------------------------------------------
 bool MovePicker::is_legal(MOVE move)
 {
-    // assert(move != Move::MOVE_NONE);
     assert(move != Move::MOVE_NULL);
 
+    // coup non initialisé
     if (move == Move::MOVE_NONE)
+    {
+        // std::cout << "---- 0000" << std::endl;
         return false;
+    }
 
-    //ZZZZ  Peut-on faire plus rapide ???
+    // pièce non initialisée
+    SQUARE from = Move::from(move);
+    if (board.piece_at(from) == Piece::PIECE_NONE)
+    {
+        // std::cout << "--------11111 "  << std::endl;
+        return false;
+    }
 
+    // la couleur de la pièce est fausse
+    if (Move::color(board.piece_at(from)) != board.turn())
+    {
+        // std::cout << "------------2222 "  << std::endl;
+        return false;
+    }
+
+    // on essaye de minimiser les appels à legal_moves
     if (gen_legal == false)
     {
         if (board.turn() == WHITE)
@@ -463,9 +480,11 @@ bool MovePicker::is_legal(MOVE move)
         gen_legal = true;
     }
 
+    // en dernier ressort, on teste
     for (size_t n=0; n<mll.count; n++)
         if (mll.mlmoves[n].move == move)
             return true;
+
     return false;
 }
 

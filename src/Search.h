@@ -10,7 +10,7 @@ class Search;
 #include "types.h"
 #include "defines.h"
 #include "ThreadData.h"
-
+#include "SearchInfo.h"
 
 // classe permettant de redéfinir mon 'locale'
 // en effet, je n'en ai pas trouvé (windows ? mingw ?)

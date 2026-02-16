@@ -8,13 +8,11 @@ class ThreadData;
 #include "defines.h"
 #include "types.h"
 #include "History.h"
+#include "Search.h"
 
 constexpr int STACK_OFFSET = 4;
 constexpr int STACK_SIZE   = MAX_PLY + 2*STACK_OFFSET;  // taille un peu trop grande, mais multiple de 8
 
-
-// Déclarations pour le compilateur
-class Search;
 
 //! \brief  Données d'une thread
 class ThreadData

@@ -230,6 +230,7 @@ HEADERS += \
     src/MovePicker.h \
     src/NNUE.h \
     src/Search.h \
+    src/SearchInfo.h \
     src/ThreadData.h \
     src/ThreadPool.h \
     src/Timer.h \

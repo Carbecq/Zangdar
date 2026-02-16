@@ -437,9 +437,8 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
     calculate_checkers_pinned<THEM>();
 
 
-
-#ifndef NDEBUG
-    // on ne passe ici qu'en debug
+#if !defined NDEBUG && !defined USE_PROF
+    // on ne passe ici qu'en debug, et sans voulir le profiling
     if (valid() == false)
     {
         printf("------------------------------------------make move \n");
@@ -505,8 +504,8 @@ template <Color Us> void Board::make_nullmove() noexcept
     // attention : on a changé de camp !!!
     calculate_checkers_pinned<Them>();
 
-#ifndef NDEBUG
-    // on ne passe ici qu'en debug
+#if !defined NDEBUG && !defined USE_PROF
+    // on ne passe ici qu'en debug, et sans voulir le profiling
     assert(valid());
 #endif
 }

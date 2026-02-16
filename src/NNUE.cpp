@@ -269,7 +269,6 @@ void NNUE::lazy_update(const Board &board, Accumulator& acc)
     if (acc.updated[side])
         return;
 
-    assert(!BB::empty(board));
     assert(head_idx > 0);
 
     const SQUARE king = acc.king_square[side];
@@ -728,10 +727,8 @@ void NNUE::refresh_accumulator(const Board &board, Accumulator& acc)
         for (PieceType piece : {PieceType::PAWN, PieceType::KNIGHT, PieceType::BISHOP, PieceType::ROOK,
              PieceType::QUEEN, PieceType::KING })
         {
-            const Bitboard old_pieces = entry.colorPiecesBB[side][color]
-                    & entry.typePiecesBB[side][piece];
-            const Bitboard new_pieces = board.colorPiecesBB[color]
-                    & board.typePiecesBB[piece];
+            const Bitboard old_pieces = entry.colorPiecesBB[side][color] & entry.typePiecesBB[side][piece];
+            const Bitboard new_pieces = board.colorPiecesBB[color]       & board.typePiecesBB[piece];
 
             // rechreche des pièces à supprimer
             Bitboard to_remove = ~new_pieces & old_pieces;
