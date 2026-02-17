@@ -65,7 +65,7 @@ DEFS += -DSYZYGY=$(SYZYGY)
 #---------------------------------------------------
 #  Tuning
 #---------------------------------------------------
-DEFS += -DUSE_TUNE
+#DEFS += -DUSE_TUNE
 
 #---------------------------------------------------
 #  Profiling
@@ -115,13 +115,13 @@ else ifeq ($(ARCH), bmi2)
 
 else ifeq ($(ARCH), native)
     DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-5950X
-    CFLAGS_ARCH += -march=native
+    CFLAGS_ARCH += -march=native -mtune=native
     CFLAGS_ARCH += -DUSE_PEXT $(SIMD)
 
 else
     ARCH = native
     DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-5950X
-    CFLAGS_ARCH += -march=native
+    CFLAGS_ARCH += -march=native -mtune=native
     CFLAGS_ARCH += -DUSE_PEXT $(SIMD)
 
 endif
@@ -146,10 +146,15 @@ endif
 #   Test : https://godbolt.org/
 #---------------------------------------------------------------------
 
+# -march=X: (execution domain) Generate code that can use instructions available in the architecture X
+# -mtune=X: (optimization domain) Optimize for the microarchitecture X, but does not change the ABI or make assumptions about available instructions
+
+
 ifeq ($(findstring clang, $(CXX)), clang)
 
 CFLAGS_REL1  = -O3 -flto -ftree-vectorize -funroll-loops -fno-exceptions -DNDEBUG -pthread -Wdisabled-optimization -Wall -Wextra \
-               -finline-functions -fno-rtti -fstrict-aliasing -fomit-frame-pointer
+               -finline-functions -fno-rtti -fstrict-aliasing -fomit-frame-pointer -fwhole-program-vtables \
+               -fvectorize -fslp-vectorize
 CFLAGS_WARN1 = -Wmissing-declarations -Wredundant-decls -Wshadow -Wundef -Wuninitialized -pedantic
 
 CFLAGS_WARN2 = -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wswitch -Wswitch-default -Wswitch-enum -Wenum-compare -Wenum-conversion
