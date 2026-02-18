@@ -195,7 +195,7 @@ void History::update_correction_history(const Board& board, int depth, int best_
     // Weight the new value based on the search depth, and the old value based on the remaining weight
     const int weight = std::min(depth + 1, 16);
 
-    int& pawn = pawn_correction_history[color][board.get_key() % PAWN_HASH_SIZE];
+    int& pawn = pawn_correction_history[color][board.get_pawn_key() % PAWN_HASH_SIZE];
     update_correction(pawn, scaled_bonus, weight);
 
     int& wmat = material_correction_history[WHITE][color][board.get_mat_key(WHITE) % PAWN_HASH_SIZE];
@@ -220,7 +220,7 @@ void History::update_correction(int& entry, int scaled_bonus, int weight)
 //---------------------------------------------------------
 int History::corrected_eval(const Board& board, int raw_eval)
 {
-    // règle des 50 coups
+    // règle des 50 coups : ramener l'évaluation vers 0 quand on s'approche de la nulle
     //TODO raw_eval = (raw_eval * (200 - board.get_fiftymove_counter())) / 200;
 
     int pawn = pawn_correction_history[board.turn()][board.get_pawn_key() % PAWN_HASH_SIZE];
