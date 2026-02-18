@@ -221,7 +221,7 @@ void History::update_correction(int& entry, int scaled_bonus, int weight)
 int History::corrected_eval(const Board& board, int raw_eval)
 {
     // règle des 50 coups : ramener l'évaluation vers 0 quand on s'approche de la nulle
-    //TODO raw_eval = (raw_eval * (200 - board.get_fiftymove_counter())) / 200;
+    raw_eval = (raw_eval * (200 - board.get_fiftymove_counter())) / 200;
 
     int pawn = pawn_correction_history[board.turn()][board.get_pawn_key() % PAWN_HASH_SIZE];
     int wmat = material_correction_history[WHITE][board.turn()][board.get_mat_key(WHITE) % PAWN_HASH_SIZE];
