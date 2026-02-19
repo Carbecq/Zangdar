@@ -507,7 +507,7 @@ setoption name <id> [value <x>]
             }
         }
 
-        if (option_name == "Threads")
+        else if (option_name == "Threads")
         {
             iss >> value;      // "value"
             int nbr;

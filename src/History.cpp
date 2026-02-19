@@ -18,7 +18,7 @@ void History::reset()
     std::memset(continuation_history,   0, sizeof(ContinuationHistoryTable));
     std::memset(capture_history,        0, sizeof(CaptureHistory));
     std::memset(pawn_correction_history,     0, sizeof(PawnCorrectionHistoryTable));
-    std::memset(material_correction_history, 0, 2*sizeof(MaterialCorrectionHistoryTable));
+    std::memset(material_correction_history, 0, N_COLORS*sizeof(MaterialCorrectionHistoryTable));
 }
 
 //==================================================================

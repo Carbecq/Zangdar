@@ -523,8 +523,8 @@ void NNUE::sub_add(const Accumulator& src, Accumulator& dst,
 {
     // Optimisations de : https://cosmo.tardis.ac/files/2024-06-01-nnue.html
 
-    const auto white_sub_idx = get_indice<side>(sub_piece, sub, king);
-    const auto white_add_idx = get_indice<side>(add_piece, add, king);
+    const auto sub_idx = get_indice<side>(sub_piece, sub, king);
+    const auto add_idx = get_indice<side>(add_piece, add, king);
 
 #if defined USE_SIMD
     constexpr int simd_width = sizeof(simd::Vepi16) / sizeof(I16);
@@ -535,16 +535,16 @@ void NNUE::sub_add(const Accumulator& src, Accumulator& dst,
         {
             auto cur_w  = simd::LoadEpi16(&src.white[i]);
             //TODO sub_add ou add_sub ??
-            cur_w       = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_sub_idx * HIDDEN_LAYER_SIZE + i]));
-            cur_w       = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_add_idx * HIDDEN_LAYER_SIZE + i]));
+            cur_w       = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[sub_idx * HIDDEN_LAYER_SIZE + i]));
+            cur_w       = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[add_idx * HIDDEN_LAYER_SIZE + i]));
             simd::StoreEpi16(&dst.white[i], cur_w);
         }
         else
         {
             auto cur_w  = simd::LoadEpi16(&src.black[i]);
             //TODO sub_add ou add_sub ??
-            cur_w       = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_sub_idx * HIDDEN_LAYER_SIZE + i]));
-            cur_w       = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_add_idx * HIDDEN_LAYER_SIZE + i]));
+            cur_w       = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[sub_idx * HIDDEN_LAYER_SIZE + i]));
+            cur_w       = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[add_idx * HIDDEN_LAYER_SIZE + i]));
             simd::StoreEpi16(&dst.black[i], cur_w);
         }
     }
@@ -554,8 +554,8 @@ void NNUE::sub_add(const Accumulator& src, Accumulator& dst,
         for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
         {
             dst.white[i] = src.white[i]
-                    + network->feature_weights[white_add_idx * HIDDEN_LAYER_SIZE + i]
-                    - network->feature_weights[white_sub_idx * HIDDEN_LAYER_SIZE + i];
+                    + network->feature_weights[add_idx * HIDDEN_LAYER_SIZE + i]
+                    - network->feature_weights[sub_idx * HIDDEN_LAYER_SIZE + i];
         }
     }
     else
@@ -563,8 +563,8 @@ void NNUE::sub_add(const Accumulator& src, Accumulator& dst,
         for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
         {
             dst.black[i] = src.black[i]
-                    + network->feature_weights[white_add_idx * HIDDEN_LAYER_SIZE + i]
-                    - network->feature_weights[white_sub_idx * HIDDEN_LAYER_SIZE + i];
+                    + network->feature_weights[add_idx * HIDDEN_LAYER_SIZE + i]
+                    - network->feature_weights[sub_idx * HIDDEN_LAYER_SIZE + i];
         }
     }
 #endif
@@ -587,9 +587,9 @@ void NNUE::sub_sub_add(const Accumulator& src, Accumulator& dst,
                        Piece add_piece_1, SQUARE add_1,
                        SQUARE king)
 {
-    const auto white_sub1_idx = get_indice<side>(sub_piece_1, sub_1, king);
-    const auto white_sub2_idx = get_indice<side>(sub_piece_2, sub_2, king);
-    const auto white_add1_idx = get_indice<side>(add_piece_1, add_1, king);
+    const auto sub1_idx = get_indice<side>(sub_piece_1, sub_1, king);
+    const auto sub2_idx = get_indice<side>(sub_piece_2, sub_2, king);
+    const auto add1_idx = get_indice<side>(add_piece_1, add_1, king);
 
 #if defined USE_SIMD
     constexpr int simd_width = sizeof(simd::Vepi16) / sizeof(I16);
@@ -599,9 +599,9 @@ void NNUE::sub_sub_add(const Accumulator& src, Accumulator& dst,
         for (size_t i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
         {
             auto cur_w = simd::LoadEpi16(&src.white[i]);
-            cur_w      = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_add1_idx * HIDDEN_LAYER_SIZE + i]));
-            cur_w      = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_sub1_idx * HIDDEN_LAYER_SIZE + i]));
-            cur_w      = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_sub2_idx * HIDDEN_LAYER_SIZE + i]));
+            cur_w      = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[add1_idx * HIDDEN_LAYER_SIZE + i]));
+            cur_w      = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[sub1_idx * HIDDEN_LAYER_SIZE + i]));
+            cur_w      = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[sub2_idx * HIDDEN_LAYER_SIZE + i]));
             simd::StoreEpi16(&dst.white[i], cur_w);
         }
     }
@@ -610,9 +610,9 @@ void NNUE::sub_sub_add(const Accumulator& src, Accumulator& dst,
         for (size_t i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
         {
             auto cur_w = simd::LoadEpi16(&src.black[i]);
-            cur_w      = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_add1_idx * HIDDEN_LAYER_SIZE + i]));
-            cur_w      = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_sub1_idx * HIDDEN_LAYER_SIZE + i]));
-            cur_w      = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_sub2_idx * HIDDEN_LAYER_SIZE + i]));
+            cur_w      = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[add1_idx * HIDDEN_LAYER_SIZE + i]));
+            cur_w      = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[sub1_idx * HIDDEN_LAYER_SIZE + i]));
+            cur_w      = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[sub2_idx * HIDDEN_LAYER_SIZE + i]));
             simd::StoreEpi16(&dst.black[i], cur_w);
         }
     }
@@ -648,10 +648,10 @@ void NNUE::sub_sub_add_add(const Accumulator& src, Accumulator& dst,
                            Piece add_piece_2, SQUARE add_2,
                            SQUARE king)
 {
-    const auto white_sub1_idx = get_indice<side>(sub_piece_1, sub_1, king);
-    const auto white_sub2_idx = get_indice<side>(sub_piece_2, sub_2, king);
-    const auto white_add1_idx = get_indice<side>(add_piece_1, add_1, king);
-    const auto white_add2_idx = get_indice<side>(add_piece_2, add_2, king);
+    const auto sub1_idx = get_indice<side>(sub_piece_1, sub_1, king);
+    const auto sub2_idx = get_indice<side>(sub_piece_2, sub_2, king);
+    const auto add1_idx = get_indice<side>(add_piece_1, add_1, king);
+    const auto add2_idx = get_indice<side>(add_piece_2, add_2, king);
 
 #if defined USE_SIMD
     constexpr int simd_width = sizeof(simd::Vepi16) / sizeof(I16);
@@ -661,10 +661,10 @@ void NNUE::sub_sub_add_add(const Accumulator& src, Accumulator& dst,
         for (size_t i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
         {
             auto cur_w = simd::LoadEpi16(&src.white[i]);
-            cur_w      = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_add1_idx * HIDDEN_LAYER_SIZE + i]));
-            cur_w      = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_add2_idx * HIDDEN_LAYER_SIZE + i]));
-            cur_w      = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_sub1_idx * HIDDEN_LAYER_SIZE + i]));
-            cur_w      = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_sub2_idx * HIDDEN_LAYER_SIZE + i]));
+            cur_w      = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[add1_idx * HIDDEN_LAYER_SIZE + i]));
+            cur_w      = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[add2_idx * HIDDEN_LAYER_SIZE + i]));
+            cur_w      = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[sub1_idx * HIDDEN_LAYER_SIZE + i]));
+            cur_w      = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[sub2_idx * HIDDEN_LAYER_SIZE + i]));
             simd::StoreEpi16(&dst.white[i], cur_w);
         }
     }
@@ -673,10 +673,10 @@ void NNUE::sub_sub_add_add(const Accumulator& src, Accumulator& dst,
         for (size_t i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
         {
             auto cur_w = simd::LoadEpi16(&src.black[i]);
-            cur_w      = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_add1_idx * HIDDEN_LAYER_SIZE + i]));
-            cur_w      = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_add2_idx * HIDDEN_LAYER_SIZE + i]));
-            cur_w      = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_sub1_idx * HIDDEN_LAYER_SIZE + i]));
-            cur_w      = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[white_sub2_idx * HIDDEN_LAYER_SIZE + i]));
+            cur_w      = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[add1_idx * HIDDEN_LAYER_SIZE + i]));
+            cur_w      = simd::AddEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[add2_idx * HIDDEN_LAYER_SIZE + i]));
+            cur_w      = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[sub1_idx * HIDDEN_LAYER_SIZE + i]));
+            cur_w      = simd::SubEpi16(cur_w, simd::LoadEpi16(&network->feature_weights[sub2_idx * HIDDEN_LAYER_SIZE + i]));
             simd::StoreEpi16(&dst.black[i], cur_w);
         }
     }
