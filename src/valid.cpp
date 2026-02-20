@@ -90,21 +90,6 @@ bool Board::valid() const noexcept
         }
     }
 
-    //    if ((colorPiecesBB[1] | colorPiecesBB[1]) != (typePiecesBB[0] | typePiecesBB[1] | typePiecesBB[2] | typePiecesBB[3] | typePiecesBB[4] | typePiecesBB[5])) {
-    //        printf("%s \n\n", display().c_str());
-    // BB::PrintBB(colorPiecesBB[0]);
-    // BB::PrintBB(colorPiecesBB[1]);
-    // BB::PrintBB(typePiecesBB[0]);
-    // BB::PrintBB(typePiecesBB[1]);
-    // BB::PrintBB(typePiecesBB[2]);
-    // BB::PrintBB(typePiecesBB[3]);
-    // BB::PrintBB(typePiecesBB[4]);
-    // BB::PrintBB(typePiecesBB[5]);
-
-    //        std::cout << "erreur 8" << std::endl;
-    //        return false;
-    //    }
-    
     if (king_square[WHITE] != get_king_square<WHITE>())
     {
         std::cout << "erreur roi blanc" << std::endl;
@@ -131,47 +116,6 @@ bool Board::valid() const noexcept
             return(false);
         }
     }
-
-    //    std::cout << "11 " << std::endl;
-
-    //    if (white_can_castle_k()) {
-    //        if (!(Bitboard(king_position(Color::WHITE)) & bitboards::Rank1)) {
-    //            return false;
-    //        }
-    //        if (piece_on(castle_rooks_from_[0]) != ROOK) {
-    //            return false;
-    //        }
-    //    }
-    //  std::cout << "12 " << std::endl;
-
-    //    if (white_can_castle_q()) {
-    //        if (!(Bitboard(king_position(Color::WHITE)) & bitboards::Rank1)) {
-    //            return false;
-    //        }
-    //        if (piece_on(castle_rooks_from_[1]) != ROOK) {
-    //            return false;
-    //        }
-    //    }
-    //   std::cout << "13 " << std::endl;
-
-    //    if (black_can_castle_k()) {
-    //        if (!(Bitboard(king_position(Color::BLACK)) & bitboards::Rank8)) {
-    //            return false;
-    //        }
-    //        if (piece_on(castle_rooks_from_[2]) != ROOK) {
-    //            return false;
-    //        }
-    //    }
-    //   std::cout << "14 " << std::endl;
-
-    //    if (black_can_castle_q()) {
-    //        if (!(Bitboard(king_position(Color::BLACK)) & bitboards::Rank8)) {
-    //            return false;
-    //        }
-    //        if (piece_on(castle_rooks_from_[3]) != ROOK) {
-    //            return false;
-    //        }
-    //    }
 
     //   std::cout << "valid fin " << std::endl;
 

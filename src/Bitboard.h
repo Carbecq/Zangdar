@@ -111,25 +111,25 @@ constexpr U32 PYRRHIC_pop_lsb(Bitboard* b) noexcept {
 [[nodiscard]] constexpr Bitboard south(Bitboard b)      noexcept { return (b >> 8); }
 [[nodiscard]] constexpr Bitboard east(Bitboard b)       noexcept { return ((b << 1) & NOT_FILE_A_BB); }
 [[nodiscard]] constexpr Bitboard west(Bitboard b)       noexcept { return ((b >> 1) & NOT_FILE_H_BB); }
-[[nodiscard]] constexpr Bitboard north_east(Bitboard b) noexcept { return((b << 9) & NOT_FILE_A_BB); }
-[[nodiscard]] constexpr Bitboard south_east(Bitboard b) noexcept {  return((b >> 7) & NOT_FILE_A_BB); }
-[[nodiscard]] constexpr Bitboard south_west(Bitboard b) noexcept { return((b >> 9) & NOT_FILE_H_BB); }
-[[nodiscard]] constexpr Bitboard north_west(Bitboard b) noexcept { return((b << 7) & NOT_FILE_H_BB); }
+[[nodiscard]] constexpr Bitboard north_east(Bitboard b) noexcept { return ((b << 9) & NOT_FILE_A_BB); }
+[[nodiscard]] constexpr Bitboard south_east(Bitboard b) noexcept { return ((b >> 7) & NOT_FILE_A_BB); }
+[[nodiscard]] constexpr Bitboard south_west(Bitboard b) noexcept { return ((b >> 9) & NOT_FILE_H_BB); }
+[[nodiscard]] constexpr Bitboard north_west(Bitboard b) noexcept { return ((b << 7) & NOT_FILE_H_BB); }
 
 [[nodiscard]] constexpr Bitboard north_north(Bitboard b)  noexcept { return (b << 16); }
 [[nodiscard]] constexpr Bitboard south_south(Bitboard b)  noexcept { return (b >> 16); }
 
-[[nodiscard]] constexpr Bitboard north_north_east(Bitboard b) noexcept { return((b << 17) & NOT_FILE_A_BB); }
-[[nodiscard]] constexpr Bitboard north_north_west(Bitboard b) noexcept { return((b << 15) & NOT_FILE_H_BB); }
+[[nodiscard]] constexpr Bitboard north_north_east(Bitboard b) noexcept { return ((b << 17) & NOT_FILE_A_BB); }
+[[nodiscard]] constexpr Bitboard north_north_west(Bitboard b) noexcept { return ((b << 15) & NOT_FILE_H_BB); }
 
-[[nodiscard]] constexpr Bitboard south_south_east(Bitboard b) noexcept { return (b >> 15 & NOT_FILE_A_BB); }
-[[nodiscard]] constexpr Bitboard south_south_west(Bitboard b) noexcept { return (b >> 17 & NOT_FILE_H_BB); }
+[[nodiscard]] constexpr Bitboard south_south_east(Bitboard b) noexcept { return ((b >> 15) & NOT_FILE_A_BB); }
+[[nodiscard]] constexpr Bitboard south_south_west(Bitboard b) noexcept { return ((b >> 17) & NOT_FILE_H_BB); }
 
-[[nodiscard]] constexpr Bitboard east_east_north(Bitboard b)  noexcept { return (b << 10 & NOT_FILE_AB_BB); }
-[[nodiscard]] constexpr Bitboard east_east_south(Bitboard b)  noexcept { return (b >> 6  & NOT_FILE_AB_BB); }
+[[nodiscard]] constexpr Bitboard east_east_north(Bitboard b)  noexcept { return ((b << 10) & NOT_FILE_AB_BB); }
+[[nodiscard]] constexpr Bitboard east_east_south(Bitboard b)  noexcept { return ((b >> 6)  & NOT_FILE_AB_BB); }
 
-[[nodiscard]] constexpr Bitboard west_west_north(Bitboard b)  noexcept { return (b << 6   & NOT_FILE_HG_BB); }
-[[nodiscard]] constexpr Bitboard west_west_south(Bitboard b)  noexcept { return (b >> 10  & NOT_FILE_HG_BB); }
+[[nodiscard]] constexpr Bitboard west_west_north(Bitboard b)  noexcept { return ((b << 6)  & NOT_FILE_HG_BB); }
+[[nodiscard]] constexpr Bitboard west_west_south(Bitboard b)  noexcept { return ((b >> 10) & NOT_FILE_HG_BB); }
 
 //! \brief Décale d'une case dans la direction donnée
 template <Direction D>

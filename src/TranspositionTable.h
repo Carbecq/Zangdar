@@ -107,20 +107,9 @@ private:
     U32                         tt_age{};
     std::vector<HashCluster>    tt_entries = {};
 
-
-    // https://lemire.me/blog/2016/06/27/a-fast-alternative-to-the-modulo-reduction/
-    // inline U64 mul_hi(const U64 a, const U64 b) {
-    //      return (static_cast<U128>(a) * static_cast<U128>(b)) >> 64;
-    // }
-
-    // inline HashEntry* GetEntry(U64 key) {
-    //      return &tt_entries[ mul_hi(key, tt_size) ];
-    // }
-
     inline U64 index(U64 key) const noexcept {
         // this emits a single mul on both x64 and arm64
         return static_cast<U64>((static_cast<U128>(key) * static_cast<U128>(nbr_cluster)) >> 64);
-        // return key & tt_mask;
     }
 
 public:

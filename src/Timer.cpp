@@ -116,7 +116,7 @@ void Timer::setup(Color color)
 
         // formules provenant de Sirius (provenant elle-mêmes de Stormphrax)
         // m_SoftBound
-        timeForThisDepth = softTimeScale / 100.0 * (time_remaining / baseTimeScale + increment * incrementScale / 100.0);
+        timeForThisDepth = softTimeScale / 100.0 * (static_cast<double>(time_remaining) / baseTimeScale + static_cast<double>(increment) * incrementScale / 100.0);
         // m_HardBound
         timeForThisMove = time_remaining * (hardTimeScale / 100.0);
     }
@@ -190,7 +190,8 @@ bool Timer::finishOnThisDepth(int elapsed, int depth, MOVE best_move, U64 total_
             pv_stability = 0;
         PrevBestMove = best_move;
 
-        double bmNodes = static_cast<double>(MoveNodeCounts[Move::fromdest(best_move)]) / static_cast<double>(total_nodes);
+        double bmNodes = (total_nodes > 0) ?
+                    static_cast<double>(MoveNodeCounts[Move::fromdest(best_move)]) / static_cast<double>(total_nodes) : 0.0;
         double scale = ((nodeTMBase / 100.0) - bmNodes) * (nodeTMScale / 100.0);
         scale *= stabilityValues[std::min(pv_stability, 6u)];
         return (elapsed > timeForThisDepth * scale);

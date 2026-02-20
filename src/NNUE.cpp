@@ -622,9 +622,9 @@ void NNUE::sub_sub_add(const Accumulator& src, Accumulator& dst,
         for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
         {
             dst.white[i] = src.white[i]
-                    + network->feature_weights[white_add1_idx * HIDDEN_LAYER_SIZE + i]
-                    - network->feature_weights[white_sub1_idx * HIDDEN_LAYER_SIZE + i]
-                    - network->feature_weights[white_sub2_idx * HIDDEN_LAYER_SIZE + i];
+                    + network->feature_weights[add1_idx * HIDDEN_LAYER_SIZE + i]
+                    - network->feature_weights[sub1_idx * HIDDEN_LAYER_SIZE + i]
+                    - network->feature_weights[sub2_idx * HIDDEN_LAYER_SIZE + i];
         }
     }
     else
@@ -632,9 +632,9 @@ void NNUE::sub_sub_add(const Accumulator& src, Accumulator& dst,
         for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
         {
             dst.black[i] = src.black[i]
-                    + network->feature_weights[white_add1_idx * HIDDEN_LAYER_SIZE + i]
-                    - network->feature_weights[white_sub1_idx * HIDDEN_LAYER_SIZE + i]
-                    - network->feature_weights[white_sub2_idx * HIDDEN_LAYER_SIZE + i];
+                    + network->feature_weights[add1_idx * HIDDEN_LAYER_SIZE + i]
+                    - network->feature_weights[sub1_idx * HIDDEN_LAYER_SIZE + i]
+                    - network->feature_weights[sub2_idx * HIDDEN_LAYER_SIZE + i];
         }
     }
 #endif
@@ -686,10 +686,10 @@ void NNUE::sub_sub_add_add(const Accumulator& src, Accumulator& dst,
         for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
         {
             dst.white[i] = src.white[i]
-                    + network->feature_weights[white_add1_idx * HIDDEN_LAYER_SIZE + i]
-                    + network->feature_weights[white_add2_idx * HIDDEN_LAYER_SIZE + i]
-                    - network->feature_weights[white_sub1_idx * HIDDEN_LAYER_SIZE + i]
-                    - network->feature_weights[white_sub2_idx * HIDDEN_LAYER_SIZE + i];
+                    + network->feature_weights[add1_idx * HIDDEN_LAYER_SIZE + i]
+                    + network->feature_weights[add2_idx * HIDDEN_LAYER_SIZE + i]
+                    - network->feature_weights[sub1_idx * HIDDEN_LAYER_SIZE + i]
+                    - network->feature_weights[sub2_idx * HIDDEN_LAYER_SIZE + i];
         }
     }
     else
@@ -697,10 +697,10 @@ void NNUE::sub_sub_add_add(const Accumulator& src, Accumulator& dst,
         for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
         {
             dst.black[i] = src.black[i]
-                    + network->feature_weights[white_add1_idx * HIDDEN_LAYER_SIZE + i]
-                    + network->feature_weights[white_add2_idx * HIDDEN_LAYER_SIZE + i]
-                    - network->feature_weights[white_sub1_idx * HIDDEN_LAYER_SIZE + i]
-                    - network->feature_weights[white_sub2_idx * HIDDEN_LAYER_SIZE + i];
+                    + network->feature_weights[add1_idx * HIDDEN_LAYER_SIZE + i]
+                    + network->feature_weights[add2_idx * HIDDEN_LAYER_SIZE + i]
+                    - network->feature_weights[sub1_idx * HIDDEN_LAYER_SIZE + i]
+                    - network->feature_weights[sub2_idx * HIDDEN_LAYER_SIZE + i];
         }
 
     }

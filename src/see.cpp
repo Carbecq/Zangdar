@@ -78,11 +78,6 @@ bool Board::fast_see(const MOVE move, const int threshold) const
             }
         }
 
-        // int piece = PieceType::PAWN;
-        // for (piece = PieceType::PAWN; piece < PieceType::KING; piece++)
-            // if (my_attackers & typePiecesBB[piece])
-            //     break;
-
         // Change de camp
         color = ~color;
 

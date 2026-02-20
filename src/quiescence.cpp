@@ -84,10 +84,6 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
         raw_eval = (tt_hit && tt_eval != VALUE_NONE) ? tt_eval : td->evaluate(board);
         static_eval = si->static_eval = td->history.corrected_eval(board, raw_eval);
 
-
-        // if (!tt_hit)
-        //     transpositionTable.store(board.get_key(), Move::MOVE_NONE, VALUE_NONE, static_eval, BOUND_NONE, 0, si->ply);
-
         // le score est trop mauvais pour moi, on n'a pas besoin
         // de chercher plus loin
         if (static_eval >= beta)
@@ -102,13 +98,6 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
     {
         static_eval = -MATE + si->ply; // idée de Koivisto
     }
-
-    //----------------------------------------------------------
-    //  Delta Pruning
-    //----------------------------------------------------------
-    // if (!isInCheck && static_eval + Tunable::DeltaPruningMargin < alpha)
-    //     return alpha;
-
 
     int  best_score = static_eval;
     MOVE best_move  = Move::MOVE_NONE;  // meilleur coup local

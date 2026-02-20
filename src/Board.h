@@ -144,23 +144,6 @@ public:
         return(Attacks::queen_moves(sq, occ));
     }
 
-    //        switch (pt)
-    //        {
-    //        case BISHOP:
-    //            occ ^= pieces_cp<C, Queen>() ^ pieces_cp<C, BISHOP>();
-    //            return(Attacks::bishop_moves(sq, occ));
-    //            break;
-    //        case ROOK:
-    //            occ ^= pieces_cp<C, Queen>() ^ pieces_cp<C, ROOK>();
-    //            return(Attacks::rook_moves(sq, occ));
-    //            break;
-    //        case Queen:
-    //            occ ^= pieces_cp<C, Queen>() ^ pieces_cp<C, ROOK>() ^ pieces_cp<C, BISHOP>();
-    //            return(Attacks::queen_moves(sq, occ));
-    //            break;
-    //        }
-    //    }
-
     void set_fen(const std::string &fen, bool logTactics) noexcept;
     [[nodiscard]] std::string get_fen() const noexcept;
     void mirror_fen(const std::string &fen, bool logTactics);

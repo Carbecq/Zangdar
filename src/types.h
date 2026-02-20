@@ -219,39 +219,6 @@ enum Square  : SQUARE {
     SQUARE_NONE
 };
 
-// // pre increment operator : ++sq
-// constexpr Square& operator++(Square& sq)
-// {
-//     sq = (static_cast<U32>(sq) + 1);
-//     return sq;
-// }
-
-// // post increment operator : sq++ (donné par IA)
-// constexpr Square operator++(Square& sq, int)
-// {
-//     Square old = sq;
-//     ++sq;
-//     return old;
-// }
-
-// constexpr inline Square operator+(Square s, Direction d) {
-//     return (static_cast<U32>(s) + static_cast<U32>(d));
-// }
-// constexpr inline Square operator+(Square s, int d) {
-//     return (static_cast<int>(s) + d);
-// }
-// constexpr inline Square operator-(Square s, int d) {
-//     return (static_cast<int>(s) - d);
-// }
-// constexpr inline Square& operator+=(Square& sq, Direction d) {
-//     return sq = (static_cast<U32>(sq) + static_cast<U32>(d));
-// }
-// constexpr inline Square& operator+=(Square& sq, U32 d) {
-//     return sq = (static_cast<U32>(sq) + d);
-// }
-// constexpr inline Square& operator-=(Square& sq, U32 d) {
-//     return sq = (static_cast<U32>(sq) - d);
-// }
 
 const std::string square_name[N_SQUARES] = {
     "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
