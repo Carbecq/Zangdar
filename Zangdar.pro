@@ -24,7 +24,10 @@ HOME_STR = "./"
 DEFINES += HOME='\\"$${HOME_STR}\\"'
 
 #------------------------------------------------------
-DEFINES += USE_TUNE
+#DEFINES += USE_TUNING
+#DEFINES += USE_PROFILING
+#DEFINES += USE_DATAGEN
+
 
 #------------------------------------------------------
 # DEFINES += DEBUG_EVAL
@@ -231,7 +234,6 @@ HEADERS += \
     src/NNUE.h \
     src/Search.h \
     src/SearchInfo.h \
-    src/ThreadData.h \
     src/ThreadPool.h \
     src/Timer.h \
     src/TranspositionTable.h \
@@ -259,7 +261,6 @@ SOURCES += \
     src/MovePicker.cpp \
     src/NNUE.cpp \
     src/Search.cpp \
-    src/ThreadData.cpp \
     src/ThreadPool.cpp \
     src/Timer.cpp \
     src/TranspositionTable.cpp \

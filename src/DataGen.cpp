@@ -14,6 +14,7 @@
 #include <cstring>
 #include <fstream>
 #include <random>
+#include <memory>
 
 #include "Board.h"
 #include "Search.h"
@@ -43,7 +44,7 @@ DataGen::DataGen(const U32 _nbr_threads, const U32 _max_fens, const std::string&
     // 1) évite d'avoir des positions avec 2 rois seuls
     // 2) évite d'avoir une partie nulle avec R+T/R sans
     //    que le mat soit trouvé
-    if (tb_init("/mnt/Datas/Echecs/Syzygy/") == true)
+    if (tb_init(SYZYGY) == true)
         threadPool.set_useSyzygy(true);
 
     //================================================
@@ -65,29 +66,26 @@ DataGen::DataGen(const U32 _nbr_threads, const U32 _max_fens, const std::string&
         });
     }
 
-    // thread de contrôle d'arrêt
+    // thread de contrôle d'arrêt (detached : ne bloque pas la fin du programme)
     // il suffit d'entrer un caractère
-    auto check_run_state = [&run] {
-        std::cout.setf(std::ios::unitbuf);  // unbuffered output
+    std::thread([&run] {
         std::string input_line{};
         while (std::getline(std::cin, input_line))
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10000));
             if (input_line.empty())
                 continue;
             run.store(false);
             break;
         }
-    };
-    threads.emplace_back(check_run_state);
+    }).detach();
 
     // boucle d'affichage de l'avancée des résultats
     while (run)
     {
         std::this_thread::sleep_for(std::chrono::seconds(10));
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(TimePoint::now() - start_time).count();
+        auto elapsed = std::max(std::chrono::duration_cast<std::chrono::milliseconds>(TimePoint::now() - start_time).count(), decltype(start_time)::duration::rep(1));
         int fps = 1000 * total_fens / elapsed;
-        int r = static_cast<double>(max_fens - total_fens) / static_cast<double>(fps);
+        int r = fps > 0 ? static_cast<double>(max_fens - total_fens) / static_cast<double>(fps) : 0;
         int h = r / 3600;
         int m = (r - h*3600) / 60;
         int s = r - h*3600 - m*60;
@@ -99,7 +97,6 @@ DataGen::DataGen(const U32 _nbr_threads, const U32 _max_fens, const std::string&
         if (total_fens > max_fens)
         {
             run = false;
-            std::cout << "taper un caractère, puis attendre un peu le temps que les threads arrêtent \n";
         }
     }
 
@@ -132,7 +129,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
     }
 
     std::array<fenData, 1000> fens{};   // liste des positions conservées, pour une partie donnée
-    int nbr_fens;                       // nombre de positions conservées, pour une partie
+    int nbr_fens = 0;                   // nombre de positions conservées, pour une partie
     std::random_device rd;
     std::mt19937_64 generator(rd());
 
@@ -146,12 +143,16 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
     //  On simule l'exécution de N parties
     //================================================
 
+    // Allocation sur le tas : Search et History sont trop gros pour la pile d'un thread
     std::unique_ptr<Search> search = std::make_unique<Search>();
-    ThreadData* td = new ThreadData;
-    td->index  = 0;
+    search->td_index  = 0;
+
+    // chaque thread a sa propre table, de façon à éviter
+    // qu'un thread efface la TT pendant qu'un autre est en pleine recherche.
+    std::unique_ptr<TranspositionTable> table_ptr = std::make_unique<TranspositionTable>(HASH_SIZE);
+    search->table = table_ptr.get();
 
     MoveList movelist;
-    size_t   nbr_moves;
     Board    board;
     int      drawCount = 0;
     int      winCount = 0;
@@ -171,8 +172,8 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
         board.initialisation();
         board.set_fen(START_FEN, false);
-        transpositionTable.clear();
-        td->history.reset();
+        search->table->update_age();
+        search->history.reset();
 
         //====================================================
         //  Initalisation random de l'échiquier
@@ -180,61 +181,41 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
         // printf("-------------------------------------------init random  \n");
 
+        auto random_ply = [&]<Color C>(size_t& current_ply) -> bool {
+            board.legal_moves<C, MoveGenType::ALL>(movelist);
+            if (movelist.size() == 0)
+            {
+                current_ply = 0;
+                board.initialisation();
+                board.set_fen(START_FEN, false);
+                return false; // recommencer
+            }
+            std::uniform_int_distribution<> distribution{0, int(movelist.size() - 1)};
+            const int index = distribution(generator);
+            search->make_move<C, true>(board, movelist.mlmoves[index].move);
+
+            // Prevent the last ply being checkmate/stalemate
+            if (++current_ply == MAX_RANDOM_PLIES)
+            {
+                board.legal_moves<C, MoveGenType::ALL>(movelist);
+                if (movelist.size() == 0)
+                {
+                    current_ply = 0;
+                    board.initialisation();
+                    board.set_fen(START_FEN, false);
+                }
+            }
+            return true;
+        };
+
         size_t current_ply = 0;
         while (current_ply < MAX_RANDOM_PLIES)
         {
-            if (board.turn() == WHITE)
-            {
-                board.legal_moves<WHITE, MoveGenType::ALL>(movelist);
-                // On exécute la boucle jusqu'à trouver un coup
-                if (movelist.size() == 0)
-                {
-                    current_ply = 0;
-                    board.initialisation();
-                    board.set_fen(START_FEN, false);
-                    continue;
-                }
-                std::uniform_int_distribution<> distribution{0, int(movelist.size() - 1)};
-                const auto index = distribution(generator);
-                td->make_move<WHITE, true>(board, movelist.mlmoves[index].move);
-
-                // Prevent the last ply being checkmate/stalemate
-                if (++current_ply == MAX_RANDOM_PLIES)
-                {
-                    board.legal_moves<WHITE, MoveGenType::ALL>(movelist);
-                    if (movelist.size() == 0)
-                    {
-                        current_ply = 0;
-                        board.initialisation();
-                        board.set_fen(START_FEN, false);
-                    }
-                }
-            }
-            else
-            {
-                board.legal_moves<BLACK, MoveGenType::ALL>(movelist);
-                if (movelist.size() == 0)
-                {
-                    current_ply = 0;
-                    board.initialisation();
-                    board.set_fen(START_FEN, false);
-                    continue;
-                }
-                std::uniform_int_distribution<> distribution{0, int(movelist.size() - 1)};
-                const int index = distribution(generator);
-                td->make_move<BLACK, true>(board, movelist.mlmoves[index].move);
-
-                if (++current_ply == MAX_RANDOM_PLIES)
-                {
-                    board.legal_moves<BLACK, MoveGenType::ALL>(movelist);
-                    if (movelist.size() == 0)
-                    {
-                        current_ply = 0;
-                        board.initialisation();
-                        board.set_fen(START_FEN, false);
-                    }
-                }
-            }
+            bool ok = board.turn() == WHITE
+                ? random_ply.template operator()<WHITE>(current_ply)
+                : random_ply.template operator()<BLACK>(current_ply);
+            if (!ok)
+                continue;
         }
 
         // printf("-------------------------------------------generated OK  \n");
@@ -247,9 +228,9 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
         timer.setup(Color::WHITE);
 
         if (board.turn() == WHITE)
-            data_search<WHITE>(board, timer, search, td, move, score);
+            data_search<WHITE>(board, timer, *search, move, score);
         else
-            data_search<BLACK>(board, timer, search, td, move, score);
+            data_search<BLACK>(board, timer, *search, move, score);
         if (std::abs(score) > MAX_RANDOM_SCORE)
         {
             // printf("-------------------------------------------score false  %d\n", score);
@@ -271,9 +252,9 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
         while (true)
         {
             // printf("----------------------------nouveau coup \n");
-            td->nodes   = 0;
-            td->stopped = false;
-            transpositionTable.update_age();
+            search->td_nodes   = 0;
+            search->td_stopped = false;
+            search->table->update_age();
 
             // Partie nulle ?
             if (board.is_draw(0))   //TODO vérifier ce 0 (voir Integral V4, Clover)
@@ -286,10 +267,9 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
                 board.legal_moves<WHITE, MoveGenType::ALL>(movelist);
             else
                 board.legal_moves<BLACK, MoveGenType::ALL>(movelist);
-            nbr_moves = movelist.size();
 
             // Aucun coup possible
-            if (!nbr_moves)
+            if (movelist.size() == 0)
             {
                 if (board.is_in_check())    // en échec : mat
                 {
@@ -303,9 +283,9 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
             }
 
             if (board.turn() == WHITE)
-                data_search<WHITE>(board, timer, search, td, move, score);
+                data_search<WHITE>(board, timer, *search, move, score);
             else
-                data_search<BLACK>(board, timer, search, td, move, score);
+                data_search<BLACK>(board, timer, *search, move, score);
 
             // printf("----------------------------ajout (%d) \n", filtered);
 
@@ -313,7 +293,8 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
             //  On cherche une position tranquille
             if (    board.is_in_check() == false
                 && !Move::is_capturing(move)
-                && abs(score) < HIGH_SCORE)
+                && abs(score) < HIGH_SCORE
+                && nbr_fens < static_cast<int>(fens.size()))
             {
                 fens[nbr_fens++] = { board.get_fen() , score * (1 - 2*board.turn()) };
             }
@@ -362,9 +343,9 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
             // Exécution du coup trouvé lors de la recherche
             if (board.turn() == WHITE)
-                td->make_move<WHITE, true>(board, move);
+                search->make_move<WHITE, true>(board, move);
             else
-                td->make_move<BLACK, true>(board, move);
+                search->make_move<BLACK, true>(board, move);
         }
         // printf("------------------fin de la partie \n");
 
@@ -399,7 +380,6 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
     } // fin des parties
 
-    // dernière étape : on ferme le fichier
     file.close();
 }
 
@@ -407,21 +387,19 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 //  Recherche dans la position actuelle
 //----------------------------------------------------------------------------
 template <Color C>
-void DataGen::data_search(Board& board, Timer& timer,
-                          std::unique_ptr<Search>& search,
-                          ThreadData *td,
+void DataGen::data_search(Board& board, Timer& timer, Search& search,
                           MOVE &move, I32 &score)
 {
     move  = Move::MOVE_NONE;
     score = -INFINITE;
 
-    td->score     = -INFINITE;
-    td->stopped   = false;
-    td->nodes     = 0;
+    search.td_score     = -INFINITE;
+    search.td_stopped   = false;
+    search.td_nodes     = 0;
 
-    td->best_depth = 0;
-    td->best_move  = Move::MOVE_NONE;
-    td->best_score = -INFINITE;
+    search.td_best_depth = 0;
+    search.td_best_move  = Move::MOVE_NONE;
+    search.td_best_score = -INFINITE;
 
 
 #if defined DEBUG_GEN
@@ -433,53 +411,52 @@ void DataGen::data_search(Board& board, Timer& timer,
     // iterative deepening
     //==================================================
 
-    td->nnue->start_search(board);
+    search.nnue.start_search(board);
 
     std::array<SearchInfo, STACK_SIZE> _info{};
     SearchInfo* si  = &(_info[STACK_OFFSET]);
     for (int i = 0; i < MAX_PLY+STACK_OFFSET; i++)
     {
         (si + i)->ply = i;
-        (si + i)->cont_hist = &td->history.continuation_history[0][0];
+        (si + i)->cont_hist = &search.history.continuation_history[0][0];
     }
 
-    for (td->depth = 1; td->depth <= std::max(1, timer.getSearchDepth()); td->depth++)
+    for (search.td_depth = 1; search.td_depth <= std::max(1, timer.getSearchDepth()); search.td_depth++)
     {
         // Search position, using aspiration windows for higher depths
-        td->score = search->aspiration_window<C>(board, timer, td, si);
+        search.td_score = search.aspiration_window<C>(board, timer, si);
 
-        if (td->stopped)
+        if (search.td_stopped)
             break;
 
         // L'itération s'est terminée sans problème
         // On peut mettre à jour les infos UCI
-        td->best_depth = td->depth;
-        td->best_move  = si->pv.line[0];
-        td->best_score = td->score;
+        search.td_best_depth = search.td_depth;
+        search.td_best_move  = si->pv.line[0];
+        search.td_best_score = search.td_score;
 
 #if defined DEBUG_GEN
-        auto elapsed = timer.elapsedTime();
+        I64 elapsed = timer.elapsedTime();
 
         std::cout << "time " << elapsed
-                  << "  depth " << td->depth
-                  << "  nodes " << td->nodes
-                  << "  score " << td->score
-                  << "  move " << Move::name(td->best_move)
+                  << "  depth " << search.td_depth
+                  << "  nodes " << search.td_nodes
+                  << "  score " << search.td_score
+                  << "  move " << Move::name(search.td_best_move)
                   << std::endl;
 #else
-        auto elapsed = 0;
+        I64 elapsed = 0;
 #endif
 
-
         // If an iteration finishes after optimal time usage, stop the search
-        if (timer.finishOnThisDepth(elapsed, td->depth, td->best_move, td->nodes))
+        if (timer.finishOnThisDepth(elapsed, search.td_depth, search.td_best_move, search.td_nodes))
             break;
 
-        td->seldepth = 0;
+        search.td_seldepth = 0;
     }
 
-    move  = td->best_move;
-    score = td->best_score;
+    move  = search.td_best_move;
+    score = search.td_best_score;
 }
 
 //===================================================
@@ -502,13 +479,5 @@ U32 DataGen::set_threads(const U32 nbr)
     return nbr_threads;
 }
 
-template void DataGen::data_search<WHITE>(Board& board, Timer& timer,
-// Search* search,
-std::unique_ptr<Search>& search,
-ThreadData* td,
-MOVE& move, I32& score);
-template void DataGen::data_search<BLACK>(Board& board, Timer& timer,
-// Search* search,
-std::unique_ptr<Search>& search,
-ThreadData* td,
-MOVE& move, I32& score);
+template void DataGen::data_search<WHITE>(Board& board, Timer& timer, Search& search, MOVE& move, I32& score);
+template void DataGen::data_search<BLACK>(Board& board, Timer& timer, Search& search, MOVE& move, I32& score);

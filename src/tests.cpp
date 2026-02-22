@@ -8,7 +8,7 @@
 #include "defines.h"
 #include "Board.h"
 #include "Move.h"
-#include "ThreadData.h"
+#include "Search.h"
 
 static void sort_moves(MoveList& ml);
 
@@ -395,11 +395,11 @@ void Board::test_value(const std::string& fen )
     MoveList ml;
 
     Accumulator acc;
-    ThreadData td;
-    td.nnue->start_search(*this);
-    td.nnue->refresh_accumulator<WHITE>(*this, acc);
-    td.nnue->refresh_accumulator<BLACK>(*this, acc);
-    int eval = td.do_evaluate(*this, acc);
+    Search search;
+    search.nnue.start_search(*this);
+    search.nnue.refresh_accumulator<WHITE>(*this, acc);
+    search.nnue.refresh_accumulator<BLACK>(*this, acc);
+    int eval = search.do_evaluate(*this, acc);
 
     printf("side = %s : evaluation = %d \n\n", side_name[side_to_move].c_str(), eval);
     BB::PrintBB(get_status().checkers, "checkers");

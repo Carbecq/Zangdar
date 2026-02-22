@@ -2,7 +2,6 @@
 #include "Board.h"
 #include "defines.h"
 #include "Move.h"
-#include "ThreadData.h"
 
 template <Color C, bool divide=false>
 [[nodiscard]] std::uint64_t Board::perft(const int depth) noexcept

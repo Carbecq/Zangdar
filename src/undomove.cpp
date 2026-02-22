@@ -2,7 +2,6 @@
 #include "Move.h"
 #include "types.h"
 #include "NNUE.h"
-#include "ThreadData.h"
 
 //=============================================================
 //! \brief  Enlève un coup
@@ -141,7 +140,7 @@ void Board::undo_move() noexcept
 
     statusHistory.pop_back();
 
-#if !defined NDEBUG && !defined USE_PROF
+#if !defined NDEBUG && !defined USE_PROFILING
     // on ne passe ici qu'en debug, et sans voulir le profiling
     assert(valid());
 #endif
@@ -155,7 +154,7 @@ template <Color Us> void Board::undo_nullmove() noexcept
     statusHistory.pop_back();       // supprime le dernier status
     side_to_move = ~side_to_move;   // Change de camp
 
-#if !defined NDEBUG && !defined USE_PROF
+#if !defined NDEBUG && !defined USE_PROFILING
     // on ne passe ici qu'en debug, et sans voulir le profiling
     assert(valid());
 #endif

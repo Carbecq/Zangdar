@@ -3,10 +3,11 @@
 
 class ThreadPool;
 
+#include <memory>
 #include "defines.h"
 #include "Board.h"
 #include "Timer.h"
-#include "ThreadData.h"
+#include "Search.h"
 
 class ThreadPool
 {
@@ -23,7 +24,7 @@ public:
 
     U64  get_all_nodes() const;
     int  get_all_depths() const;
-    MOVE get_best_move() const { return threadData[0].best_move; }
+    MOVE get_best_move() const { return search[0].td_best_move; }
     U64  get_all_tbhits() const;
 
     void set_logUci(bool f)     { logUci = f;       }
@@ -33,7 +34,7 @@ public:
     U32  get_nbrThreads() const { return nbrThreads; }
     bool get_useSyzygy() const { return useSyzygy; }
 
-    std::array<ThreadData, MAX_THREADS> threadData;
+    std::unique_ptr<Search[]> search;
 
 private:
     U32     nbrThreads;

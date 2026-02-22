@@ -92,7 +92,7 @@ void Uci::run()
             std::cout << "option name SyzygyPath type string default " << "<empty>" << std::endl;
             std::cout << "option name MoveOverhead type spin default " << MOVE_OVERHEAD << " min 0 max 10000" << std::endl;
 
-#if defined USE_TUNE
+#if defined USE_TUNIng
             std::cout << Tunable::paramsToUci();
 #endif
 
@@ -548,7 +548,7 @@ setoption name <id> [value <x>]
         //------------------------------------------------------------
         // Tuning
         //------------------------------------------------------------
-#if defined USE_TUNE
+#if defined USE_TUNIng
         else
         {
             int param;
@@ -925,8 +925,8 @@ void Uci::bench(int argCount, char* argValue[])
         const auto end = TimePoint::now();
         const auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
-        scores[total] = threadPool.threadData[0].best_score;
-        moves[total]  = threadPool.threadData[0].best_move;
+        scores[total] = threadPool.search[0].td_best_score;
+        moves[total]  = threadPool.search[0].td_best_move;
         nodes[total]  = threadPool.get_all_nodes();
         times[total]  = ms;
 

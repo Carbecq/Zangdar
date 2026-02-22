@@ -3,7 +3,6 @@
 #include "Move.h"
 #include "NNUE.h"
 #include "zobrist.h"
-#include "ThreadData.h"
 
 //==================================================
 //! \brief  Réalise un coup sur la position
@@ -437,7 +436,7 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
     calculate_checkers_pinned<THEM>();
 
 
-#if !defined NDEBUG && !defined USE_PROF
+#if !defined NDEBUG && !defined USE_PROFILING
     // on ne passe ici qu'en debug, et sans voulir le profiling
     if (valid() == false)
     {
@@ -504,7 +503,7 @@ template <Color Us> void Board::make_nullmove() noexcept
     // attention : on a changé de camp !!!
     calculate_checkers_pinned<Them>();
 
-#if !defined NDEBUG && !defined USE_PROF
+#if !defined NDEBUG && !defined USE_PROFILING
     // on ne passe ici qu'en debug, et sans voulir le profiling
     assert(valid());
 #endif

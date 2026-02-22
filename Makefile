@@ -65,12 +65,17 @@ DEFS += -DSYZYGY=$(SYZYGY)
 #---------------------------------------------------
 #  Tuning
 #---------------------------------------------------
-#DEFS += -DUSE_TUNE
+#DEFS += -DUSE_TUNING
 
 #---------------------------------------------------
 #  Profiling
 #---------------------------------------------------
-# DEFS += -DUSE_PROF
+#DEFS += -DUSE_PROFILING
+
+#---------------------------------------------------
+#  Datagen
+#---------------------------------------------------
+DEFS += -DUSE_DATAGEN
 
 #---------------------------------------------------
 #  NNUE
@@ -201,7 +206,7 @@ CFLAGS_COM  = -pipe -std=c++23 -DVERSION=\"$(VERSION)\" $(DEFS) $(CFLAGS_NNUE)
 CFLAGS_REL  = $(CFLAGS_REL1) $(CFLAGS_WARN1) -DNDEBUG
 CFLAGS_DBG  = -g -O2
 CFLAGS_WARN = $(CFLAGS_WARN1) $(CFLAGS_WARN2) $(CFLAGS_WARN3) $(CFLAGS_WARN4) $(CFLAGS_WARN5) $(CFLAGS_WARN6)
-CFLAGS_PROF = $(CFLAGS_REL1) $(CFLAGS_WARN1) -pg -DNDEBUG -DUSE_PROF
+CFLAGS_PROF = $(CFLAGS_REL1) $(CFLAGS_WARN1) -pg -DNDEBUG -DUSE_PROFILING
 
 LDFLAGS_REL  = -s -flto=auto -lm
 LDFLAGS_DBG  = -lm

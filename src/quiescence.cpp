@@ -8,14 +8,14 @@
 //!         donc sans prise ou promotion.
 //-------------------------------------------------------------
 template <Color C>
-int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadData* td, SearchInfo* si)
+int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchInfo* si)
 {
     assert(beta > alpha);
 
     //  Time-out
-    if (td->stopped || timer.check_limits(td->depth, td->index, td->nodes))
+    if (td_stopped || timer.check_limits(td_depth, td_index, td_nodes))    // ATTENTION on peut avoir depth <=0
     {
-        td->stopped = true;
+        td_stopped = true;
         return 0;
     }
 
@@ -39,14 +39,14 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
     // prevent overflows
     const bool isInCheck = board.is_in_check();
     if (si->ply >= MAX_PLY)
-        return isInCheck ? VALUE_DRAW : td->evaluate(board);
+        return isInCheck ? VALUE_DRAW : evaluate(board);
 
     // Prefetch La table de transposition aussitôt que possible
-    transpositionTable.prefetch(board.get_key());
+    table->prefetch(board.get_key());
 
     // Update node count and selective depth
-    td->nodes++;
-    td->seldepth = std::max(td->seldepth, si->ply);
+    td_nodes++;
+    td_seldepth = std::max(td_seldepth, si->ply);
 
     const int  old_alpha = alpha;
     const bool isPV      = ((beta - alpha) != 1);
@@ -58,7 +58,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
     int   tt_bound = BOUND_NONE;
     int   tt_depth = 0;
     bool  tt_pv    = false;
-    bool  tt_hit   = transpositionTable.probe(board.get_key(), si->ply, tt_move, tt_score, tt_eval, tt_bound, tt_depth, tt_pv);
+    bool  tt_hit   = table->probe(board.get_key(), si->ply, tt_move, tt_score, tt_eval, tt_bound, tt_depth, tt_pv);
 
     // note : on ne teste pas la profondeur, car dans la Quiescence, elle est à 0
     //        dans la cas de la Quiescence, on cut tous les coups, y compris la PV ????
@@ -81,8 +81,8 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
 
     if (!isInCheck)
     {
-        raw_eval = (tt_hit && tt_eval != VALUE_NONE) ? tt_eval : td->evaluate(board);
-        static_eval = si->static_eval = td->history.corrected_eval(board, raw_eval);
+        raw_eval = (tt_hit && tt_eval != VALUE_NONE) ? tt_eval : evaluate(board);
+        static_eval = si->static_eval = history.corrected_eval(board, raw_eval);
 
         // le score est trop mauvais pour moi, on n'a pas besoin
         // de chercher plus loin
@@ -103,7 +103,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
     MOVE best_move  = Move::MOVE_NONE;  // meilleur coup local
     int  score;
     MOVE move;
-    MovePicker movePicker(board, td->history, si, Move::MOVE_NONE,
+    MovePicker movePicker(board, history, si, Move::MOVE_NONE,
                           Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, 0);
 
     // Boucle sur tous les coups
@@ -130,13 +130,13 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
             }
         }
 
-        td->make_move<C, true>(board, move);
+        make_move<C, true>(board, move);
         si->move = move;
-        si->cont_hist = &td->history.continuation_history[Move::piece(move)][Move::dest(move)];
-        score = -quiescence<~C>(board, timer, -beta, -alpha, td, si+1);
-        td->undo_move<C, true>(board);
+        si->cont_hist = &history.continuation_history[Move::piece(move)][Move::dest(move)];
+        score = -quiescence<~C>(board, timer, -beta, -alpha, si+1);
+        undo_move<C, true>(board);
 
-        if (td->stopped)
+        if (td_stopped)
             return 0;
 
         // Found a new best move in this position
@@ -161,16 +161,16 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, ThreadDa
         }
     }
 
-    if (!td->stopped)
+    if (!td_stopped)
     {
         int bound = best_score >= beta    ? BOUND_LOWER
                                           : best_score > old_alpha ? BOUND_EXACT
                                                                    : BOUND_UPPER;
-        transpositionTable.store(board.get_key(), best_move, best_score, static_eval, bound, 0, si->ply, ttPV);
+        table->store(board.get_key(), best_move, best_score, static_eval, bound, 0, si->ply, ttPV);
     }
 
     return best_score;
 }
 
-template int Search::quiescence<WHITE>(Board& board, Timer& timer, int alpha, int beta, ThreadData* td, SearchInfo* si);
-template int Search::quiescence<BLACK>(Board& board, Timer& timer, int alpha, int beta, ThreadData* td, SearchInfo* si);
+template int Search::quiescence<WHITE>(Board& board, Timer& timer, int alpha, int beta, SearchInfo* si);
+template int Search::quiescence<BLACK>(Board& board, Timer& timer, int alpha, int beta, SearchInfo* si);

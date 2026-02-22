@@ -3,7 +3,6 @@
 
 class DataGen;
 
-#include <memory>
 #include "Board.h"
 #include "Search.h"
 
@@ -24,10 +23,7 @@ private:
                  std::atomic<size_t>& sum_fens,
                  std::atomic<bool>& run);
     U32 set_threads(const U32 nbr);
-    template <Color color> void data_search(Board& board, Timer& timer,
-                     // Search* search,
-                     std::unique_ptr<Search>& search,
-                     ThreadData* td,
+    template <Color color> void data_search(Board& board, Timer& timer, Search& search,
                      MOVE &move, I32 &score);
 
     constexpr static int MAX_RANDOM_PLIES =     8;   // nombre maximum de plies joués au hasard

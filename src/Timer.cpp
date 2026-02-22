@@ -151,6 +151,8 @@ bool Timer::check_limits(const int depth, const int index, const U64 total_nodes
     {
         if (mode == TimerMode::TIME && depth >= 4)
         {
+            // ce mode est utilisé :
+            //  > pour le jeu normal
             // Every MAX_COUNTER , check if our time has expired.
             if (--counter > 0)
                 return false;
@@ -160,11 +162,22 @@ bool Timer::check_limits(const int depth, const int index, const U64 total_nodes
         }
         else if (mode == TimerMode::NODE)
         {
+            // ce mode est utilisé :
+            //  > pour datagen,
+            //  > pour des tests perso (run ...)
             return (total_nodes > nodesForThisDepth);
+        }
+        else if (mode == TimerMode::DEPTH)
+        {
+            // ce mode est utilisé :
+            //  > pour le bench
+            //  > pour datagen, dans la partie random_game
+            //  > pour des tests perso (run ...)
+            return (depth > searchDepth);
         }
         else
         {
-            return (depth > searchDepth);
+            // Problème
         }
     }
 
