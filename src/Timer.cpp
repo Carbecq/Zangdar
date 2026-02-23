@@ -106,6 +106,7 @@ void Timer::setup(Color color)
     {
         I64 time      = limits.time[color];
         int increment = limits.incr[color];
+        int mtg       = limits.movestogo;
 
         // Attention, on peut avoir time<0
         I64 time_remaining = std::max(static_cast<I64>(1), time - MoveOverhead);
@@ -117,11 +118,26 @@ void Timer::setup(Color color)
         // partie : 40 coups en 15 minutes              : moves_to_go = 40 ; wtime=btime = 15*60000 ; winc=binc = 0
         // partie en 5 minutes, incrément de 6 secondes : moves_to_go = 0  ; wtime=btime =  5*60000 ; winc=binc = 6 >> sudden death
 
-        // formules provenant de Sirius (provenant elle-mêmes de Stormphrax)
-        // m_SoftBound
-        timeForThisDepth = softTimeScale / 100.0 * (static_cast<double>(time_remaining) / baseTimeScale + static_cast<double>(increment) * incrementScale / 100.0);
-        // m_HardBound
-        timeForThisMove = time_remaining * (hardTimeScale / 100.0);
+        if (mtg > 0)
+        {
+            // Cadence à nombre de coups imposé (ex: 40/15)
+            // m_SoftBound : temps moyen par coup, pondéré par l'incrément
+            timeForThisDepth = softTimeScale / 100.0 * (static_cast<double>(time_remaining) / mtg + static_cast<double>(increment) * incrementScale / 100.0);
+            // m_HardBound : au plus 4x le temps moyen par coup
+            timeForThisMove  = std::min(time_remaining * (hardTimeScale / 100.0), static_cast<double>(time_remaining) / mtg * 4.0);
+        }
+        else
+        {
+            // Sudden death (formules Stormphrax)
+            // m_SoftBound
+            timeForThisDepth = softTimeScale / 100.0 * (static_cast<double>(time_remaining) / baseTimeScale + static_cast<double>(increment) * incrementScale / 100.0);
+            // m_HardBound
+            timeForThisMove = time_remaining * (hardTimeScale / 100.0);
+        }
+
+        // Cap de sécurité : ne jamais utiliser plus de 80% du temps restant
+        timeForThisMove  = std::min(timeForThisMove, static_cast<I64>(time_remaining * 0.80));
+        timeForThisDepth = std::min(timeForThisDepth, timeForThisMove);
     }
 
 #if defined DEBUG_TIME
