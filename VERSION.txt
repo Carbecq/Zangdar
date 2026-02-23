@@ -1,2 +1,2 @@
-VERSION = 6.4.2
+VERSION = 6.4.3
 NETWORK = \"networks/net_6.bin\"

@@ -174,7 +174,9 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
         board.initialisation();
         board.set_fen(START_FEN, false);
         search->table->update_age();
-        search->history.reset();
+        // history.reset() supprimé : évite un memset de ~32 MB par partie
+        // L'influence résiduelle sur le move ordering est négligeable
+        // pour des recherches de 5000 nodes sur des positions aléatoires.
 
         //====================================================
         //  Initalisation random de l'échiquier
