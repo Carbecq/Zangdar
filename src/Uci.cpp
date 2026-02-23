@@ -874,6 +874,7 @@ void Uci::go_tactics(const std::string& line, int dmax, int tmax, U64& total_nod
 //=================================================================
 //! \brief  Benchmark
 //!         Les tests du fichier bench.csv proviennent d'Ethereal
+//! commande : bench depth threads hash
 //-----------------------------------------------------------------
 void Uci::bench(int argCount, char* argValue[])
 {
@@ -925,8 +926,9 @@ void Uci::bench(int argCount, char* argValue[])
         const auto end = TimePoint::now();
         const auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
-        scores[total] = threadPool.search[0].iter_best_score;
-        moves[total]  = threadPool.search[0].iter_best_move;
+        int bt = threadPool.get_best_thread();
+        scores[total] = threadPool.search[bt].iter_best_score;
+        moves[total]  = threadPool.search[bt].iter_best_move;
         nodes[total]  = threadPool.get_all_nodes();
         times[total]  = ms;
 

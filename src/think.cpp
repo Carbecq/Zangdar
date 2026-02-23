@@ -53,7 +53,14 @@ void Search::think(Board board, Timer timer, size_t m_index)
         threadPool.main_thread_stopped();
         threadPool.wait(1);
 
-        //TODO : choix du bestmove entre les threads ?
+        // Sélection du meilleur résultat parmi toutes les threads
+        int best_thread = threadPool.get_best_thread();
+        if (best_thread != 0)
+        {
+            iter_best_move  = threadPool.search[best_thread].iter_best_move;
+            iter_best_score = threadPool.search[best_thread].iter_best_score;
+            iter_best_depth = threadPool.search[best_thread].iter_best_depth;
+        }
 
         if (threadPool.get_logUci())
             show_uci_best();
@@ -80,13 +87,14 @@ void Search::iterative_deepening(Board& board, Timer& timer, SearchInfo* si)
             break;
 
         // L'itération s'est terminée sans problème
-        // On peut mettre à jour les infos UCI
+        // Toutes les threads sauvegardent leur meilleur résultat
+        iter_best_depth = iter_depth;
+        iter_best_move  = si->pv.line[0];
+        iter_best_score = iter_score;
+
+        // Seule la thread principale gère l'affichage UCI et le time management
         if (index == 0)
         {
-            iter_best_depth = iter_depth;
-            iter_best_move  = si->pv.line[0];
-            iter_best_score = iter_score;
-
             auto elapsed = timer.elapsedTime();
 
             if (threadPool.get_logUci())
@@ -730,8 +738,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 bound = BOUND_EXACT;
 
                 // update the PV
-                if (index == 0)
-                    update_pv(si, move);
+                update_pv(si, move);
 
                 // If score beats beta we have a cutoff
                 if (score >= beta)

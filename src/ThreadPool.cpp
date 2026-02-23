@@ -185,6 +185,28 @@ void ThreadPool::quit()
 }
 
 //=================================================
+//! \brief  Retourne l'index de la meilleure thread
+//! Sélection par profondeur la plus grande,
+//! puis par score en cas d'égalité.
+//-------------------------------------------------
+int ThreadPool::get_best_thread() const
+{
+    int best = 0;
+
+    for (size_t i = 1; i < nbrThreads; i++)
+    {
+        if (   search[i].iter_best_depth > search[best].iter_best_depth
+            || (search[i].iter_best_depth == search[best].iter_best_depth
+                && search[i].iter_best_score > search[best].iter_best_score))
+        {
+            best = i;
+        }
+    }
+
+    return best;
+}
+
+//=================================================
 //! \brief  Retourne le nombre total des nodes recherchés
 //-------------------------------------------------
 U64 ThreadPool::get_all_nodes() const
