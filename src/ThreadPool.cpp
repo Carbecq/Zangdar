@@ -50,8 +50,8 @@ void ThreadPool::set_threads(U32 nbr)
         search = std::make_unique<Search[]>(nbrThreads);
         for (size_t i = 0; i < nbrThreads; i++)
         {
-            search[i].table    = nullptr;
-            search[i].td_index = i;
+            search[i].table = nullptr;
+            search[i].index = i;
         }
     }
 
@@ -105,16 +105,16 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
 
         for (size_t i = 0; i < nbrThreads; i++)
         {
-            search[i].td_depth    = timer.getSearchDepth();
-            search[i].td_seldepth = 0;
-            search[i].td_score    = -INFINITE;
-            search[i].td_nodes    = 0;
-            search[i].td_stopped  = false;
-            search[i].td_tbhits   = 0;
+            search[i].seldepth    = 0;
+            search[i].stopped     = false;
+            search[i].iter_depth  = timer.getSearchDepth();
+            search[i].iter_score  = -INFINITE;
+            search[i].nodes       = 0;
+            search[i].tbhits      = 0;
 
-            search[i].td_best_depth = 0;
-            search[i].td_best_move  = Move::MOVE_NONE;
-            search[i].td_best_score = -INFINITE;
+            search[i].iter_best_depth = 0;
+            search[i].iter_best_move  = Move::MOVE_NONE;
+            search[i].iter_best_score = -INFINITE;
 
             search[i].table         = &transpositionTable;
         }
@@ -142,7 +142,7 @@ void ThreadPool::main_thread_stopped()
     // envoie à toutes les autres threads
     // le signal d'arrêter
     for (size_t i = 1; i < nbrThreads; i++)
-        search[i].td_stopped = true;
+        search[i].stopped = true;
 }
 
 //=================================================
@@ -165,7 +165,7 @@ void ThreadPool::wait(size_t start)
 void ThreadPool::stop()
 {
     // Message d'arrêt à la thread principale
-    search[0].td_stopped = true;
+    search[0].stopped = true;
 
     // On bloque ici en attendant la thread principale
     if (search[0].thread.joinable())
@@ -188,7 +188,7 @@ U64 ThreadPool::get_all_nodes() const
     U64 total = 0;
     for (size_t i=0; i<nbrThreads; i++)
     {
-        total += search[i].td_nodes;
+        total += search[i].nodes;
     }
     return(total);
 }
@@ -201,7 +201,7 @@ int ThreadPool::get_all_depths() const
     int total = 0;
     for (size_t i=0; i<nbrThreads; i++)
     {
-        total += search[i].td_best_depth;
+        total += search[i].iter_best_depth;
     }
     return(total);
 }
@@ -214,7 +214,7 @@ U64 ThreadPool::get_all_tbhits() const
     U64 total = 0;
     for (size_t i=0; i<nbrThreads; i++)
     {
-        total += search[i].td_tbhits;
+        total += search[i].tbhits;
     }
     return(total);
 }

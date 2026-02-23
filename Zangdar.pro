@@ -44,14 +44,14 @@ DEFINES += HOME='\\"$${HOME_STR}\\"'
 linux-clang {
 CFLAGS_REL1  = -O3 -flto=auto -ftree-vectorize -funroll-loops -fno-exceptions -DNDEBUG -pthread -Wdisabled-optimization -Wall -Wextra \
                -finline-functions -fno-rtti -fstrict-aliasing -fomit-frame-pointer
-CFLAGS_WARN1 = -Wmissing-declarations -Wredundant-decls -Wshadow -Wundef -Wuninitialized -pedantic
+CFLAGS_WARN1 = -Wmissing-declarations -Wredundant-decls -Wshadow -Wundef -Wuninitialized
 
 CFLAGS_WARN2 = -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wswitch -Wswitch-enum -Wenum-compare -Wenum-conversion
 CFLAGS_WARN3 = -Wformat=2 -Winit-self -Wmissing-include-dirs
 CFLAGS_WARN4 = -Woverloaded-virtual -Warray-bounds
 CFLAGS_WARN5 = -Wsign-promo -Wstrict-overflow=5 -Wno-unused
 CFLAGS_WARN6 = -Wswitch-default -Wattributes -Waddress -Wfloat-equal -Wmissing-prototypes -Wconditional-uninitialized
-# CFLAGS_WARN7 = -Wsign-conversion
+# CFLAGS_WARN7 = -Wsign-conversion -pedantic
 }
 
 #------------------------------------------------------
@@ -60,14 +60,14 @@ CFLAGS_WARN6 = -Wswitch-default -Wattributes -Waddress -Wfloat-equal -Wmissing-p
 linux-g++ {
 CFLAGS_REL1  = -O3 -flto=auto -ftree-vectorize -funroll-loops -fno-exceptions -DNDEBUG -pthread -fwhole-program -Wdisabled-optimization -Wall -Wextra \
                -finline-functions -fno-rtti -fstrict-aliasing -fomit-frame-pointer
-CFLAGS_WARN1 = -Wmissing-declarations -Wredundant-decls -Wshadow -Wundef -Wuninitialized -pedantic
+CFLAGS_WARN1 = -Wmissing-declarations -Wredundant-decls -Wshadow -Wundef -Wuninitialized
 
 CFLAGS_WARN2 = -Wcast-align=strict -Wcast-qual -Wctor-dtor-privacy -Wswitch -Wswitch-enum -Wenum-compare -Wenum-conversion
 CFLAGS_WARN3 = -Wformat=2 -Winit-self -Wlogical-op -Wmissing-include-dirs
 CFLAGS_WARN4 = -Wnoexcept -Woverloaded-virtual -Warray-bounds=2
 CFLAGS_WARN5 = -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5 -Wno-unused
 CFLAGS_WARN6 = -Wswitch-default -Wattributes -Waddress -Wfloat-equal -Wbidi-chars -Warray-compare -Wuninitialized
-# CFLAGS_WARN7 = -Wsign-conversion
+# CFLAGS_WARN7 = -Wsign-conversion -pedantic
 }
 
 # https://devblogs.microsoft.com/cppblog/even-more-new-safety-rules-in-c-code-analysis/

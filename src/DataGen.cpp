@@ -145,7 +145,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
     // Allocation sur le tas : Search et History sont trop gros pour la pile d'un thread
     std::unique_ptr<Search> search = std::make_unique<Search>();
-    search->td_index  = 0;
+    search->index  = 0;
 
     // chaque thread a sa propre table, de façon à éviter
     // qu'un thread efface la TT pendant qu'un autre est en pleine recherche.
@@ -258,8 +258,8 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
         while (true)
         {
             // printf("----------------------------nouveau coup \n");
-            search->td_nodes   = 0;
-            search->td_stopped = false;
+            search->nodes   = 0;
+            search->stopped = false;
             search->table->update_age();
 
             // Partie nulle ?
@@ -403,13 +403,13 @@ void DataGen::data_search(Board& board, Timer& timer, Search& search,
     move  = Move::MOVE_NONE;
     score = -INFINITE;
 
-    search.td_score     = -INFINITE;
-    search.td_stopped   = false;
-    search.td_nodes     = 0;
+    search.iter_score     = -INFINITE;
+    search.stopped   = false;
+    search.nodes     = 0;
 
-    search.td_best_depth = 0;
-    search.td_best_move  = Move::MOVE_NONE;
-    search.td_best_score = -INFINITE;
+    search.iter_best_depth = 0;
+    search.iter_best_move  = Move::MOVE_NONE;
+    search.iter_best_score = -INFINITE;
 
 
 #if defined DEBUG_GEN
@@ -432,19 +432,19 @@ void DataGen::data_search(Board& board, Timer& timer, Search& search,
         (si + i)->cont_hist = &search.history.continuation_history[0][0];
     }
 
-    for (search.td_depth = 1; search.td_depth <= std::max(1, timer.getSearchDepth()); search.td_depth++)
+    for (search.iter_depth = 1; search.iter_depth <= std::max(1, timer.getSearchDepth()); search.iter_depth++)
     {
         // Search position, using aspiration windows for higher depths
-        search.td_score = search.aspiration_window<C>(board, timer, si);
+        search.iter_score = search.aspiration_window<C>(board, timer, si);
 
-        if (search.td_stopped)
+        if (search.stopped)
             break;
 
         // L'itération s'est terminée sans problème
         // On peut mettre à jour les infos UCI
-        search.td_best_depth = search.td_depth;
-        search.td_best_move  = si->pv.line[0];
-        search.td_best_score = search.td_score;
+        search.iter_best_depth = search.iter_depth;
+        search.iter_best_move  = si->pv.line[0];
+        search.iter_best_score = search.iter_score;
 
 #if defined DEBUG_GEN
         I64 elapsed = timer.elapsedTime();
@@ -460,14 +460,14 @@ void DataGen::data_search(Board& board, Timer& timer, Search& search,
 #endif
 
         // If an iteration finishes after optimal time usage, stop the search
-        if (timer.finishOnThisDepth(elapsed, search.td_depth, search.td_best_move, search.td_nodes))
+        if (timer.finishOnThisDepth(elapsed, search.iter_depth, search.iter_best_move, search.nodes))
             break;
 
-        search.td_seldepth = 0;
+        search.seldepth = 0;
     }
 
-    move  = search.td_best_move;
-    score = search.td_best_score;
+    move  = search.iter_best_move;
+    score = search.iter_best_score;
 }
 
 //===================================================

@@ -192,25 +192,6 @@ bool TranspositionTable::probe(U64 key, int ply, MOVE& move, int &score, int& ev
     return false;
 }
 
-void TranspositionTable::stats()
-{
-    // std::cout << "TT size = " << clusterCount << std::endl;
-    //    for (int i=0; i<tt_buckets; i++)
-    //    {
-    //        std::cout << "store[" << i+1 << "] = " << nbr_store[i] << std::endl;
-    //    }
-    //    for (int i=0; i<tt_buckets; i++)
-    //    {
-    //        std::cout << "probe[" << i+1 << "] = " << nbr_probe[i] << std::endl;
-    //    }
-
-    //    std::cout << "PawnCacheSize = " << PAWN_CACHE_SIZE << std::endl;
-    //    std::cout << "store  = " << pcachestore << std::endl;
-    //    std::cout << "hit    = " << pcachehit << std::endl;
-    //    std::cout << "no hit = " << pcachenohit << std::endl;
-    //    std::cout << "usage  = " << (double)pcachenohit / (double)pcachehit << std::endl;
-}
-
 //=======================================================================
 //! \brief Estimation de l'utilisation de la table de transposition
 //! On regarde combien d'entrées contiennent une valeur récente.

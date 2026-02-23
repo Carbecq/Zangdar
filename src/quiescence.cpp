@@ -13,9 +13,9 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
     assert(beta > alpha);
 
     //  Time-out
-    if (td_stopped || timer.check_limits(td_depth, td_index, td_nodes))    // ATTENTION on peut avoir depth <=0
+    if (stopped || timer.check_limits(iter_depth, index, nodes))    // ATTENTION on peut avoir depth <=0
     {
-        td_stopped = true;
+        stopped = true;
         return 0;
     }
 
@@ -45,8 +45,8 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
     table->prefetch(board.get_key());
 
     // Update node count and selective depth
-    td_nodes++;
-    td_seldepth = std::max(td_seldepth, si->ply);
+    nodes++;
+    seldepth = std::max(seldepth, si->ply);
 
     const int  old_alpha = alpha;
     const bool isPV      = ((beta - alpha) != 1);
@@ -136,7 +136,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
         score = -quiescence<~C>(board, timer, -beta, -alpha, si+1);
         undo_move<C, true>(board);
 
-        if (td_stopped)
+        if (stopped)
             return 0;
 
         // Found a new best move in this position
@@ -153,15 +153,13 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
                 // try for an early cutoff:
                 if(score >= beta)
                 {
-                    // transpositionTable.store(board.get_key(), move, score, static_eval, BOUND_LOWER, 0, si->ply);
-                    // return score;
                     break;
                 }
             }
         }
     }
 
-    if (!td_stopped)
+    if (!stopped)
     {
         int bound = best_score >= beta    ? BOUND_LOWER
                                           : best_score > old_alpha ? BOUND_EXACT

@@ -128,7 +128,6 @@ public:
 
     void store(U64 hash, MOVE move, int score, int eval, int bound, int depth, int ply, bool pv);
     bool probe(U64 hash, int ply, MOVE &code, int &score, int &eval, int &bound, int &depth, bool &pv);
-    void stats();
     int  hash_full() const;
 
     //! \brief Store terminal scores as distance from the current position to mate/TB

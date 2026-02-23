@@ -24,7 +24,7 @@ public:
 
     U64  get_all_nodes() const;
     int  get_all_depths() const;
-    MOVE get_best_move() const { return search[0].td_best_move; }
+    MOVE get_best_move() const { return search[0].iter_best_move; }
     U64  get_all_tbhits() const;
 
     void set_logUci(bool f)     { logUci = f;       }

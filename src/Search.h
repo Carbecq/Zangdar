@@ -47,18 +47,19 @@ public:
     template <Color US, bool Update_NNUE> void make_move(Board& board, const MOVE move) noexcept;
     template <Color US, bool Update_NNUE> void undo_move(Board& board) noexcept;
 
-    U64         td_nodes;
-    U64         td_tbhits;
+    U64         nodes;          // nombre de neuds recherchés
+    U64         tbhits;
 
-    int         td_index;
-    int         td_depth;       // profondeur demandée dans iterative  deepening
-    int         td_seldepth;
-    int         td_score;
-    bool        td_stopped;
+    int         index;          // indice de la thread
+    int         seldepth;       // selective depth
+    bool        stopped;        // indique que la recherche est stoppée
 
-    MOVE        td_best_move;
-    int         td_best_score;
-    int         td_best_depth;
+    int         iter_depth;     // profondeur demandée dans iterative  deepening
+    int         iter_score;
+
+    MOVE        iter_best_move; // meilleur coup trouvé lors de iterative deepening
+    int         iter_best_score;
+    int         iter_best_depth;
 
 
     // Point de départ de la recherche

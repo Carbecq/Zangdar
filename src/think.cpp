@@ -27,6 +27,13 @@ void Search::think(Board board, Timer timer, size_t m_index)
     nnue.start_search(board);
 
     // Grace au décalage, la position root peut regarder en arrière
+    /*
+    0   4                                     131 135
+    +---|--------------------------------------+---+        136 éléments total (128 + 2*4)
+
+    +---+--------------------------------------+---+
+        0                                     127 131       ply
+    */
     std::array<SearchInfo, STACK_SIZE> _info{};
     SearchInfo* si  = &(_info[STACK_OFFSET]);
 
@@ -64,8 +71,6 @@ void Search::think(Board board, Timer timer, size_t m_index)
 
         table->update_age();
     }
-
-    // table->stats();
 }
 
 //======================================================
@@ -77,39 +82,21 @@ void Search::think(Board board, Timer timer, size_t m_index)
 template<Color C>
 void Search::iterative_deepening(Board& board, Timer& timer, SearchInfo* si)
 {
-
-    /*
-    0   4                                     131 135
-    +---|--------------------------------------+---+        136 éléments total (128 + 2*4)
-
-    +---+--------------------------------------+---+
-        0                                     127 131       ply
- */
-
-    // Grace au décalage, la position root peut regarder en arrière
-    // SearchInfo* si  = &(_info[STACK_OFFSET]);
-
-    // for (int i = 0; i < MAX_PLY+STACK_OFFSET; i++)
-    // {
-    //     (si + i)->ply = i;
-    //     (si + i)->cont_hist = &history.continuation_history[0][0];
-    // }
-
-    for (td_depth = 1; td_depth <= timer.getSearchDepth(); td_depth++)
+    for (iter_depth = 1; iter_depth <= timer.getSearchDepth(); iter_depth++)
     {
         // Search position, using aspiration windows for higher depths
-        td_score = aspiration_window<C>(board, timer, si);
+        iter_score = aspiration_window<C>(board, timer, si);
 
-        if (td_stopped)
+        if (stopped)
             break;
 
         // L'itération s'est terminée sans problème
         // On peut mettre à jour les infos UCI
-        if (td_index == 0)
+        if (index == 0)
         {
-            td_best_depth = td_depth;
-            td_best_move  = si->pv.line[0];
-            td_best_score = td_score;
+            iter_best_depth = iter_depth;
+            iter_best_move  = si->pv.line[0];
+            iter_best_score = iter_score;
 
             auto elapsed = timer.elapsedTime();
 
@@ -117,10 +104,10 @@ void Search::iterative_deepening(Board& board, Timer& timer, SearchInfo* si)
                 show_uci_result(elapsed, si->pv);
 
             // If an iteration finishes after optimal time usage, stop the search
-            if (timer.finishOnThisDepth(elapsed, td_depth, td_best_move, td_nodes))
+            if (timer.finishOnThisDepth(elapsed, iter_depth, iter_best_move, nodes))
                 break;
 
-            td_seldepth = 0;
+            seldepth = 0;
         }
     }
 }
@@ -135,8 +122,8 @@ int Search::aspiration_window(Board& board, Timer& timer, SearchInfo* si)
 {
     int alpha  = -INFINITE;
     int beta   = INFINITE;
-    int depth  = td_depth;
-    int score  = td_score;
+    int depth  = iter_depth;
+    int score  = iter_score;
 
     const int initialWindow = AspirationWindowsInitial;
     int delta = AspirationWindowsDelta;
@@ -152,7 +139,7 @@ int Search::aspiration_window(Board& board, Timer& timer, SearchInfo* si)
     {
         score = alpha_beta<C>(board, timer, alpha, beta, std::max(1, depth), false, si);
 
-        if (td_stopped)
+        if (stopped)
             break;
 
         // Search failed low, adjust window and reset depth
@@ -160,7 +147,7 @@ int Search::aspiration_window(Board& board, Timer& timer, SearchInfo* si)
         {
             alpha = std::max(score - delta, -INFINITE); // alpha/score-delta
             beta  = (alpha + beta) / 2;
-            depth = td_depth;
+            depth = iter_depth;
         }
 
         // Search failed high, adjust window and reduce depth
@@ -206,9 +193,9 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     const bool isRoot     = (si->ply == 0);
 
     //  Time-out
-    if (td_stopped || timer.check_limits(td_depth, td_index, td_nodes)) // depth ? td_depth ?
+    if (stopped || timer.check_limits(iter_depth, index, nodes)) // depth ? td_depth ?
     {
-        td_stopped = true;
+        stopped = true;
         return 0;
     }
 
@@ -264,8 +251,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     const bool isPV = ((beta - alpha) != 1);
 
      // Update node count and selective depth
-    td_nodes++;
-    td_seldepth = isRoot ? 0 : std::max(td_seldepth, si->ply);
+    nodes++;
+    seldepth = isRoot ? 0 : std::max(seldepth, si->ply);
 
     int  score      = -INFINITE;
     int  best_score = -INFINITE;        // initially assume the worst case
@@ -309,7 +296,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
     if (!isExcluded && threadPool.get_useSyzygy() && board.probe_wdl(tb_score, tb_bound, si->ply) == true)
     {
-        td_tbhits++;
+        tbhits++;
 
         // Check to see if the WDL value would cause a cutoff
         if (    tb_bound == BOUND_EXACT
@@ -372,10 +359,6 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 static_eval = tt_score;
             }
         }
-
-        // if (!ttHit)
-        //     m_ttable.put(pos.key(), ScoreNone, rawStaticEval, NullMove, 0, 0, TtFlag::None, ttpv);
-
     }
     else
     {
@@ -415,7 +398,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             score = quiescence<C>(board, timer, alpha, beta, si);
             if (score <= alpha)
             {
-                td_nodes--;
+                nodes--;
                 return score;
             }
         }
@@ -453,7 +436,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             int null_score = -alpha_beta<~C>(board, timer, -beta, -beta + 1, depth - 1 - R, !cut_node, si+1);
             board.undo_nullmove<C>();
 
-            if (td_stopped)
+            if (stopped)
                 return 0;
 
             // Cutoff
@@ -545,7 +528,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         if (move == si->excluded)
             continue;
 
-        const U64  starting_nodes = td_nodes;
+        const U64  starting_nodes = nodes;
         const bool isQuiet   = !Move::is_tactical(move);    // capture, promotion (avec capture ou non), prise en-passant
 
         move_count++;
@@ -738,11 +721,11 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         undo_move<C, true>(board);
 
         // Track where nodes were spent in the Main thread at the Root
-        if (isRoot && td_index==0)
-            timer.updateMoveNodes(move, td_nodes - starting_nodes);
+        if (isRoot && index==0)
+            timer.updateMoveNodes(move, nodes - starting_nodes);
 
         //  Time-out
-        if (td_stopped)
+        if (stopped)
             return 0;
 
         // On a trouvé un nouveau meilleur coup
@@ -758,7 +741,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 bound = BOUND_EXACT;
 
                 // update the PV
-                if (td_index == 0)
+                if (index == 0)
                     update_pv(si, move);
 
                 // If score beats beta we have a cutoff
@@ -797,7 +780,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         history.update_correction_history(board, depth, best_score, static_eval );
     }
 
-    if (!td_stopped && !isExcluded)
+    if (!stopped && !isExcluded)
     {
         //  si on est ici, c'est que l'on a trouvé au moins 1 coup
         //  et de plus : score < beta

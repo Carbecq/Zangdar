@@ -102,7 +102,6 @@ void Timer::setup(Color color)
     {
         I64 time      = limits.time[color];
         int increment = limits.incr[color];
-        // int movestogo = limits.movestogo;
 
         // Attention, on peut avoir time<0
         I64 time_remaining = std::max(static_cast<I64>(1), time - MoveOverhead);

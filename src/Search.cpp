@@ -71,8 +71,8 @@ void Search::show_uci_result(I64 elapsed, const PVariation& pv) const
            << " depth "    << std::setw(2) << td_best_depth                     // depth <x> search depth in plies
            << " seldepth " << std::setw(2) << td_seldepth                       // seldepth <x> selective search depth in plies
 #else
-           << " depth "    << td_best_depth
-           << " seldepth " << td_seldepth
+           << " depth "    << iter_best_depth
+           << " seldepth " << seldepth
 #endif
 
 // time     : the time searched in ms
@@ -93,13 +93,13 @@ void Search::show_uci_result(I64 elapsed, const PVariation& pv) const
            << " hashfull "   << hash_full;
 #endif
 
-    if (td_best_score >= MATE_IN_X)
+    if (iter_best_score >= MATE_IN_X)
     {
-        stream << " score mate " << (MATE - td_best_score) / 2 + 1;             // score mate <y> mate in y moves, not plies.
+        stream << " score mate " << (MATE - iter_best_score) / 2 + 1;             // score mate <y> mate in y moves, not plies.
     }
-    else if (td_best_score <= -MATE_IN_X)
+    else if (iter_best_score <= -MATE_IN_X)
     {
-        stream << " score mate " << (-MATE - td_best_score) / 2;
+        stream << " score mate " << (-MATE - iter_best_score) / 2;
     }
     else
     {
@@ -107,7 +107,7 @@ void Search::show_uci_result(I64 elapsed, const PVariation& pv) const
 #if defined USE_PRETTY
         stream << " score cp " << std::right << std::setw(5) << td_best_score;  // score cp <x> the score from the engine's point of view in centipawns.
 #else
-        stream << " score cp " << td_best_score;
+        stream << " score cp " << iter_best_score;
 #endif
     }
 
@@ -126,7 +126,7 @@ void Search::show_uci_result(I64 elapsed, const PVariation& pv) const
 void Search::show_uci_best() const
 {
     // ATTENTION AU FORMAT D'AFFICHAGE
-    std::cout << "bestmove " << Move::name(td_best_move) << std::endl;
+    std::cout << "bestmove " << Move::name(iter_best_move) << std::endl;
 }
 
 //=========================================================
