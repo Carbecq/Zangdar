@@ -220,7 +220,7 @@ U64 ThreadPool::get_all_nodes() const
 }
 
 //=================================================
-//! \brief  Retourne le nombre total des nodes recherchés
+//! \brief  Retourne la somme des profondeurs atteintes
 //-------------------------------------------------
 int ThreadPool::get_all_depths() const
 {

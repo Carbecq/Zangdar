@@ -13,6 +13,10 @@ namespace Cuckoo
 std::array<U64, 8192>  keys{0};
 std::array<MOVE, 8192> moves{0};
 
+//======================================================
+//! \brief  Initialise les tables de hachage Cuckoo
+//!         pour la détection de répétition imminente
+//------------------------------------------------------
 void init()
 {
     [[maybe_unused]] U32 count = 0;

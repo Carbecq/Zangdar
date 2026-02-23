@@ -365,58 +365,60 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     std::string word;
 
     // Parse board positions
+    // On inverse les couleurs : P (blanc) -> pion noir, p (noir) -> pion blanc
+    // et on inverse verticalement les cases
     ss >> word;
     SQUARE i = A8; // 56;
     for (const auto &c : word) {
         switch (c) {
         case 'P':
-            add_piece(SQ::mirrorVertically(i), ~Color::WHITE, Piece::WHITE_PAWN);
+            add_piece(SQ::mirrorVertically(i), Color::BLACK, Piece::BLACK_PAWN);
             i++;
             break;
         case 'p':
-            add_piece(SQ::mirrorVertically(i), ~Color::BLACK, Piece::WHITE_PAWN);
+            add_piece(SQ::mirrorVertically(i), Color::WHITE, Piece::WHITE_PAWN);
             i++;
             break;
         case 'N':
-            add_piece(SQ::mirrorVertically(i), ~Color::WHITE, Piece::WHITE_KNIGHT);
+            add_piece(SQ::mirrorVertically(i), Color::BLACK, Piece::BLACK_KNIGHT);
             i++;
             break;
         case 'n':
-            add_piece(SQ::mirrorVertically(i), ~Color::BLACK, Piece::WHITE_KNIGHT);
+            add_piece(SQ::mirrorVertically(i), Color::WHITE, Piece::WHITE_KNIGHT);
             i++;
             break;
         case 'B':
-            add_piece(SQ::mirrorVertically(i), ~Color::WHITE, Piece::WHITE_BISHOP);
+            add_piece(SQ::mirrorVertically(i), Color::BLACK, Piece::BLACK_BISHOP);
             i++;
             break;
         case 'b':
-            add_piece(SQ::mirrorVertically(i), ~Color::BLACK, Piece::WHITE_BISHOP);
+            add_piece(SQ::mirrorVertically(i), Color::WHITE, Piece::WHITE_BISHOP);
             i++;
             break;
         case 'R':
-            add_piece(SQ::mirrorVertically(i), ~Color::WHITE, Piece::WHITE_ROOK);
+            add_piece(SQ::mirrorVertically(i), Color::BLACK, Piece::BLACK_ROOK);
             i++;
             break;
         case 'r':
-            add_piece(SQ::mirrorVertically(i), ~Color::BLACK, Piece::WHITE_ROOK);
+            add_piece(SQ::mirrorVertically(i), Color::WHITE, Piece::WHITE_ROOK);
             i++;
             break;
         case 'Q':
-            add_piece(SQ::mirrorVertically(i), ~Color::WHITE, Piece::WHITE_QUEEN);
+            add_piece(SQ::mirrorVertically(i), Color::BLACK, Piece::BLACK_QUEEN);
             i++;
             break;
         case 'q':
-            add_piece(SQ::mirrorVertically(i), ~Color::BLACK, Piece::WHITE_QUEEN);
+            add_piece(SQ::mirrorVertically(i), Color::WHITE, Piece::WHITE_QUEEN);
             i++;
             break;
         case 'K':
-            add_piece(SQ::mirrorVertically(i), ~Color::WHITE, Piece::WHITE_KING);
-            king_square[~Color::WHITE] = SQ::mirrorVertically(i);
+            add_piece(SQ::mirrorVertically(i), Color::BLACK, Piece::BLACK_KING);
+            king_square[Color::BLACK] = SQ::mirrorVertically(i);
             i++;
             break;
         case 'k':
-            add_piece(SQ::mirrorVertically(i), ~Color::BLACK, Piece::WHITE_KING);
-            king_square[~Color::BLACK] = SQ::mirrorVertically(i);
+            add_piece(SQ::mirrorVertically(i), Color::WHITE, Piece::WHITE_KING);
+            king_square[Color::WHITE] = SQ::mirrorVertically(i);
             i++;
             break;
         case '1':
@@ -438,12 +440,12 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     }
 
     //----------------------------------------------------------
-    // Set the side to move
+    // Set the side to move (inversé)
     ss >> word;
     if (word == "w") {
-        side_to_move = ~Color::WHITE;
+        side_to_move = Color::BLACK;
     } else {
-        side_to_move = ~Color::BLACK;
+        side_to_move = Color::WHITE;
     }
 
 

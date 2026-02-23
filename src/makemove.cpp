@@ -519,6 +519,9 @@ void Board::add_piece(const SQUARE square, const Color color, const Piece piece)
     piece_square[square]    = piece;
 }
 
+//=============================================================================
+//! \brief  Bascule une pièce sur une case (toggle)
+//-----------------------------------------------------------------------------
 void Board::set_piece(const SQUARE square, const Color color, const Piece piece) noexcept
 {
     BB::toggle_bit(colorPiecesBB[color], square);
@@ -526,6 +529,9 @@ void Board::set_piece(const SQUARE square, const Color color, const Piece piece)
     piece_square[square] = piece;
 }
 
+//=============================================================================
+//! \brief  Retire une pièce de la case indiquée
+//-----------------------------------------------------------------------------
 void Board::remove_piece(const SQUARE square, const Color color, const Piece piece) noexcept
 {
     BB::toggle_bit(colorPiecesBB[color], square);

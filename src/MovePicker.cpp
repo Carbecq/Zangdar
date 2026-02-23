@@ -485,6 +485,9 @@ bool MovePicker::is_legal(MOVE move)
 }
 
 
+//==================================================================
+//! \brief  Affiche la table MVV/LVA pour vérification
+//------------------------------------------------------------------
 std::string pchar[N_PIECE_TYPE] = {"NoPiece", "Pion", "Cavalier", "Fou", "Tour", "Dame", "Roi"};
 void MovePicker::verify_MvvLva()
 {

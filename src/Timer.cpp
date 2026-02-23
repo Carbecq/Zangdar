@@ -4,6 +4,10 @@
 #include "Timer.h"
 #include "Move.h"
 
+//===========================================================
+//! \brief  Constructeur
+//! Initialise les limites de temps fournies par le protocole UCI
+//-----------------------------------------------------------
 Timer::Timer(bool infinite,
              int wtime,
              int btime,

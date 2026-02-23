@@ -11,8 +11,6 @@
 #include "Move.h"
 #include "Search.h"
 
-static void sort_moves(MoveList& ml);
-
 //====================================================
 //! \brief Réalisation d'une série de tests "perft"
 //!
@@ -303,7 +301,10 @@ void test_eval(const std::string& fen)
 void test_mirror(void)
 {
     std::string     str_file(HOME);
-    str_file += "tests/mirror.epd";
+    // str_file += "tests/mirror.epd";
+    str_file += "tests/1000.epd";
+
+    std::cout << "[test_mirror]  " << str_file << std::endl;
 
     std::ifstream file(str_file);
     if (!file.is_open())
@@ -334,152 +335,139 @@ void test_mirror(void)
             //            std::cout << "Mirror OK : " << line << std::endl;
         }
 
-        if((numero % 1000) == 0)
+        if((numero % 100) == 0)
             std::cout << "position " << numero << std::endl;
     }
+
+    std::cout << "[test_mirror]  fini " << std::endl;
 
     file.close();
 }
 
 //===========================================================
 //! \brief  Test vérifiant la symétrie de l'évaluation
+//! L'évaluation de la position originale doit être identique
+//! à celle de la position miroir (couleurs inversées).
 //-----------------------------------------------------------
 bool Board::test_mirror(const std::string& line)
 {
-    int ev1 = 0; int ev2 = 0;
-    bool r = true;
-//    std::cout << "********************************************************" << std::endl;
-//    std::cout << line << std::endl;
+    auto search = std::make_unique<Search>();
 
-
+    // Evaluation de la position originale
     initialisation();
     set_fen(line, true);
+    search->nnue.start_search(*this);
+    int ev1 = search->evaluate(*this);
 
-//    std::cout << display() << std::endl;
-
- //AFAIRE   ev1 = evaluate();
-//    std::cout << "side = " << side_to_move << " : ev1 = " << ev1 << std::endl;
-
+    // Evaluation de la position miroir
+    initialisation();
     mirror_fen(line, true);
+    search->nnue.start_search(*this);
+    int ev2 = search->evaluate(*this);
 
-    // Note : pour faire le test, il faut soit désactiver le cache
-    //        soit faire "Transtable.clear();" pour chaque évaluation
-
-//    std::cout << display() << std::endl;
-  //AFAIRE  ev2 = evaluate();
-//    std::cout << "side = " << side_to_move << " : ev2 = " << ev2 <<  std::endl;
-
-    if(ev1 != ev2)
+    if (ev1 != ev2)
     {
         std::cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> " << std::endl;
+        std::cout << "Mirror Fail : ev1 = " << ev1 << " ; ev2 = " << ev2 << std::endl;
         initialisation();
         set_fen(line, true);
         std::cout << display() << std::endl;
+        initialisation();
         mirror_fen(line, true);
         std::cout << display() << std::endl;
-        std::cout << "ev1 = " << ev1 << " ; ev2 = " << ev2 << std::endl;
-        r = false;
+        return false;
     }
 
-    return(r);
+    return true;
 }
 
 //======================================================
-//! \brief  Affiche tous les coups possibles ainsi que leur valeur
-//!         L'affichage est fait dans l'ordre défini par la valeur du coup
+//! \brief  Affiche tous les coups possibles ainsi que leur évaluation NNUE
+//!         L'affichage est trié par évaluation décroissante
 //------------------------------------------------------
-void Board::test_value(const std::string& fen )
+void Board::test_value(const std::string& fen)
 {
     set_fen(fen, false);
     std::cout << display() << std::endl;
 
-    MoveList ml;
-
-    Accumulator acc;
     auto search = std::make_unique<Search>();
     search->nnue.start_search(*this);
-    search->nnue.refresh_accumulator<WHITE>(*this, acc);
-    search->nnue.refresh_accumulator<BLACK>(*this, acc);
-    int eval = search->do_evaluate(*this, acc);
 
+    int eval = search->evaluate(*this);
     printf("side = %s : evaluation = %d \n\n", side_name[side_to_move].c_str(), eval);
-    BB::PrintBB(get_status().checkers, "checkers");
-    BB::PrintBB(get_status().pinned, "pinned");
 
-    MOVE move;
+    MoveList ml;
 
-    // generate successor moves
-   legal_moves<WHITE, MoveGenType::ALL>(ml);
-   sort_moves(ml);
+    if (side_to_move == WHITE)
+        legal_moves<WHITE, MoveGenType::ALL>(ml);
+    else
+        legal_moves<BLACK, MoveGenType::ALL>(ml);
 
-    // look over all moves
-   for (size_t index=0; index<ml.count; index++)
-   {
-       move = ml.mlmoves[index].move;
+    printf("%zu coups legaux\n\n", ml.count);
 
-       // execute current move
-       make_move<WHITE, false>(acc, move);
-
-       bool doCheck    = is_in_check();
-
-       printf("\nside = %s : %s : value=%d \n", side_name[side_to_move].c_str(),
-              Move::name(move).c_str(), ml.mlmoves[index].value);
-
-       printf("capturing ? %d \n", Move::is_capturing(move));
-       printf("enpassant ? %d \n", Move::is_enpassant(move));
-       printf("promotion ? %d \n", Move::is_promoting(move));
-       printf("tactique  ? %d \n", Move::is_tactical(move));
-
-       if (doCheck)
-           printf("blanc fait échec \n");
-       else
-           printf("blanc ne fait pas échec \n");
-
-       // retract current move
-       undo_move<WHITE>();
-   }
-
-}
-
-#include "MovePicker.h"
-
-//======================================================
-//! \brief  Ordonne les captures en fonction de MvvLva
-//------------------------------------------------------
-static void sort_moves(MoveList& ml)
-{
-    for (size_t i=0; i<ml.count; i++)
+    // Jouer chaque coup et évaluer la position résultante
+    for (size_t index = 0; index < ml.count; index++)
     {
-        MOVE m = ml.mlmoves[i].move;
-        if (Move::is_capturing(m))
+        MOVE move = ml.mlmoves[index].move;
+
+        if (side_to_move == WHITE)
         {
-            PieceType piece = Move::piece_type(m);
-            PieceType capt  = Move::captured_type(m);
-            ml.mlmoves[i].value = MvvLvaScores[capt][piece];
+            search->make_move<WHITE, true>(*this, move);
+            ml.mlmoves[index].value = -search->evaluate(*this);
+            search->undo_move<WHITE, true>(*this);
         }
         else
         {
-            ml.mlmoves[i].value = 0;
+            search->make_move<BLACK, true>(*this, move);
+            ml.mlmoves[index].value = -search->evaluate(*this);
+            search->undo_move<BLACK, true>(*this);
         }
     }
-    for (size_t i=0; i<ml.count-1; i++)
+
+    // Tri par évaluation décroissante
+    for (size_t i = 0; i < ml.count; i++)
     {
-        for (size_t j=i; j<ml.count; j++)
+        for (size_t j = i + 1; j < ml.count; j++)
         {
-            if (ml.mlmoves[j].value > ml.mlmoves[i].value )
-            {
-                int v = ml.mlmoves[i].value;
-                MOVE m = ml.mlmoves[i].move;
-
-                ml.mlmoves[i].value = ml.mlmoves[j].value;
-                ml.mlmoves[j].value = v;
-
-                ml.mlmoves[i].move = ml.mlmoves[j].move;
-                ml.mlmoves[j].move = m;
-            }
+            if (ml.mlmoves[j].value > ml.mlmoves[i].value)
+                std::swap(ml.mlmoves[i], ml.mlmoves[j]);
         }
+    }
+
+    // Affichage
+    printf("%-6s %6s  %s\n", "coup", "eval", "flags");
+    printf("------ ------  -----\n");
+
+    for (size_t index = 0; index < ml.count; index++)
+    {
+        MOVE move = ml.mlmoves[index].move;
+        int  val  = ml.mlmoves[index].value;
+
+        std::string flags;
+        if (Move::is_capturing(move))  flags += "cap ";
+        if (Move::is_enpassant(move))  flags += "ep ";
+        if (Move::is_promoting(move))  flags += "prom ";
+        if (Move::is_castling(move))   flags += "castle ";
+
+        // Vérifier si le coup donne échec
+        if (side_to_move == WHITE)
+        {
+            make_move<WHITE, false>(search->nnue.get_accumulator(), move);
+            if (is_in_check()) flags += "check ";
+            undo_move<WHITE>();
+        }
+        else
+        {
+            make_move<BLACK, false>(search->nnue.get_accumulator(), move);
+            if (is_in_check()) flags += "check ";
+            undo_move<BLACK>();
+        }
+
+        printf("%-6s %6d  %s\n", Move::name(move).c_str(), val, flags.c_str());
     }
 }
+
+#include "MovePicker.h"
 
 //========================================================
 //! \brief  Test de la Static Exchange Evaluation

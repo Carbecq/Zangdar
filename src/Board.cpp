@@ -229,11 +229,12 @@ void Board::calculate_hash(U64& key, U64& pawn_key, U64 mat_key[N_COLORS]) const
 
 }
 
-// Upcoming repetition detection
-// http://www.open-chess.org/viewtopic.php?f=5&t=2300
-// Implemented originally in SF
-// Paper accessible @ http://marcelk.net/2013-04-06/paper/upcoming-rep-v2.pdf
-
+//==================================================================
+//! \brief  Détection de répétition imminente
+//! Vérifie si un coup réversible peut amener une position déjà vue.
+//! http://www.open-chess.org/viewtopic.php?f=5&t=2300
+//! Paper : http://marcelk.net/2013-04-06/paper/upcoming-rep-v2.pdf
+//------------------------------------------------------------------
 bool Board::upcoming_repetition(int ply) const
 {
     // Adapted from Obsidian

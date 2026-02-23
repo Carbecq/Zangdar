@@ -88,7 +88,7 @@ void Uci::run()
 
             std::cout << "option name Hash type spin default " << HASH_SIZE <<" min " << MIN_HASH_SIZE << " max " << MAX_HASH_SIZE << std::endl;
             std::cout << "option name Clear Hash type button" << std::endl;
-            std::cout << "option name Threads type spin default 1 min 1 max " << MAX_THREADS << std::endl;
+            std::cout << "option name Threads type spin default 1 min 1 max " << std::max(1U, std::thread::hardware_concurrency()) << std::endl;
             std::cout << "option name SyzygyPath type string default " << "<empty>" << std::endl;
             std::cout << "option name MoveOverhead type spin default " << MOVE_OVERHEAD << " min 0 max 10000" << std::endl;
 
@@ -200,7 +200,12 @@ void Uci::run()
 
         else if(token == "eval")
         {
-            test_eval(fen);
+            std::string rest;
+            std::getline(iss, rest);
+            if (!rest.empty())
+                test_eval(rest);
+            else
+                test_eval(fen);
         }
 
         else if(token == "see")

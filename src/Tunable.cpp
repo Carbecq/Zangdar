@@ -6,6 +6,9 @@
 namespace Tunable
 {
 
+//==================================================
+//! \brief  Constructeur d'un paramètre tunable
+//--------------------------------------------------
 TunableParam::TunableParam(const std::string& _name, int _value, int _min, int _max, int _step)
     : name(_name),
       value(_value),
@@ -22,6 +25,9 @@ TunableParam::TunableParam(const std::string& _name, int _value, int _min, int _
     params.push_back(this);
 }
 
+//==================================================
+//! \brief  Modifie la valeur d'un paramètre par son nom
+//--------------------------------------------------
 void setParam(const std::string &name, int value)
 {
     for (auto param : params)

@@ -75,6 +75,9 @@ Bitboard bishop_attacks_on_the_fly(SQUARE sq, Bitboard block)
 }
 
 //======================================================
+//! \brief  Initialise la table d'attaques des fous
+//!         en utilisant les magic bitboards ou PEXT
+//------------------------------------------------------
 void init_bishop_attacks()
 {
     // loop over 64 board squares
@@ -148,6 +151,9 @@ Bitboard rook_attacks_on_the_fly(SQUARE sq, Bitboard block)
 }
 
 //======================================================
+//! \brief  Initialise la table d'attaques des tours
+//!         en utilisant les magic bitboards ou PEXT
+//------------------------------------------------------
 void init_rook_attacks()
 {
     // loop over 64 board squares

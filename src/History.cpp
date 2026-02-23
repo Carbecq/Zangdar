@@ -4,12 +4,17 @@
 #include "types.h"
 #include "Board.h"
 
+//==================================================================
+//! \brief  Constructeur
+//------------------------------------------------------------------
 History::History()
 {
 
 }
 
-//*********************************************************************
+//==================================================================
+//! \brief  Remise à zéro de toutes les tables d'historique
+//------------------------------------------------------------------
 void History::reset()
 {
     std::memset(main_history,           0, sizeof(MainHistoryTable));
@@ -121,6 +126,10 @@ void History::update_quiet_history(Color color, SearchInfo* info, MOVE best_move
     }
 }
 
+//==================================================================
+//! \brief  Met à jour la main history
+//! \param[in]  bonus   bonus (positif) ou malus (négatif)
+//------------------------------------------------------------------
 void History::update_main(Color color, SearchInfo* info, MOVE move, int bonus)
 {
     const SQUARE from = Move::from(move);
@@ -129,11 +138,19 @@ void History::update_main(Color color, SearchInfo* info, MOVE move, int bonus)
     gravity(main_history[color][BB::test_bit(info->threats, from)][BB::test_bit(info->threats, dest)][from][dest], bonus);
 }
 
+//==================================================================
+//! \brief  Met à jour la pawn history
+//! \param[in]  bonus   bonus (positif) ou malus (négatif)
+//------------------------------------------------------------------
 void History::update_pawn(KEY pawnkey, MOVE move, int bonus)
 {
     gravity(pawn_history[get_index(pawnkey)][Move::piece(move)][Move::dest(move)], bonus);
 }
 
+//==================================================================
+//! \brief  Met à jour la continuation history (1-ply, 2-ply, 4-ply)
+//! \param[in]  bonus   bonus (positif) ou malus (négatif)
+//------------------------------------------------------------------
 void History::update_continuation(SearchInfo* info, MOVE move, int bonus)
 {
     if (Move::is_ok((info - 1)->move))
@@ -144,6 +161,10 @@ void History::update_continuation(SearchInfo* info, MOVE move, int bonus)
         gravity( (*(info - 4)->cont_hist)[Move::piece(move)][Move::dest(move)], bonus);
 }
 
+//==================================================================
+//! \brief  Met à jour la continuation history après LMR
+//! Bonus si score >= beta, malus si score <= alpha
+//------------------------------------------------------------------
 void History::update_continuation_history(SearchInfo* info, MOVE move, int score, int alpha, int beta, int depth)
 {
     int bonus = score <= alpha ? stat_malus(depth)
@@ -176,6 +197,10 @@ void History::update_capture_history(MOVE best_move, I16 depth,
     }
 }
 
+//==================================================================
+//! \brief  Met à jour la capture history pour un coup
+//! \param[in]  malus   bonus (positif) ou malus (négatif)
+//------------------------------------------------------------------
 void History::update_capture(MOVE move, int malus)
 {
     gravity(capture_history[Move::piece(move)][Move::dest(move)][Move::captured_type(move)], malus);
@@ -205,6 +230,10 @@ void History::update_correction_history(const Board& board, int depth, int best_
     update_correction(bmat, scaled_bonus, weight);
 }
 
+//==================================================================
+//! \brief  Met à jour une entrée de correction history
+//! Moyenne pondérée entre ancienne et nouvelle valeur
+//------------------------------------------------------------------
 void History::update_correction(int& entry, int scaled_bonus, int weight)
 {
     // Compute the weighted sum of the old and new values, and clamp the result.

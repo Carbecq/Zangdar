@@ -394,7 +394,10 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 }
 
 //============================================================================
-//  Recherche dans la position actuelle
+//! \brief  Recherche dans la position actuelle
+//! Lance un iterative deepening avec aspiration windows
+//! \param[out] move    meilleur coup trouvé
+//! \param[out] score   score du meilleur coup
 //----------------------------------------------------------------------------
 template <Color C>
 void DataGen::data_search(Board& board, Timer& timer, Search& search,
@@ -471,7 +474,8 @@ void DataGen::data_search(Board& board, Timer& timer, Search& search,
 }
 
 //===================================================
-//  Calcul du nombre de threads
+//! \brief  Calcule le nombre de threads à utiliser
+//! Limité au nombre de processeurs disponibles
 //---------------------------------------------------
 U32 DataGen::set_threads(const U32 nbr)
 {
