@@ -49,25 +49,14 @@ void Search::think(Board board, Timer timer, size_t m_index)
     // Arrêt des threads, affichage du résultat
     if (m_index == 0)
     {
+        // Toujours arrêter et attendre les autres threads
+        threadPool.main_thread_stopped();
+        threadPool.wait(1);
+
+        //TODO : choix du bestmove entre les threads ?
+
         if (threadPool.get_logUci())
-        {
-            threadPool.main_thread_stopped(); // arrêt des autres threads
-            threadPool.wait(1);               // attente de ces threads
-
-            //TODO : choix du bestmove entre les threads ?
-
-            // Aussitôt que Fastchess recoit "bestmove", il lance une nouvelle commande "position"
-
-            // * bestmove <move1> [ ponder <move2> ]
-            // 	the engine has stopped searching and found the move <move> best in this position.
-            // 	the engine can send the move it likes to ponder on. The engine must not start pondering automatically.
-            // 	this command must always be sent if the engine stops searching, also in pondering mode if there is a
-            // 	"stop" command, so for every "go" command a "bestmove" command is needed!
-            // 	Directly before that the engine should send a final "info" command with the final search information,
-            // 	the the GUI has the complete statistics about the last search.
-
             show_uci_best();
-        }
 
         table->update_age();
     }

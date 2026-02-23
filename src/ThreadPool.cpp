@@ -46,6 +46,10 @@ void ThreadPool::set_threads(U32 nbr)
     // Réallouer uniquement si le nombre change
     if (newNbr != nbrThreads)
     {
+        // Arrêter toute recherche en cours avant de réallouer
+        if (search)
+            stop();
+
         nbrThreads = newNbr;
         search = std::make_unique<Search[]>(nbrThreads);
         for (size_t i = 0; i < nbrThreads; i++)
@@ -164,12 +168,12 @@ void ThreadPool::wait(size_t start)
 //-------------------------------------------------
 void ThreadPool::stop()
 {
-    // Message d'arrêt à la thread principale
-    search[0].stopped = true;
+    // Signal d'arrêt à toutes les threads
+    for (size_t i = 0; i < nbrThreads; i++)
+        search[i].stopped = true;
 
-    // On bloque ici en attendant la thread principale
-    if (search[0].thread.joinable())
-        search[0].thread.join();
+    // Attente de toutes les threads
+    wait(0);
 }
 
 //=================================================

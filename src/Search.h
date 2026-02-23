@@ -3,6 +3,7 @@
 
 
 #include <thread>
+#include <atomic>
 #include <cstring>
 #include "Timer.h"
 #include "Board.h"
@@ -52,7 +53,7 @@ public:
 
     int         index;          // indice de la thread
     int         seldepth;       // selective depth
-    bool        stopped;        // indique que la recherche est stoppée
+    std::atomic<bool> stopped;  // indique que la recherche est stoppée
 
     int         iter_depth;     // profondeur demandée dans iterative  deepening
     int         iter_score;
