@@ -9,7 +9,7 @@
 //! \brief  Constructeur avec arguments
 //-------------------------------------------------
 ThreadPool::ThreadPool(U32 _nbr, bool _tb, bool _log) :
-    nbrThreads(_nbr),
+    nbrThreads(0),
     useSyzygy(_tb),
     logUci(_log)
 {
@@ -18,13 +18,6 @@ ThreadPool::ThreadPool(U32 _nbr, bool _tb, bool _log) :
     sprintf(message, "ThreadPool::constructeur : nbrThreads=%d ; useSyzygy=%d ; logUci=%d ", _nbr, _tb, _log);
     printlog(message);
 #endif
-
-    search = std::make_unique<Search[]>(MAX_THREADS);
-    for (size_t i = 0; i < MAX_THREADS; i++)
-    {
-        search[i].table  = nullptr;
-        search[i].td_index  = i;
-    }
 
     set_threads(_nbr);
 }
@@ -46,9 +39,21 @@ void ThreadPool::set_threads(U32 nbr)
         processorCount = MAX_THREADS;
 
     // Clamp the number of threads to the number of processors
-    nbrThreads     = std::min(nbr, processorCount);
-    nbrThreads     = std::max(nbrThreads, 1U);
-    nbrThreads     = std::min(nbrThreads, MAX_THREADS);
+    U32 newNbr = std::min(nbr, processorCount);
+    newNbr     = std::max(newNbr, 1U);
+    newNbr     = std::min(newNbr, MAX_THREADS);
+
+    // Réallouer uniquement si le nombre change
+    if (newNbr != nbrThreads)
+    {
+        nbrThreads = newNbr;
+        search = std::make_unique<Search[]>(nbrThreads);
+        for (size_t i = 0; i < nbrThreads; i++)
+        {
+            search[i].table    = nullptr;
+            search[i].td_index = i;
+        }
+    }
 
 #if defined DEBUG_LOG
     sprintf(message, "ThreadPool::set_threads : nbrThreads=%d ", nbrThreads);

@@ -195,7 +195,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
             }
             std::uniform_int_distribution<> distribution{0, int(movelist.size() - 1)};
             const int index = distribution(generator);
-            search->make_move<C, true>(board, movelist.mlmoves[index].move);
+            search->make_move<C, false>(board, movelist.mlmoves[index].move);
 
             // Prevent the last ply being checkmate/stalemate
             if (++current_ply == MAX_RANDOM_PLIES)
@@ -225,6 +225,9 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
         // Evaluation de la position, en fin des MAX_RANDOM_PLIES moves
         // Si elle est trop déséquilibrée, on passe à une nouvelle partie
+
+        // Initialisation NNUE une seule fois par partie (au lieu de à chaque data_search)
+        search->nnue.start_search(board);
 
         move  = Move::MOVE_NONE;
         score = -INFINITE;
@@ -284,6 +287,10 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
                 }
                 break;
             }
+
+            // Rebase le stack NNUE avant chaque recherche pour éviter l'overflow
+            // (head_idx monte de 1 à chaque make_move de la boucle de jeu)
+            search->nnue.rebase(board);
 
             if (board.turn() == WHITE)
                 data_search<WHITE>(board, timer, *search, move, score);
@@ -414,7 +421,8 @@ void DataGen::data_search(Board& board, Timer& timer, Search& search,
     // iterative deepening
     //==================================================
 
-    search.nnue.start_search(board);
+    // start_search() est appelé une seule fois par partie, dans genfens()
+    // L'accumulateur NNUE est maintenu incrémentalement par les make_move de la boucle de jeu.
 
     std::array<SearchInfo, STACK_SIZE> _info{};
     SearchInfo* si  = &(_info[STACK_OFFSET]);

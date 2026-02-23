@@ -148,6 +148,7 @@ public:
     inline Accumulator& get_accumulator()             { return stack[head_idx]; }
 
     void start_search(const Board& board);
+    void rebase(const Board& board);
     void push();
     void pop();
     void init_accumulator(Accumulator &acc);

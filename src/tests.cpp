@@ -4,6 +4,7 @@
 #include <chrono>
 #include <iomanip>      // std::setw
 #include <filesystem>
+#include <memory>
 
 #include "defines.h"
 #include "Board.h"
@@ -395,11 +396,11 @@ void Board::test_value(const std::string& fen )
     MoveList ml;
 
     Accumulator acc;
-    Search search;
-    search.nnue.start_search(*this);
-    search.nnue.refresh_accumulator<WHITE>(*this, acc);
-    search.nnue.refresh_accumulator<BLACK>(*this, acc);
-    int eval = search.do_evaluate(*this, acc);
+    auto search = std::make_unique<Search>();
+    search->nnue.start_search(*this);
+    search->nnue.refresh_accumulator<WHITE>(*this, acc);
+    search->nnue.refresh_accumulator<BLACK>(*this, acc);
+    int eval = search->do_evaluate(*this, acc);
 
     printf("side = %s : evaluation = %d \n\n", side_name[side_to_move].c_str(), eval);
     BB::PrintBB(get_status().checkers, "checkers");

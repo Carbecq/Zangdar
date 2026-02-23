@@ -65,6 +65,33 @@ void NNUE::start_search(const Board& board)
 }
 
 //====================================================
+//! \brief  Rebase le stack NNUE : copie l'accumulateur courant
+//!         en position 0 et remet head_idx à 0.
+//!         Réinitialise les finny tables (elles référencent
+//!         des positions de stack qui ne sont plus valides).
+//!         Utilisé dans DataGen pour éviter l'overflow du stack
+//!         quand start_search() n'est appelé qu'une fois par partie.
+//----------------------------------------------------
+void NNUE::rebase(const Board& board)
+{
+    if (head_idx > 0)
+    {
+        // Assurer que l'accumulateur courant est à jour
+        Accumulator& current = stack[head_idx];
+        lazy_updates(board, current);
+
+        stack[0] = current;
+        head_idx = 0;
+    }
+
+    // Réinitialiser les finny tables car elles peuvent contenir
+    // des bitboards obsolètes après le rebase
+    for (int i = 0; i < 2; i++)
+        for (int j = 0; j < KING_BUCKETS_COUNT; j++)
+            finny[i][j].init();
+}
+
+//====================================================
 //! \brief  Ajoute 1 nouvel accumulateur
 //----------------------------------------------------
 void NNUE::push()
