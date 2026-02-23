@@ -149,7 +149,8 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
     // chaque thread a sa propre table, de façon à éviter
     // qu'un thread efface la TT pendant qu'un autre est en pleine recherche.
-    std::unique_ptr<TranspositionTable> table_ptr = std::make_unique<TranspositionTable>(HASH_SIZE);
+    // TT réduite (4 MB vs 128 MB) : suffisant pour 5000 nodes, meilleure localité cache
+    std::unique_ptr<TranspositionTable> table_ptr = std::make_unique<TranspositionTable>(DATAGEN_HASH_SIZE);
     search->table = table_ptr.get();
 
     MoveList movelist;

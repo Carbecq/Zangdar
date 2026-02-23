@@ -40,6 +40,10 @@ private:
     constexpr static int HARD_NODE_LIMIT  = 5'000'000;
     constexpr static int SOFT_NODE_LIMIT  =     5'000;
 
+    // TT réduite pour datagen : 4 MB suffit pour des recherches de 5000 nodes
+    // (vs 128 MB en jeu normal). Meilleure localité cache, moins de RAM.
+    constexpr static int DATAGEN_HASH_SIZE = 4;
+
     constexpr static std::string COLOR_WIN[N_COLORS] = {"1.0", "0.0"};
     constexpr static std::string COLOR_DRAW = "0.5";
 };
