@@ -31,7 +31,7 @@ void paramsToSpsa();
 std::string paramsToUci();
 void paramsToJSON();
 
-#if defined USE_TUNIng
+#if defined USE_TUNING
 #define PARAM(name, value, min, max, step) inline TunableParam name(#name, value, min, max, step)
 #else
 #define PARAM(name, value, min, max, step) constexpr int name = value

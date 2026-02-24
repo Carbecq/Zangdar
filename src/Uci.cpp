@@ -92,7 +92,7 @@ void Uci::run()
             std::cout << "option name SyzygyPath type string default " << "<empty>" << std::endl;
             std::cout << "option name MoveOverhead type spin default " << MOVE_OVERHEAD << " min 0 max 10000" << std::endl;
 
-#if defined USE_TUNIng
+#if defined USE_TUNING
             std::cout << Tunable::paramsToUci();
 #endif
 
@@ -553,7 +553,7 @@ setoption name <id> [value <x>]
         //------------------------------------------------------------
         // Tuning
         //------------------------------------------------------------
-#if defined USE_TUNIng
+#if defined USE_TUNING
         else
         {
             int param;
