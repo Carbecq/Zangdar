@@ -24,7 +24,7 @@ HOME_STR = "./"
 DEFINES += HOME='\\"$${HOME_STR}\\"'
 
 #------------------------------------------------------
-#DEFINES += USE_TUNING
+DEFINES += USE_TUNING
 #DEFINES += USE_PROFILING
 #DEFINES += USE_DATAGEN
 

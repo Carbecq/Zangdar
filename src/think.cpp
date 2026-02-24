@@ -122,11 +122,11 @@ int Search::aspiration_window(Board& board, Timer& timer, SearchInfo* si)
     int depth  = iter_depth;
     int score  = iter_score;
 
-    const int initialWindow = AspirationWindowsInitial;
-    int delta = AspirationWindowsDelta;
+    const int initialWindow = Tunable::AspirationWindowsInitial;
+    int delta = Tunable::AspirationWindowsDelta;
 
     // After a few depths use a previous result to form the window
-    if (depth >= AspirationWindowsDepth)
+    if (depth >= Tunable::AspirationWindowsDepth)
     {
         alpha = std::max(score - initialWindow, -INFINITE);
         beta  = std::min(score + initialWindow, INFINITE);
@@ -162,7 +162,7 @@ int Search::aspiration_window(Board& board, Timer& timer, SearchInfo* si)
             return score;
         }
 
-        delta += delta * AspirationWindowsExpand / 10000;
+        delta += delta * Tunable::AspirationWindowsExpand / 10000;
     }
 
     return score;

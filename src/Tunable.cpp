@@ -69,7 +69,7 @@ std::string paramsToUci()
 void paramsToJSON()
 {
     std::ofstream json;
-    json.open("config.json");
+    json.open("spsa_params.json");
 
     json << "{\n";
 
@@ -93,5 +93,31 @@ void paramsToJSON()
     json.close();
 }
 
+//==================================================
+//  Ecriture des paramètres au format SPSA
+//  Format OpenBench : name, int, value, min, max, c_end, r_end
+//--------------------------------------------------
+std::string paramsToSpsa()
+{
+    std::ostringstream ss;
+
+    for (auto param : params)
+    {
+        // c_end : perturbation size, typiquement step ou (max-min)/20
+        double c_end = std::max(static_cast<double>(param->step), (param->max - param->min) / 20.0);
+        // r_end : learning rate
+        double r_end = 0.002;
+
+        ss << param->name
+           << ", " << "int"
+           << ", " << double(param->value)
+           << ", " << double(param->min)
+           << ", " << double(param->max)
+           << ", " << c_end
+           << ", " << r_end
+           << "\n";
+    }
+
+    return ss.str();}
 
 } // namespace Tunable

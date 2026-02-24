@@ -65,7 +65,7 @@ DEFS += -DSYZYGY=$(SYZYGY)
 #---------------------------------------------------
 #  Tuning
 #---------------------------------------------------
-#DEFS += -DUSE_TUNING
+DEFS += -DUSE_TUNING
 
 #---------------------------------------------------
 #  Profiling
@@ -81,7 +81,6 @@ DEFS += -DSYZYGY=$(SYZYGY)
 #  NNUE
 #---------------------------------------------------
 CFLAGS_NNUE = -DNETWORK=$(NETWORK)
-SIMD        = -DUSE_SIMD
 
 #---------------------------------------------------------------------
 #   Architecture
@@ -94,6 +93,25 @@ CFLAGS_ARCH =
 ZANGDAR     = Zangdar
 
 DEFAULT_EXE = $(ZANGDAR)
+
+# Détection du CPU local
+CPU_MODEL := $(shell cat /proc/cpuinfo 2>/dev/null | grep -m1 'model name' | sed 's/.*: //;s/(R)//g;s/(TM)//g;s/CPU //;s/ [0-9]*-Core.*//;s/Processor//;s/  */ /g;s/ *$$//;s/ /-/g;s/[^a-zA-Z0-9_-]//g')
+ifeq ($(CPU_MODEL),)
+    CPU_MODEL := unknown
+endif
+
+# Détection des capacités CPU
+HAS_AVX2   := $(shell grep -qm1 'avx2'    /proc/cpuinfo 2>/dev/null && echo yes)
+HAS_AVX512 := $(shell grep -qm1 'avx512f' /proc/cpuinfo 2>/dev/null && echo yes)
+HAS_BMI2   := $(shell grep -qm1 'bmi2'    /proc/cpuinfo 2>/dev/null && echo yes)
+
+# SIMD activé si au moins AVX2
+SIMD =
+ifeq ($(HAS_AVX512), yes)
+    SIMD = -DUSE_SIMD
+else ifeq ($(HAS_AVX2), yes)
+    SIMD = -DUSE_SIMD
+endif
 
 ifeq ($(ARCH), avx2)
     DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
@@ -119,23 +137,35 @@ else ifeq ($(ARCH), bmi2)
     CFLAGS_ARCH += -DUSE_PEXT $(SIMD)
 
 else ifeq ($(ARCH), native)
-    DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-5950X
+    DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(CPU_MODEL)
     CFLAGS_ARCH += -march=native -mtune=native
-    CFLAGS_ARCH += -DUSE_PEXT $(SIMD)
+    ifeq ($(HAS_BMI2), yes)
+        CFLAGS_ARCH += -DUSE_PEXT
+    endif
+    CFLAGS_ARCH += $(SIMD)
 
 else
     ARCH = native
-    DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-5950X
+    DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(CPU_MODEL)
     CFLAGS_ARCH += -march=native -mtune=native
-    CFLAGS_ARCH += -DUSE_PEXT $(SIMD)
+    ifeq ($(HAS_BMI2), yes)
+        CFLAGS_ARCH += -DUSE_PEXT
+    endif
+    CFLAGS_ARCH += $(SIMD)
 
 endif
 
-$(info Version = $(VERSION))
-$(info CXX     = $(CXX))
-$(info ARCH    = $(ARCH))
-$(info OS      = $(OS))
-$(info Network = $(NETWORK))
+$(info Version  = $(VERSION))
+$(info CXX      = $(CXX))
+$(info ARCH     = $(ARCH))
+$(info CPU      = $(CPU_MODEL))
+$(info AVX2     = $(HAS_AVX2))
+$(info AVX512   = $(HAS_AVX512))
+$(info BMI2     = $(HAS_BMI2))
+$(info SIMD     = $(if $(SIMD),yes,no))
+$(info PEXT     = $(HAS_BMI2))
+$(info OS       = $(OS))
+$(info Network  = $(NETWORK))
 
 ### Executable name
 ifeq ($(target_windows),yes)

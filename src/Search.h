@@ -71,7 +71,6 @@ private:
     inline const Accumulator& get_accumulator() const { return nnue.get_accumulator(); }
     inline       Accumulator& get_accumulator()       { return nnue.get_accumulator(); }
 
-private:
     template <Color C> void iterative_deepening(Board& board, Timer& timer, SearchInfo* si);
     template <Color C> int  alpha_beta(Board& board, Timer& timer, int alpha, int beta, int depth, bool cut_node, SearchInfo* si);
     template <Color C> int  quiescence(Board& board, Timer& timer, int alpha, int beta, SearchInfo* si);
@@ -79,11 +78,7 @@ private:
     void show_uci_result(I64 elapsed, const PVariation &pv) const;
     void show_uci_best() const;
     void update_pv(SearchInfo* si, const MOVE move) const;
-
-    static constexpr int AspirationWindowsDepth    = 6;
-    static constexpr int AspirationWindowsInitial  = 12;
-    static constexpr int AspirationWindowsDelta    = 16;
-    static constexpr int AspirationWindowsExpand   = 6667;
+    void init_reductions();
 
     static constexpr int LateMovePruningDepth = 7;
     static constexpr int LateMovePruningCount[2][8] = {
@@ -92,8 +87,6 @@ private:
     };
 
     int Reductions[2][32][32];
-
-
 
 }__attribute__((aligned(64)));
 

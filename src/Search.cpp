@@ -17,11 +17,20 @@ Search::Search()
     printlog(message);
 #endif
 
-    // Initializes the late move reduction array
+       init_reductions();
+}
+
+//=============================================
+//! \brief  Initialise la table de réduction LMR
+//---------------------------------------------
+void Search::init_reductions()
+{
     for (int d = 1; d < 32; ++d)
         for (int m = 1; m < 32; ++m)
-            Reductions[0][d][m] = 0.00 + log(d) * log(m) / 3.25, // capture
-                Reductions[1][d][m] = 1.75 + log(d) * log(m) / 2.25; // quiet
+        {
+            Reductions[0][d][m] = Tunable::LMR_CaptureBase / 100.0 + log(d) * log(m) / (Tunable::LMR_CaptureDivisor / 100.0);
+            Reductions[1][d][m] = Tunable::LMR_QuietBase   / 100.0 + log(d) * log(m) / (Tunable::LMR_QuietDivisor   / 100.0);
+        }
 }
 
 //=============================================

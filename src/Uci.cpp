@@ -262,6 +262,11 @@ void Uci::run()
             Tunable::paramsToJSON();
         }
 
+        else if (token == "spsa")
+        {
+            std::cout << Tunable::paramsToSpsa();
+        }
+
         else if (token == "yyy")
         {
             std::string syzygy_path(SYZYGY);
