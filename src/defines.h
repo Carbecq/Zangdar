@@ -48,7 +48,7 @@ static constexpr int MAX_HASH_SIZE  = 1024;
 
 static constexpr int PAWN_HASH_SIZE = 16384;
 
-static constexpr U32 MAX_THREADS    = 32;
+static constexpr U32 MAX_THREADS    = 256;  // borne de sécurité
 
 static constexpr int VALUE_DRAW     = 0;
 static constexpr int MATE           = 31000;

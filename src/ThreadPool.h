@@ -33,7 +33,7 @@ public:
     U32  get_nbrThreads() const { return nbrThreads; }
     bool get_useSyzygy() const { return useSyzygy; }
 
-    std::array<ThreadData, MAX_THREADS> threadData;
+    std::vector<ThreadData> threadData;
 
 private:
     U32     nbrThreads;

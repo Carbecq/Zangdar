@@ -3,7 +3,9 @@
 
 class ThreadData;
 
+#include <atomic>
 #include <cstring>
+#include <memory>
 #include <thread>
 #include "defines.h"
 #include "types.h"
@@ -21,9 +23,13 @@ class ThreadData
 {
 public:
     ThreadData();
+    ThreadData(ThreadData&& other) noexcept;
+    ThreadData(const ThreadData&) = delete;
+    ThreadData& operator=(const ThreadData&) = delete;
+    ThreadData& operator=(ThreadData&&) = delete;
 
-    std::thread thread;
-    Search*     search;     // pointeur sur la classe de recherche
+    std::thread             thread;
+    std::unique_ptr<Search> search;
     U64         nodes;
     U64         tbhits;
     History     history;
@@ -32,7 +38,7 @@ public:
     int         depth;
     int         seldepth;
     int         score;
-    bool        stopped;
+    std::atomic<bool> stopped{false};
 
     MOVE        best_move;
     int         best_score;

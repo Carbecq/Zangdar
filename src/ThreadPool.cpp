@@ -9,7 +9,7 @@
 //! \brief  Constructeur avec arguments
 //-------------------------------------------------
 ThreadPool::ThreadPool(U32 _nbr, bool _tb, bool _log) :
-    nbrThreads(_nbr),
+    nbrThreads(0),
     useSyzygy(_tb),
     logUci(_log)
 {
@@ -18,12 +18,6 @@ ThreadPool::ThreadPool(U32 _nbr, bool _tb, bool _log) :
     sprintf(message, "ThreadPool::constructeur : nbrThreads=%d ; useSyzygy=%d ; logUci=%d ", _nbr, _tb, _log);
     printlog(message);
 #endif
-
-    for (size_t i = 0; i < MAX_THREADS; i++)
-    {
-        threadData[i].search = nullptr;
-        threadData[i].index  = i;
-    }
 
     set_threads(_nbr);
 }
@@ -45,9 +39,24 @@ void ThreadPool::set_threads(U32 nbr)
         processorCount = MAX_THREADS;
 
     // Clamp the number of threads to the number of processors
-    nbrThreads     = std::min(nbr, processorCount);
-    nbrThreads     = std::max(nbrThreads, 1U);
-    nbrThreads     = std::min(nbrThreads, MAX_THREADS);
+    U32 newNbr     = std::min(nbr, processorCount);
+    newNbr         = std::max(newNbr, 1U);
+    newNbr         = std::min(newNbr, MAX_THREADS);
+
+    if (newNbr == nbrThreads)
+        return;
+
+    // Arrêter toute recherche en cours avant de redimensionner
+    if (!threadData.empty())
+        stop();
+
+    size_t old_size = threadData.size();
+    nbrThreads = newNbr;
+    threadData.resize(nbrThreads);
+
+    // Initialiser l'index des nouveaux éléments
+    for (size_t i = old_size; i < nbrThreads; i++)
+        threadData[i].index = i;
 
 #if defined DEBUG_LOG
     sprintf(message, "ThreadPool::set_threads : nbrThreads=%d ", nbrThreads);
@@ -85,6 +94,9 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
     //  an opening is selected by the gui, from the book, and the engines play from there
     //  that's how engine testing works, be it by devs, rating lists, or tournaments
 
+    // Attente des threads précédentes
+    wait(0);
+
     // Probe Syzygy TableBases
     if (useSyzygy && board.probe_root(best) == true)
     {
@@ -103,15 +115,14 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
             threadData[i].seldepth = 0;
             threadData[i].score    = -INFINITE;
             threadData[i].nodes    = 0;
-            threadData[i].stopped  = false;
+            threadData[i].stopped.store(false, std::memory_order_relaxed);
             threadData[i].tbhits   = 0;
 
             threadData[i].best_depth = 0;
             threadData[i].best_move  = Move::MOVE_NONE;
             threadData[i].best_score = -INFINITE;
 
-            delete threadData[i].search;
-            threadData[i].search = new Search();
+            threadData[i].search = std::make_unique<Search>();
         }
 
         // Il faut mettre le lancement des threads dans une boucle séparée
@@ -120,9 +131,9 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
         for (size_t i = 0; i < nbrThreads; i++)
         {
             if (board.side_to_move == WHITE)
-                threadData[i].thread = std::thread(&Search::think<WHITE>, threadData[i].search, board, timer, i);
+                threadData[i].thread = std::thread(&Search::think<WHITE>, threadData[i].search.get(), board, timer, i);
             else
-                threadData[i].thread = std::thread(&Search::think<BLACK>, threadData[i].search, board, timer, i);
+                threadData[i].thread = std::thread(&Search::think<BLACK>, threadData[i].search.get(), board, timer, i);
         }
     }
 }
@@ -137,7 +148,7 @@ void ThreadPool::main_thread_stopped()
     // envoie à toutes les autres threads
     // le signal d'arrêter
     for (size_t i = 1; i < nbrThreads; i++)
-        threadData[i].stopped = true;
+        threadData[i].stopped.store(true, std::memory_order_relaxed);
 }
 
 //=================================================
@@ -159,12 +170,12 @@ void ThreadPool::wait(size_t start)
 //-------------------------------------------------
 void ThreadPool::stop()
 {
-    // Message d'arrêt à la thread principale
-    threadData[0].stopped = true;
+    // Signal d'arrêt à toutes les threads
+    for (size_t i = 0; i < nbrThreads; i++)
+        threadData[i].stopped.store(true, std::memory_order_relaxed);
 
-    // On bloque ici en attendant la thread principale
-    if (threadData[0].thread.joinable())
-        threadData[0].thread.join();
+    // Attente de toutes les threads
+    wait(0);
 }
 
 //=================================================
@@ -175,10 +186,7 @@ void ThreadPool::quit()
     stop();
 
     for (size_t i = 0; i < nbrThreads; i++)
-    {
-        delete threadData[i].search;
-        threadData[i].search = nullptr;
-    }
+        threadData[i].search.reset();
 }
 
 //=================================================
