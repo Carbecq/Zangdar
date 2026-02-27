@@ -9,14 +9,19 @@ namespace Tunable
 //==================================================
 //! \brief  Constructeur d'un paramètre tunable
 //--------------------------------------------------
-TunableParam::TunableParam(const std::string& _name, int _value, int _min, int _max, int _step)
+TunableParam::TunableParam(const std::string& _name, int _value, int _min, int _max)
     : name(_name),
       value(_value),
       min(_min),
-      max(_max),
-      step(_step)
+      max(_max)
 {
-    if (value < min || value > max)
+    step = std::max(1, (_max - _min)/20);
+
+    if (    (_value < _min)
+         || (_value > _max)
+         || (_min   >= _max)
+         || (_min + step > _max)
+         || (step < 0.5) )
     {
         std::cerr << "info string Value out of range for parameter " << name << std::endl;
         return;
