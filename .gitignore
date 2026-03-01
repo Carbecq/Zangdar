@@ -3,12 +3,9 @@ src/*.o
 src/*/*.o
 Zangdar.pro.user*
 doc/
-test/
-ignore_src/
 .vs/
 x64/
 gen/
-WeatherFactory/
 clang.txt
 
 

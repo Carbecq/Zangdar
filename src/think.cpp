@@ -26,6 +26,13 @@ void Search::think(Board board, Timer timer, size_t m_index)
 
     nnue.start_search(board);
 
+    // Réinitialise la table LMR (nécessaire car les TunableParam
+    // peuvent ne pas être initialisés lors de la construction globale,
+    // et aussi pour prendre en compte les changements via setoption)
+#if defined USE_TUNING
+    init_reductions();
+#endif
+
     // Grace au décalage, la position root peut regarder en arrière
     /*
     0   4                                     131 135
@@ -475,7 +482,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 // Coupure si cette dernière recherche bat betaCut
                 if (pbScore >= betaCut)
                 {
-                    table->store(board.get_key(), pbMove, pbScore, static_eval, BOUND_LOWER, depth-3, si->ply, false);
+                    table->store(board.get_key(), pbMove, pbScore, static_eval, BOUND_LOWER, depth-(Tunable::ProbcutReduction-1), si->ply, false);
                     return pbScore;
                 }
             }
@@ -566,12 +573,12 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         // Prune moves with a low history score moves at near-leaf nodes
         //-------------------------------------------------
         if (   !isRoot
-               &&  isQuiet
-               &&  best_score > -TBWIN_IN_X
-               &&  depth <= (Tunable::HistoryPruningDepth - improving)
-               && hist < -Tunable::HistoryPruningLimit * depth)
+            && isQuiet
+            && best_score > -TBWIN_IN_X
+            && depth <= (Tunable::HistoryPruningDepth - improving)
+            && hist  < -(Tunable::HistoryPruningScale * depth))
         {
-            continue;
+             continue;
         }
 
         //-------------------------------------------------

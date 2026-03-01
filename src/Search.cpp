@@ -25,6 +25,9 @@ Search::Search()
 //---------------------------------------------
 void Search::init_reductions()
 {
+    Reductions[0][0][0] = 0;
+    Reductions[1][0][0] = 0;
+
     for (int d = 1; d < 32; ++d)
         for (int m = 1; m < 32; ++m)
         {

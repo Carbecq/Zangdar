@@ -130,12 +130,12 @@ private:
 
     inline int stat_bonus(int depth)
     {
-        return std::min<int>(Tunable::HistoryBonusMax, depth*Tunable::HistoryBonusMargin - Tunable::HistoryBonusBias);
+        return std::min<int>(Tunable::HistoryBonusMax, depth*Tunable::HistoryBonusScale - Tunable::HistoryBonusOffset);
     }
 
     inline int stat_malus(int depth)
     {
-        return -stat_bonus(depth);
+        return -std::min<int>(Tunable::HistoryMalusMax, depth*Tunable::HistoryMalusScale - Tunable::HistoryMalusOffset);
     }
 
     [[nodiscard]] inline int get_index(const KEY pawnkey) const {

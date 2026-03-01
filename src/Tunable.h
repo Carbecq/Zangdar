@@ -36,15 +36,7 @@ void paramsToJSON();
 #define PARAM(name, value, min, max) constexpr int name = value
 #endif
 
-// Quiescence
-PARAM(DeltaPruningBias,    300, 100, 400);
-
-// Aspiration Window
-PARAM(AspirationWindowsDepth,    6, 3, 10);
-PARAM(AspirationWindowsInitial, 12, 5, 30);
-PARAM(AspirationWindowsDelta,   16, 8, 40);
-PARAM(AspirationWindowsExpand, 6667, 4000, 9000);
-
+//----------------------------------------------------- LMR
 // LMR Table (valeurs x100)
 PARAM(LMR_CaptureBase,      0,   0, 150);
 PARAM(LMR_CaptureDivisor, 325, 200, 500);
@@ -54,17 +46,26 @@ PARAM(LMR_QuietDivisor,   225, 150, 400);
 //  LATE MOVE REDUCTION
 PARAM(LMR_HistReductionDivisor, 5000, 3000, 8000);
 PARAM(LMR_DeeperMargin, 43, 20, 60);
-PARAM(LMR_DeeperScale, 2, 0, 10);
+PARAM(LMR_DeeperScale, 2, 0, 5);
 PARAM(LMR_ShallowerMargin, 11, 0, 20);
 
-//  RAZORING
-PARAM(RazoringDepth,    3, 1, 5);
-PARAM(RazoringMargin, 200, 100, 300);
+//----------------------------------------------------- Pruning
+// Futility Pruning.
+PARAM(FPMargin,                  95, 50, 150);
+PARAM(FPDepth,                    8, 5, 12);
+PARAM(FPHistoryLimit,         12000, 8000, 16000);
+PARAM(FPHistoryLimitImproving, 6000, 2000, 10000);
 
-//  STATIC NULL MOVE PRUNING ou aussi REVERSE FUTILITY PRUNING
-PARAM(SNMPDepth,      6, 2, 10);
-PARAM(SNMPMargin,    70, 50, 100);
+// Static Exchange Evaluation Pruning
+PARAM(SEEPruningDepth,  9, 5, 12);
+PARAM(SEEQuietMargin, -64, -128, 0);
+PARAM(SEENoisyMargin, -19, -50, 50);
 
+// History Pruning
+PARAM(HistoryPruningDepth,     3,   1,    6);
+PARAM(HistoryPruningScale,  4500, 2000, 6000);
+
+//------------------------------------------------------ NMP
 //  NULL MOVE PRUNING
 PARAM(NMPDepth,     3, 1, 5);
 PARAM(NMPReduction, 3, 1, 6);
@@ -77,27 +78,50 @@ PARAM(ProbCutDepth,     5, 1, 8);
 PARAM(ProbCutMargin,  100, 50, 200);
 PARAM(ProbcutReduction, 4, 2, 6);
 
-// Futility Pruning.
-PARAM(FPMargin,                  95, 50, 150);
-PARAM(FPDepth,                    8, 5, 12);
-PARAM(FPHistoryLimit,         12000, 8000, 16000);
-PARAM(FPHistoryLimitImproving, 6000, 2000, 10000);
+//  RAZORING
+PARAM(RazoringDepth,    3, 1, 5);
+PARAM(RazoringMargin, 200, 100, 300);
 
-PARAM(HistoryPruningDepth,     3, 1, 5);
-PARAM(HistoryPruningLimit,  4500, 0, 8000);
+//  STATIC NULL MOVE PRUNING ou aussi REVERSE FUTILITY PRUNING
+PARAM(SNMPDepth,      6, 2, 10);
+PARAM(SNMPMargin,    70, 50, 100);
 
-// Static Exchange Evaluation Pruning
-PARAM(SEEPruningDepth,  9, 5, 12);
-PARAM(SEEQuietMargin, -64, -128, 0);
-PARAM(SEENoisyMargin, -19, -50, 50);
+//-------------------------------------------- Autres
+
+// Aspiration Window
+PARAM(AspirationWindowsDepth,    6, 3, 10);
+PARAM(AspirationWindowsInitial, 12, 5, 30);
+PARAM(AspirationWindowsDelta,   16, 8, 40);
+PARAM(AspirationWindowsExpand, 6667, 4000, 9000);
+
+// Quiescence
+PARAM(DeltaPruningBias,    300, 100, 400);
 
 //  SINGULAR EXTENSION
 PARAM(SEDepth, 8, 5, 10);
 
 // History
-PARAM(HistoryBonusMargin, 364,  128,  512);
-PARAM(HistoryBonusBias,   -66, -128,  128);
-PARAM(HistoryBonusMax,   1882, 1024, 4096);
+PARAM(HistoryBonusScale,    364,  128,  512);
+PARAM(HistoryBonusOffset,   -66, -128,  128);
+PARAM(HistoryBonusMax,     1882, 1024, 4096);
+
+PARAM(HistoryMalusScale,    364,  128,  512);
+PARAM(HistoryMalusOffset,   -66, -128,  128);
+PARAM(HistoryMalusMax,     1882, 1024, 4096);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 } // namespace Tunable
