@@ -217,6 +217,7 @@ DISTFILES += \
     Makefile \
     README.md \
     VERSION.txt \
+    scripts/spsa_tune.py \
     src/pyrrhic/LICENSE \
     src/pyrrhic/README.md
 

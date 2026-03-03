@@ -68,17 +68,7 @@ public:
 private:
     Limits limits;
 
-    // peut-on tuner les valeurs du Timer ??
-    // But be sure to tune especially time management parameters only at longer time controls
-
-    static constexpr int softTimeScale  = 57;
-    static constexpr int hardTimeScale  = 62;
-    static constexpr int baseTimeScale  = 20;
-    static constexpr int incrementScale = 83;
-    static constexpr int nodeTMBase     = 145;
-    static constexpr int nodeTMScale    = 167;
-
-    static constexpr std::array<double, 7> stabilityValues = {
+     static constexpr std::array<double, 7> stabilityValues = {
         2.2, 1.6, 1.4, 1.1, 1, 0.95, 0.9
     };
 

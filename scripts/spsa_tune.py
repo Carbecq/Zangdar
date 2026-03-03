@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 SPSA Tuning Script for Zangdar using fastchess.
+Version 1.0
 
 Usage:
     python3 spsa_tune.py [options]
@@ -31,6 +32,8 @@ import time
 import csv
 from datetime import datetime, timedelta
 
+__version__ = "1.0"
+
 
 # ============================================================
 #  Groupes de paramètres
@@ -47,7 +50,7 @@ PARAM_GROUPS = {
         ],
     },
     "pruning": {
-        "desc": "Futility, SEE et History Pruning",
+        "desc": "Futility, Static Exchange Evaluation, History Pruning",
         "params": [
             "FPMargin", "FPDepth", "FPHistoryLimit", "FPHistoryLimitImproving",
             "SEEPruningDepth", "SEEQuietMargin", "SEENoisyMargin",
@@ -55,7 +58,7 @@ PARAM_GROUPS = {
         ],
     },
     "nmp": {
-        "desc": "NMP, ProbCut, Razoring, SNMP",
+        "desc": "Null Move Pruning, ProbCut, Razoring, Static Null Move Pruning",
         "params": [
             "NMPDepth", "NMPReduction", "NMPMargin", "NMPMax", "NMPDivisor",
             "ProbCutDepth", "ProbCutMargin", "ProbcutReduction",
@@ -63,15 +66,32 @@ PARAM_GROUPS = {
             "SNMPDepth", "SNMPMargin",
         ],
     },
+    "history": {
+        "desc": "History Bonus & Malus",
+        "params": [
+        "HistoryBonusScale", "HistoryBonusOffset", "HistoryBonusMax",
+        "HistoryMalusScale", "HistoryMalusOffset", "HistoryMalusMax",
+        ],
+    },
     "misc": {
-        "desc": "Aspiration, Delta pruning, SE, History bonus",
+        "desc": "Aspiration, Delta pruning, Singular Extension",
         "params": [
             "AspirationWindowsDepth", "AspirationWindowsInitial",
             "AspirationWindowsDelta", "AspirationWindowsExpand",
             "DeltaPruningBias",
             "SEDepth",
-            "HistoryBonusScale", "HistoryBonusOffset", "HistoryBonusMax",
-            "HistoryMalusScale", "HistoryMalusOffset", "HistoryMalusMax",
+        ],
+    },
+    "timer-1": {
+        "desc": "Time Management, critique",
+        "params": [
+            "softTimeScale", "hardTimeScale", "baseTimeScale",
+        ],
+    },
+    "timer-2": {
+        "desc": "Time Management, ponderation",
+        "params": [
+            "incrementScale", "nodeTMBase", "nodeTMScale",
         ],
     },
     "all": {
@@ -119,6 +139,37 @@ def load_params(config_file):
             # Premier pas cible : a0 * range_scale / (1+A)^alpha ≈ 2% de la plage
             "range_scale": param_range / 100.0,
         }
+    # Validation des paramètres
+    warnings = []
+    for name, p in params.items():
+        val, vmin, vmax, step = p["value"], p["min"], p["max"], p["step"]
+        param_range = vmax - vmin
+
+        # Valeur hors bornes
+        if val < vmin or val > vmax:
+            warnings.append(f"  {name}: value {val:.0f} hors bornes [{vmin:.0f}, {vmax:.0f}]")
+
+        # Grille trop grossière (moins de 5 valeurs possibles)
+        if step > 0 and param_range / step < 5:
+            n_vals = int(param_range / step) + 1
+            warnings.append(f"  {name}: grille trop grossière "
+                            f"({n_vals} valeurs possibles, range={param_range:.0f}, step={step:.0f})")
+
+        # Valeur à moins d'un step d'un bord (perturbation asymétrique)
+        if step > 0:
+            if 0.01 < val - vmin < step:
+                warnings.append(f"  {name}: value {val:.0f} à moins d'un step du min "
+                                f"(distance={val-vmin:.0f}, step={step:.0f})")
+            if 0.01 < vmax - val < step:
+                warnings.append(f"  {name}: value {val:.0f} à moins d'un step du max "
+                                f"(distance={vmax-val:.0f}, step={step:.0f})")
+
+    if warnings:
+        print(f"\n  ATTENTION - problèmes de configuration:")
+        for w in warnings:
+            print(w)
+        print()
+
     return params
 
 
@@ -471,6 +522,7 @@ def main():
         description="SPSA Tuner pour Zangdar avec fastchess",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("--engine",
         default="./Zangdar",
         help="Chemin vers l'exécutable du moteur (compilé avec -DUSE_TUNING)")
@@ -525,6 +577,8 @@ def main():
     if args.analyze:
         run_analyze()
         sys.exit(0)
+
+    print(f"\n  SPSA Tuner pour Zangdar v{__version__}\n")
 
     # ----- Vérifications -----
     if not os.path.isfile(args.engine):
@@ -615,7 +669,7 @@ def main():
     total_games = args.iterations * args.games_per_iter
     print(f"""
 {'='*60}
-  SPSA Tuner pour Zangdar
+  SPSA Tuner pour Zangdar v{__version__}
 {'='*60}
   Engine:       {args.engine}
   Config:       {args.config}

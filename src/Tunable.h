@@ -67,7 +67,7 @@ PARAM(HistoryPruningScale,  4500, 2000, 6000);
 
 //------------------------------------------------------ NMP
 //  NULL MOVE PRUNING
-PARAM(NMPDepth,     3, 1, 5);
+PARAM(NMPDepth,     3, 1, 6);
 PARAM(NMPReduction, 3, 1, 6);
 PARAM(NMPMargin,   32, 16, 48);
 PARAM(NMPMax,     384, 350, 450);
@@ -76,15 +76,39 @@ PARAM(NMPDivisor, 128, 64, 192);
 //  ProbCut
 PARAM(ProbCutDepth,     5, 1, 8);
 PARAM(ProbCutMargin,  100, 50, 200);
-PARAM(ProbcutReduction, 4, 2, 6);
+PARAM(ProbcutReduction, 4, 2, 7);
 
 //  RAZORING
-PARAM(RazoringDepth,    3, 1, 5);
+PARAM(RazoringDepth,    3, 1, 6);
 PARAM(RazoringMargin, 200, 100, 300);
 
 //  STATIC NULL MOVE PRUNING ou aussi REVERSE FUTILITY PRUNING
 PARAM(SNMPDepth,      6, 2, 10);
 PARAM(SNMPMargin,    70, 50, 100);
+
+//-------------------------------------------- Bonus de l'history
+// History
+PARAM(HistoryBonusScale,    364,  128,  512);
+PARAM(HistoryBonusOffset,   -66, -128,  128);
+PARAM(HistoryBonusMax,     1882, 1024, 4096);
+
+PARAM(HistoryMalusScale,    364,  128,  512);
+PARAM(HistoryMalusOffset,   -66, -128,  128);
+PARAM(HistoryMalusMax,     1882, 1024, 4096);
+
+//-------------------------------------------- Timer
+
+//   Peut-on tuner les valeurs du Timer ??
+//   But be sure to tune especially time management parameters only at longer time controls
+//   TC type 40/4 ou 10+0.1 minimum
+// Timer 1, valeurs les plus critiques : définissent l'allocation de base
+PARAM(softTimeScale  ,  57,  20,  80);      // valeur * 100
+PARAM(hardTimeScale  ,  62,  20,  80);      // valeur * 100
+PARAM(baseTimeScale  ,  20,  10,  40);      // valeur simple
+// Timer 2, pondération de l'incrément et du node TM
+PARAM(incrementScale ,  83,  40, 100);      // valeur * 100
+PARAM(nodeTMBase     , 145, 100, 200);      // valeur * 100
+PARAM(nodeTMScale    , 167, 100, 200);      // valeur * 100
 
 //-------------------------------------------- Autres
 
@@ -100,14 +124,6 @@ PARAM(DeltaPruningBias,    300, 100, 400);
 //  SINGULAR EXTENSION
 PARAM(SEDepth, 8, 5, 10);
 
-// History
-PARAM(HistoryBonusScale,    364,  128,  512);
-PARAM(HistoryBonusOffset,   -66, -128,  128);
-PARAM(HistoryBonusMax,     1882, 1024, 4096);
-
-PARAM(HistoryMalusScale,    364,  128,  512);
-PARAM(HistoryMalusOffset,   -66, -128,  128);
-PARAM(HistoryMalusMax,     1882, 1024, 4096);
 
 
 

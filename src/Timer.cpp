@@ -3,6 +3,7 @@
 #include <iostream>
 #include "Timer.h"
 #include "Move.h"
+#include "Tunable.h"
 
 //===========================================================
 //! \brief  Constructeur
@@ -115,28 +116,55 @@ void Timer::setup(Color color)
         // CCRL 40/15 : 40 moves in 15 minutes
         // Amateur    : 12 minutes with 8 second increments.
 
-        // partie : 40 coups en 15 minutes              : moves_to_go = 40 ; wtime=btime = 15*60000 ; winc=binc = 0
-        // partie en 5 minutes, incrément de 6 secondes : moves_to_go = 0  ; wtime=btime =  5*60000 ; winc=binc = 6 >> sudden death
+        //  CCRL 40/15 : 40 coups en 15 minutes, sans incrément
+        //  TC=40/15:00
+        //  go wtime 900000 btime 900000 movestogo 40
 
+        //  CCRL blitz : game in 2 minutes plus 1 second increment
+        //  tc=3:00+1
+        //  go wtime 181000 btime 181000 winc 1000 binc 1000
+
+        //  STC : partie en 10 secondes, incrément de 0.1 secondes
+        //  tc=10+0.1
+        //  go wtime 10100 btime 10100 winc 100 binc 100
+
+        //  LTC : partie en 1 minute, incrément de 0.6 secondes
+        //  tc=60+0.6
+        //  TC=1:00+0.6
+        //  go wtime 60600 btime 60600 winc 600 binc 600
+
+        //  VLTC : partie en 5 minutes, incrément de 3 secondes :
+        //  tc=5:00+3
+        //  go wtime 303000 btime 303000 winc 3000 binc 3000
+
+        // partie en 12 minutes, incrément de 8 secondes :
+        //  tc = 12:00+8
+        //  go wtime 728000 btime 728000 winc 8000 binc 8000
+
+        // CCRL 40/15
         if (mtg > 0)
         {
             // Cadence à nombre de coups imposé (ex: 40/15)
             // m_SoftBound : temps moyen par coup, pondéré par l'incrément
-            timeForThisDepth = softTimeScale / 100.0 * (static_cast<double>(time_remaining) / mtg + static_cast<double>(increment) * incrementScale / 100.0);
+            timeForThisDepth = Tunable::softTimeScale / 100.0 * (static_cast<double>(time_remaining) / mtg
+                             + static_cast<double>(increment) * Tunable::incrementScale / 100.0);
             // m_HardBound : au plus 4x le temps moyen par coup
-            timeForThisMove  = std::min(time_remaining * (hardTimeScale / 100.0), static_cast<double>(time_remaining) / mtg * 4.0);
+            timeForThisMove  = std::min(time_remaining * (Tunable::hardTimeScale / 100.0), static_cast<double>(time_remaining) / mtg * 4.0);
+
+            // Cap de sécurité : tenir compte de l'incrément
+            I64 safetyCap = static_cast<I64>(time_remaining * 0.80 + increment * 0.50);
+            timeForThisMove = std::min(timeForThisMove, std::min(safetyCap, time_remaining));
         }
         else
         {
             // Sudden death (formules Stormphrax)
             // m_SoftBound
-            timeForThisDepth = softTimeScale / 100.0 * (static_cast<double>(time_remaining) / baseTimeScale + static_cast<double>(increment) * incrementScale / 100.0);
+            timeForThisDepth = Tunable::softTimeScale / 100.0 * (static_cast<double>(time_remaining) / Tunable::baseTimeScale
+                             + static_cast<double>(increment) * Tunable::incrementScale / 100.0);
             // m_HardBound
-            timeForThisMove = time_remaining * (hardTimeScale / 100.0);
+            timeForThisMove = time_remaining * (Tunable::hardTimeScale / 100.0);
         }
 
-        // Cap de sécurité : ne jamais utiliser plus de 80% du temps restant
-        timeForThisMove  = std::min(timeForThisMove, static_cast<I64>(time_remaining * 0.80));
         timeForThisDepth = std::min(timeForThisDepth, timeForThisMove);
     }
 
@@ -224,7 +252,7 @@ bool Timer::finishOnThisDepth(int elapsed, int depth, MOVE best_move, U64 total_
 
         double bmNodes = (total_nodes > 0) ?
                     static_cast<double>(MoveNodeCounts[Move::fromdest(best_move)]) / static_cast<double>(total_nodes) : 0.0;
-        double scale = ((nodeTMBase / 100.0) - bmNodes) * (nodeTMScale / 100.0);
+        double scale = ((Tunable::nodeTMBase / 100.0) - bmNodes) * (Tunable::nodeTMScale / 100.0);
         scale *= stabilityValues[std::min(pv_stability, 6u)];
         return (elapsed > timeForThisDepth * scale);
     }
