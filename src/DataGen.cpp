@@ -124,7 +124,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
     file.open(str_file, std::ios::out);     //app = append ; out = write
     if (file.is_open() == false)
     {
-        std::cout << "file " << str_file << "not opened" << std::endl;
+        std::cout << "file " << str_file << " not opened" << std::endl;
         return;
     }
 
@@ -173,10 +173,8 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
         board.initialisation();
         board.set_fen(START_FEN, false);
-        search->table->update_age();
-        // history.reset() supprimé : évite un memset de ~32 MB par partie
-        // L'influence résiduelle sur le move ordering est négligeable
-        // pour des recherches de 5000 nodes sur des positions aléatoires.
+        search->table->clear();
+        search->history.reset();
 
         //====================================================
         //  Initalisation random de l'échiquier

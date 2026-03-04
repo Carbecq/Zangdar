@@ -9,7 +9,7 @@
 namespace {
 
 #include "incbin/incbin.h"
-INCBIN(networkData, NETWORK);
+INCBIN(networkData, EVALFILE);
 const Network *network = reinterpret_cast<const Network *>(gnetworkDataData);
 
 }

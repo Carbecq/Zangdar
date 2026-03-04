@@ -65,7 +65,7 @@ DEFS += -DSYZYGY=$(SYZYGY)
 #---------------------------------------------------
 #  Tuning
 #---------------------------------------------------
-DEFS += -DUSE_TUNING
+#DEFS += -DUSE_TUNING
 
 #---------------------------------------------------
 #  Profiling
@@ -75,12 +75,12 @@ DEFS += -DUSE_TUNING
 #---------------------------------------------------
 #  Datagen
 #---------------------------------------------------
-# DEFS += -DUSE_DATAGEN
+DEFS += -DUSE_DATAGEN
 
 #---------------------------------------------------
 #  NNUE
 #---------------------------------------------------
-CFLAGS_NNUE = -DNETWORK=$(NETWORK)
+CFLAGS_NNUE = -DEVALFILE=$(EVALFILE)
 
 #---------------------------------------------------------------------
 #   Architecture
@@ -165,7 +165,7 @@ $(info BMI2     = $(HAS_BMI2))
 $(info SIMD     = $(if $(SIMD),yes,no))
 $(info PEXT     = $(HAS_BMI2))
 $(info OS       = $(OS))
-$(info Network  = $(NETWORK))
+$(info Evalfile = $(EVALFILE))
 
 ### Executable name
 ifeq ($(target_windows),yes)
@@ -283,12 +283,21 @@ endif
 #	Dépendances
 #---------------------------------------------------------------------
 
+# Target pour OpenBench : compile directement vers $(EXE) sans renommage
+# OpenBench appelle : make -j EXE=<chemin> [EVALFILE=<réseau>] [CXX=<compilateur>]
+openbench: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL)
+openbench: LDFLAGS = $(LDFLAGS_REL) $(LDFLAGS_WIN) $(LDFLAGS_STA)
+openbench: $(EXE)
+	$(info Génération pour OpenBench : $(EXE))
+
 release: $(EXE)
 	mv $(EXE) $(EXEC)
 	$(info Génération en mode release : $(EXEC))
+
 prof: $(EXE)
 	mv $(EXE) $(EXEC)
 	$(info Génération en mode profile : $(EXEC))
+
 debug: $(EXE)
 	mv $(EXE) $(EXEC)
 	$(info Génération en mode debug : $(EXEC))

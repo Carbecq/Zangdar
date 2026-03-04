@@ -10,7 +10,7 @@ DEFINES += STATIC
 QMAKE_LFLAGS += -flto=auto
 
 #------------------------------------------------------
-DEFINES += NETWORK=\\\"/mnt/Datas/Echecs/Programmation/Zangdar/APP/networks/net_5.bin\\\"
+DEFINES += EVALFILE=\\\"/mnt/Datas/Echecs/Programmation/Zangdar/APP/networks/net_5.bin\\\"
 DEFINES += USE_SIMD
 DEFINES += SYZYGY=\\\"/mnt/Datas/Echecs/Syzygy\\\"
 DEFINES += VERSION=\\\"0.00.00\\\"
