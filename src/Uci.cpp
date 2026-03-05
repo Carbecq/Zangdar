@@ -961,7 +961,7 @@ void Uci::bench(int argCount, char* argValue[])
     std::cout << "===============================================" << std::endl;
     std::cout << "total nodes = " << total_nodes << std::endl;
     std::cout << "time        = " << std::fixed << std::setprecision(3) << static_cast<double>(total_time)/1000.0 << " s" << std::endl;
-    std::cout << "nps         = " << std::fixed << std::setprecision(3) << static_cast<double>(total_nodes)/1000.0/static_cast<double>(total_time) << " Mnode/s" << std::endl;
+    std::cout << "nps         = " << static_cast<U64>(1000.0 * total_nodes / (total_time + 1)) << std::endl;
     std::cout << "depth       = " << depth << std::endl;
     std::cout << "nbr threads = " << threadPool.get_nbrThreads() << std::endl;
     std::cout << "hash size   = " << transpositionTable.get_hash_size() << std::endl;
