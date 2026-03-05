@@ -75,7 +75,7 @@ DEFS += -DSYZYGY=$(SYZYGY)
 #---------------------------------------------------
 #  Datagen
 #---------------------------------------------------
-DEFS += -DUSE_DATAGEN
+#DEFS += -DUSE_DATAGEN
 
 #---------------------------------------------------
 #  NNUE
@@ -155,17 +155,20 @@ else
 
 endif
 
-$(info Version  = $(VERSION))
-$(info CXX      = $(CXX))
-$(info ARCH     = $(ARCH))
-$(info CPU      = $(CPU_MODEL))
-$(info AVX2     = $(HAS_AVX2))
-$(info AVX512   = $(HAS_AVX512))
-$(info BMI2     = $(HAS_BMI2))
-$(info SIMD     = $(if $(SIMD),yes,no))
-$(info PEXT     = $(HAS_BMI2))
-$(info OS       = $(OS))
-$(info Evalfile = $(EVALFILE))
+$(info Version   = $(VERSION))
+$(info CXX       = $(CXX))
+$(info ARCH      = $(ARCH))
+$(info CPU       = $(CPU_MODEL))
+$(info AVX2      = $(if $(HAS_AVX2),yes,no))
+$(info AVX512    = $(if $(HAS_AVX512),yes,no))
+$(info BMI2      = $(if $(HAS_BMI2),yes,no))
+$(info SIMD      = $(if $(SIMD),yes,no))
+$(info PEXT      = $(if $(HAS_BMI2),yes,no))
+$(info OS        = $(OS))
+$(info Evalfile  = $(EVALFILE))
+$(info Tuning    = $(if $(findstring USE_TUNING,$(DEFS)),yes,no))
+$(info Profiling = $(if $(findstring USE_PROFILING,$(DEFS)),yes,no))
+$(info Datagen   = $(if $(findstring USE_DATAGEN,$(DEFS)),yes,no))
 
 ### Executable name
 ifeq ($(target_windows),yes)
