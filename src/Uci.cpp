@@ -897,7 +897,7 @@ void Uci::bench(int argCount, char* argValue[])
     U64     total_nodes = 0;
     U64     total_time  = 0;
 
-    int depth       = argCount > 2 ? atoi(argValue[2]) : 16;
+    int depth       = argCount > 2 ? atoi(argValue[2]) : 20;
     depth           = std::min(depth, MAX_PLY-1);
     int nbr_threads = argCount > 3 ? atoi(argValue[3]) : 1;
     int hash_size   = argCount > 4 ? atoi(argValue[4]) : HASH_SIZE;
