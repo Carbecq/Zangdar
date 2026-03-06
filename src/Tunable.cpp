@@ -17,17 +17,59 @@ TunableParam::TunableParam(const std::string& _name, int _value, int _min, int _
 {
     step = std::max(1, (_max - _min)/20);
 
-    if (    (_value < _min)
-         || (_value > _max)
-         || (_min   >= _max)
-         || (_min + step > _max)
-         || (step < 0.5) )
-    {
-        std::cerr << "info string Value out of range for parameter " << name << std::endl;
+    if (verifParam(_name, _value, _min, _max, step) == false)
         return;
-    }
 
     params.push_back(this);
+}
+
+bool verifParam(const std::string &name, int value, int min, int max, int step)
+{
+    int range = max - min;
+
+    if (value < min)
+    {
+            std::cerr << "parameter " << name << " : value < min " << std::endl;
+            return false;
+    }
+    else if (value > max)
+    {
+            std::cerr << "parameter " << name << " : value > max " << std::endl;
+            return false;
+    }
+    else if (min >= max)
+    {
+            std::cerr << "parameter " << name << " :  min >= max " << std::endl;
+            return false;
+    }
+    else if (min + step > max)
+    {
+            std::cerr << "parameter " << name << " : min+step > max " << std::endl;
+            return false;
+    }
+    else if (step < 0.5)
+    {
+            std::cerr << "parameter " << name << " : step < 0.5 " << std::endl;
+            return false;
+    }
+    // Grille trop grossière (moins de 5 valeurs possibles)
+    else if (range / step < 5)
+    {
+        std::cerr << "parameter " << name << " : Grille trop grossière (moins de 5 valeurs possibles)" << std::endl;
+        return false;
+    }
+    else if (value - min < step)
+    {
+        std::cerr << "parameter " << name << " : Valeur à moins d'un step du bord min" << std::endl;
+        return false;
+    }
+    else if (max - value < step)
+    {
+        std::cerr << "parameter " << name << " : Valeur à moins d'un step du bord max" << std::endl;
+        return false;
+    }
+
+    return true;
 }
 
 //==================================================

@@ -29,6 +29,7 @@ void setParam(const std::string &name, int value);
 std::string paramsToSpsa();
 std::string paramsToUci();
 void paramsToJSON();
+bool verifParam(const std::string &name, int value, int min, int max, int step);
 
 #if defined USE_TUNING
 #define PARAM(name, value, min, max) inline TunableParam name(#name, value, min, max)
@@ -37,11 +38,14 @@ void paramsToJSON();
 #endif
 
 //----------------------------------------------------- LMR
+
+
+
 // LMR Table (valeurs x100)
-PARAM(LMR_CaptureBase,      0,   0, 150);
-PARAM(LMR_CaptureDivisor, 325, 200, 500);
-PARAM(LMR_QuietBase,      175, 100, 250);
-PARAM(LMR_QuietDivisor,   225, 150, 400);
+PARAM(LMR_CaptureBase,      0, -100, 200);   // base -1.0 à +2.0
+PARAM(LMR_CaptureDivisor, 325,  200, 500);
+PARAM(LMR_QuietBase,      175,   75, 300);
+PARAM(LMR_QuietDivisor,   225,  150, 400);
 
 //  LATE MOVE REDUCTION
 PARAM(LMR_HistReductionDivisor, 5000, 3000, 8000);
