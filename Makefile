@@ -258,6 +258,10 @@ endif
 
 EXE  = $(DEFAULT_EXE)-$(COMP)
 
+openbench: EXEC    = $(EXE)$(SUF)
+openbench: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL)
+openbench: LDFLAGS = $(LDFLAGS_REL) $(LDFLAGS_WIN) $(LDFLAGS_STA)
+
 release: EXEC    = $(EXE)-rel$(SUF)
 release: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL)
 release: LDFLAGS = $(LDFLAGS_REL) $(LDFLAGS_WIN) $(LDFLAGS_STA)
@@ -288,10 +292,8 @@ endif
 
 # Target pour OpenBench : compile directement vers $(EXE) sans renommage
 # OpenBench appelle : make -j EXE=<chemin> [EVALFILE=<réseau>] [CXX=<compilateur>]
-openbench: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL)
-openbench: LDFLAGS = $(LDFLAGS_REL) $(LDFLAGS_WIN) $(LDFLAGS_STA)
 openbench: $(EXE)
-	$(info Génération pour OpenBench : $(EXE))
+    $(info Génération pour OpenBench : $(EXEC))
 
 release: $(EXE)
 	mv $(EXE) $(EXEC)
