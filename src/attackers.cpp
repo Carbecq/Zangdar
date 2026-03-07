@@ -96,6 +96,50 @@ template <Color C>
 template Bitboard Board::squares_attacked<WHITE>() const noexcept ;
 template Bitboard Board::squares_attacked<BLACK>() const noexcept ;
 
+//! \brief Retourne le Bitboard des cases attaquées par C avec une occupancy explicite
+//! (utilisé pour les mouvements du roi, sans le roi dans l'occupancy)
+template <Color C>
+[[nodiscard]] Bitboard Board::squares_attacked(Bitboard occ) const noexcept
+{
+    Bitboard mask = 0ULL;
+
+    const Bitboard friendly = colorPiecesBB[C];
+
+    Bitboard pawns   = friendly &  typePiecesBB[PieceType::PAWN];
+    Bitboard knights = friendly &  typePiecesBB[PieceType::KNIGHT];
+    Bitboard bishops = friendly & (typePiecesBB[PieceType::BISHOP] | typePiecesBB[PieceType::QUEEN]);
+    Bitboard rooks   = friendly & (typePiecesBB[PieceType::ROOK]   | typePiecesBB[PieceType::QUEEN]);
+
+    // Pawns
+    if constexpr (C == Color::WHITE) {
+        mask |= BB::north_east(pawns);
+        mask |= BB::north_west(pawns);
+    } else {
+        mask |= BB::south_east(pawns);
+        mask |= BB::south_west(pawns);
+    }
+
+    // Knights
+    while (knights)
+        mask |= Attacks::knight_moves(BB::pop_lsb(knights));
+
+    // Bishops and Queens
+    while (bishops)
+        mask |= Attacks::bishop_moves(BB::pop_lsb(bishops), occ);
+
+    // Rooks and Queens
+    while (rooks)
+        mask |= Attacks::rook_moves(BB::pop_lsb(rooks), occ);
+
+    // King
+    mask |= Attacks::king_moves(get_king_square<C>());
+
+    return mask;
+}
+
+template Bitboard Board::squares_attacked<WHITE>(Bitboard occ) const noexcept ;
+template Bitboard Board::squares_attacked<BLACK>(Bitboard occ) const noexcept ;
+
 template void Board::calculate_checkers_pinned<WHITE>() noexcept;
 template void Board::calculate_checkers_pinned<BLACK>() noexcept;
 

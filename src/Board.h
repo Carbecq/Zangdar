@@ -153,6 +153,8 @@ public:
 
     //! \brief Retourne le bitboard des cases attaquées
     template<Color C> [[nodiscard]] Bitboard squares_attacked() const noexcept;
+    //! \brief Retourne le bitboard des cases attaquées avec une occupancy explicite
+    template<Color C> [[nodiscard]] Bitboard squares_attacked(Bitboard occ) const noexcept;
 
     //! \brief  Détermine si la case sq est attaquée par le camp C
     template<Color C> [[nodiscard]] constexpr bool square_attacked(const SQUARE sq) const noexcept {
@@ -167,14 +169,14 @@ public:
     template<Color C>
     [[nodiscard]] constexpr bool is_doing_check() const noexcept { return attackersButKing<C>(get_king_square<~C>()) != 0; }
 
-    template<MoveGenType MGType> void legal_moves(MoveList &ml)
+    template<MoveGenType MGType> void legal_moves(MoveList &ml) const
     {
         if (turn() == WHITE)
             legal_moves<WHITE, MGType>(ml);
         else
             legal_moves<BLACK, MGType>(ml);
     }
-    template<Color C, MoveGenType MGType> void legal_moves(MoveList &ml) ;
+    template<Color C, MoveGenType MGType> void legal_moves(MoveList &ml) const ;
 
     template<Color C> void apply_token(const std::string &token) ;
 
@@ -311,7 +313,7 @@ public:
             add_quiet_move(ml, to - dir, to, Move::make_piece(color, PieceType::PAWN), flags);
         }
     }
-    inline void push_pawn_capture_moves(MoveList& ml, Bitboard attack, const int dir, Color color)
+    inline void push_pawn_capture_moves(MoveList& ml, Bitboard attack, const int dir, Color color) const noexcept
     {
         SQUARE to;
         while (attack) {

@@ -13,7 +13,7 @@ constexpr int PUSH[] = {8, -8};
 //! algorithme de Mperft
 //-----------------------------------------------------------------
 template <Color US, MoveGenType MGType>
-void Board::legal_moves(MoveList& ml)
+void Board::legal_moves(MoveList& ml) const
 {
     constexpr Color THEM = ~US;
     constexpr bool GenNoisy = (MGType & MoveGenType::NOISY) != 0;
@@ -309,8 +309,7 @@ void Board::legal_moves(MoveList& ml)
      *     la case (2) ne sera pas attaquée par la tour NOIRE.
      *   Il faut donc calculer les attaques de NOIR sans le roi bLANC.
      */
-    colorPiecesBB[US] ^= SQ::square_BB(K);  // suppression du roi ami
-    attackBB = squares_attacked<THEM>();    // attaques ennemies SANS le roi ami
+    attackBB = squares_attacked<THEM>(occupiedBB ^ SQ::square_BB(K));  // attaques ennemies SANS le roi ami
 
     if constexpr (GenNoisy)
     {
@@ -336,16 +335,14 @@ void Board::legal_moves(MoveList& ml)
         }
     }
 
-    // remet le roi dans l'échiquier
-    colorPiecesBB[US] ^= SQ::square_BB(K);
 }
 
 // Explicit instantiations.
-template void Board::legal_moves<WHITE, MoveGenType::NOISY>(MoveList& ml)  ;
-template void Board::legal_moves<BLACK, MoveGenType::NOISY>(MoveList& ml)  ;
+template void Board::legal_moves<WHITE, MoveGenType::NOISY>(MoveList& ml) const ;
+template void Board::legal_moves<BLACK, MoveGenType::NOISY>(MoveList& ml) const ;
 
-template void Board::legal_moves<WHITE, MoveGenType::QUIET>(MoveList& ml)  ;
-template void Board::legal_moves<BLACK, MoveGenType::QUIET>(MoveList& ml)  ;
+template void Board::legal_moves<WHITE, MoveGenType::QUIET>(MoveList& ml) const ;
+template void Board::legal_moves<BLACK, MoveGenType::QUIET>(MoveList& ml) const ;
 
-template void Board::legal_moves<WHITE, MoveGenType::ALL>(MoveList& ml)  ;
-template void Board::legal_moves<BLACK, MoveGenType::ALL>(MoveList& ml)  ;
+template void Board::legal_moves<WHITE, MoveGenType::ALL>(MoveList& ml) const ;
+template void Board::legal_moves<BLACK, MoveGenType::ALL>(MoveList& ml) const ;

@@ -101,6 +101,7 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
     {
         std::cout << "bestmove " << Move::name(best) << std::endl;
     }
+
     else
     {
 #if defined DEBUG_LOG
@@ -110,12 +111,13 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
 
         for (size_t i = 0; i < nbrThreads; i++)
         {
-            search[i].seldepth    = 0;
-            search[i].stopped     = false;
-            search[i].iter_depth  = timer.getSearchDepth();
-            search[i].iter_score  = -INFINITE;
-            search[i].nodes       = 0;
-            search[i].tbhits      = 0;
+            search[i].seldepth      = 0;
+            search[i].stopped       = false;
+            search[i].iter_depth    = timer.getSearchDepth();
+            search[i].iter_score    = -INFINITE;
+            search[i].nodes         = 0;
+            search[i].tbhits        = 0;
+            search[i].rootMovesCount = 0;
 
             search[i].iter_best_depth = 0;
             search[i].iter_best_move  = Move::MOVE_NONE;

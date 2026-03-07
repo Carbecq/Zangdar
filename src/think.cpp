@@ -26,6 +26,11 @@ void Search::think(Board board, Timer timer, size_t m_index)
 
     nnue.start_search(board);
 
+    // Nombre de coups légaux à la racine (utilisé pour détecter un coup forcé)
+    MoveList rootMovesList;
+    board.legal_moves<ALL>(rootMovesList);
+    rootMovesCount = static_cast<int>(rootMovesList.size());
+
     // Réinitialise la table LMR (nécessaire car les TunableParam
     // peuvent ne pas être initialisés lors de la construction globale,
     // et aussi pour prendre en compte les changements via setoption)
@@ -106,6 +111,10 @@ void Search::iterative_deepening(Board& board, Timer& timer, SearchInfo* si)
 
             if (threadPool.get_logUci())
                 show_uci_result(elapsed, si->pv);
+
+            // Coup forcé : un seul coup légal à la racine, inutile d'aller plus loin
+            if (rootMovesCount == 1)
+                break;
 
             // If an iteration finishes after optimal time usage, stop the search
             if (timer.finishOnThisDepth(elapsed, iter_depth, iter_best_move, nodes))

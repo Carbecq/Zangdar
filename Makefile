@@ -293,19 +293,19 @@ endif
 # Target pour OpenBench : compile directement vers $(EXE) sans renommage
 # OpenBench appelle : make -j EXE=<chemin> [EVALFILE=<réseau>] [CXX=<compilateur>]
 openbench: $(EXE)
-    $(info Génération pour OpenBench : $(EXEC))
+	@echo "Génération pour OpenBench : $(EXEC)"
 
 release: $(EXE)
 	mv $(EXE) $(EXEC)
-	$(info Génération en mode release : $(EXEC))
+	@echo "Génération en mode release : $(EXEC)"
 
 prof: $(EXE)
 	mv $(EXE) $(EXEC)
-	$(info Génération en mode profile : $(EXEC))
+	@echo "Génération en mode profile : $(EXEC)"
 
 debug: $(EXE)
 	mv $(EXE) $(EXEC)
-	$(info Génération en mode debug : $(EXEC))
+	@echo "Génération en mode debug : $(EXEC)"
 
 #---------------------------------------------------------------------
 #	PGO (code venant d'Ethereal)
@@ -318,7 +318,7 @@ pgo:
 	$(CXX) $(PGO_USE) $(CFLAGS) $(PGO_FLAGS) $(SRC) $(LDFLAGS) -o $(EXE)
 	rm -f *.gcda *.profdata *.profraw
 	mv $(EXE) $(EXEC)
-	$(info Génération en mode pgo : $(EXEC))
+	@echo "Génération en mode pgo : $(EXEC)"
 
 #----------------------------------------------------------------------
 
