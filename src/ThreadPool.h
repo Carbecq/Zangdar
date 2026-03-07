@@ -28,18 +28,21 @@ public:
     MOVE get_best_move() const { return search[get_best_thread()].iter_best_move; }
     U64  get_all_tbhits() const;
 
-    void set_logUci(bool f)     { logUci = f;       }
-    void set_useSyzygy(bool f)  { useSyzygy = f;    }
+    void set_logUci(bool f)          { logUci = f;       }
+    void set_useSyzygy(bool f)       { useSyzygy = f;    }
+    void set_syzygyProbeLimit(int n) { syzygyProbeLimit = n; }
 
-    bool get_logUci() const { return logUci; }
-    U32  get_nbrThreads() const { return nbrThreads; }
-    bool get_useSyzygy() const { return useSyzygy; }
+    bool get_logUci()           const { return logUci; }
+    U32  get_nbrThreads()       const { return nbrThreads; }
+    bool get_useSyzygy()        const { return useSyzygy; }
+    int  get_syzygyProbeLimit() const { return syzygyProbeLimit; }
 
     std::unique_ptr<Search[]> search;
 
 private:
     U32     nbrThreads;
     bool    useSyzygy;
+    int     syzygyProbeLimit;  // max pieces for WDL/DTZ probing (0 = no limit)
     bool    logUci;
 
 };

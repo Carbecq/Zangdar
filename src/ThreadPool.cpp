@@ -11,6 +11,7 @@
 ThreadPool::ThreadPool(U32 _nbr, bool _tb, bool _log) :
     nbrThreads(0),
     useSyzygy(_tb),
+    syzygyProbeLimit(0),
     logUci(_log)
 {
 #if defined DEBUG_LOG

@@ -4,6 +4,7 @@
 #include "pyrrhic/tbprobe.h"
 #include "Board.h"
 #include "TranspositionTable.h"
+#include "ThreadPool.h"
 #include "Move.h"
 
 /*
@@ -52,10 +53,14 @@ bool Board::probe_wdl(int& score, int& bound, int ply) const
     // was not reset by the last move. Finally, there is obviously no point
     // if there are more pieces than we have TBs for.
 
+    int probeLimit = threadPool.get_syzygyProbeLimit();
+    int pieceCount = BB::count_bit(occupancy_all());
+
     if (   ply == 0
         || get_status().castling
         || get_status().fiftymove_counter
-        || BB::count_bit(occupancy_all()) > TB_LARGEST)
+        || pieceCount > TB_LARGEST
+        || (probeLimit > 0 && pieceCount > probeLimit))
         return false;
 
  //   std::cout << display() << std::endl;
@@ -95,8 +100,13 @@ bool Board::probe_root(MOVE& move) const
 {
     // We cannot probe when there are castling rights, or when
     // we have more pieces than our largest Tablebase has pieces
-    if (get_status().castling || BB::count_bit(occupancy_all()) > TB_LARGEST)
-        return false;
+    int probeLimit = threadPool.get_syzygyProbeLimit();
+    int pieceCount = BB::count_bit(occupancy_all());
+
+    if (   get_status().castling
+         || pieceCount > TB_LARGEST
+         || (probeLimit > 0 && pieceCount > probeLimit))
+         return false;
 
     // Call Pyrrhic
     unsigned result = tb_probe_root(

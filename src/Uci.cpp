@@ -90,6 +90,7 @@ void Uci::run()
             std::cout << "option name Clear Hash type button" << std::endl;
             std::cout << "option name Threads type spin default 1 min 1 max " << std::max(1U, std::thread::hardware_concurrency()) << std::endl;
             std::cout << "option name SyzygyPath type string default " << "<empty>" << std::endl;
+            std::cout << "option name SyzygyProbeLimit type spin default 6 min 0 max 7" << std::endl;
             std::cout << "option name MoveOverhead type spin default " << MOVE_OVERHEAD << " min 0 max 10000" << std::endl;
 
 #if defined USE_TUNING
@@ -544,6 +545,14 @@ setoption name <id> [value <x>]
                 // only use TB if loading was successful
                 threadPool.set_useSyzygy(TB_LARGEST > 0);
             }
+        }
+
+        else if (option_name == "SyzygyProbeLimit")
+        {
+            int limit;
+            iss >> value;      // "value"
+            iss >> limit;
+            threadPool.set_syzygyProbeLimit(limit);
         }
 
         else if (option_name == "MoveOverhead")
