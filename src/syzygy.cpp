@@ -94,10 +94,21 @@ bool Board::probe_wdl(int& score, int& bound, int ply) const
 
 //=========================================================================
 //! \brief Probe Syzygy Tables at the root.
+//!
+//! Retourne true  → la position est NULLE ou PERDUE : 'move' est le coup DTZ-optimal
+//!                   à jouer immédiatement ; win_count vaut 0.
+//! Retourne false → la position est GAGNANTE ou hors des TB :
+//!                   si win_count > 0, win_moves contient tous les coups gagnants TB
+//!                   et la recherche doit se limiter à ces coups.
+//!                   si win_count == 0, la position n'est pas dans les TB, recherche normale.
+//!
 //! This function should not be used during search.
 //-------------------------------------------------------------------------
-bool Board::probe_root(MOVE& move) const
+bool Board::probe_root(MOVE& move, MoveList& root_moves) const
 {
+    move      = Move::MOVE_NONE;
+    root_moves.count = 0;
+
     // We cannot probe when there are castling rights, or when
     // we have more pieces than our largest Tablebase has pieces
     int probeLimit = threadPool.get_syzygyProbeLimit();
@@ -108,8 +119,9 @@ bool Board::probe_root(MOVE& move) const
          || (probeLimit > 0 && pieceCount > probeLimit))
          return false;
 
-    // Call Pyrrhic
-    unsigned result = tb_probe_root(
+    // Appel Pyrrhic avec un tableau de résultats pour obtenir TOUS les coups et leur WDL/DTZ
+    unsigned results[TB_MAX_MOVES + 1];
+    unsigned best = tb_probe_root(
         occupancy_c<WHITE>(),  occupancy_c<BLACK>(),
         occupancy_p<PieceType::KING>(),   occupancy_p<PieceType::QUEEN>(),
         occupancy_p<PieceType::ROOK>(),   occupancy_p<PieceType::BISHOP>(),
@@ -117,35 +129,34 @@ bool Board::probe_root(MOVE& move) const
         get_status().fiftymove_counter,
         get_status().ep_square == SQUARE_NONE ? 0 : get_status().ep_square,
         turn() == WHITE ? 1 : 0,
-        nullptr);
+        results);
 
     // Probe failed, or we are already in a finished position.
-    if (   result == TB_RESULT_FAILED
-        || result == TB_RESULT_CHECKMATE
-        || result == TB_RESULT_STALEMATE)
+    if (   best == TB_RESULT_FAILED
+        || best == TB_RESULT_CHECKMATE
+        || best == TB_RESULT_STALEMATE)
         return false;
 
-    // Extract information
-    int score;
+    unsigned wdl = TB_GET_WDL(best);
 
-    move = convertPyrrhicMove(result);
-    unsigned wdl = TB_GET_WDL(result);
-    unsigned dtz = TB_GET_DTZ(result);
-
-    switch (wdl)
+    if (wdl == TB_WIN)
     {
-    case TB_WIN:
-        score = TBWIN - dtz;
-        break;
-    case TB_LOSS:
-        score = -TBWIN + dtz;
-        break;
-    default:
-        score = 0;
-        break;
+        // Collecter TOUS les coups gagnants pour que la recherche trouve le gain le plus rapide.
+        // L'alpha-bêta les score en TBWIN-ply, trouvant naturellement le coup DTM-optimal.
+        for (const unsigned* r = results; *r != TB_RESULT_FAILED; r++)
+        {
+            if (TB_GET_WDL(*r) == TB_WIN)
+                root_moves.add(convertPyrrhicMove(*r));
+        }
+        // Retourner false : l'appelant doit lancer la recherche normale limitée à win_moves.
+        return false;
     }
 
-    // Print thinking info
+    // NUL ou PERTE : jouer le coup DTZ-optimal immédiatement
+    move = convertPyrrhicMove(best);
+    unsigned dtz = TB_GET_DTZ(best);
+    int score = (wdl == TB_LOSS) ? -TBWIN + (int)dtz : 0;
+
     std::cout << "info depth " << dtz
               << " score cp "  << score
               << " time 0 nodes 0 nps 0 tbhits 1 pv " << Move::name(move)

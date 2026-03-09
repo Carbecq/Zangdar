@@ -35,10 +35,10 @@ public:
     Search();
     ~Search();
 
-    std::thread         thread;
-    History             history;
     NNUE                nnue;
+    std::thread         thread;
     TranspositionTable* table = nullptr;
+    History             history;
 
     //==============================================
     //  Evaluation
@@ -62,8 +62,8 @@ public:
     int         iter_best_score;
     int         iter_best_depth;
 
-    int         rootMovesCount; // nombre de coups légaux à la racine
-
+    MoveList    root_moves;
+    bool        tb_root;
 
     // Point de départ de la recherche
     template <Color C> void think(Board board, Timer timer, size_t _index);

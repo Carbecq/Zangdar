@@ -601,7 +601,7 @@ public:
     void TBScore(const unsigned wdl, const unsigned dtz, int &score, int &bound) const;
     bool probe_wdl(int &score, int &bound, int ply) const;
     MOVE convertPyrrhicMove(unsigned result) const;
-    bool probe_root(MOVE& move) const;
+    bool probe_root(MOVE& move, MoveList &root_moves) const;
 
     //*************************************************************************
     //*************************************************************************
