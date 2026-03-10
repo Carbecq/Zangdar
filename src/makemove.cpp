@@ -261,15 +261,10 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
 
             if (!BB::empty(pawn_attackers<THEM>(new_ep))  )     // La case de prise en-passant est-elle attaquée par un pion ?
             {
-                // printf("attaquée \n");
                 // En toute rigueur, il faudrait tester la légalité de la prise
                 // On s'en passera ...
                 newStatus.ep_square = new_ep;
                 newStatus.key ^= ep_key[newStatus.ep_square];
-            }
-            else
-            {
-                // printf("PAS attaquée \n");
             }
         }
 
@@ -469,18 +464,6 @@ template <Color Us> void Board::make_nullmove() noexcept
 
     const Status& previousStatus = statusHistory.back();
     statusHistory.emplace_back(previousStatus);
-
-    // statusHistory.emplace_back(
-    //                             previousStatus.key ^ side_key,  // zobrist will be changed later
-    //                             previousStatus.pawn_key,
-    //                             Move::MOVE_NULL,
-    //                             SQUARE_NONE,                                               // reset en passant. might be set later
-    //                             previousStatus.castling,                                 // copy meta. might be changed
-    //                             previousStatus.fiftymove_counter + 1,                     // increment fifty move counter. might be reset
-    //                             previousStatus.fullmove_counter + (color == Color::BLACK),   // increment move counter
-    //                             0ULL,
-    //                             0ULL);
-
     Status& newStatus = statusHistory.back();
 
     newStatus.key ^= side_key;

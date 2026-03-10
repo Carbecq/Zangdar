@@ -23,6 +23,35 @@
  * SOFTWARE.
  */
 
+/*  est-ce que les fonctions pyrrhic sont thread safe ?
+ *
+ *  Réponse : oui, avec une nuance importante
+
+  tb_probe_wdl() et tb_probe_root() — thread-safe pour les lectures concurrentes
+
+  Les sondes utilisent du double-checked locking avec des atomics (atomic_load/store avec memory_order_acquire/release)
+  pour initialiser les tables lazily. Une fois chargées, elles lisent des fichiers mmap en lecture seule.
+  Plusieurs threads peuvent donc sonder simultanément sans problème — c'est exactement ce que fait Zangdar en Lazy SMP.
+
+  tb_init() — NON thread-safe
+
+  C'est là que ça coince :
+  - initialized est un int brut (non atomique)
+  - tbHash, pieceEntry, pawnEntry, pathString sont réinitialisés sans verrou
+  - Si un thread sonde pendant qu'un autre appelle tb_init(), c'est une data race (crash ou comportement indéfini)
+
+  Conclusion pour Zangdar
+
+  Le pattern utilisé est correct :
+  tb_init()          ← thread principale, avant tout
+  threadPool.start() ← les workers sondent ensuite en parallèle : OK
+
+  Le seul risque serait d'appeler tb_init() (via setoption SyzygyPath) pendant une recherche en cours.
+  Dans ce cas il faudrait s'assurer que la recherche est stoppée avant (threadPool.stop() → tb_init() → relancer).
+  En pratique, les GUIs envoient setoption avant go, donc ça ne pose pas de problème réel.
+
+ */
+
 #pragma once
 
 /// General compatibility for executing tablebase calls

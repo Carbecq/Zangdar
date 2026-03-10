@@ -284,8 +284,6 @@ I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
 //------------------------------------------------------------
 void NNUE::lazy_updates(const Board& board, Accumulator& acc)
 {
-    // assert (board != nullptr);
-
     lazy_update<WHITE>(board, acc);
     lazy_update<BLACK>(board, acc);
 }

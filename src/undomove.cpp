@@ -10,10 +10,6 @@ template <Color Us>
 void Board::undo_move() noexcept
 {
     constexpr Color Them     = ~Us;
-
-    // printf("------------------------------------------undo move \n");
-    // std::cout << display() << std::endl << std::endl;
-
     const MOVE move = get_status().move;
 
     // Swap sides

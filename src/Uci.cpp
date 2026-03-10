@@ -631,7 +631,6 @@ void Uci::go_run(const std::string& abc, const std::string& fen, int dmax, int t
     else
         auxi = fen;
 
-    //    Options.log_uci = true;
     if (abc != "n")
     {
         uci_board.initialisation();

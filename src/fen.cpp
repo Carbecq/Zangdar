@@ -342,8 +342,6 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
         return;
     }
 
-    // nnue.reset();
-
     // est-ce une notation FEN ou EPD ?
     bool epd = false;
     std::size_t found = fen.find(';');

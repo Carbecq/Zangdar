@@ -66,10 +66,6 @@ bool Board::probe_wdl(int& score, int& bound, int ply) const
         || (probeLimit > 0 && pieceCount > probeLimit))
         return false;
 
- //   std::cout << display() << std::endl;
-
- //     printf("probe_wdl : ply=%d cas=%d half=%d BC=%d-%d : ", ply, castling, halfmove_counter, BB::count_bit(occupied()), TB_LARGEST);
-
     // Tap into Pyrrhic's API. Pyrrhic takes the board representation, followed
     // by the enpass square (0 if none set), and the turn. Pyrrhic defines WHITE
     // as 1, and BLACK as 0, which is the opposite of how Ethereal defines them
@@ -84,13 +80,9 @@ bool Board::probe_wdl(int& score, int& bound, int ply) const
 
     // Probe failed
     if (result == TB_RESULT_FAILED)
-    {
- //      printf(" failed \n");
         return false;
-    }
 
     TBScore(result, ply, score, bound);
-//    printf("probe_wdl success : score=%d ply=%d tbwin=%d tbloss=%d \n", score, ply, TB_WIN, TB_LOSS);
 
     return true;
 }

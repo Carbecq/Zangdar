@@ -239,9 +239,6 @@ void Search::make_move(Board& board, const MOVE move) noexcept
 template <Color US, bool Update_NNUE>
 void Search::undo_move(Board& board) noexcept
 {
-    // printf("------------------------------------------undo move \n");
-    // std::cout << display() << std::endl << std::endl;
-
     if constexpr (Update_NNUE == true)
         nnue.pop(); // retourne a l'accumulateur précédent
 
