@@ -27,13 +27,7 @@ void Search::think(Board board, Timer timer, size_t m_index)
     nnue.start_search(board);
 
     // Nombre de coups légaux à la racine (utilisé pour détecter un coup forcé)
-    // Si un filtre TB est actif (TB_WIN), on compte uniquement les coups gagnants.
-    if (tb_root == false)
-    {
-        // Aucun coup n'a été donné par Syzygy
-        // il faut faire une génération
-        board.legal_moves<ALL>(root_moves);
-    }
+    root_move_count = board.count_legal_moves();
 
     // Réinitialise la table LMR (nécessaire car les TunableParam
     // peuvent ne pas être initialisés lors de la construction globale,
@@ -117,7 +111,7 @@ void Search::iterative_deepening(Board& board, Timer& timer, SearchInfo* si)
                 show_uci_result(elapsed, si->pv);
 
             // Coup forcé : un seul coup légal à la racine, inutile d'aller plus loin
-            if (root_moves.size() == 1)
+            if (root_move_count == 1)
                 break;
 
             // If an iteration finishes after optimal time usage, stop the search
@@ -544,23 +538,6 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     {
         if (move == si->excluded)
             continue;
-
-        // Filtre TB à la racine (style Stockfish) : ne chercher que les coups gagnants
-        // afin de trouver le gain le plus rapide (DTM-optimal via TBWIN-ply scoring).
-        if (isRoot && tb_root)
-        {
-            bool found = false;
-            for (size_t j = 0; j < root_moves.size(); j++)
-            {
-                if (root_moves.mlmoves[j].move == move)
-                {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found)
-                continue;
-        }
 
         const U64  starting_nodes = nodes;
         const bool isQuiet   = !Move::is_tactical(move);    // capture, promotion (avec capture ou non), prise en-passant

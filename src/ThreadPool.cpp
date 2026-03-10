@@ -96,13 +96,8 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
     //  an opening is selected by the gui, from the book, and the engines play from there
     //  that's how engine testing works, be it by devs, rating lists, or tournaments
 
-    // Probe Syzygy TableBases
-    // NUL/PERTE : probe_root retourne true et on joue le coup DTZ-optimal immédiatement.
-    // GAIN : probe_root retourne false et root_moves est rempli ; la recherche tourne
-    //        limitée à ces coups pour que l'alpha-bêta trouve le gain le plus rapide (DTM-optimal).
-    MoveList root_moves;
-
-    if (useSyzygy && board.probe_root(best, root_moves) == true)
+    // Probe Syzygy TableBases : joue directement le coup DTZ-optimal si la position est dans les TB.
+    if (useSyzygy && board.probe_root(best) == true)
     {
         transpositionTable.update_age();
         std::cout << "bestmove " << Move::name(best) << std::endl;
@@ -129,8 +124,6 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
             search[i].iter_best_score = -INFINITE;
 
             search[i].table           = &transpositionTable;
-            search[i].root_moves      = root_moves;
-            search[i].tb_root         = root_moves.size() > 0;
         }
 
         // Il faut mettre le lancement des threads dans une boucle séparée

@@ -177,6 +177,7 @@ public:
             legal_moves<BLACK, MGType>(ml);
     }
     template<Color C, MoveGenType MGType> void legal_moves(MoveList &ml) const ;
+    int count_legal_moves() const { MoveList ml; legal_moves<ALL>(ml); return ml.size(); }
 
     template<Color C> void apply_token(const std::string &token) ;
 
@@ -601,7 +602,7 @@ public:
     void TBScore(const unsigned wdl, const unsigned dtz, int &score, int &bound) const;
     bool probe_wdl(int &score, int &bound, int ply) const;
     MOVE convertPyrrhicMove(unsigned result) const;
-    bool probe_root(MOVE& move, MoveList &root_moves) const;
+    bool probe_root(MOVE& move) const;
     void probe_root_test() const;
 
     //*************************************************************************

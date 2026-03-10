@@ -62,8 +62,7 @@ public:
     int         iter_best_score;
     int         iter_best_depth;
 
-    MoveList    root_moves;
-    bool        tb_root;
+    int         root_move_count;
 
     // Point de départ de la recherche
     template <Color C> void think(Board board, Timer timer, size_t _index);

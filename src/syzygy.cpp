@@ -99,10 +99,9 @@ bool Board::probe_wdl(int& score, int& bound, int ply) const
 //!
 //! This function should not be used during search.
 //-------------------------------------------------------------------------
-bool Board::probe_root(MOVE& move, MoveList& root_moves) const
+bool Board::probe_root(MOVE& move) const
 {
-    move      = Move::MOVE_NONE;
-    root_moves.count = 0;
+    move = Move::MOVE_NONE;
 
     // We cannot probe when there are castling rights, or when
     // we have more pieces than our largest Tablebase has pieces
@@ -114,8 +113,6 @@ bool Board::probe_root(MOVE& move, MoveList& root_moves) const
          || (probeLimit > 0 && pieceCount > probeLimit))
          return false;
 
-    // Appel Pyrrhic avec un tableau de résultats pour obtenir TOUS les coups et leur WDL/DTZ
-    unsigned results[TB_MAX_MOVES + 1];
     unsigned best = tb_probe_root(
         occupancy_c<WHITE>(),  occupancy_c<BLACK>(),
         occupancy_p<PieceType::KING>(),   occupancy_p<PieceType::QUEEN>(),
@@ -124,7 +121,7 @@ bool Board::probe_root(MOVE& move, MoveList& root_moves) const
         get_status().fiftymove_counter,
         get_status().ep_square == SQUARE_NONE ? 0 : get_status().ep_square,
         turn() == WHITE ? 1 : 0,
-        results);
+        nullptr);
 
     // Probe failed, or we are already in a finished position.
     if (   best == TB_RESULT_FAILED
@@ -132,33 +129,13 @@ bool Board::probe_root(MOVE& move, MoveList& root_moves) const
         || best == TB_RESULT_STALEMATE)
         return false;
 
-    unsigned wdl = TB_GET_WDL(best);
-
-    if (wdl == TB_WIN)
-    {
-        // Collecter TOUS les coups gagnants, avec leur DTZ pour le tri.
-        // On trie par DTZ croissant : les coups qui zeroing le plus tôt en premier,
-        // ce qui aide alpha-bêta à établir rapidement un alpha élevé (TBWIN-ply).
-        for (const unsigned* r = results; *r != TB_RESULT_FAILED; r++)
-        {
-            if (TB_GET_WDL(*r) == TB_WIN)
-            {
-                root_moves.mlmoves[root_moves.count].move  = convertPyrrhicMove(*r);
-                root_moves.mlmoves[root_moves.count].value = (int)TB_GET_DTZ(*r);
-                root_moves.count++;
-            }
-        }
-        std::sort(root_moves.mlmoves.begin(),
-                  root_moves.mlmoves.begin() + root_moves.count,
-                  [](const MLMove& a, const MLMove& b) { return a.value < b.value; });
-        // Retourner false : l'appelant doit lancer la recherche normale limitée à win_moves.
-        return false;
-    }
-
-    // NUL ou PERTE : jouer le coup DTZ-optimal immédiatement
+    // Jouer le coup DTZ-optimal immédiatement
     move = convertPyrrhicMove(best);
+    unsigned wdl = TB_GET_WDL(best);
     unsigned dtz = TB_GET_DTZ(best);
-    int score = (wdl == TB_LOSS) ? -TBWIN + (int)dtz : 0;
+    int score = (wdl == TB_WIN)  ?  TBWIN - (int)dtz
+              : (wdl == TB_LOSS) ? -TBWIN + (int)dtz
+              : 0;
 
     std::cout << "info depth " << dtz
               << " score cp "  << score
