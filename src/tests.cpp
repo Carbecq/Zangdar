@@ -289,8 +289,19 @@ void test_eval(const std::string& fen)
 {
     Board b;
     b.initialisation();
-
     b.test_value(fen);
+}
+
+//====================================================
+//! \brief Test Syzygy : sonde les tables pour la position
+//!        donnée en FEN et affiche le résultat détaillé.
+//----------------------------------------------------
+void test_syzygy(const std::string& fen)
+{
+    Board board;
+    board.initialisation();
+    board.set_fen(fen, false);
+    board.probe_root_test();
 }
 
 //====================================================
@@ -647,3 +658,4 @@ void test_see()
 
 template void test_perft<true>(const std::string& str, const std::string& m_fen, int depth);
 template void test_perft<false>(const std::string& str, const std::string& m_fen, int depth);
+

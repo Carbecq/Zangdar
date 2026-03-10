@@ -602,6 +602,7 @@ public:
     bool probe_wdl(int &score, int &bound, int ply) const;
     MOVE convertPyrrhicMove(unsigned result) const;
     bool probe_root(MOVE& move, MoveList &root_moves) const;
+    void probe_root_test() const;
 
     //*************************************************************************
     //*************************************************************************

@@ -124,6 +124,7 @@ void test_suite(const std::string& abc, int dmax);
 void test_eval(const std::string& abc);
 void test_mirror();
 void test_see();
+void test_syzygy(const std::string& fen);
 
 
 #endif // DEFINES_H

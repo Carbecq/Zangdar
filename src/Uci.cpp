@@ -152,6 +152,7 @@ void Uci::run()
             std::cout << "test                          : test de recherche sur un ensemble de positions"       << std::endl;
             std::cout << "eval                          : test evaluation"                                      << std::endl;
             std::cout << "see                           : test see"                                             << std::endl;
+            std::cout << "syzygy [fen]                  : test syzygy sur la position courante ou le fen donné" << std::endl;
             std::cout << "run <fen> [dmax][tmax][nmax][thread]      : test de recherche <Silver2/Kiwipete/Quies/Fine70/WAC2/BUG/REF>"           << std::endl;
             std::cout << "mirror                        : test mirror"                                          << std::endl;
             std::cout << "fen [str]                     : positionne la chaine fen"                             << std::endl;
@@ -203,15 +204,22 @@ void Uci::run()
         {
             std::string rest;
             std::getline(iss, rest);
-            if (!rest.empty())
-                test_eval(rest);
-            else
-                test_eval(fen);
+            test_eval(rest.empty() ? fen : rest);
         }
 
         else if(token == "see")
         {
             test_see();
+        }
+
+        else if(token == "syzygy")
+        {
+            std::string rest;
+            std::getline(iss, rest);
+            // Supprime l'espace en tête si présent
+            if (!rest.empty() && rest.front() == ' ')
+                rest.erase(0, 1);
+            test_syzygy(rest.empty() ? fen : rest);
         }
 
         else if (token == "run")
