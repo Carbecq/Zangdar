@@ -150,11 +150,11 @@ void Uci::run()
             std::cout << "p <r/k/s/f> [dmax]            : test perft  <Ref/Kiwipete/Silver2/fen> "              << std::endl;
             std::cout << "d <r/k/s/f> [dmax]            : test divide <Ref/Kiwipete/Silver2/fen> "              << std::endl;
             std::cout << "test                          : test de recherche sur un ensemble de positions"       << std::endl;
-            std::cout << "eval                          : test evaluation"                                      << std::endl;
-            std::cout << "see                           : test see"                                             << std::endl;
+            std::cout << "eval [fen]                    : test evaluation sur la position courante ou le fen donné"   << std::endl;
             std::cout << "syzygy [fen]                  : test syzygy sur la position courante ou le fen donné" << std::endl;
             std::cout << "run <fen> [dmax][tmax][nmax][thread]      : test de recherche <Silver2/Kiwipete/Quies/Fine70/WAC2/BUG/REF>"           << std::endl;
             std::cout << "mirror                        : test mirror"                                          << std::endl;
+            std::cout << "see                           : test see"                                             << std::endl;
             std::cout << "fen [str]                     : positionne la chaine fen"                             << std::endl;
             std::cout << "dmax [p]                      : positionne la profondeur de recherche"                << std::endl;
             std::cout << "tmax [ms]                     : positionne le temps de recherche en millisecondes"    << std::endl;
