@@ -19,7 +19,6 @@ public:
 public:
     void clear() { count = 0; }
     size_t size() const { return count; }
-    void add(MOVE m) { mlmoves[count++].move = m;}
 
     std::array<MLMove, MAX_MOVES> mlmoves;
     size_t                        count;

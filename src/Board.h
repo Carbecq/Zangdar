@@ -177,8 +177,6 @@ public:
             legal_moves<BLACK, MGType>(ml);
     }
     template<Color C, MoveGenType MGType> void legal_moves(MoveList &ml) const ;
-    int count_legal_moves() const { MoveList ml; legal_moves<ALL>(ml); return ml.size(); }
-
     template<Color C> void apply_token(const std::string &token) ;
 
     void verify_MvvLva();

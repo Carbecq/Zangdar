@@ -90,12 +90,9 @@ bool Board::probe_wdl(int& score, int& bound, int ply) const
 //=========================================================================
 //! \brief Probe Syzygy Tables at the root.
 //!
-//! Retourne true  → la position est NULLE ou PERDUE : 'move' est le coup DTZ-optimal
-//!                   à jouer immédiatement ; win_count vaut 0.
-//! Retourne false → la position est GAGNANTE ou hors des TB :
-//!                   si win_count > 0, win_moves contient tous les coups gagnants TB
-//!                   et la recherche doit se limiter à ces coups.
-//!                   si win_count == 0, la position n'est pas dans les TB, recherche normale.
+//! Retourne true  → la position est dans la table Syzygy :
+//!                  'move' est le coup DTZ-optimal à jouer immédiatement.
+//! Retourne false → la position est hors de la table Syzygy
 //!
 //! This function should not be used during search.
 //-------------------------------------------------------------------------
