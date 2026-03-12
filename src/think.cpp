@@ -428,7 +428,6 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 depth >= Tunable::NMPDepth
                 && static_eval >= beta
                 && (si-1)->move != Move::MOVE_NULL
-                && (si-2)->move != Move::MOVE_NULL
                 && board.getNonPawnMaterial<C>())
         {
             int R = Tunable::NMPReduction
