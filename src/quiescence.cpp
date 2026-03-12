@@ -115,19 +115,21 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
             break;
 
 
-        /* Delta Pruning, a technique similar in concept to futility pruning,
-            only used in the quiescence search.
-            It works as follows: before we make a capture, we test whether
-            the captured piece value plus some safety margin (typically around 200 centipawns)
-            are enough to raise alpha for the current node.
+        /* Delta Pruning : technique similaire au futility pruning, utilisée uniquement
+            dans la recherche de quiescence.
+            Avant d'effectuer un coup bruyant (capture ou promotion), on vérifie si le gain
+            matériel (valeur de la pièce capturée + bonus de promotion éventuel) plus une
+            marge de sécurité suffisent à améliorer alpha.
         */
 
-        if (!isInCheck && Move::is_capturing(move))
+        if (!isInCheck)
         {
-            if (static_eval + Tunable::DeltaPruningBias + EGPieceValue[Move::captured_type(move)] <= alpha)
-            {
+            int gain = Move::is_capturing(move) ? EGPieceValue[Move::captured_type(move)] : 0;
+            if (Move::is_promoting(move))
+                gain += EGPieceValue[Move::promoted_type(move)] - EGPieceValue[PAWN];
+
+            if (static_eval + Tunable::DeltaPruningBias + gain <= alpha)
                 continue;
-            }
         }
 
         make_move<C, true>(board, move);
