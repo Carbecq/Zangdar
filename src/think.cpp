@@ -682,7 +682,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             if (cut_node)
                 R += 2 - ttPV;
 
-            // Reduce quiets more if ttMove is a capture
+            // Reduce more if ttMove is a capture
             R += Move::is_capturing(tt_move);
 
             // Reduce more when opponent has few pieces
@@ -692,6 +692,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             R -= std::max(-2, std::min(2, hist / Tunable::LMR_HistReductionDivisor));
 
             // Depth after reductions, avoiding going straight to quiescence
+            // TODO vérifier ce newDepth+1
             int lmrDepth = std::clamp(newDepth - R, 1, newDepth + 1);
 
             // Search this move with reduced depth:
