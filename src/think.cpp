@@ -428,7 +428,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 depth >= Tunable::NMPDepth
                 && static_eval >= beta
                 && (si-1)->move != Move::MOVE_NULL
-                && board.getNonPawnMaterial<C>())
+                && board.getNonPawnMaterial<C>()
+                && (!tt_hit || !(tt_bound & BOUND_UPPER) || tt_score >= beta))
         {
             int R = Tunable::NMPReduction
                     + (Tunable::NMPMargin*depth + std::min<int>(static_eval - beta, Tunable::NMPMax)) / Tunable::NMPDivisor;
