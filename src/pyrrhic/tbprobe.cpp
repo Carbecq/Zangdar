@@ -1055,7 +1055,7 @@ static void free_tb_entry(struct BaseEntry *be)
   }
 }
 
-bool tb_init(const char *path)
+bool tb_init(const std::string& path)
 {
   if (!initialized) {
     init_indices();
@@ -1084,11 +1084,14 @@ bool tb_init(const char *path)
   }
 
   // if path is an empty string or equals "<empty>", we are done.
-  const char *p = path;
-  if (strlen(p) == 0 || !strcmp(p, "<empty>")) return true;
+  if (path.empty() || path=="<empty>")
+    return true;
+  // const char *p = path;
+  // if (strlen(p) == 0 || !strcmp(p, "<empty>"))
+  //   return true;
 
-  pathString = (char*)malloc(strlen(p) + 1);
-  strcpy(pathString, p);
+  pathString = (char*)malloc(path.size() + 1);
+  memcpy(pathString, path.data(), path.size() + 1);
   numPaths = 0;
   for (int i = 0;; i++) {
     if (pathString[i] != SEP_CHAR)

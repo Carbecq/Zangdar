@@ -44,8 +44,8 @@ DataGen::DataGen(const U32 _nbr_threads, const U32 _max_fens, const std::string&
     // 1) évite d'avoir des positions avec 2 rois seuls
     // 2) évite d'avoir une partie nulle avec R+T/R sans
     //    que le mat soit trouvé
-    if (tb_init(SYZYGY) == true)
-        threadPool.set_useSyzygy(true);
+    tb_init(SYZYGY);
+    threadPool.set_useSyzygy(true);
 
     //================================================
     //  Lancement de la génération par thread

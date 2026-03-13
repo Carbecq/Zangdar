@@ -10,21 +10,16 @@ DEFINES += STATIC
 QMAKE_LFLAGS += -flto=auto
 
 #------------------------------------------------------
-DEFINES += EVALFILE=\\\"/mnt/Datas/Echecs/Programmation/Zangdar/APP/networks/net_5.bin\\\"
+DEFINES += EVALFILE=\\\"/mnt/Datas/Echecs/Programmation/Zangdar/APP/networks/net_6.bin\\\"
 DEFINES += USE_SIMD
-DEFINES += SYZYGY=\\\"/mnt/Datas/Echecs/Syzygy\\\"
 DEFINES += VERSION=\\\"0.00.00\\\"
 
 #------------------------------------------------------
 # ATTENTION : ne pas mettre "\" car ils sont reconnus comme caractères spéciaux
-# pour Github
-HOME_STR = "./"
-# pour moi
-# HOME_STR = "D:/Echecs/Programmation/Zangdar/"
-DEFINES += HOME='\\"$${HOME_STR}\\"'
+DEFINES += SYZYGY=\\\"/mnt/Datas/Echecs/Syzygy\\\"
 
 #------------------------------------------------------
-DEFINES += USE_TUNING
+# DEFINES += USE_TUNING
 #DEFINES += USE_PROFILING
 #DEFINES += USE_DATAGEN
 

@@ -116,7 +116,7 @@ struct TbRootMoves {
 
 /// Init/Deinit for Pyrrhic
 
-bool tb_init(const char *_path);
+bool tb_init(const std::string &_path);
 void tb_free(void);
 
 /// Pyrrhic Tablebase Probing Functions

@@ -26,7 +26,7 @@ void test_suite(const std::string& abc, int dmax)
     //  perftsuite_ref  : petite suite permettant de voir s'il y a eu perte de perfo
     //  perftsuite_big  : énorme suite pour contrôler le générateur de coups
 
-    std::string     str_file(HOME);
+    std::string     str_file(MAISON);
     str_file += "tests/perftsuite_" + abc + ".epd";
 
     std::ifstream file(str_file);
@@ -311,7 +311,7 @@ void test_syzygy(const std::string& fen)
 //----------------------------------------------------
 void test_mirror(void)
 {
-    std::string     str_file(HOME);
+    std::string     str_file(MAISON);
     // str_file += "tests/mirror.epd";
     str_file += "tests/1000.epd";
 
@@ -485,7 +485,7 @@ void Board::test_value(const std::string& fen)
 //--------------------------------------------------------
 void test_see()
 {
-    std::string   str_file(HOME);
+    std::string   str_file(MAISON);
     str_file += "tests/see.epd";
 
     std::ifstream file(str_file);

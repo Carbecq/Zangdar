@@ -278,6 +278,7 @@ void Uci::run()
 
         else if (token == "yyy")
         {
+            // commande For Your Eyes Only
             std::string syzygy_path(SYZYGY);
             std::string command = "name SyzygyPath value ";
             command += syzygy_path;
@@ -548,7 +549,7 @@ setoption name <id> [value <x>]
                 sprintf(message, "Uci::parse_options : SyzygyPath (%s) ", path.c_str());
                 printlog(message);
 #endif
-                tb_init(path.data());
+                tb_init(path);
 
                 // only use TB if loading was successful
                 threadPool.set_useSyzygy(TB_LARGEST > 0);
@@ -659,7 +660,7 @@ void Uci::go_test(int dmax, int tmax)
     // les noms non commentés seront utilisés.
 
     std::string     str_0000("0000.txt");
-    std::string     str_path(HOME);
+    std::string     str_path(MAISON);
     str_path += "tests/" + str_0000;
 
     std::string     line;
@@ -701,7 +702,7 @@ void Uci::go_test(int dmax, int tmax)
 
         std::cout << "test du fichier : [" << str_line << "]" << std::endl;
 
-        str_file = HOME;
+        str_file = MAISON;
         str_file += "tests/" + str_line;
 
         ifs.open(str_file, std::ifstream::in);

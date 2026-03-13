@@ -29,7 +29,7 @@ std::vector<std::string> split(const std::string& s, char delimiter)
 void printlog(const std::string& message)
 {
     std::ofstream myfile;
-    std::string str(HOME);
+    std::string str(MAISON);
     str += "/debug.txt";
 
     myfile.open(str, std::ios_base::app); // append instead of overwrite

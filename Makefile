@@ -38,16 +38,10 @@ endif
 CONFIG = VERSION.txt
 include ${CONFIG}
 
-# needed only for tests
-# just comment it if you want
-HOME = \"/mnt/Datas/Echecs/Programmation/Zangdar/\"
-#HOME = \"./\"
-DEFS = -DHOME=$(HOME)
-
 ifeq ($(target_windows),yes)
-	SYZYGY = \"D:/Echecs/Syzygy\"
+    SYZYGY = \"D:/Echecs/Syzygy\"
 else
-	SYZYGY = \"/mnt/Datas/Echecs/Syzygy\"
+    SYZYGY = \"/mnt/Datas/Echecs/Syzygy\"
 endif
 DEFS += -DSYZYGY=$(SYZYGY)
 
@@ -241,9 +235,9 @@ CFLAGS_DBG  = -g -O2
 CFLAGS_WARN = $(CFLAGS_WARN1) $(CFLAGS_WARN2) $(CFLAGS_WARN3) $(CFLAGS_WARN4) $(CFLAGS_WARN5) $(CFLAGS_WARN6)
 CFLAGS_PROF = $(CFLAGS_REL1) $(CFLAGS_WARN1) -pg -DNDEBUG -DUSE_PROFILING
 
-LDFLAGS_REL  = -s -flto=auto -lm
+LDFLAGS_REL  = -s -flto -lm
 LDFLAGS_DBG  = -lm
-LDFLAGS_PROF = -pg -flto=auto -lm
+LDFLAGS_PROF = -pg -flto -lm
 
 PGO_FLAGS = -fno-asynchronous-unwind-tables
 

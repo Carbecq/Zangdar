@@ -126,5 +126,8 @@ void test_mirror();
 void test_see();
 void test_syzygy(const std::string& fen);
 
+//=========================================================
+//  Définitions pour l'utilisation à la maison
+const std::string MAISON          = "/mnt/Datas/Echecs/Programmation/Zangdar/";   // pour faire les tests
 
 #endif // DEFINES_H
