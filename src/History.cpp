@@ -23,7 +23,7 @@ void History::reset()
     std::memset(continuation_history,   0, sizeof(ContinuationHistoryTable));
     std::memset(capture_history,        0, sizeof(CaptureHistory));
     std::memset(pawn_correction_history,     0, sizeof(PawnCorrectionHistoryTable));
-    std::memset(material_correction_history, 0, N_COLORS*sizeof(MaterialCorrectionHistoryTable));
+    std::memset(non_pawn_correction_history, 0, N_COLORS*sizeof(NonPawnCorrectionHistoryTable));
 }
 
 //==================================================================
@@ -223,10 +223,10 @@ void History::update_correction_history(const Board& board, int depth, int best_
     int& pawn = pawn_correction_history[color][board.get_pawn_key() % PAWN_HASH_SIZE];
     update_correction(pawn, scaled_bonus, weight);
 
-    int& wmat = material_correction_history[WHITE][color][board.get_mat_key(WHITE) % PAWN_HASH_SIZE];
+    int& wmat = non_pawn_correction_history[WHITE][color][board.get_non_pawn_key(WHITE) % PAWN_HASH_SIZE];
     update_correction(wmat, scaled_bonus, weight);
 
-    int& bmat = material_correction_history[BLACK][color][board.get_mat_key(BLACK) % PAWN_HASH_SIZE];
+    int& bmat = non_pawn_correction_history[BLACK][color][board.get_non_pawn_key(BLACK) % PAWN_HASH_SIZE];
     update_correction(bmat, scaled_bonus, weight);
 }
 
@@ -253,8 +253,8 @@ int History::corrected_eval(const Board& board, int raw_eval)
     raw_eval = (raw_eval * (200 - board.get_fiftymove_counter())) / 200;
 
     int pawn = pawn_correction_history[board.turn()][board.get_pawn_key() % PAWN_HASH_SIZE];
-    int wmat = material_correction_history[WHITE][board.turn()][board.get_mat_key(WHITE) % PAWN_HASH_SIZE];
-    int bmat = material_correction_history[BLACK][board.turn()][board.get_mat_key(BLACK) % PAWN_HASH_SIZE];
+    int wmat = non_pawn_correction_history[WHITE][board.turn()][board.get_non_pawn_key(WHITE) % PAWN_HASH_SIZE];
+    int bmat = non_pawn_correction_history[BLACK][board.turn()][board.get_non_pawn_key(BLACK) % PAWN_HASH_SIZE];
 
     int corrected = raw_eval + (pawn + wmat + bmat) / CorrectionHistoryScale;
 

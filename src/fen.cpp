@@ -317,12 +317,12 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
     // Calculate hash
     KEY key;
     KEY pawn_key;
-    KEY mat_key[N_COLORS];
-    calculate_hash(key, pawn_key, mat_key);
+    KEY non_pawn_key[N_COLORS];
+    calculate_hash(key, pawn_key, non_pawn_key);
     get_status().key      = key;
     get_status().pawn_key = pawn_key;
-    get_status().mat_key[WHITE] = mat_key[WHITE];
-    get_status().mat_key[BLACK] = mat_key[BLACK];
+    get_status().non_pawn_key[WHITE] = non_pawn_key[WHITE];
+    get_status().non_pawn_key[BLACK] = non_pawn_key[BLACK];
 
     //   std::cout << display() << std::endl;
 }
@@ -575,12 +575,12 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     // Calculate hash
     KEY key;
     KEY pawn_key;
-    KEY mat_key[N_COLORS];
-    calculate_hash(key, pawn_key, mat_key);
+    KEY non_pawn_key[N_COLORS];
+    calculate_hash(key, pawn_key, non_pawn_key);
     get_status().key      = key;
     get_status().pawn_key = pawn_key;
-    get_status().mat_key[WHITE] = mat_key[WHITE];
-    get_status().mat_key[BLACK] = mat_key[BLACK];
+    get_status().non_pawn_key[WHITE] = non_pawn_key[WHITE];
+    get_status().non_pawn_key[BLACK] = non_pawn_key[BLACK];
 
     //   std::cout << display() << std::endl;
 }

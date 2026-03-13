@@ -127,12 +127,12 @@ std::string Board::display() const noexcept
 //=============================================================
 //! \brief  Calcule la valeur du hash
 //-------------------------------------------------------------
-void Board::calculate_hash(U64& key, U64& pawn_key, U64 mat_key[N_COLORS]) const
+void Board::calculate_hash(U64& key, U64& pawn_key, U64 non_pawn_key[N_COLORS]) const
 {
     key            = 0ULL;
     pawn_key       = 0ULL;
-    mat_key[WHITE] = 0ULL;
-    mat_key[BLACK] = 0ULL;
+    non_pawn_key[WHITE] = 0ULL;
+    non_pawn_key[BLACK] = 0ULL;
 
     Bitboard bb;
 
@@ -153,31 +153,31 @@ void Board::calculate_hash(U64& key, U64& pawn_key, U64 mat_key[N_COLORS]) const
     while (bb) {
         int sq = BB::pop_lsb(bb);
         key            ^= piece_key[static_cast<U32>(Piece::WHITE_KNIGHT)][sq];
-        mat_key[WHITE] ^= piece_key[static_cast<U32>(Piece::WHITE_KNIGHT)][sq];
+        non_pawn_key[WHITE] ^= piece_key[static_cast<U32>(Piece::WHITE_KNIGHT)][sq];
     }
     bb = occupancy_cp<WHITE, PieceType::BISHOP>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
         key            ^= piece_key[static_cast<U32>(Piece::WHITE_BISHOP)][sq];
-        mat_key[WHITE] ^= piece_key[static_cast<U32>(Piece::WHITE_BISHOP)][sq];
+        non_pawn_key[WHITE] ^= piece_key[static_cast<U32>(Piece::WHITE_BISHOP)][sq];
     }
     bb = occupancy_cp<WHITE, PieceType::ROOK>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
         key            ^= piece_key[static_cast<U32>(Piece::WHITE_ROOK)][sq];
-        mat_key[WHITE] ^= piece_key[static_cast<U32>(Piece::WHITE_ROOK)][sq];
+        non_pawn_key[WHITE] ^= piece_key[static_cast<U32>(Piece::WHITE_ROOK)][sq];
     }
     bb = occupancy_cp<WHITE, PieceType::QUEEN>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
         key            ^= piece_key[static_cast<U32>(Piece::WHITE_QUEEN)][sq];
-        mat_key[WHITE] ^= piece_key[static_cast<U32>(Piece::WHITE_QUEEN)][sq];
+        non_pawn_key[WHITE] ^= piece_key[static_cast<U32>(Piece::WHITE_QUEEN)][sq];
     }
     bb = occupancy_cp<WHITE, PieceType::KING>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
         key            ^= piece_key[static_cast<U32>(Piece::WHITE_KING)][sq];
-        mat_key[WHITE] ^= piece_key[static_cast<U32>(Piece::WHITE_KING)][sq];
+        non_pawn_key[WHITE] ^= piece_key[static_cast<U32>(Piece::WHITE_KING)][sq];
     }
 
     // Pieces Noires
@@ -192,31 +192,31 @@ void Board::calculate_hash(U64& key, U64& pawn_key, U64 mat_key[N_COLORS]) const
     while (bb) {
         int sq = BB::pop_lsb(bb);
         key            ^= piece_key[static_cast<U32>(Piece::BLACK_KNIGHT)][sq];
-        mat_key[BLACK] ^= piece_key[static_cast<U32>(Piece::BLACK_KNIGHT)][sq];
+        non_pawn_key[BLACK] ^= piece_key[static_cast<U32>(Piece::BLACK_KNIGHT)][sq];
     }
     bb = occupancy_cp<BLACK, PieceType::BISHOP>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
         key            ^= piece_key[static_cast<U32>(Piece::BLACK_BISHOP)][sq];
-        mat_key[BLACK] ^= piece_key[static_cast<U32>(Piece::BLACK_BISHOP)][sq];
+        non_pawn_key[BLACK] ^= piece_key[static_cast<U32>(Piece::BLACK_BISHOP)][sq];
     }
     bb = occupancy_cp<BLACK, PieceType::ROOK>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
         key            ^= piece_key[static_cast<U32>(Piece::BLACK_ROOK)][sq];
-        mat_key[BLACK] ^= piece_key[static_cast<U32>(Piece::BLACK_ROOK)][sq];
+        non_pawn_key[BLACK] ^= piece_key[static_cast<U32>(Piece::BLACK_ROOK)][sq];
     }
     bb = occupancy_cp<BLACK, PieceType::QUEEN>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
         key            ^= piece_key[static_cast<U32>(Piece::BLACK_QUEEN)][sq];
-        mat_key[BLACK] ^= piece_key[static_cast<U32>(Piece::BLACK_QUEEN)][sq];
+        non_pawn_key[BLACK] ^= piece_key[static_cast<U32>(Piece::BLACK_QUEEN)][sq];
     }
     bb = occupancy_cp<BLACK, PieceType::KING>();
     while (bb) {
         int sq = BB::pop_lsb(bb);
         key            ^= piece_key[static_cast<U32>(Piece::BLACK_KING)][sq];
-        mat_key[BLACK] ^= piece_key[static_cast<U32>(Piece::BLACK_KING)][sq];
+        non_pawn_key[BLACK] ^= piece_key[static_cast<U32>(Piece::BLACK_KING)][sq];
     }
 
     // Castling

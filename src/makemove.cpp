@@ -109,7 +109,7 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
             }
             else
             {
-                newStatus.mat_key[US] ^= piece_key[piece][from] ^ piece_key[piece][dest];
+                newStatus.non_pawn_key[US] ^= piece_key[piece][from] ^ piece_key[piece][dest];
             }
 
             if constexpr (Update_NNUE == true)
@@ -142,11 +142,11 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
                 newStatus.pawn_key    ^= piece_key[piece][from];
 
                 newStatus.key         ^= piece_key[promoted][dest];   // pièce promue apparait
-                newStatus.mat_key[US] ^= piece_key[promoted][dest];
+                newStatus.non_pawn_key[US] ^= piece_key[promoted][dest];
 
 
                 newStatus.key           ^= piece_key[captured][dest]; // pièce prise disparait
-                newStatus.mat_key[THEM] ^= piece_key[captured][dest];
+                newStatus.non_pawn_key[THEM] ^= piece_key[captured][dest];
 
                 newStatus.fiftymove_counter = 0;
 
@@ -175,13 +175,13 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
                 if (Move::type(piece) == PieceType::PAWN)
                     newStatus.pawn_key    ^= piece_key[piece][from] ^ piece_key[piece][dest];
                 else
-                    newStatus.mat_key[US] ^= piece_key[piece][from] ^ piece_key[piece][dest];
+                    newStatus.non_pawn_key[US] ^= piece_key[piece][from] ^ piece_key[piece][dest];
 
                 newStatus.key ^= piece_key[captured][dest];
                 if (Move::type(captured) == PieceType::PAWN)
                     newStatus.pawn_key      ^= piece_key[captured][dest];
                 else
-                    newStatus.mat_key[THEM] ^= piece_key[captured][dest];
+                    newStatus.non_pawn_key[THEM] ^= piece_key[captured][dest];
 
                 newStatus.fiftymove_counter = 0;
 
@@ -213,7 +213,7 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
             newStatus.key      ^= piece_key[piece][from];
             newStatus.pawn_key ^= piece_key[piece][from];
             newStatus.key         ^= piece_key[promoted][dest];
-            newStatus.mat_key[US] ^= piece_key[promoted][dest];
+            newStatus.non_pawn_key[US] ^= piece_key[promoted][dest];
             newStatus.fiftymove_counter = 0;
 
             if constexpr (Update_NNUE == true)
@@ -337,8 +337,8 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
 
                 assert(Move::type(piece_on(get_king_dest<US, CastleSide::KING_SIDE>())) == PieceType::KING);
 
-                newStatus.key         ^= piece_key[piece][from] ^ piece_key[piece][dest];
-                newStatus.mat_key[US] ^= piece_key[piece][from] ^ piece_key[piece][dest];
+                newStatus.key              ^= piece_key[piece][from] ^ piece_key[piece][dest];
+                newStatus.non_pawn_key[US] ^= piece_key[piece][from] ^ piece_key[piece][dest];
 
                 // Move the Rook
                 if constexpr (US == WHITE)
@@ -347,8 +347,8 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
 
                     assert(piece_on(F1) == Piece::WHITE_ROOK);
 
-                    newStatus.key         ^= piece_key[Piece::WHITE_ROOK][H1] ^ piece_key[Piece::WHITE_ROOK][F1];
-                    newStatus.mat_key[US] ^= piece_key[Piece::WHITE_ROOK][H1] ^ piece_key[Piece::WHITE_ROOK][F1];
+                    newStatus.key              ^= piece_key[Piece::WHITE_ROOK][H1] ^ piece_key[Piece::WHITE_ROOK][F1];
+                    newStatus.non_pawn_key[US] ^= piece_key[Piece::WHITE_ROOK][H1] ^ piece_key[Piece::WHITE_ROOK][F1];
                     if constexpr (Update_NNUE == true)
                     {
                         dp.type = DirtyPieces::CASTLING;
@@ -362,8 +362,8 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
 
                     assert(piece_on(F8) == Piece::BLACK_ROOK);
 
-                    newStatus.key         ^= piece_key[Piece::BLACK_ROOK][H8] ^ piece_key[Piece::BLACK_ROOK][F8];
-                    newStatus.mat_key[US] ^= piece_key[Piece::BLACK_ROOK][H8] ^ piece_key[Piece::BLACK_ROOK][F8];
+                    newStatus.key              ^= piece_key[Piece::BLACK_ROOK][H8] ^ piece_key[Piece::BLACK_ROOK][F8];
+                    newStatus.non_pawn_key[US] ^= piece_key[Piece::BLACK_ROOK][H8] ^ piece_key[Piece::BLACK_ROOK][F8];
                     if constexpr (Update_NNUE == true)
                     {
                         dp.type = DirtyPieces::CASTLING;
@@ -385,8 +385,8 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
 
                 assert(Move::type(piece_on(get_king_dest<US, CastleSide::QUEEN_SIDE>())) == PieceType::KING);
 
-                newStatus.key         ^= piece_key[piece][from] ^ piece_key[piece][dest];
-                newStatus.mat_key[US] ^= piece_key[piece][from] ^ piece_key[piece][dest];
+                newStatus.key              ^= piece_key[piece][from] ^ piece_key[piece][dest];
+                newStatus.non_pawn_key[US] ^= piece_key[piece][from] ^ piece_key[piece][dest];
 
                 // Move the Rook
                 if constexpr (US == WHITE)
@@ -395,8 +395,8 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
 
                     assert(piece_on(D1) == Piece::WHITE_ROOK);
 
-                    newStatus.key         ^= piece_key[Piece::WHITE_ROOK][A1] ^ piece_key[Piece::WHITE_ROOK][D1];
-                    newStatus.mat_key[US] ^= piece_key[Piece::WHITE_ROOK][A1] ^ piece_key[Piece::WHITE_ROOK][D1];
+                    newStatus.key              ^= piece_key[Piece::WHITE_ROOK][A1] ^ piece_key[Piece::WHITE_ROOK][D1];
+                    newStatus.non_pawn_key[US] ^= piece_key[Piece::WHITE_ROOK][A1] ^ piece_key[Piece::WHITE_ROOK][D1];
                     if constexpr (Update_NNUE == true)
                     {
                         dp.type = DirtyPieces::CASTLING;
@@ -410,8 +410,8 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
 
                     assert(piece_on(D8) == Piece::BLACK_ROOK);
 
-                    newStatus.key         ^= piece_key[Piece::BLACK_ROOK][A8] ^ piece_key[Piece::BLACK_ROOK][D8];
-                    newStatus.mat_key[US] ^= piece_key[Piece::BLACK_ROOK][A8] ^ piece_key[Piece::BLACK_ROOK][D8];
+                    newStatus.key              ^= piece_key[Piece::BLACK_ROOK][A8] ^ piece_key[Piece::BLACK_ROOK][D8];
+                    newStatus.non_pawn_key[US] ^= piece_key[Piece::BLACK_ROOK][A8] ^ piece_key[Piece::BLACK_ROOK][D8];
                     if constexpr (Update_NNUE == true)
                     {
                         dp.type = DirtyPieces::CASTLING;

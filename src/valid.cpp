@@ -23,14 +23,14 @@ bool Board::valid() const noexcept
         std::cout << "erreur pawn key" << std::endl;
         return false;
     }
-    if (get_status().mat_key[WHITE] != hash_3[WHITE])
+    if (get_status().non_pawn_key[WHITE] != hash_3[WHITE])
     {
-        std::cout << "erreur mat key white" << std::endl;
+        std::cout << "erreur non_pawn key white" << std::endl;
         return false;
     }
-    if (get_status().mat_key[BLACK] != hash_3[BLACK])
+    if (get_status().non_pawn_key[BLACK] != hash_3[BLACK])
     {
-        std::cout << "erreur mat key black" << std::endl;
+        std::cout << "erreur non_pawn key black" << std::endl;
         return false;
     }
 

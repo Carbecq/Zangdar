@@ -65,8 +65,8 @@ using ContinuationHistoryTable = I16[N_PIECE][N_SQUARES][N_PIECE][N_SQUARES];
 // indexed by the corresponding board feature, then uses the difference to adjust future
 // static evaluations in positions with the same feature
 //============================================================================
-using PawnCorrectionHistoryTable        = int[N_COLORS][PAWN_HASH_SIZE];
-using MaterialCorrectionHistoryTable    = int[N_COLORS][PAWN_HASH_SIZE];
+using PawnCorrectionHistoryTable       = int[N_COLORS][PAWN_HASH_SIZE];
+using NonPawnCorrectionHistoryTable    = int[N_COLORS][PAWN_HASH_SIZE];
 
 
 
@@ -166,8 +166,8 @@ private:
 
     // Correction History
     // Utilisé pour la correction de l'évaluation
-    PawnCorrectionHistoryTable     pawn_correction_history = {{0}};
-    MaterialCorrectionHistoryTable material_correction_history[N_COLORS] = {{{0}}};
+    PawnCorrectionHistoryTable    pawn_correction_history = {{0}};
+    NonPawnCorrectionHistoryTable non_pawn_correction_history[N_COLORS] = {{{0}}};
 };
 
 #endif // HISTORY_H

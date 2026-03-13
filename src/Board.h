@@ -16,10 +16,10 @@
 // celle-ci sera nécessaire pour effectuer un unmake_move
 struct Status
 {
-    KEY  key                = 0ULL;                     // nombre unique (?) correspondant à la position
-    KEY  pawn_key           = 0ULL;                     // nombre unique (?) correspondant à la position des pions
-    KEY  mat_key[N_COLORS]  = {0ULL, 0ULL};             // nombre unique (?) correspondant à la position des pièces
-    MOVE move               = Move::MOVE_NONE;
+    KEY  key                    = 0ULL;                     // nombre unique (?) correspondant à la position
+    KEY  pawn_key               = 0ULL;                     // nombre unique (?) correspondant à la position des pions
+    KEY  non_pawn_key[N_COLORS] = {0ULL, 0ULL};             // nombre unique (?) correspondant à la position des pièces, sauf les pions
+    MOVE move                   = Move::MOVE_NONE;
     SQUARE   ep_square          = Square::SQUARE_NONE;      // case en-passant : si les blancs jouent e2-e4, la case est e3
     U32      castling           = CASTLE_NONE;              // droit au roque
     int      fiftymove_counter  = 0;                        // nombre de demi-coups depuis la dernière capture ou le dernier mouvement de pion.
@@ -108,7 +108,7 @@ public:
 
 
     template <Color C> void calculate_checkers_pinned() noexcept;
-    void calculate_hash(U64& key, U64& pawn_key, U64 mat_key[2]) const;
+    void calculate_hash(U64& key, U64& pawn_key, U64 non_pawn_key[2]) const;
 
     //! \brief  Retourne le Bitboard de TOUS les attaquants (Blancs et Noirs) de la case "sq"
     [[nodiscard]] Bitboard all_attackers(const SQUARE sq, const Bitboard occ) const noexcept
@@ -628,8 +628,8 @@ public:
     [[nodiscard]] inline int get_fullmove_counter()   const noexcept { return get_status().fullmove_counter;  }
     [[nodiscard]] inline SQUARE get_ep_square()       const noexcept { return get_status().ep_square;         }
     [[nodiscard]] inline KEY get_key()                const noexcept { return get_status().key;               }
-    [[nodiscard]] inline KEY get_pawn_key()           const noexcept { return get_status().pawn_key;          }
-    [[nodiscard]] inline KEY get_mat_key(Color color) const noexcept { return get_status().mat_key[color];   }
+    [[nodiscard]] inline KEY get_pawn_key()                 const noexcept { return get_status().pawn_key;          }
+    [[nodiscard]] inline KEY get_non_pawn_key(Color color)  const noexcept { return get_status().non_pawn_key[color];   }
     [[nodiscard]] inline Bitboard get_checkers()      const noexcept { return get_status().checkers;          }
     [[nodiscard]] inline Bitboard get_pinned()        const noexcept { return get_status().pinned;            }
 
