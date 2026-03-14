@@ -138,22 +138,15 @@ void NNUE::add(Accumulator& accu, Piece piece, SQUARE from, SQUARE wking, SQUARE
 
     // SIMD fait perdre "un peu" de perf
 
-    // #if defined USE_SIMD
-    //     constexpr int simd_width = sizeof(simd::Vepi16) / sizeof(I16);
+    #if defined USE_SIMD
+        constexpr int simd_width = sizeof(simd::Vepi16) / sizeof(I16);
 
-    //     for (Usize i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
-    //     {
-    //         auto current = simd::LoadEpi16(&accu.white[i]);
-    //         auto value   = simd::LoadEpi16(&network->feature_weights[i+offset_w]);
-    //         current      = simd::AddEpi16(current, value);
-    //         simd::StoreEpi16(&accu.white[i], current);
-
-    //         current = simd::LoadEpi16(&accu.black[i]);
-    //         value   = simd::LoadEpi16(&network->feature_weights[i+offset_b]);
-    //         current = simd::AddEpi16(current, value);
-    //         simd::StoreEpi16(&accu.black[i], current);
-    //     }
-    // #else
+        for (Usize i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
+        {
+            simd::StoreEpi16(&accu.white[i], simd::AddEpi16(simd::LoadEpi16(&accu.white[i]), simd::LoadEpi16(&network->feature_weights[i+offset_w])));
+            simd::StoreEpi16(&accu.black[i], simd::AddEpi16(simd::LoadEpi16(&accu.black[i]), simd::LoadEpi16(&network->feature_weights[i+offset_b])));
+        }
+    #else
 
     for (size_t i = 0; i < HIDDEN_LAYER_SIZE; ++i)
     {
