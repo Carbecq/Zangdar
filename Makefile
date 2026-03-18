@@ -45,31 +45,25 @@ else
 endif
 DEFS += -DSYZYGY=$(SYZYGY)
 
-#  Quelques defines utilisés en debug
-# DEFS += -DDEBUG_EVAL
-# DEFS += -DDEBUG_LOG
-# DEFS += -DDEBUG_TIME
+DEFS += $(EXTRA_DEFS)
 
-#  Affichage "lisible"
-#  NE PAS UTILISER PRETTY avec
-#       + Arena (score mal affiché)
-#       + test STS
-#DEFS += -DUSE_PRETTY
+#   make EXTRA_DEFS=-DUSE_TUNING  
+#   make EXTRA_DEFS="-DUSE_TUNING -DDEBUG_LOG"  
+
+#  Quelques defines utilisés en debug
+# EXTRA_DEFS = -DDEBUG_EVAL
+# EXTRA_DEFS = -DDEBUG_LOG
+# EXTRA_DEFS = -DDEBUG_TIME
 
 #---------------------------------------------------
 #  Tuning
 #---------------------------------------------------
-#DEFS += -DUSE_TUNING
-
-#---------------------------------------------------
-#  Profiling
-#---------------------------------------------------
-#DEFS += -DUSE_PROFILING
+#EXTRA_DEFS = -DUSE_TUNING
 
 #---------------------------------------------------
 #  Datagen
 #---------------------------------------------------
-#DEFS += -DUSE_DATAGEN
+#EXTRA_DEFS = -DUSE_DATAGEN
 
 #---------------------------------------------------
 #  NNUE
@@ -85,6 +79,7 @@ endif
 
 CFLAGS_ARCH =
 ZANGDAR     = Zangdar
+ZANGDAR_DEV = Zangdar_dev
 
 DEFAULT_EXE = $(ZANGDAR)
 
@@ -95,19 +90,28 @@ ifeq ($(CPU_MODEL),)
 endif
 
 # Détection des capacités CPU
+HAS_SSE2   := $(shell grep -qm1 'sse2'    /proc/cpuinfo 2>/dev/null && echo yes)
+HAS_POPCNT := $(shell grep -qm1 'popcnt'  /proc/cpuinfo 2>/dev/null && echo yes)
 HAS_AVX2   := $(shell grep -qm1 'avx2'    /proc/cpuinfo 2>/dev/null && echo yes)
 HAS_AVX512 := $(shell grep -qm1 'avx512f' /proc/cpuinfo 2>/dev/null && echo yes)
 HAS_BMI2   := $(shell grep -qm1 'bmi2'    /proc/cpuinfo 2>/dev/null && echo yes)
 
-# SIMD activé si au moins AVX2
+# SIMD activé si au moins SSE2
 SIMD =
 ifeq ($(HAS_AVX512), yes)
     SIMD = -DUSE_SIMD
 else ifeq ($(HAS_AVX2), yes)
     SIMD = -DUSE_SIMD
+else ifeq ($(HAS_SSE2), yes)
+    SIMD = -DUSE_SIMD
 endif
 
-ifeq ($(ARCH), avx2)
+ifeq ($(ARCH), sse2)
+    DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
+    CFLAGS_ARCH += -msse -msse2 -mpopcnt
+    CFLAGS_ARCH += $(SIMD)
+
+else ifeq ($(ARCH), avx2)
     DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
     CFLAGS_ARCH += -msse -msse2
     CFLAGS_ARCH += -msse3 -mpopcnt
@@ -153,6 +157,8 @@ $(info Version   = $(VERSION))
 $(info CXX       = $(CXX))
 $(info ARCH      = $(ARCH))
 $(info CPU       = $(CPU_MODEL))
+$(info SSE2      = $(if $(HAS_SSE2),yes,no))
+$(info POPCNT    = $(if $(HAS_POPCNT),yes,no))
 $(info AVX2      = $(if $(HAS_AVX2),yes,no))
 $(info AVX512    = $(if $(HAS_AVX512),yes,no))
 $(info BMI2      = $(if $(HAS_BMI2),yes,no))
@@ -161,7 +167,6 @@ $(info PEXT      = $(if $(HAS_BMI2),yes,no))
 $(info OS        = $(OS))
 $(info Evalfile  = $(EVALFILE))
 $(info Tuning    = $(if $(findstring USE_TUNING,$(DEFS)),yes,no))
-$(info Profiling = $(if $(findstring USE_PROFILING,$(DEFS)),yes,no))
 $(info Datagen   = $(if $(findstring USE_DATAGEN,$(DEFS)),yes,no))
 
 ### Executable name
@@ -181,11 +186,10 @@ endif
 # -march=X: (execution domain) Generate code that can use instructions available in the architecture X
 # -mtune=X: (optimization domain) Optimize for the microarchitecture X, but does not change the ABI or make assumptions about available instructions
 
-
 ifeq ($(findstring clang, $(CXX)), clang)
 
 CFLAGS_REL1  = -O3 -flto -ftree-vectorize -funroll-loops -fno-exceptions -DNDEBUG -pthread -Wdisabled-optimization -Wall -Wextra \
-               -finline-functions -fno-rtti -fstrict-aliasing -fomit-frame-pointer -fwhole-program-vtables \
+               -finline-functions -fno-rtti -fstrict-aliasing -fwhole-program-vtables \
                -fvectorize -fslp-vectorize
 CFLAGS_WARN1 = -Wmissing-declarations -Wredundant-decls -Wshadow -Wundef -Wuninitialized -pedantic
 
@@ -210,7 +214,7 @@ PGO_USE   = -fprofile-instr-use=zangdar.profdata
 else
 
 CFLAGS_REL1  = -O3 -flto=auto -ftree-vectorize -funroll-loops -fno-exceptions -DNDEBUG -pthread -fwhole-program -Wdisabled-optimization -Wall -Wextra \
-               -finline-functions -fno-rtti -fstrict-aliasing -fomit-frame-pointer
+               -finline-functions -fno-rtti -fstrict-aliasing
 CFLAGS_WARN1 = -Wmissing-declarations -Wredundant-decls -Wshadow -Wundef -Wuninitialized -pedantic
 
 CFLAGS_WARN2 = -Wcast-align=strict -Wcast-qual -Wctor-dtor-privacy -Wswitch -Wswitch-default -Wswitch-enum -Wenum-compare -Wenum-conversion
@@ -229,15 +233,20 @@ endif
 # CFLAGS  : -fsanitize=undefined -fsanitize=memory and -fsanitize=address and maybe even -fsanitize=thread
 # LDFLAGS : -fsanitize=address -static-libsan
 
+#   Pour perf record / perf report, il faut des symboles de debug et pas de frame pointer omission :
+#       -g -fno-omit-frame-pointer -O3
+#   -pg c'est pour gprof, pas perf
+#
+
 CFLAGS_COM  = -pipe -std=c++23 -DVERSION=\"$(VERSION)\" $(DEFS) $(CFLAGS_NNUE)
-CFLAGS_REL  = $(CFLAGS_REL1) $(CFLAGS_WARN1) -DNDEBUG
+CFLAGS_REL  = $(CFLAGS_REL1) $(CFLAGS_WARN1) -DNDEBUG -fomit-frame-pointer
 CFLAGS_DBG  = -g -O2
 CFLAGS_WARN = $(CFLAGS_WARN1) $(CFLAGS_WARN2) $(CFLAGS_WARN3) $(CFLAGS_WARN4) $(CFLAGS_WARN5) $(CFLAGS_WARN6)
-CFLAGS_PROF = $(CFLAGS_REL1) $(CFLAGS_WARN1) -pg -DNDEBUG -DUSE_PROFILING
+CFLAGS_PERF = $(CFLAGS_REL1) $(CFLAGS_WARN1)  -DNDEBUG -g -fno-omit-frame-pointer -DUSE_PROFILING
 
 LDFLAGS_REL  = -s -flto -lm
 LDFLAGS_DBG  = -lm
-LDFLAGS_PROF = -pg -flto -lm
+LDFLAGS_PERF = -pg -flto -lm
 
 PGO_FLAGS = -fno-asynchronous-unwind-tables
 
@@ -264,9 +273,9 @@ debug: EXEC    = $(EXE)-dbg$(SUF)
 debug: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_WARN) $(CFLAGS_DBG)
 debug: LDFLAGS = $(LDFLAGS_DBG) $(LDFLAGS_WIN) $(LDFLAGS_STA)
 
-prof: EXEC    = $(EXE)-pro$(SUF)
-prof: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_PROF)
-prof: LDFLAGS = $(LDFLAGS_PROF) $(LDFLAGS_WIN) $(LDFLAGS_STA)
+perf: EXEC    = $(EXE)-perf$(SUF)
+perf: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_PERF)
+perf: LDFLAGS = $(LDFLAGS_PERF) $(LDFLAGS_WIN) $(LDFLAGS_STA)
 
 pgo: EXEC    = $(EXE)-pgo$(SUF)
 pgo: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL)
@@ -287,31 +296,36 @@ endif
 # Target pour OpenBench : compile directement vers $(EXE) sans renommage
 # OpenBench appelle : make -j EXE=<chemin> [EVALFILE=<réseau>] [CXX=<compilateur>]
 openbench: $(EXE)
+	@cp $(EXEC) $(ZANGDAR_DEV)
 	@echo "Génération pour OpenBench : $(EXEC)"
 
 release: $(EXE)
-	mv $(EXE) $(EXEC)
+	@mv $(EXE) $(EXEC)
+	@cp $(EXEC) $(ZANGDAR_DEV)
 	@echo "Génération en mode release : $(EXEC)"
 
-prof: $(EXE)
-	mv $(EXE) $(EXEC)
-	@echo "Génération en mode profile : $(EXEC)"
+perf: $(EXE)
+	@mv $(EXE) $(EXEC)
+	@cp $(EXEC) $(ZANGDAR_DEV)
+	@echo "Génération en mode test perf : $(EXEC)"
 
 debug: $(EXE)
-	mv $(EXE) $(EXEC)
+	@mv $(EXE) $(EXEC)
+	@cp $(EXEC) $(ZANGDAR_DEV)
 	@echo "Génération en mode debug : $(EXEC)"
 
 #---------------------------------------------------------------------
 #	PGO (code venant d'Ethereal)
 #---------------------------------------------------------------------
 pgo:
-	rm -f *.gcda *.profdata *.profraw
+	@rm -f *.gcda *.profdata *.profraw
 	$(CXX) $(PGO_GEN) $(CFLAGS) $(PGO_FLAGS) $(SRC) $(LDFLAGS) -o $(EXE)
 	$(PGO_BENCH)
 	$(PGO_MERGE)
 	$(CXX) $(PGO_USE) $(CFLAGS) $(PGO_FLAGS) $(SRC) $(LDFLAGS) -o $(EXE)
-	rm -f *.gcda *.profdata *.profraw
-	mv $(EXE) $(EXEC)
+	@rm -f *.gcda *.profdata *.profraw
+	@mv $(EXE) $(EXEC)
+	@cp $(EXEC) $(ZANGDAR_DEV)
 	@echo "Génération en mode pgo : $(EXEC)"
 
 #----------------------------------------------------------------------
@@ -325,7 +339,7 @@ $(EXE): $(OBJ)
 #---------------------------------------------------------------------
 
 clean:
-	@rm -f $(OBJ) $(EXE)*
+	@rm -f $(OBJ) $(EXE)* $(ZANGDAR_DEV)
 	@rm -f *.gcda *.profdata *.profraw
 
 mrproper: clean

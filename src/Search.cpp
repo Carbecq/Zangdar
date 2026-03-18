@@ -57,12 +57,6 @@ void Search::show_uci_result(I64 elapsed, const PVariation& pv) const
 
     std::stringstream stream;
 
-// en mode UCI, il ne faut pas mettre les points de séparateur,
-// sinon Arena n'affiche pas correctement le nombre de nodes
-#if defined USE_PRETTY
-    stream.imbue(std::locale(std::locale::classic(), new MyNumPunct));
-    int l = 12;
-#endif
 
     /*  score
      *      cp <x>
@@ -78,32 +72,18 @@ void Search::show_uci_result(I64 elapsed, const PVariation& pv) const
     int hash_full  = table->hash_full();
 
     stream << "info "
-
-#if defined USE_PRETTY
-           << " depth "    << std::setw(2) << td_best_depth                     // depth <x> search depth in plies
-           << " seldepth " << std::setw(2) << td_seldepth                       // seldepth <x> selective search depth in plies
-#else
            << " depth "    << iter_best_depth
            << " seldepth " << seldepth
-#endif
 
 // time     : the time searched in ms
 // nodes    : noeuds calculés
 // nps      : nodes per second searched
 
-#if defined USE_PRETTY
-              << " time "       << std::setw(6) << elapsed                          // time <x> the time searched in ms
-              << " nodes "      << std::setw(l) << all_nodes
-              << " nps "        << std::setw(7) << all_nodes * 1000 / elapsed       // nps <x> x nodes per second searched,
-              << " tbhits "     << all_tbhits                                       // tbhits <x> x positions where found in the endgame table bases
-           << " hashfull "   << std::setw(5) << hash_full;                          // hashfull <x> the hash is x permill full,
-#else
-              << " time "       << elapsed
-              << " nodes "      << all_nodes
-              << " nps "        << all_nodes * 1000 / elapsed
-              << " tbhits "     << all_tbhits
+           << " time "       << elapsed
+           << " nodes "      << all_nodes
+           << " nps "        << all_nodes * 1000 / elapsed
+           << " tbhits "     << all_tbhits
            << " hashfull "   << hash_full;
-#endif
 
     if (iter_best_score >= MATE_IN_X)
     {
@@ -115,12 +95,7 @@ void Search::show_uci_result(I64 elapsed, const PVariation& pv) const
     }
     else
     {
-
-#if defined USE_PRETTY
-        stream << " score cp " << std::right << std::setw(5) << td_best_score;  // score cp <x> the score from the engine's point of view in centipawns.
-#else
         stream << " score cp " << iter_best_score;
-#endif
     }
 
     stream << " pv";

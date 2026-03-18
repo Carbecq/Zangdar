@@ -11,7 +11,7 @@
 #include <immintrin.h>
 #endif
 
-#if defined(__AVX512F__)
+#if defined(__AVX512F__) && defined(__AVX512BW__)
   #define ALIGN   64
 #elif defined(__AVX2__)
   #define ALIGN   32
@@ -157,9 +157,8 @@ public:
     template<Color color> int  evaluate(const Accumulator& current, size_t count);
 
     void add(Accumulator &accu,
-             Piece piece, SQUARE from,
-             SQUARE wking, SQUARE bking);
-
+              Piece piece, SQUARE from,
+              SQUARE wking, SQUARE bking);
     void lazy_updates(const Board &board, Accumulator &acc);
 
 
@@ -168,9 +167,7 @@ public:
                    const std::array<I16, HIDDEN_LAYER_SIZE * N_COLORS * OUTPUT_BUCKETS>& weights,
                    const int bucket);
 
-
     template <Color side> void add(Accumulator& accu, Piece piece, SQUARE from, SQUARE king);
-
 
 private:
     std::array<Accumulator, MAX_PLY+1> stack;                       // pile des accumulateurs

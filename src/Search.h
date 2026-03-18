@@ -13,17 +13,6 @@
 
 
 
-// classe permettant de redéfinir mon 'locale'
-// en effet, je n'en ai pas trouvé (windows ? mingw ?)
-// de qui permet d'écrire un entier avec un séparateur : 1.000.000
-
-class MyNumPunct : public std::numpunct<char>
-{
-protected:
-    virtual char do_thousands_sep() const { return '.'; }
-    virtual std::string do_grouping() const { return "\03"; }
-};
-
 constexpr int STACK_OFFSET = 4;
 constexpr int STACK_SIZE   = MAX_PLY + 2*STACK_OFFSET;  // taille un peu trop grande, mais multiple de 8
 

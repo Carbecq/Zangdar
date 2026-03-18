@@ -20,15 +20,13 @@ DEFINES += SYZYGY=\\\"/mnt/Datas/Echecs/Syzygy\\\"
 
 #------------------------------------------------------
 # DEFINES += USE_TUNING
-#DEFINES += USE_PROFILING
-#DEFINES += USE_DATAGEN
+# DEFINES += USE_DATAGEN
 
 
 #------------------------------------------------------
 # DEFINES += DEBUG_EVAL
 # DEFINES += DEBUG_LOG
 # DEFINES += DEBUG_TIME
-# DEFINES += USE_PRETTY
 
 #------------------------------------------------------
 # https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html

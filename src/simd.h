@@ -21,7 +21,11 @@
 namespace simd {
 
 //--------------------------------------------------------------------------------- AVX512
-#if defined __AVX512__
+// __AVX512F__ donne les instructions de base (entiers 32/64 bits),
+// mais les opérations sur epi16 (16 bits) comme _mm512_add_epi16, _mm512_mullo_epi16, _mm512_min_epi16, etc.
+// nécessitent AVX-512BW (Byte and Word).
+
+#if defined(__AVX512F__) && defined(__AVX512BW__)
 
 using Vepi16 = __m512i;
 using Vepi32 = __m512i;
@@ -158,6 +162,75 @@ inline int ReduceAddEpi32(Vepi32 vector) {
     __m128i sum32 = _mm_add_epi32(upper32, sum64);
 
     // Return the bottom 32 bits of sum32
+    return _mm_cvtsi128_si32(sum32);
+}
+
+//--------------------------------------------------------------------------------- SSE2
+#elif defined __SSE2__
+
+using Vepi16 = __m128i;
+using Vepi32 = __m128i;
+
+inline Vepi16 ZeroEpi16() {
+    return _mm_setzero_si128();
+}
+
+inline Vepi32 ZeroEpi32() {
+    return _mm_setzero_si128();
+}
+
+inline Vepi16 LoadEpi16(const int16_t* memory_address) {
+    return _mm_load_si128(reinterpret_cast<const __m128i*>(memory_address));
+}
+
+inline Vepi32 LoadEpi32(const int32_t* memory_address) {
+    return _mm_load_si128(reinterpret_cast<const __m128i*>(memory_address));
+}
+
+inline void StoreEpi16(void* memory_address, Vepi16 vector) {
+    _mm_store_si128(reinterpret_cast<__m128i*>(memory_address), vector);
+}
+
+inline Vepi16 SetEpi16(int num) {
+    return _mm_set1_epi16(num);
+}
+
+inline Vepi32 SetEpi32(int num) {
+    return _mm_set1_epi32(num);
+}
+
+inline Vepi16 AddEpi16(Vepi16 v1, Vepi16 v2) {
+    return _mm_add_epi16(v1, v2);
+}
+
+inline Vepi32 AddEpi32(Vepi32 v1, Vepi32 v2) {
+    return _mm_add_epi32(v1, v2);
+}
+
+inline Vepi16 SubEpi16(Vepi16 v1, Vepi16 v2) {
+    return _mm_sub_epi16(v1, v2);
+}
+
+inline Vepi16 MultiplyEpi16(Vepi16 v1, Vepi16 v2) {
+    return _mm_mullo_epi16(v1, v2);
+}
+
+inline Vepi32 MultiplyAddEpi16(Vepi16 v1, Vepi16 v2) {
+    return _mm_madd_epi16(v1, v2);
+}
+
+inline Vepi16 Clip(Vepi16 vector, int l1q) {
+    // SSE2 n'a pas min/max epi16, mais SSE2 a _mm_min_epi16 (signé)
+    // _mm_min_epi16 et _mm_max_epi16 existent en SSE2
+    return _mm_min_epi16(_mm_max_epi16(vector, ZeroEpi16()), SetEpi16(l1q));
+}
+
+inline int ReduceAddEpi32(Vepi32 vector) {
+    // 128 bits → réduction horizontale
+    __m128i upper64 = _mm_unpackhi_epi64(vector, vector);
+    __m128i sum64 = _mm_add_epi32(upper64, vector);
+    __m128i upper32 = _mm_shuffle_epi32(sum64, 1);
+    __m128i sum32 = _mm_add_epi32(upper32, sum64);
     return _mm_cvtsi128_si32(sum32);
 }
 
