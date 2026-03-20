@@ -309,8 +309,9 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
             // printf("----------------------------ajout fin (%d) \n", ok_tb);
 
             // Si on utilise les tables Syzygy, inutile d'aller plus loin
+            int min_tb = std::min(TB_LARGEST, threadPool.get_syzygyProbeLimit());
             if (    threadPool.get_useSyzygy()
-                 && BB::count_bit(board.occupancy_all()) <= 6)
+                 && (BB::count_bit(board.occupancy_all()) <= min_tb))
             {
                 use_syzygy = true;
                 break;
@@ -360,10 +361,40 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
         // Si on utilise les tables Syzygy, le résultat est exact.
         if (use_syzygy)
         {
-            score *= (board.turn() == WHITE ? 1 : -1);
-            result = score < 0 ? COLOR_WIN[BLACK] :
-                     score > 0 ? COLOR_WIN[WHITE] :
-                                 COLOR_DRAW;
+            unsigned wdl = tb_probe_wdl(
+                board.occupancy_c<WHITE>(), board.occupancy_c<BLACK>(),
+                board.occupancy_p<PieceType::KING>(),   board.occupancy_p<PieceType::QUEEN>(),
+                board.occupancy_p<PieceType::ROOK>(),   board.occupancy_p<PieceType::BISHOP>(),
+                board.occupancy_p<PieceType::KNIGHT>(), board.occupancy_p<PieceType::PAWN>(),
+                board.get_status().ep_square == SQUARE_NONE ? 0 : board.get_status().ep_square,
+                board.turn() == WHITE ? 1 : 0);
+
+/*            Les tables Syzygy retournent le WDL du point de vue du camp qui doit jouer (board.turn()).
+
+              - TB_WIN → le camp qui joue gagne → COLOR_WIN[board.turn()]
+              - TB_LOSS → le camp qui joue perd → c'est l'adversaire qui gagne → COLOR_WIN[~board.turn()]
+              - sinon → nulle
+
+              L'opérateur ~ inverse la couleur (WHITE→BLACK, BLACK→WHITE).
+
+              Exemple concret : si c'est aux Noirs de jouer et que Syzygy dit TB_WIN :
+              - board.turn() = BLACK
+              - result = COLOR_WIN[BLACK] = "0.0" ✓
+*/
+            if (wdl != TB_RESULT_FAILED)
+            {
+                result = (wdl == TB_WIN)  ? COLOR_WIN[board.turn()] :
+                         (wdl == TB_LOSS) ? COLOR_WIN[~board.turn()] :
+                                            COLOR_DRAW;
+            }
+            else
+            {
+                // fallback : score de la dernière recherche
+                score *= (board.turn() == WHITE ? 1 : -1);
+                result = score < 0 ? COLOR_WIN[BLACK] :
+                         score > 0 ? COLOR_WIN[WHITE] :
+                                     COLOR_DRAW;
+            }
         }
 
         // Ecriture dans le fichier des fens collectées dans cette partie

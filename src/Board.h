@@ -602,6 +602,7 @@ public:
     MOVE convertPyrrhicMove(unsigned result) const;
     bool probe_root(MOVE& move) const;
     void probe_root_test() const;
+    void syzygy_info();
 
     //*************************************************************************
     //*************************************************************************

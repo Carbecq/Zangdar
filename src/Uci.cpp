@@ -167,6 +167,7 @@ void Uci::run()
         {
             std::cout << "Zangdar " << VERSION << " NNUE " << EVALFILE << std::endl;
             std::cout << transpositionTable.info();
+            uci_board.syzygy_info();
         }
         else if (token == "s")
         {
@@ -538,6 +539,9 @@ setoption name <id> [value <x>]
 
         else if (option_name == "SyzygyPath")
         {
+            // Pour mettre plusieurs chemins
+            // setoption name SyzygyPath value /mnt/Datas/Echecs/Syzygy/345:/mnt/Datas/Echecs/Syzygy/6
+
             iss >> value;      // "value"
 
             std::string path;
@@ -552,7 +556,13 @@ setoption name <id> [value <x>]
                 tb_init(path);
 
                 // only use TB if loading was successful
-                threadPool.set_useSyzygy(TB_LARGEST > 0);
+                if (TB_LARGEST > 0)
+                {
+                    threadPool.set_useSyzygy(true);
+                    // Initialize probeLimit to TB_LARGEST if not explicitly set
+                    if (threadPool.get_syzygyProbeLimit() == 0)
+                        threadPool.set_syzygyProbeLimit(TB_LARGEST);
+                }
             }
         }
 

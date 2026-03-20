@@ -292,3 +292,11 @@ MOVE Board::convertPyrrhicMove(unsigned result) const
     }
 }
 
+void Board::syzygy_info()
+{
+    std::cout << "useSyzygy  = " << threadPool.get_useSyzygy() << std::endl;
+    std::cout << "probeLimit = " << threadPool.get_syzygyProbeLimit() << std::endl;
+    std::cout << "TB_LARGEST = " << TB_LARGEST << std::endl;
+
+
+}

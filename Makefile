@@ -38,10 +38,17 @@ endif
 CONFIG = VERSION.txt
 include ${CONFIG}
 
+
+#---------------------------------------------------------------------
+#   Définition locale des tables Syzygy 
+#   1- n'est utilisé que pour le raccourci yyy (tests internes).
+#   2- pour Datagen. Dans le cas d'une utilisation  sur un serveur externe,
+#      il faut modifier le makefile
+#---------------------------------------------------------------------
 ifeq ($(target_windows),yes)
-    SYZYGY = \"D:/Echecs/Syzygy\"
+    SYZYGY = \"D:/Echecs/Syzygy/345:D:/Echecs/Syzygy/6\"
 else
-    SYZYGY = \"/mnt/Datas/Echecs/Syzygy\"
+    SYZYGY = \"/mnt/Datas/Echecs/Syzygy/345:/mnt/Datas/Echecs/Syzygy/6\"
 endif
 DEFS += -DSYZYGY=$(SYZYGY)
 
