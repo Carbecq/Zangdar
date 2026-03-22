@@ -45,7 +45,16 @@ DataGen::DataGen(const U32 _nbr_threads, const U32 _max_fens, const std::string&
     // 2) évite d'avoir une partie nulle avec R+T/R sans
     //    que le mat soit trouvé
     tb_init(SYZYGY);
-    threadPool.set_useSyzygy(true);
+
+    // only use TB if loading was successful
+    if (TB_LARGEST > 0)
+    {
+        threadPool.set_useSyzygy(true);
+
+        // Sans cet appel, syzygyProbeLimit vaut 0 et le break Syzygy en cours de partie
+        // (DataGen.cpp, boucle de jeu) ne se déclencherait jamais (min(TB_LARGEST,0) = 0).
+        threadPool.set_syzygyProbeLimit(TB_LARGEST);
+    }
 
     //================================================
     //  Lancement de la génération par thread
@@ -302,6 +311,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
             if (    board.is_in_check() == false
                 && !Move::is_capturing(move)
                 && abs(score) < HIGH_SCORE
+                && BB::count_bit(board.occupancy_all()) >= MIN_PIECES
                 && nbr_fens < static_cast<int>(fens.size()))
             {
                 fens[nbr_fens++] = { board.get_fen() , score * (1 - 2*board.turn()) };

@@ -14,8 +14,6 @@ bool Board::fast_see(const MOVE move, const int threshold) const
 {
     // Code provenant de Berserk
 
-    // Cette routine n'est appelée qu'en cas de capture
-
     const SQUARE from = Move::from(move);
     const SQUARE dest = Move::dest(move);
 

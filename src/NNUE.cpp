@@ -71,6 +71,30 @@ void NNUE::start_search(const Board& board)
 //!         des positions de stack qui ne sont plus valides).
 //!         Utilisé dans DataGen pour éviter l'overflow du stack
 //!         quand start_search() n'est appelé qu'une fois par partie.
+//!
+//!  C'est utile. Voici pourquoi.
+//!
+//! Le problème sans rebase
+//!
+//! Dans DataGen, start_search() n'est appelé qu'une seule fois par partie
+//!  (pour éviter de recalculer l'accumulateur de zéro à chaque coup).
+//! La boucle de jeu enchaîne les make_move, et chaque coup fait un push() → head_idx monte de 1 à chaque demi-coup.
+//! Sur une longue partie (50-100 coups), head_idx atteindrait la taille du stack (MAX_PLY+1) → overflow
+//! et comportement indéfini.
+//!
+//! Ce que fait rebase
+//!
+//!     1. Applique les lazy updates en attente sur l'accumulateur courant (lazy_updates)
+//!     2. Copie cet accumulateur en stack[0] et remet head_idx = 0
+//!     3. Réinitialise les Finny tables — elles contiennent des références aux positions du stack
+//!         (buckets de roi, bitboards), qui deviennent obsolètes après le décalage
+//!
+//! Le résultat : le stack repart de zéro avec l'état correct, sans recalculer l'accumulateur
+//!   depuis la position initiale.
+//!
+//! Donc oui, c'est nécessaire dans le contexte DataGen où start_search() n'est pas rappelé à chaque coup.
+//!   Sans ça, overflow garanti sur les parties longues.
+//!
 //----------------------------------------------------
 void NNUE::rebase(const Board& board)
 {

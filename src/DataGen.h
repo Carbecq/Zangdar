@@ -44,6 +44,10 @@ private:
     // (vs 128 MB en jeu normal). Meilleure localité cache, moins de RAM.
     constexpr static int DATAGEN_HASH_SIZE = 4;
 
+    // Nombre minimum de pièces pour sauvegarder une position :
+    // exclut 2R seuls (2) et 2R+1P (3), inutiles pour l'entraînement NNUE.
+    constexpr static int MIN_PIECES = 4;
+
     constexpr static std::string COLOR_WIN[N_COLORS] = {"1.0", "0.0"};
     constexpr static std::string COLOR_DRAW = "0.5";
 };
