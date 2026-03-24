@@ -34,16 +34,16 @@ DataGen::DataGen(const U32 _nbr_threads, const U32 _max_fens, const std::string&
 {
     const U32 max_fens = std::clamp(_max_fens, 1U, 1000U) * 1000000U;
 
-    printf("DataGen : nbr_threads=%d ; max_fens=%d millions ; output=%s \n", _nbr_threads, max_fens/1000000, _output.c_str());
+    printf("DataGen : nbr_threads=%u ; max_fens=%u millions ; output=%s \n", _nbr_threads, max_fens/1000000, _output.c_str());
 
     //================================================
     //  Initialisations
     //================================================
-    U32 nbr_threads = set_threads(_nbr_threads);
 
     // 1) évite d'avoir des positions avec 2 rois seuls
     // 2) évite d'avoir une partie nulle avec R+T/R sans
     //    que le mat soit trouvé
+    // 3) SYZYGY est défini dans le Makefile
     tb_init(SYZYGY);
 
     // only use TB if loading was successful
@@ -55,13 +55,21 @@ DataGen::DataGen(const U32 _nbr_threads, const U32 _max_fens, const std::string&
         // (DataGen.cpp, boucle de jeu) ne se déclencherait jamais (min(TB_LARGEST,0) = 0).
         threadPool.set_syzygyProbeLimit(TB_LARGEST);
     }
+    else
+    {
+        std::cout << "Les tables Syzygy ne sont pas présentes." << std::endl;
+        return;
+    }
+
+    U32 nbr_threads = set_threads(_nbr_threads);
 
     //================================================
     //  Lancement de la génération par thread
     //================================================
     std::vector<std::thread> threads{};
     std::atomic<size_t> total_fens{0};           // nombre total de fens pour toutes les threads
-    std::atomic<bool> run{true};
+    // shared_ptr pour que le thread detached (lecture stdin) ne référence jamais un objet détruit
+    auto run = std::make_shared<std::atomic<bool>>(true);
     auto start_time = TimePoint::now();
 
     for (size_t i = 0; i < nbr_threads; i++)
@@ -70,34 +78,36 @@ DataGen::DataGen(const U32 _nbr_threads, const U32 _max_fens, const std::string&
         str_file += "/data" + std::to_string(i) + ".txt";
 
         threads.emplace_back(
-                    [this, i, str_file, &total_fens, &run] {
-            genfens(i, str_file, total_fens, run);
+                    [this, i, str_file, &total_fens, run] {
+            genfens(i, str_file, total_fens, *run);
         });
     }
 
     // thread de contrôle d'arrêt (detached : ne bloque pas la fin du programme)
     // il suffit d'entrer un caractère
-    std::thread([&run] {
+    std::thread([run] {
         std::string input_line{};
         while (std::getline(std::cin, input_line))
         {
             if (input_line.empty())
                 continue;
-            run.store(false);
+            run->store(false);
             break;
         }
     }).detach();
 
     // boucle d'affichage de l'avancée des résultats
-    while (run)
+    while (run->load())
     {
         std::this_thread::sleep_for(std::chrono::seconds(10));
         auto elapsed = std::max(std::chrono::duration_cast<std::chrono::milliseconds>(TimePoint::now() - start_time).count(), decltype(start_time)::duration::rep(1));
-        int fps = 1000 * total_fens / elapsed;
-        int r = fps > 0 ? static_cast<double>(max_fens - total_fens) / static_cast<double>(fps) : 0;
-        int h = r / 3600;
-        int m = (r - h*3600) / 60;
-        int s = r - h*3600 - m*60;
+        U64 fps = 1000 * total_fens / elapsed;
+        int r   = (fps > 0 && total_fens < max_fens)
+                ? static_cast<double>(max_fens - total_fens) / static_cast<double>(fps)
+                : 0;
+        int h   = r / 3600;
+        int m   = (r - h*3600) / 60;
+        int s   = r - h*3600 - m*60;
         std::cout << "total fens = " << total_fens/1000000.0 << " millions"
                   << " ; fens/s = " << fps
                   << " ; fens/s/t = " << 1000*total_fens/elapsed/nbr_threads
@@ -105,7 +115,7 @@ DataGen::DataGen(const U32 _nbr_threads, const U32 _max_fens, const std::string&
                   << std::endl;
         if (total_fens > max_fens)
         {
-            run = false;
+            run->store(false);
         }
     }
 
@@ -182,7 +192,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
         board.initialisation();
         board.set_fen(START_FEN, false);
-        search->table->clear();
+        search->table->update_age();            // evite de clear 4 Mo
         search->history.reset();
 
         //====================================================
@@ -207,7 +217,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
             // Prevent the last ply being checkmate/stalemate
             if (++current_ply == MAX_RANDOM_PLIES)
             {
-                board.legal_moves<C, MoveGenType::ALL>(movelist);
+                board.legal_moves<~C, MoveGenType::ALL>(movelist);
                 if (movelist.size() == 0)
                 {
                     current_ply = 0;
@@ -270,7 +280,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
             search->table->update_age();
 
             // Partie nulle ?
-            if (board.is_draw(0))   //TODO vérifier ce 0 (voir Integral V4, Clover)
+            if (board.is_draw(0))
             {
                 result = COLOR_DRAW;
                 break;
@@ -311,7 +321,6 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
             if (    board.is_in_check() == false
                 && !Move::is_capturing(move)
                 && abs(score) < HIGH_SCORE
-                && BB::count_bit(board.occupancy_all()) >= MIN_PIECES
                 && nbr_fens < static_cast<int>(fens.size()))
             {
                 fens[nbr_fens++] = { board.get_fen() , score * (1 - 2*board.turn()) };
@@ -319,9 +328,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
             // printf("----------------------------ajout fin (%d) \n", ok_tb);
 
             // Si on utilise les tables Syzygy, inutile d'aller plus loin
-            int min_tb = std::min(TB_LARGEST, threadPool.get_syzygyProbeLimit());
-            if (    threadPool.get_useSyzygy()
-                 && (BB::count_bit(board.occupancy_all()) <= min_tb))
+            if (BB::count_bit(board.occupancy_all()) <= TB_LARGEST)
             {
                 use_syzygy = true;
                 break;
