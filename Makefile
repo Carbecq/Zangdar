@@ -44,13 +44,16 @@ include ${CONFIG}
 #   1- n'est utilisé que pour le raccourci yyy (tests internes).
 #   2- pour Datagen. Dans le cas d'une utilisation  sur un serveur externe,
 #      il faut modifier le makefile
+# Path to the folders/directories storing the Syzygy tablebase files. 
+# Multiple directories are to be separated by ";" on Windows and by ":" on Unix-based operating systems. 
+# Do not use spaces around the ";" or ":".
 #---------------------------------------------------------------------
 ifeq ($(target_windows),yes)
-    SYZYGY = \"D:/Echecs/Syzygy/345:D:/Echecs/Syzygy/6\"
+    SYZYGY = D:/Echecs/Syzygy/345;D:/Echecs/Syzygy/6
 else
-    SYZYGY = \"/mnt/Datas/Echecs/Syzygy/345:/mnt/Datas/Echecs/Syzygy/6\"
+    SYZYGY = /mnt/Datas/Echecs/Syzygy/345:/mnt/Datas/Echecs/Syzygy/6
 endif
-DEFS += -DSYZYGY=$(SYZYGY)
+DEFS += -DSYZYGY='"$(SYZYGY)"'
 
 DEFS += $(EXTRA_DEFS)
 

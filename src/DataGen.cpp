@@ -15,6 +15,7 @@
 #include <fstream>
 #include <random>
 #include <memory>
+#include <csignal>
 
 #include "Board.h"
 #include "Search.h"
@@ -24,17 +25,26 @@
 #include "ThreadPool.h"
 #include "pyrrhic/tbprobe.h"
 
+// Pointeur global pour permettre au handler de signal d'arrêter proprement le datagen
+static std::atomic<bool>* g_datagen_run = nullptr;
+
+static void datagen_signal_handler(int /*sig*/)
+{
+    if (g_datagen_run)
+        g_datagen_run->store(false);
+}
+
 //===========================================================================
 //! \brief  Constructeur
 //! \param[in]  _nbr_threads    nombre de threads demandé
 //! \param[in]  _max_fens       nombre de fens demandé, en millions
-//! \param[in]  _output         répertoire de sortie des fichers
+//! \param[in]  _output         répertoire de sortie des fichiers
 //---------------------------------------------------------------------------
 DataGen::DataGen(const U32 _nbr_threads, const U32 _max_fens, const std::string& _output)
 {
-    const U32 max_fens = std::clamp(_max_fens, 1U, 1000U) * 1000000U;
+    const U32 max_fens = std::clamp(_max_fens, 1U, 1000U) * 1'000'000U;
 
-    printf("DataGen : nbr_threads=%u ; max_fens=%u millions ; output=%s \n", _nbr_threads, max_fens/1000000, _output.c_str());
+    printf("DataGen : nbr_threads=%u ; max_fens=%u millions ; output=%s \n", _nbr_threads, max_fens/1'000'000, _output.c_str());
 
     //================================================
     //  Initialisations
@@ -68,9 +78,15 @@ DataGen::DataGen(const U32 _nbr_threads, const U32 _max_fens, const std::string&
     //================================================
     std::vector<std::thread> threads{};
     std::atomic<size_t> total_fens{0};           // nombre total de fens pour toutes les threads
+
     // shared_ptr pour que le thread detached (lecture stdin) ne référence jamais un objet détruit
     auto run = std::make_shared<std::atomic<bool>>(true);
     auto start_time = TimePoint::now();
+
+    // Installer le handler de signal pour arrêt propre via Ctrl-C
+    g_datagen_run = run.get();
+    auto prev_sigint  = std::signal(SIGINT,  datagen_signal_handler);
+    auto prev_sigterm = std::signal(SIGTERM, datagen_signal_handler);
 
     for (size_t i = 0; i < nbr_threads; i++)
     {
@@ -108,12 +124,12 @@ DataGen::DataGen(const U32 _nbr_threads, const U32 _max_fens, const std::string&
         int h   = r / 3600;
         int m   = (r - h*3600) / 60;
         int s   = r - h*3600 - m*60;
-        std::cout << "total fens = " << total_fens/1000000.0 << " millions"
-                  << " ; fens/s = " << fps
-                  << " ; fens/s/t = " << 1000*total_fens/elapsed/nbr_threads
-                  << " ; end in " << h << " hours " << m << " min " << s << " sec"
-                  << std::endl;
-        if (total_fens > max_fens)
+        std::cout << "total fens = " << total_fens/1'000'000.0 << " millions"
+                   << " ; fens/s = " << fps
+                   << " ; fens/s/t = " << 1000*total_fens/elapsed/nbr_threads
+                   << " ; end in " << h << " hours " << m << " min " << s << " sec"
+                   << std::endl;
+        if (total_fens >= max_fens)
         {
             run->store(false);
         }
@@ -125,13 +141,18 @@ DataGen::DataGen(const U32 _nbr_threads, const U32 _max_fens, const std::string&
     for (auto& t : threads)
         t.join();
 
+    // Restaurer les handlers de signal
+    std::signal(SIGINT,  prev_sigint);
+    std::signal(SIGTERM, prev_sigterm);
+    g_datagen_run = nullptr;
+
     std::cout << "total fens generated = " << total_fens << std::endl;
 }
 
 //====================================================================
 //! \brief  Lancement d'une génération de fens , dans une thread donnée
 //! \param[in]  total_fens  somme des fens collectées sur toutes les threads
-//! \param[in]  run         indique que l'on veut arrêter
+//! \param[in]  run         true = continuer la génération, false = arrêter
 //--------------------------------------------------------------------
 void DataGen::genfens(int thread_id, const std::string& str_file,
                       std::atomic<size_t>& total_fens,
@@ -186,6 +207,8 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
     // Boucle infinie sur une simulation de parties
     //----------------------------------------------------
 
+    // run est vérifié uniquement ici, entre deux parties :
+    // Ctrl-C (ou limite atteinte) → finit la partie en cours → écrit les fens → sort proprement.
     while (run.load())
     {
         // printf("-----nouvelle partie : id=%d  \n", thread_id);
@@ -426,7 +449,8 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
                  << "\n";
         }
 
-        total_fens.fetch_add(nbr_fens); // total des tous les threads
+        total_fens.fetch_add(nbr_fens);   // total des fens de tous les threads
+        file.flush();   // force l'écriture sur disque : protège contre Ctrl-C / crash
 
         // file << "\n";
         // file << "\n";

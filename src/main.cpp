@@ -28,7 +28,7 @@ int main(int argCount, char* argValue[])
     }
 
     //  DataGen
-    //  appel : Zangdar datagen <nbr_threads> <max_games> <output_dir>
+    //  appel : Zangdar datagen <nbr_threads> <max_fens_millions> <output_dir>
     else if (argCount > 1 && strcmp(argValue[1], "datagen") == 0)
     {
         DataGen(std::stoi(std::string{argValue[2]}), std::stoi(std::string{argValue[3]}), std::string{argValue[4]});

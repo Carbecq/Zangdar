@@ -20,7 +20,7 @@ public:
 
 private:
     void genfens(int thread_id, const std::string& str_file,
-                 std::atomic<size_t>& sum_fens,
+                 std::atomic<size_t>& total_fens,
                  std::atomic<bool>& run);
     U32 set_threads(const U32 nbr);
     template <Color color> void data_search(Board& board, Timer& timer, Search& search,
