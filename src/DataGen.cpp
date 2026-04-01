@@ -161,7 +161,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
     printf("thread id = %d : out = %s \n", thread_id, str_file.c_str());
 
     std::ofstream file;
-    file.open(str_file, std::ios::out);     //app = append ; out = write
+    file.open(str_file, std::ios::app);     //app = append ; out = write
     if (file.is_open() == false)
     {
         std::cout << "file " << str_file << " not opened" << std::endl;

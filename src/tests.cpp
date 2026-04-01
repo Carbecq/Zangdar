@@ -11,6 +11,10 @@
 #include "Move.h"
 #include "Search.h"
 
+bool test_mirror(Board& board, const std::string& line);
+template <Color C, bool divide=false>
+[[nodiscard]] std::uint64_t perft(Board& board, const int depth) noexcept;
+
 //====================================================
 //! \brief Réalisation d'une série de tests "perft"
 //!
@@ -53,7 +57,7 @@ void test_suite(const std::string& abc, int dmax)
     int             failed_tests   = 0;
     int             numero         = 0;
     std::vector<std::string>  poslist;                // liste des positions
-//    std::string     aa;
+    //    std::string     aa;
     int             indice;
     char            tag = ';';
     char            tag2 = ' ';
@@ -83,7 +87,7 @@ void test_suite(const std::string& abc, int dmax)
 
         // Extraction de la position
         // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR
-//        aa = liste1[0];
+        //        aa = liste1[0];
 
         // Vérification d'unicité de la position
         // à ne faire qu'une fois
@@ -133,9 +137,9 @@ void test_suite(const std::string& abc, int dmax)
 
                 // Exécution du test perft pour cette position et cette profondeur
                 if (CB.turn() == WHITE)
-                    actual = CB.perft<WHITE, false>(depth);
+                    actual = perft<WHITE, false>(CB, depth);
                 else
-                    actual = CB.perft<BLACK, false>(depth);
+                    actual = perft<BLACK, false>(CB, depth);
 
                 total_expected += expected;
                 total_actual   += actual;
@@ -264,9 +268,9 @@ void test_perft(const std::string& str, const std::string& m_fen, int depth)
     U64  total;
 
     if (CB.turn() == WHITE)
-        total = CB.perft<WHITE, divide>(depth);
+        total = perft<WHITE, divide>(CB, depth);
     else
-        total = CB.perft<BLACK, divide>(depth);
+        total = perft<BLACK, divide>(CB, depth);
 
     auto end        = TimePoint::now();
     auto delta      = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
@@ -282,15 +286,93 @@ void test_perft(const std::string& str, const std::string& m_fen, int depth)
         std::cout << "resultat        : >>>>>>>>>>>>>>>>>>>>>>>>>>>> KO : bon = " << nbr[depth] << std::endl;
 }
 
-//========================================================
-//! \brief  Affiche tous les coups possibles ainsi que leur valeur
-//---------------------------------------------------------
+//======================================================
+//! \brief  Affiche tous les coups possibles ainsi que leur évaluation NNUE
+//!         L'affichage est trié par évaluation décroissante
+//------------------------------------------------------
 void test_eval(const std::string& fen)
 {
-    Board b;
-    b.initialisation();
-    b.test_value(fen);
+    Board board(fen);
+    std::cout << board.display() << std::endl;
+
+    auto search = std::make_unique<Search>();
+    search->nnue.start_search(board);
+
+    int eval = search->evaluate(board);
+    printf("side = %s : evaluation = %d \n\n", side_name[board.turn()].c_str(), eval);
+
+    MoveList ml;
+
+    if (board.turn() == WHITE)
+        board.legal_moves<WHITE, MoveGenType::ALL>(ml);
+    else
+        board.legal_moves<BLACK, MoveGenType::ALL>(ml);
+
+    printf("%zu coups legaux\n\n", ml.count);
+
+    // Jouer chaque coup et évaluer la position résultante
+    for (size_t index = 0; index < ml.count; index++)
+    {
+        MOVE move = ml.mlmoves[index].move;
+
+        if (board.turn() == WHITE)
+        {
+            search->make_move<WHITE, true>(board, move);
+            ml.mlmoves[index].value = -search->evaluate(board);
+            search->undo_move<WHITE, true>(board);
+        }
+        else
+        {
+            search->make_move<BLACK, true>(board, move);
+            ml.mlmoves[index].value = -search->evaluate(board);
+            search->undo_move<BLACK, true>(board);
+        }
+    }
+
+    // Tri par évaluation décroissante
+    for (size_t i = 0; i < ml.count; i++)
+    {
+        for (size_t j = i + 1; j < ml.count; j++)
+        {
+            if (ml.mlmoves[j].value > ml.mlmoves[i].value)
+                std::swap(ml.mlmoves[i], ml.mlmoves[j]);
+        }
+    }
+
+    // Affichage
+    printf("%-6s %6s  %s\n", "coup", "eval", "flags");
+    printf("------ ------  -----\n");
+
+    for (size_t index = 0; index < ml.count; index++)
+    {
+        MOVE move = ml.mlmoves[index].move;
+        int  val  = ml.mlmoves[index].value;
+
+        std::string flags;
+        if (Move::is_capturing(move))  flags += "cap ";
+        if (Move::is_enpassant(move))  flags += "ep ";
+        if (Move::is_promoting(move))  flags += "prom ";
+        if (Move::is_castling(move))   flags += "castle ";
+
+        // Vérifier si le coup donne échec
+        if (board.turn() == WHITE)
+        {
+            board.make_move<WHITE, false>(search->nnue.get_accumulator(), move);
+            if (board.is_in_check()) flags += "check ";
+            board.undo_move<WHITE>();
+        }
+        else
+        {
+            board.make_move<BLACK, false>(search->nnue.get_accumulator(), move);
+            if (board.is_in_check()) flags += "check ";
+            board.undo_move<BLACK>();
+        }
+
+        printf("%-6s %6d  %s\n", Move::name(move).c_str(), val, flags.c_str());
+    }
 }
+
+
 
 //====================================================
 //! \brief Test Syzygy : sonde les tables pour la position
@@ -337,7 +419,7 @@ void test_mirror(void)
 
         numero++;
 
-        if (board.test_mirror(line) == false)
+        if (test_mirror(board, line) == false)
         {
             std::cout << "Mirror Fail : " << line << std::endl;
         }
@@ -360,122 +442,38 @@ void test_mirror(void)
 //! L'évaluation de la position originale doit être identique
 //! à celle de la position miroir (couleurs inversées).
 //-----------------------------------------------------------
-bool Board::test_mirror(const std::string& line)
+bool test_mirror(Board& board, const std::string& line)
 {
+    // Evaluation de la position originale
+    board.initialisation();
+    board.set_fen(line, false);
+
     auto search = std::make_unique<Search>();
 
-    // Evaluation de la position originale
-    initialisation();
-    set_fen(line, true);
-    search->nnue.start_search(*this);
-    int ev1 = search->evaluate(*this);
+    search->nnue.start_search(board);
+    int ev1 = search->evaluate(board);
 
     // Evaluation de la position miroir
-    initialisation();
-    mirror_fen(line, true);
-    search->nnue.start_search(*this);
-    int ev2 = search->evaluate(*this);
+    board.initialisation();
+    board.mirror_fen(line, true);
+
+    search->nnue.start_search(board);
+    int ev2 = search->evaluate(board);
 
     if (ev1 != ev2)
     {
         std::cout << ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> " << std::endl;
         std::cout << "Mirror Fail : ev1 = " << ev1 << " ; ev2 = " << ev2 << std::endl;
-        initialisation();
-        set_fen(line, true);
-        std::cout << display() << std::endl;
-        initialisation();
-        mirror_fen(line, true);
-        std::cout << display() << std::endl;
+        board.initialisation();
+        board.set_fen(line, true);
+        std::cout << board.display() << std::endl;
+        board.initialisation();
+        board.mirror_fen(line, true);
+        std::cout << board.display() << std::endl;
         return false;
     }
 
     return true;
-}
-
-//======================================================
-//! \brief  Affiche tous les coups possibles ainsi que leur évaluation NNUE
-//!         L'affichage est trié par évaluation décroissante
-//------------------------------------------------------
-void Board::test_value(const std::string& fen)
-{
-    set_fen(fen, false);
-    std::cout << display() << std::endl;
-
-    auto search = std::make_unique<Search>();
-    search->nnue.start_search(*this);
-
-    int eval = search->evaluate(*this);
-    printf("side = %s : evaluation = %d \n\n", side_name[side_to_move].c_str(), eval);
-
-    MoveList ml;
-
-    if (side_to_move == WHITE)
-        legal_moves<WHITE, MoveGenType::ALL>(ml);
-    else
-        legal_moves<BLACK, MoveGenType::ALL>(ml);
-
-    printf("%zu coups legaux\n\n", ml.count);
-
-    // Jouer chaque coup et évaluer la position résultante
-    for (size_t index = 0; index < ml.count; index++)
-    {
-        MOVE move = ml.mlmoves[index].move;
-
-        if (side_to_move == WHITE)
-        {
-            search->make_move<WHITE, true>(*this, move);
-            ml.mlmoves[index].value = -search->evaluate(*this);
-            search->undo_move<WHITE, true>(*this);
-        }
-        else
-        {
-            search->make_move<BLACK, true>(*this, move);
-            ml.mlmoves[index].value = -search->evaluate(*this);
-            search->undo_move<BLACK, true>(*this);
-        }
-    }
-
-    // Tri par évaluation décroissante
-    for (size_t i = 0; i < ml.count; i++)
-    {
-        for (size_t j = i + 1; j < ml.count; j++)
-        {
-            if (ml.mlmoves[j].value > ml.mlmoves[i].value)
-                std::swap(ml.mlmoves[i], ml.mlmoves[j]);
-        }
-    }
-
-    // Affichage
-    printf("%-6s %6s  %s\n", "coup", "eval", "flags");
-    printf("------ ------  -----\n");
-
-    for (size_t index = 0; index < ml.count; index++)
-    {
-        MOVE move = ml.mlmoves[index].move;
-        int  val  = ml.mlmoves[index].value;
-
-        std::string flags;
-        if (Move::is_capturing(move))  flags += "cap ";
-        if (Move::is_enpassant(move))  flags += "ep ";
-        if (Move::is_promoting(move))  flags += "prom ";
-        if (Move::is_castling(move))   flags += "castle ";
-
-        // Vérifier si le coup donne échec
-        if (side_to_move == WHITE)
-        {
-            make_move<WHITE, false>(search->nnue.get_accumulator(), move);
-            if (is_in_check()) flags += "check ";
-            undo_move<WHITE>();
-        }
-        else
-        {
-            make_move<BLACK, false>(search->nnue.get_accumulator(), move);
-            if (is_in_check()) flags += "check ";
-            undo_move<BLACK>();
-        }
-
-        printf("%-6s %6d  %s\n", Move::name(move).c_str(), val, flags.c_str());
-    }
 }
 
 #include "MovePicker.h"
@@ -587,7 +585,7 @@ void test_see()
         if (move)
         {
             bool v = board.fast_see(move, 0);
-        //    int  s = board.see(move);
+            //    int  s = board.see(move);
 
             //    int  s = board.see(move);
 
@@ -613,16 +611,16 @@ void test_see()
                 failed_tests_b++;
             }
 
-//            if ((s>=0 && score>=0) || (s<0 && score<0))
-//            {
-//                printf(" : OK \n");
-//                passed_tests_s++;
-//            }
-//            else
-//            {
-//                printf(" : %s : (%s) seeS=%d score=%d \n", fen.c_str(), strm.c_str(), s, score);
-//                failed_tests_s++;
-//            }
+            //            if ((s>=0 && score>=0) || (s<0 && score<0))
+            //            {
+            //                printf(" : OK \n");
+            //                passed_tests_s++;
+            //            }
+            //            else
+            //            {
+            //                printf(" : %s : (%s) seeS=%d score=%d \n", fen.c_str(), strm.c_str(), s, score);
+            //                failed_tests_s++;
+            //            }
             printf("\n");
 
             total_tests++;

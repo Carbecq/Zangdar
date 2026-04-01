@@ -61,7 +61,6 @@ DEFS += $(EXTRA_DEFS)
 #   make EXTRA_DEFS="-DUSE_TUNING -DDEBUG_LOG"  
 
 #  Quelques defines utilisés en debug
-# EXTRA_DEFS = -DDEBUG_EVAL
 # EXTRA_DEFS = -DDEBUG_LOG
 # EXTRA_DEFS = -DDEBUG_TIME
 
@@ -69,11 +68,6 @@ DEFS += $(EXTRA_DEFS)
 #  Tuning
 #---------------------------------------------------
 #EXTRA_DEFS = -DUSE_TUNING
-
-#---------------------------------------------------
-#  Datagen
-#---------------------------------------------------
-#EXTRA_DEFS = -DUSE_DATAGEN
 
 #---------------------------------------------------
 #  NNUE
@@ -177,7 +171,6 @@ $(info PEXT      = $(if $(HAS_BMI2),yes,no))
 $(info OS        = $(OS))
 $(info Evalfile  = $(EVALFILE))
 $(info Tuning    = $(if $(findstring USE_TUNING,$(DEFS)),yes,no))
-$(info Datagen   = $(if $(findstring USE_DATAGEN,$(DEFS)),yes,no))
 
 ### Executable name
 ifeq ($(target_windows),yes)
@@ -199,7 +192,7 @@ endif
 ifeq ($(findstring clang, $(CXX)), clang)
 
 CFLAGS_REL1  = -O3 -flto -ftree-vectorize -funroll-loops -fno-exceptions -DNDEBUG -pthread -Wdisabled-optimization -Wall -Wextra \
-               -finline-functions -fno-rtti -fstrict-aliasing -fwhole-program-vtables \
+               -finline-functions -fno-rtti -fstrict-aliasing  \
                -fvectorize -fslp-vectorize
 CFLAGS_WARN1 = -Wmissing-declarations -Wredundant-decls -Wshadow -Wundef -Wuninitialized -pedantic
 
@@ -211,8 +204,9 @@ CFLAGS_WARN6 = -Wattributes -Waddress -Wfloat-equal -Wmissing-prototypes -Wcondi
 # CFLAGS_WARN7 = -Wsign-conversion
 
 ifeq ($(target_windows),yes)
-	LDFLAGS_STA = -Wl,--stack,16777216	# 16*1014*1024 = 16 Mo
+    LDFLAGS_STA = -Wl,--stack,16777216	# 16*1014*1024 = 16 Mo
 else
+    CFLAGS_REL1 += -fwhole-program-vtables
 #	LDFLAGS_STA = -Wl,-z,stack-size=16777216
 #pour Linux : utiliser : ulimit -s <size> ; ou ulimit -s unlimited
 endif

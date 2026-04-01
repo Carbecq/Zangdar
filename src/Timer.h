@@ -62,8 +62,6 @@ public:
     I64  getMoveOverhead() const { return MoveOverhead; }
 
     void updateMoveNodes(MOVE move, U64 nodes);
-    void update(int depth, const PVariation pvs[]);
-
 
 private:
     Limits limits;
