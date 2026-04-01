@@ -20,11 +20,9 @@ DEFINES += SYZYGY=\\\"/mnt/Datas/Echecs/Syzygy\\\"
 
 #------------------------------------------------------
 # DEFINES += USE_TUNING
-# DEFINES += USE_DATAGEN
 
 
 #------------------------------------------------------
-# DEFINES += DEBUG_EVAL
 # DEFINES += DEBUG_LOG
 # DEFINES += DEBUG_TIME
 

@@ -179,8 +179,6 @@ public:
     template<Color C, MoveGenType MGType> void legal_moves(MoveList &ml) const ;
     template<Color C> void apply_token(const std::string &token) ;
 
-    void verify_MvvLva();
-
     //==============================================
     //  Génération des coups
 
@@ -589,10 +587,6 @@ public:
                        const Piece piece, const Piece captured) noexcept;
     void promotion_piece(const SQUARE from, const SQUARE dest, const Color color, const Piece promo) noexcept;
     void promocapt_piece(const SQUARE from, const SQUARE dest, const Color color, const Piece captured, const Piece promoted) noexcept;
-
-    bool test_mirror(const std::string &line);
-    template<Color C, bool divide> [[nodiscard]] std::uint64_t perft(const int depth) noexcept;
-    void test_value(const std::string& fen );
 
     //===========================================================================
     //  Syzygy

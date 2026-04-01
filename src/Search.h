@@ -55,9 +55,10 @@ public:
     template <Color C> void think(Board board, Timer timer, size_t _index);
     template <Color C> int  aspiration_window(Board& board, Timer& timer, SearchInfo* si);
 
-private:
     inline const Accumulator& get_accumulator() const { return nnue.get_accumulator(); }
     inline       Accumulator& get_accumulator()       { return nnue.get_accumulator(); }
+
+private:
 
     template <Color C> void iterative_deepening(Board& board, Timer& timer, SearchInfo* si);
     template <Color C> int  alpha_beta(Board& board, Timer& timer, int alpha, int beta, int depth, bool cut_node, SearchInfo* si);

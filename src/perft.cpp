@@ -4,7 +4,7 @@
 #include "Move.h"
 
 template <Color C, bool divide=false>
-[[nodiscard]] std::uint64_t Board::perft(const int depth) noexcept
+[[nodiscard]] std::uint64_t perft(Board& board, const int depth) noexcept
 {
     if (depth == 0)
         return 1;
@@ -14,7 +14,7 @@ template <Color C, bool divide=false>
     Accumulator accum;  // ne sert pas
 
     MoveList ml;
-    legal_moves<C, MoveGenType::ALL>(ml);
+    board.legal_moves<C, MoveGenType::ALL>(ml);
 
     // on génère des coups légaux, on peut
     // faire un bulk-counting
@@ -49,15 +49,15 @@ template <Color C, bool divide=false>
 
         if constexpr (divide == false)
         {
-            make_move<C, false>(accum, move);
-            nodes += perft<~C, false>(depth - 1);
-            undo_move<C>();
+            board.make_move<C, false>(accum, move);
+            nodes += perft<~C, false>(board, depth - 1);
+            board.undo_move<C>();
         }
         else
         {
-            make_move<C, false>(accum, move);
-            auto child = perft<~C, false>(depth - 1);
-            undo_move<C>();
+            board.make_move<C, false>(accum, move);
+            auto child = perft<~C, false>(board, depth - 1);
+            board.undo_move<C>();
             std::cout << Move::name(move) << " : " << child << std::endl;
             nodes += child;
         }
@@ -67,8 +67,8 @@ template <Color C, bool divide=false>
 }
 
 // Explicit instantiations.
-template std::uint64_t Board::perft<WHITE, true>(const int depth) noexcept;
-template std::uint64_t Board::perft<WHITE, false>(const int depth) noexcept;
-template std::uint64_t Board::perft<BLACK, true>(const int depth) noexcept;
-template std::uint64_t Board::perft<BLACK, false>(const int depth) noexcept;
+template std::uint64_t perft<WHITE, true>(Board& board, const int depth) noexcept;
+template std::uint64_t perft<WHITE, false>(Board& board, const int depth) noexcept;
+template std::uint64_t perft<BLACK, true>(Board& board, const int depth) noexcept;
+template std::uint64_t perft<BLACK, false>(Board& board, const int depth) noexcept;
 
