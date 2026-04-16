@@ -51,11 +51,11 @@ constexpr I32 QAB   = QA * QB;
 constexpr int KING_BUCKETS_COUNT = 8;    // max king bucket
 constexpr std::array<int, N_SQUARES> king_buckets_map = {    // tableau servant à connaitre si la roi a changé de bucket
     0, 1, 2, 3, 3, 2, 1, 0,   // rank 1
-    0, 1, 2, 3, 3, 2, 1, 0,   // rank 2
-    4, 4, 5, 5, 5, 5, 4, 4,   // rank 3
-    4, 4, 5, 5, 5, 5, 4, 4,   // rank 4
-    6, 6, 6, 6, 6, 6, 6, 6,   // rank 5
-    6, 6, 6, 6, 6, 6, 6, 6,   // rank 6
+    4, 4, 5, 5, 5, 5, 4, 4,   // rank 2
+    6, 6, 6, 6, 6, 6, 6, 6,   // rank 3
+    6, 6, 6, 6, 6, 6, 6, 6,   // rank 4
+    7, 7, 7, 7, 7, 7, 7, 7,   // rank 5
+    7, 7, 7, 7, 7, 7, 7, 7,   // rank 6
     7, 7, 7, 7, 7, 7, 7, 7,   // rank 7
     7, 7, 7, 7, 7, 7, 7, 7,   // rank 8
 };
