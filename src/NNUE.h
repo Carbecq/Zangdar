@@ -25,22 +25,22 @@
 
 
 //------------------------------------------------------------------------------
-//  Description du réseau : (768x4hm -> 768)x2 -> 1x8  SquaredClippedReLU
+//  Description du réseau : (768x8kb -> 1024)x2 -> 1x8ob  SquaredClippedReLU
 //
 //      entrées              : 2 (couleurs) * 6 (pièces) * 64 (cases)  = 768
-//      Input Buckets        : 4
-//      Horizontal Mirroring :
-//      neurons              : 768 ; 1 seule couche
+//      Input Buckets        : 8 (King Buckets)
+//      Horizontal Mirroring : oui
+//      neurons              : 1024 ; 1 seule couche cachée
 //      perspective          : sorties : 2 * HIDDEN_LAYER_SIZE * OUTPUT_BUCKETS
-//      Output Buckets       : 8
-//      SquareClippedRelu    : l'activation se fait en "clippant" la valeur entre 0 et QA (ici 255)
+//      Output Buckets       : 8 (MaterialCount)
+//      SquaredClippedRelu   : l'activation se fait en "clippant" la valeur entre 0 et QA (ici 255)
 
 
 // https://www.chessprogramming.org/NNUE#Output_Buckets
 
 constexpr size_t INPUT_LAYER_SIZE  = N_COLORS * 6 * N_SQUARES;   // = 768 : entrées (note : il n'y a que 6 pièces
 constexpr size_t HIDDEN_LAYER_SIZE = 1024;                        // Hidden Layer : nombre de neuron(es) ; va de 16 à ... 1024 (plus ?)
-constexpr size_t OUTPUT_BUCKETS    = 8;  //TODO à voir ?
+constexpr size_t OUTPUT_BUCKETS    = 8;
 constexpr size_t BUCKET_DIVISOR    = (32 + OUTPUT_BUCKETS - 1) / OUTPUT_BUCKETS;   // 4.875 -> 4
 
 constexpr I32 SCALE = 400;
@@ -48,17 +48,16 @@ constexpr I32 QA    = 255;      /// Hidden Layer Quantisation Factor
 constexpr I32 QB    =  64;      /// Output Layer Quantisation Factor
 constexpr I32 QAB   = QA * QB;
 
-constexpr int KING_BUCKETS_COUNT = 5;    // max king bucket
+constexpr int KING_BUCKETS_COUNT = 8;    // max king bucket
 constexpr std::array<int, N_SQUARES> king_buckets_map = {    // tableau servant à connaitre si la roi a changé de bucket
-                                                             0, 0, 1, 1, 1, 1, 0, 0,
-                                                             2, 2, 2, 2, 2, 2, 2, 2,
-                                                             3, 3, 3, 3, 3, 3, 3, 3,
-                                                             3, 3, 3, 3, 3, 3, 3, 3,
-                                                             4, 4, 4, 4, 4, 4, 4, 4,
-                                                             4, 4, 4, 4, 4, 4, 4, 4,
-                                                             4, 4, 4, 4, 4, 4, 4, 4,
-                                                             4, 4, 4, 4, 4, 4, 4, 4,
-
+                                                              0, 1, 2, 3, 3, 2, 1, 0,   // rank 1
+                                                              4, 4, 5, 5, 5, 5, 4, 4,   // rank 2
+                                                              6, 6, 6, 6, 6, 6, 6, 6,   // rank 3
+                                                              6, 6, 6, 6, 6, 6, 6, 6,   // rank 4
+                                                              6, 6, 6, 6, 6, 6, 6, 6,   // rank 5
+                                                              7, 7, 7, 7, 7, 7, 7, 7,   // rank 6
+                                                              7, 7, 7, 7, 7, 7, 7, 7,   // rank 7
+                                                              7, 7, 7, 7, 7, 7, 7, 7,   // rank 8
 };
 
 

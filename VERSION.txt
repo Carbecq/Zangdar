@@ -1,2 +1,2 @@
-VERSION  = 6.9.0
-EVALFILE = \"networks/net_7b.bin\"
+VERSION  = 6.10.0
+EVALFILE = \"networks/net_8a_1000.bin\"
