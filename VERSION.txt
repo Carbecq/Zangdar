@@ -1,2 +1,3 @@
 VERSION  = 6.10.2
-EVALFILE = \"networks/net_8c_1000.bin\"
+NET_NAME = net_8c_1000.bin
+

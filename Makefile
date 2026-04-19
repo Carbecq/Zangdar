@@ -57,8 +57,8 @@ DEFS += -DSYZYGY='"$(SYZYGY)"'
 
 DEFS += $(EXTRA_DEFS)
 
-#   make EXTRA_DEFS=-DUSE_TUNING  
-#   make EXTRA_DEFS="-DUSE_TUNING -DDEBUG_LOG"  
+#   make EXTRA_DEFS=-DUSE_TUNING
+#   make EXTRA_DEFS="-DUSE_TUNING -DDEBUG_LOG"
 
 #  Quelques defines utilisés en debug
 # EXTRA_DEFS = -DDEBUG_LOG
@@ -72,7 +72,14 @@ DEFS += $(EXTRA_DEFS)
 #---------------------------------------------------
 #  NNUE
 #---------------------------------------------------
-CFLAGS_NNUE = -DEVALFILE=$(EVALFILE)
+NETS_DIR  = networks
+NETS_FILE = $(NETS_DIR)/$(NET_NAME)
+NETS_REPO = https://github.com/Carbec/zangdar-nets/releases/download
+
+# EVALFILE peut être surchargé en ligne de commande (ex: OpenBench)
+EVALFILE ?= $(NETS_FILE)
+
+CFLAGS_NNUE = -DEVALFILE=\"$(EVALFILE)\" -DNET_NAME=\"$(NET_NAME)\"
 
 #---------------------------------------------------------------------
 #   Architecture
@@ -169,7 +176,7 @@ $(info BMI2      = $(if $(HAS_BMI2),yes,no))
 $(info SIMD      = $(if $(SIMD),yes,no))
 $(info PEXT      = $(if $(HAS_BMI2),yes,no))
 $(info OS        = $(OS))
-$(info Evalfile  = $(EVALFILE))
+$(info Evalfile  = $(NET_NAME))
 $(info Tuning    = $(if $(findstring USE_TUNING,$(DEFS)),yes,no))
 
 ### Executable name
@@ -337,8 +344,16 @@ pgo:
 $(EXE): $(OBJ)
 	@$(CXX) -o $@ $^ $(LDFLAGS)
 
+src/NNUE.o: $(EVALFILE)
+
 %.o: %.cpp
 	@$(CXX) -o $@ -c $< $(CFLAGS)
+
+$(NETS_FILE):
+	$(info Downloading network $(NET_NAME))
+	curl -sL -o $@ $(NETS_REPO)/$(NET_NAME)/$(NET_NAME)
+
+download-net: $(NETS_FILE)
 
 #---------------------------------------------------------------------
 

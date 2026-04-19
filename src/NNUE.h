@@ -25,31 +25,42 @@
 
 
 //------------------------------------------------------------------------------
-//  Description du réseau : (768x8kb -> 1024)x2 -> 1x8ob  SquaredClippedReLU
+//  Description du réseau : (768×8kb → 1024)×2 → 1×8ob  SCReLU
 //
-//      entrées              : 2 (couleurs) * 6 (pièces) * 64 (cases)  = 768
-//      Input Buckets        : 8 (King Buckets)
-//      Horizontal Mirroring : oui
-//      neurons              : 1024 ; 1 seule couche cachée
-//      perspective          : sorties : 2 * HIDDEN_LAYER_SIZE * OUTPUT_BUCKETS
-//      Output Buckets       : 8 (MaterialCount)
-//      SquaredClippedRelu   : l'activation se fait en "clippant" la valeur entre 0 et QA (ici 255)
-
+//      Entrées              : 768 = 2 couleurs × 6 pièces × 64 cases
+//      Input Buckets        : 8 (king buckets, avec horizontal mirroring)
+//      Accumulateur         : 1024 neurones par perspective (incrémental)
+//      Output Buckets       : 8 (MaterialCount : selon le nb de pièces restantes)
+//      Activation           : SCReLU = clamp(x, 0, QA)² / QA  (Squared Clipped ReLU)
+//      Factoriser           : poids partagés entre buckets (l0f dans Bullet), mergés au save
+//
+//  Pipeline d'évaluation :
+//    1. Accumulateur (incrémental) : acc[white/black] ← biases + Σ feature_weights
+//    2. SCReLU SIMD : clipped = clamp(acc, 0, QA) ; output = clipped × clipped (I16 safe)
+//    3. produit matrice-vecteur (activations × output_weights) : sum = Σ(output × output_weights[bucket]) via madd_epi16 → I32
+//    4. Mise à l'échelle : eval = (sum/QA + bias) × SCALE / QAB
 
 // https://www.chessprogramming.org/NNUE#Output_Buckets
 
-constexpr size_t INPUT_LAYER_SIZE  = N_COLORS * 6 * N_SQUARES;   // = 768 : entrées (note : il n'y a que 6 pièces
-constexpr size_t HIDDEN_LAYER_SIZE = 1024;                        // Hidden Layer : nombre de neuron(es) ; va de 16 à ... 1024 (plus ?)
+constexpr size_t INPUT_LAYER_SIZE  = N_COLORS * 6 * N_SQUARES;   // = 768
+constexpr size_t HIDDEN_LAYER_SIZE = 1024;                        // neurones par perspective
 constexpr size_t OUTPUT_BUCKETS    = 8;
-constexpr size_t BUCKET_DIVISOR    = (32 + OUTPUT_BUCKETS - 1) / OUTPUT_BUCKETS;   // 4.875 -> 4
+constexpr size_t BUCKET_DIVISOR    = (32 + OUTPUT_BUCKETS - 1) / OUTPUT_BUCKETS;   // = 4
 
 constexpr I32 SCALE = 400;
-constexpr I32 QA    = 255;      /// Hidden Layer Quantisation Factor
-constexpr I32 QB    =  64;      /// Output Layer Quantisation Factor
-constexpr I32 QAB   = QA * QB;
+constexpr I32 QA    = 255;      // facteur de quantification L0 (accumulateur)
+constexpr I32 QB    =  64;      // facteur de quantification output weights
+constexpr I32 QAB   = QA * QB;  // = 16320 : scale du biais de sortie
 
-constexpr int KING_BUCKETS_COUNT = 8;    // max king bucket
-constexpr std::array<int, N_SQUARES> king_buckets_map = {    // tableau servant à connaitre si la roi a changé de bucket
+// King buckets : chaque position du roi détermine quel jeu de poids utiliser.
+// La symétrie horizontale est gérée par get_square() (mirroring du fichier),
+// donc le layout est symétrique autour du centre (fichiers D/E identiques).
+// Vue du blanc (rank 1 = rangée du roi blanc) :
+//   rank 1 : coins (a/h) et flancs (b/g) = 0-3 (4 zones fines près de la base)
+//   rank 2 : flancs = 4, centre = 5
+//   rank 3-4 : tout = 6 (milieu de terrain)
+//   rank 5-8 : tout = 7 (terrain ennemi, roi avancé)
+constexpr std::array<int, N_SQUARES> king_buckets_map = {
     0, 1, 2, 3, 3, 2, 1, 0,   // rank 1
     4, 4, 5, 5, 5, 5, 4, 4,   // rank 2
     6, 6, 6, 6, 6, 6, 6, 6,   // rank 3
@@ -59,22 +70,21 @@ constexpr std::array<int, N_SQUARES> king_buckets_map = {    // tableau servant 
     7, 7, 7, 7, 7, 7, 7, 7,   // rank 7
     7, 7, 7, 7, 7, 7, 7, 7,   // rank 8
 };
+constexpr int KING_BUCKETS_COUNT = *std::ranges::max_element(king_buckets_map) + 1;
 
 //-----------------------------------------------------------------------
-//  Architecture du réseau
+//  Layout mémoire du réseau (chargé depuis le fichier .bin via incbin)
 struct Network {
-    alignas(ALIGN) std::array<I16, KING_BUCKETS_COUNT * INPUT_LAYER_SIZE * HIDDEN_LAYER_SIZE>  feature_weights;
-    alignas(ALIGN) std::array<I16, HIDDEN_LAYER_SIZE>                     feature_biases;
+    // feature_weights[bucket][feature][neurone] — layout Bullet "l0w" (après merge factoriser)
+    // feature ∈ [0, INPUT_LAYER_SIZE), neurone ∈ [0, HIDDEN_LAYER_SIZE)
+    alignas(ALIGN) std::array<I16, KING_BUCKETS_COUNT * INPUT_LAYER_SIZE * HIDDEN_LAYER_SIZE> feature_weights;
+    alignas(ALIGN) std::array<I16, HIDDEN_LAYER_SIZE>                                         feature_biases;
 
-    /* structure provenant de Bullet :
-     * on a 2 possibilités :
-     *      non transposed : output_weights[N_COLORS][HIDDEN_SIZE][OUTPUT_BUCKETS];
-     *      transposed     : output_weights[OUTPUT_BUCKETS][N_COLORS][HIDDEN_SIZE];
-     * Bullet sort maintenant la version "transposed"
-     */
-
+    // output_weights layout Bullet "transposed" : [OUTPUT_BUCKETS][N_COLORS * HIDDEN_LAYER_SIZE]
+    // → adresse = bucket * N_COLORS * HIDDEN_LAYER_SIZE + color * HIDDEN_LAYER_SIZE + i
+    // Bullet génère cette disposition depuis la v1.x (flag .transpose() dans save_format)
     alignas(ALIGN) std::array<I16, N_COLORS * HIDDEN_LAYER_SIZE * OUTPUT_BUCKETS> output_weights;
-    alignas(ALIGN) std::array<I16, OUTPUT_BUCKETS>                                output_bias;
+    alignas(ALIGN) std::array<I16, OUTPUT_BUCKETS>                                output_bias;  // à l'échelle QAB
 };
 
 //------------------------------------------------------------------------------
@@ -201,8 +211,9 @@ private:
                          Piece add_piece_2, SQUARE add_2,
                          SQUARE king);
 
-    // count = 32 : b = 7.5
-    //          2 :     0
+    // Output bucket selon le nb de pièces restantes (MaterialCount).
+    // count ∈ [2, 32] → bucket ∈ [0, 7]  (BUCKET_DIVISOR = 4)
+    // count=2 → bucket=0 (finale), count=32 → bucket≤7 (partie pleine)
     inline int get_bucket(size_t count) const {
         assert(count >= 2);
         return (count - 2) / BUCKET_DIVISOR;
@@ -217,9 +228,10 @@ private:
             return SQ::mirrorVertically(square);
     }
 
-    //  Retourne la case, en tenant compte du Horizontal Mirroring
-    //  Curieusement, le test inverse est pire (en elo)
-    //      king_SQUARE & 0b100 = 0 [FILE_A ... FILE_D] , 4 [FILE_D ... FILE_H]
+    // Horizontal mirroring : si le roi est sur les fichiers E-H (bit 2 = 1),
+    // on miroire horizontalement toutes les cases pour ramener le roi côté A-D.
+    // Cela permet de partager les poids entre les deux flancs (symétrie du roi).
+    // Note : le test inverse (miroir si A-D) est empiriquement moins bon en Elo.
     inline SQUARE get_square(SQUARE square, SQUARE king_square) const {
         return king_square & 0b100 ? SQ::mirrorHorizontally(square) : square;
     }
@@ -228,6 +240,8 @@ private:
     template <Color side>U32 get_indice(Piece piece, SQUARE square, SQUARE king);
 
 
+    // SCReLU scalaire (fallback non-SIMD) : clamp(x, 0, QA)²
+    // Le résultat est à l'échelle QA² → divisé par QA dans activation()
     inline I32 screlu(I16 x) {
         auto clamped = std::clamp(static_cast<I32>(x), 0, QA);
         return clamped * clamped;

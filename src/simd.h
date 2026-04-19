@@ -1,18 +1,26 @@
 #ifndef SIMD_H
 #define SIMD_H
 
-/*  AVX2
- *      __m256i = 256-bit vector containing integers = 32 octets = 16 * I16
+/*  Wrappers SIMD portables (AVX-512 / AVX2 / SSE2) pour l'inférence NNUE.
  *
+ *  Types vectoriels :
+ *      Vepi16 : vecteur d'entiers I16 (16 bits signés)
+ *      Vepi32 : vecteur d'entiers I32 (32 bits signés)
  *
+ *  Taille d'un vecteur selon l'ISA :
+ *      AVX-512 : 512 bits = 32 × I16  (kChunkSize = 32)
+ *      AVX2    : 256 bits = 16 × I16  (kChunkSize = 16)
+ *      SSE2    : 128 bits =  8 × I16  (kChunkSize =  8)
  *
+ *  Opération clé pour SCReLU — MultiplyAddEpi16 (madd_epi16) :
+ *      Traite les vecteurs par paires d'I16 et produit des I32 :
+ *      out[i] = v1[2i] × v2[2i] + v1[2i+1] × v2[2i+1]
+ *      Utilisé dans activation() : madd(product, clipped) = clipped² × weight → I32
+ *      → évite l'overflow I16 et accumule directement en I32
  *
- * _mm256_load_si256  : Moves integer values from aligned memory location to a destination vector.
- * _mm256_loadu_si256 : Moves integer values from unaligned memory location to a destination vector.
- *
+ *  _mm256_load_si256  : chargement depuis mémoire alignée (ALIGN=32 en AVX2)
+ *  _mm256_loadu_si256 : chargement depuis mémoire non alignée (plus lent)
  */
-
-    // Code provenant de Integral
 
 #if defined USE_SIMD
 #include <immintrin.h>

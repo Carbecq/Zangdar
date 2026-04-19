@@ -158,8 +158,8 @@ void NNUE::add(Accumulator& accu, Piece piece, SQUARE from, SQUARE wking, SQUARE
 {
     const auto [white_idx, black_idx] = get_indices(piece, from, wking, bking);
 
-    // Dans le cas de cette fonction SIM n'apporte rien
-
+    // Non-SIMD volontairement : appelé une seule fois par pièce au début
+    // de la recherche (start_search), pas dans la boucle critique.
     for (size_t i = 0; i < HIDDEN_LAYER_SIZE; ++i)
         accu.white[i] += network->feature_weights[white_idx * HIDDEN_LAYER_SIZE + i];
 
@@ -169,95 +169,86 @@ void NNUE::add(Accumulator& accu, Piece piece, SQUARE from, SQUARE wking, SQUARE
 
 
 //=========================================
-//! \brief  Calcul de la valeur résultante des 2 accumulateurs
-//! et de leur poids
+//! \brief  Évaluation SCReLU + produit matrice-vecteur (activations × output_weights) → score en centipions
+//!
+//! Algorithme "Lizard" (SCReLU dual perspective) :
+//!   1. SCReLU SIMD : clipped = clamp(acc, 0, QA)
+//!      product = clipped × weight  (I16, safe : 255×127 = 32385 < 32767)
+//!      result  = madd(product, clipped) → I32  (= clipped² × weight)
+//!      → sum accumule clipped² × weight sur toutes les paires
+//!
+//!   2. Mise à l'échelle :
+//!      sum est à l'échelle QA² × QB
+//!      eval = sum / QA + bias   (bias à QAB = QA×QB → cohérent après /QA)
+//!      eval = eval × SCALE / QAB
+//!
+//! Ref : https://cosmo.tardis.ac/files/2024-06-01-nnue.html
 //-----------------------------------------
 #if defined USE_SIMD
 
 constexpr int kChunkSize = sizeof(simd::Vepi16) / sizeof(I16);
-
 
 I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
                      const std::array<I16, HIDDEN_LAYER_SIZE>& them,
                      const std::array<I16, HIDDEN_LAYER_SIZE * N_COLORS * OUTPUT_BUCKETS>& weights,
                      const int bucket)
 {
-    // Routine provenant de Integral
-    // Merci pour les commentaires )
-
-    // Doc : https://cosmo.tardis.ac/files/2024-06-01-nnue.html
-    // On va utiliser l'algorithme "Lizard"
-
     const int adresse = bucket * N_COLORS * HIDDEN_LAYER_SIZE;
 
     auto sum = simd::ZeroEpi32();
 
-    // Compute evaluation from our perspective
+    // Perspective du joueur actif (us)
     for (size_t i = 0; i < HIDDEN_LAYER_SIZE; i += kChunkSize)
     {
-        const auto input  = simd::LoadEpi16(&us[i]);
-        const auto weight = simd::LoadEpi16(&weights[adresse + i]);
+        const auto input   = simd::LoadEpi16(&us[i]);
+        const auto weight  = simd::LoadEpi16(&weights[adresse + i]);
 
-        // Clip the accumulator values
+        // Écrêtage : clamp(acc, 0, QA) → valeur entre 0 et 255
         const auto clipped = simd::Clip(input, QA);
 
-        // compute t = v * w in 16-bit
-        // this step relies on v being less than 256 and abs(w) being less than 127,
-        // so abs(v * w) is at most 255*126=32130, less than i16::MAX, which is 32767,
-        // so the output still fits in i16.
-
-        // Multiply weights by clipped values (still in i16, no overflow)
+        // 1ère multiplication : clipped × weight → I16
+        // Pas d'overflow : 255 × 127 = 32385 < 32767 (max I16)
         const auto product = simd::MultiplyEpi16(clipped, weight);
 
-        // Perform the second multiplication with widening to i32,
-        // accumulating the result
-        const auto result = simd::MultiplyAddEpi16(product, clipped);
+        // 2ème multiplication avec élargissement vers I32 (madd) :
+        // result[i] = product[2i] × clipped[2i] + product[2i+1] × clipped[2i+1]
+        //           = clipped² × weight  (SCReLU = activation au carré)
+        const auto result  = simd::MultiplyAddEpi16(product, clipped);
 
-        // Accumulate the results in 32-bit integers
+        // Accumulation en I32
         sum = simd::AddEpi32(sum, result);
     }
 
-    // Compute evaluation from their perspective
+    // Perspective de l'adversaire (them)
     for (size_t i = 0; i < HIDDEN_LAYER_SIZE; i += kChunkSize)
     {
-        const auto input  = simd::LoadEpi16(&them[i]);
-        const auto weight = simd::LoadEpi16(&weights[adresse + HIDDEN_LAYER_SIZE + i]);
-
-        // Clip the accumulator values
+        const auto input   = simd::LoadEpi16(&them[i]);
+        const auto weight  = simd::LoadEpi16(&weights[adresse + HIDDEN_LAYER_SIZE + i]);
         const auto clipped = simd::Clip(input, QA);
-
-        // Multiply weights by clipped values (still in i16, no overflow)
         const auto product = simd::MultiplyEpi16(clipped, weight);
-
-        // Perform the second multiplication with widening to i32,
-        // accumulating the result
-        const auto result = simd::MultiplyAddEpi16(product, clipped);
-
-        // Accumulate the results in 32-bit integers
+        const auto result  = simd::MultiplyAddEpi16(product, clipped);
         sum = simd::AddEpi32(sum, result);
     }
 
-    // Perform a horizontal sum to get the final result
+    // Réduction horizontale : somme tous les I32 du vecteur en un seul scalaire
     I32 eval = simd::ReduceAddEpi32(sum);
 
-    // De-quantize the evaluation because of our squared activation function
+    // Dé-quantification : sum est à l'échelle QA²×QB → on divise par QA → échelle QA×QB
     eval /= QA;
 
-    // Add final output bias
+    // Ajout du biais de sortie (stocké à l'échelle QA×QB = QAB)
     eval += network->output_bias[bucket];
 
-    // Scale the evaluation
+    // Mise à l'échelle en centipions, puis dé-quantification finale
     eval *= SCALE;
-
-    // De-quantize again
     eval /= QAB;
 
     return eval;
-
 }
 
 #else
 
+// Fallback scalaire (sans SIMD) — même algorithme SCReLU Lizard
 I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
                      const std::array<I16, HIDDEN_LAYER_SIZE>& them,
                      const std::array<I16, HIDDEN_LAYER_SIZE * N_COLORS * OUTPUT_BUCKETS>& weights,

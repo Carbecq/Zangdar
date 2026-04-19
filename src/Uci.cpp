@@ -165,7 +165,7 @@ void Uci::run()
 
         else if (token == "v")
         {
-            std::cout << "Zangdar " << VERSION << " NNUE " << EVALFILE << std::endl;
+            std::cout << "Zangdar " << VERSION << " NNUE " << NET_NAME << std::endl;
             std::cout << transpositionTable.info();
             uci_board.syzygy_info();
         }
