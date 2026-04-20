@@ -74,7 +74,7 @@ DEFS += $(EXTRA_DEFS)
 #---------------------------------------------------
 NETS_DIR  = networks
 NETS_FILE = $(NETS_DIR)/$(NET_NAME)
-NETS_REPO = https://github.com/Carbec/zangdar-nets/releases/download
+NETS_REPO = https://github.com/Carbecq/Zangdar-Networks/releases/download
 
 # EVALFILE peut être surchargé en ligne de commande (ex: OpenBench)
 EVALFILE ?= $(NETS_FILE)

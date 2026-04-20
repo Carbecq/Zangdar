@@ -106,6 +106,10 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
     MovePicker movePicker(board, history, si, Move::MOVE_NONE,
                           Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, 0);
 
+    // QS History : suivi des captures essayées pour bonus/malus
+    std::array<MOVE, MAX_MOVES> tried_captures;
+    size_t capture_count = 0;
+
     // Boucle sur tous les coups
     // Si on est en échec, on génère aussi les coups "quiet"
     while ((move = movePicker.next_move(!isInCheck).move ) != Move::MOVE_NONE)
@@ -130,6 +134,9 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
             }
         }
 
+        if (Move::is_capturing(move))
+            tried_captures[capture_count++] = move;
+
         make_move<C, true>(board, move);
         si->move = move;
         si->cont_hist = &history.continuation_history[Move::piece(move)][Move::dest(move)];
@@ -153,6 +160,12 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
                 // try for an early cutoff:
                 if(score >= beta)
                 {
+                    // QS History : bonus au meilleur coup, malus aux autres
+                    if (Move::is_capturing(best_move))
+                    {
+                        int qs_depth = std::max(1, seldepth - si->ply);
+                        history.update_capture_history(best_move, qs_depth, capture_count, tried_captures);
+                    }
                     break;
                 }
             }
