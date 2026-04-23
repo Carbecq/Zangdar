@@ -42,7 +42,11 @@ public:
 
     int         index;          // indice de la thread
     int         seldepth;       // selective depth
-    std::atomic<bool> stopped;  // indique que la recherche est stoppée
+    std::atomic<bool>  stopped{false};  // flag local (DataGen)
+    std::atomic<bool>* stopFlagPtr;     // pointe vers stopped (DataGen) ou ThreadPool::searchStopped (engine)
+
+    bool is_stopped()  const noexcept { return stopFlagPtr->load(std::memory_order_relaxed); }
+    void signal_stop()       noexcept { stopFlagPtr->store(true, std::memory_order_relaxed); }
 
     int         iter_depth;     // profondeur demandée dans iterative  deepening
     int         iter_score;

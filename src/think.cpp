@@ -90,7 +90,7 @@ void Search::iterative_deepening(Board& board, Timer& timer, SearchInfo* si)
         // Search position, using aspiration windows for higher depths
         iter_score = aspiration_window<C>(board, timer, si);
 
-        if (stopped)
+        if (is_stopped())
             break;
 
         // L'itération s'est terminée sans problème
@@ -143,7 +143,7 @@ int Search::aspiration_window(Board& board, Timer& timer, SearchInfo* si)
     {
         score = alpha_beta<C>(board, timer, alpha, beta, std::max(1, depth), false, si);
 
-        if (stopped)
+        if (is_stopped())
             break;
 
         // Search failed low, adjust window and reset depth
@@ -197,9 +197,9 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     const bool isRoot     = (si->ply == 0);
 
     //  Time-out
-    if (stopped || timer.check_limits(iter_depth, index, nodes)) // depth ? td_depth ?
+    if (is_stopped() || timer.check_limits(iter_depth, index, nodes))
     {
-        stopped = true;
+        signal_stop();
         return 0;
     }
 
@@ -439,7 +439,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             int null_score = -alpha_beta<~C>(board, timer, -beta, -beta + 1, depth - 1 - R, !cut_node, si+1);
             board.undo_nullmove<C>();
 
-            if (stopped)
+            if (is_stopped())
                 return 0;
 
             // Cutoff
@@ -729,7 +729,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             timer.updateMoveNodes(move, nodes - starting_nodes);
 
         //  Time-out
-        if (stopped)
+        if (is_stopped())
             return 0;
 
         // On a trouvé un nouveau meilleur coup
@@ -783,7 +783,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         history.update_correction_history(board, depth, best_score, static_eval );
     }
 
-    if (!stopped && !isExcluded)
+    if (!is_stopped() && !isExcluded)
     {
         //  si on est ici, c'est que l'on a trouvé au moins 1 coup
         //  et de plus : score < beta

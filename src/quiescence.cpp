@@ -13,9 +13,9 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
     assert(beta > alpha);
 
     //  Time-out
-    if (stopped || timer.check_limits(iter_depth, index, nodes))    // ATTENTION on peut avoir depth <=0
+    if (is_stopped() || timer.check_limits(iter_depth, index, nodes))    // ATTENTION on peut avoir depth <=0
     {
-        stopped = true;
+        signal_stop();
         return 0;
     }
 
@@ -143,7 +143,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
         score = -quiescence<~C>(board, timer, -beta, -alpha, si+1);
         undo_move<C, true>(board);
 
-        if (stopped)
+        if (is_stopped())
             return 0;
 
         // Found a new best move in this position
@@ -172,7 +172,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
         }
     }
 
-    if (!stopped)
+    if (!is_stopped())
     {
         int bound = best_score >= beta    ? BOUND_LOWER
                                           : best_score > old_alpha ? BOUND_EXACT

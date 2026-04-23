@@ -38,6 +38,7 @@ public:
     int  get_syzygyProbeLimit() const { return syzygyProbeLimit; }
 
     std::unique_ptr<Search[]> search;
+    std::atomic<bool> searchStopped{false};
 
 private:
     U32     nbrThreads;

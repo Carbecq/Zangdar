@@ -9,7 +9,7 @@
 //=============================================
 //! \brief  Constructeur
 //---------------------------------------------
-Search::Search()
+Search::Search() : stopFlagPtr(&stopped)
 {
 #if defined DEBUG_LOG
     char message[100];

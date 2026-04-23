@@ -91,6 +91,9 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
     printlog(message);
 #endif
 
+    // Garantit qu'aucune recherche précédente n'est encore active (double "go")
+    stop();
+
     MOVE best = Move::MOVE_NONE;
 
     //  an opening is selected by the gui, from the book, and the engines play from there
@@ -110,14 +113,16 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
         printlog(message);
 #endif
 
+        searchStopped.store(false, std::memory_order_relaxed);
+
         for (size_t i = 0; i < nbrThreads; i++)
         {
-            search[i].seldepth      = 0;
-            search[i].stopped       = false;
-            search[i].iter_depth    = timer.getSearchDepth();
-            search[i].iter_score    = -INFINITE;
-            search[i].nodes         = 0;
-            search[i].tbhits        = 0;
+            search[i].stopFlagPtr     = &searchStopped;
+            search[i].seldepth        = 0;
+            search[i].iter_depth      = timer.getSearchDepth();
+            search[i].iter_score      = -INFINITE;
+            search[i].nodes           = 0;
+            search[i].tbhits          = 0;
 
             search[i].iter_best_depth = 0;
             search[i].iter_best_move  = Move::MOVE_NONE;
@@ -146,10 +151,7 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
 //-------------------------------------------------
 void ThreadPool::main_thread_stopped()
 {
-    // envoie à toutes les autres threads
-    // le signal d'arrêter
-    for (size_t i = 1; i < nbrThreads; i++)
-        search[i].stopped = true;
+    searchStopped.store(true, std::memory_order_relaxed);
 }
 
 //=================================================
@@ -171,11 +173,7 @@ void ThreadPool::wait(size_t start)
 //-------------------------------------------------
 void ThreadPool::stop()
 {
-    // Signal d'arrêt à toutes les threads
-    for (size_t i = 0; i < nbrThreads; i++)
-        search[i].stopped = true;
-
-    // Attente de toutes les threads
+    searchStopped.store(true, std::memory_order_relaxed);
     wait(0);
 }
 
@@ -198,12 +196,18 @@ int ThreadPool::get_best_thread() const
 
     for (size_t i = 1; i < nbrThreads; i++)
     {
-        if (   search[i].iter_best_depth > search[best].iter_best_depth
-            || (search[i].iter_best_depth == search[best].iter_best_depth
-                && search[i].iter_best_score > search[best].iter_best_score))
-        {
-            best = i;
-        }
+        const int bd = search[best].iter_best_depth, bs = search[best].iter_best_score;
+        const int id = search[i].iter_best_depth,    is = search[i].iter_best_score;
+
+        // Un mat plus proche bat tout (indépendamment de la profondeur)
+        if (is > MATE_IN_X && is > bs)                    { best = i; continue; }
+        if (is > MATE_IN_X || bs > MATE_IN_X)               continue;
+
+        // Pas de mat gagnant des deux côtés :
+        // profondeur égale → préférer le score plus haut
+        if (id == bd && is > bs)  { best = i; continue; }
+        // profondeur plus grande → toujours préférer (pas de mat gagnant des deux côtés)
+        if (id  > bd)             { best = i; continue; }
     }
 
     return best;
