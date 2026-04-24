@@ -476,9 +476,9 @@ void DataGen::data_search(Board& board, Timer& timer, Search& search,
     move  = Move::MOVE_NONE;
     score = -INFINITE;
 
-    search.iter_score     = -INFINITE;
-    search.stopped   = false;
-    search.nodes     = 0;
+    search.iter_score = -INFINITE;
+    search.stopped    = false;
+    search.nodes      = 0;
 
     search.iter_best_depth = 0;
     search.iter_best_move  = Move::MOVE_NONE;
@@ -510,7 +510,7 @@ void DataGen::data_search(Board& board, Timer& timer, Search& search,
         // Search position, using aspiration windows for higher depths
         search.iter_score = search.aspiration_window<C>(board, timer, si);
 
-        if (search.stopped)
+        if (search.is_stopped())
             break;
 
         // L'itération s'est terminée sans problème

@@ -192,22 +192,27 @@ void ThreadPool::quit()
 //-------------------------------------------------
 int ThreadPool::get_best_thread() const
 {
+    /// Un thread est meilleur qu'un autre si l'une de ces conditions est vraie :
+    /// [1] Le thread a une profondeur égale et un score plus élevé.
+    /// [2] Le thread a un score de mat et est plus proche du mat.
+    /// [3] Le thread a une profondeur plus grande sans remplacer un mat plus proche.
+
     int best = 0;
 
     for (size_t i = 1; i < nbrThreads; i++)
     {
-        const int bd = search[best].iter_best_depth, bs = search[best].iter_best_score;
-        const int id = search[i].iter_best_depth,    is = search[i].iter_best_score;
+        const int best_depth = search[best].iter_best_depth;
+        const int best_score = search[best].iter_best_score;
+        const int iter_depth = search[i].iter_best_depth;
+        const int iter_score = search[i].iter_best_score;
 
-        // Un mat plus proche bat tout (indépendamment de la profondeur)
-        if (is > MATE_IN_X && is > bs)                    { best = i; continue; }
-        if (is > MATE_IN_X || bs > MATE_IN_X)               continue;
+        if (   (iter_depth == best_depth && iter_score > best_score)
+            || (iter_score > MATE_IN_X && iter_score > best_score))
+            best = i;
 
-        // Pas de mat gagnant des deux côtés :
-        // profondeur égale → préférer le score plus haut
-        if (id == bd && is > bs)  { best = i; continue; }
-        // profondeur plus grande → toujours préférer (pas de mat gagnant des deux côtés)
-        if (id  > bd)             { best = i; continue; }
+        if (    iter_depth > best_depth
+            && (iter_score > best_score || best_score < MATE_IN_X))
+            best = i;
     }
 
     return best;

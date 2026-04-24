@@ -88,9 +88,9 @@ void Search::iterative_deepening(Board& board, Timer& timer, SearchInfo* si)
     for (iter_depth = 1; iter_depth <= timer.getSearchDepth(); iter_depth++)
     {
         // Search position, using aspiration windows for higher depths
-        iter_score = aspiration_window<C>(board, timer, si);
+        iter_score     = aspiration_window<C>(board, timer, si);
 
-        if (is_stopped())
+         if (is_stopped())
             break;
 
         // L'itération s'est terminée sans problème
@@ -99,7 +99,7 @@ void Search::iterative_deepening(Board& board, Timer& timer, SearchInfo* si)
         iter_best_move  = si->pv.line[0];
         iter_best_score = iter_score;
 
-        // Seule la thread principale gère l'affichage UCI et le time management
+         // Seule la thread principale gère l'affichage UCI et le time management
         if (index == 0)
         {
             auto elapsed = timer.elapsedTime();
@@ -127,10 +127,9 @@ int Search::aspiration_window(Board& board, Timer& timer, SearchInfo* si)
     int alpha  = -INFINITE;
     int beta   = INFINITE;
     int depth  = iter_depth;
+    int delta  = Tunable::AspirationWindowsDelta;
     int score  = iter_score;
-
     const int initialWindow = Tunable::AspirationWindowsInitial;
-    int delta = Tunable::AspirationWindowsDelta;
 
     // After a few depths use a previous result to form the window
     if (depth >= Tunable::AspirationWindowsDepth)
@@ -160,7 +159,7 @@ int Search::aspiration_window(Board& board, Timer& timer, SearchInfo* si)
             beta  = std::min(score + delta, INFINITE);   // beta/score+delta
             // idée de Berserk
             if (abs(score) < TBWIN_IN_X)
-                depth--;
+                depth = std::max(depth-1, 1);
         }
 
         // Score within the bounds is accepted as correct

@@ -10,7 +10,7 @@ DEFINES += STATIC
 QMAKE_LFLAGS += -flto=auto
 
 #------------------------------------------------------
-DEFINES += EVALFILE=\\\"/mnt/Datas/Echecs/Programmation/Zangdar/APP/networks/net_6.bin\\\"
+DEFINES += NET_NAME=\\\"/mnt/Datas/Echecs/Programmation/Zangdar/APP/networks/net_6.bin\\\"
 DEFINES += USE_SIMD
 DEFINES += VERSION=\\\"0.00.00\\\"
 

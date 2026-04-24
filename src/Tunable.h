@@ -117,9 +117,9 @@ PARAM(nodeTMScale    , 167, 100, 200);      // valeur * 100
 //-------------------------------------------- Autres
 
 // Aspiration Window
-PARAM(AspirationWindowsDepth,    6, 3, 10);
-PARAM(AspirationWindowsInitial, 12, 5, 30);
-PARAM(AspirationWindowsDelta,   16, 8, 40);
+PARAM(AspirationWindowsDepth,    6, 3, 10);     // 6
+PARAM(AspirationWindowsInitial, 12, 5, 30); // 12
+PARAM(AspirationWindowsDelta,   16, 8, 40);     // 16
 PARAM(AspirationWindowsExpand, 6667, 4000, 9000);
 
 // Quiescence
