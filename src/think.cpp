@@ -414,7 +414,12 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 && abs(beta) < MATE_IN_X
                 && board.getNonPawnMaterial<C>())
         {
-            int eval_margin = Tunable::SNMPMargin * depth;
+            // corrplexity : différence entre eval brute et eval corrigée par correction history.
+            // Positif → on surestimait → marge plus grande (pruning moins agressif).
+            // Négatif → on sous-estimait → marge plus petite (pruning plus agressif).
+            int corrplexity = raw_eval - si->static_eval;
+            int eval_margin = Tunable::SNMPMargin * (depth - improving)
+                            + corrplexity * Tunable::SNMPCorrplexityScale / 128;
 
             if (static_eval - eval_margin >= beta)
                 return static_eval - eval_margin; // Fail Soft
