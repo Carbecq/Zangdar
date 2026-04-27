@@ -1,6 +1,8 @@
 CXX = clang++
 # CXX = /bin/g++-14
 
+.DEFAULT_GOAL := pgo
+
 ifeq ($(CXX),clang++)
 	COMP := clang
 else
