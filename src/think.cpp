@@ -60,17 +60,9 @@ void Search::think(Board board, Timer timer, size_t m_index)
         threadPool.main_thread_stopped();
         threadPool.wait(1);
 
-        // Sélection du meilleur résultat parmi toutes les threads
-        int best_thread = threadPool.get_best_thread();
-        if (best_thread != 0)
-        {
-            iter_best_move  = threadPool.search[best_thread].iter_best_move;
-            iter_best_score = threadPool.search[best_thread].iter_best_score;
-            iter_best_depth = threadPool.search[best_thread].iter_best_depth;
-        }
-
+        // Sélection et affichage du meilleur résultat parmi toutes les threads
         if (threadPool.get_logUci())
-            show_uci_best();
+            show_uci_best(threadPool.get_best_move());
 
         table->update_age();
     }
@@ -85,21 +77,27 @@ void Search::think(Board board, Timer timer, size_t m_index)
 template<Color C>
 void Search::iterative_deepening(Board& board, Timer& timer, SearchInfo* si)
 {
+    int prev_score = -INFINITE;
+
     for (iter_depth = 1; iter_depth <= timer.getSearchDepth(); iter_depth++)
     {
         // Search position, using aspiration windows for higher depths
-        iter_score     = aspiration_window<C>(board, timer, si);
+        const int score = aspiration_window<C>(board, timer, si, prev_score);
 
-         if (is_stopped())
+        if (is_stopped())
             break;
 
         // L'itération s'est terminée sans problème
         // Toutes les threads sauvegardent leur meilleur résultat
-        iter_best_depth = iter_depth;
-        iter_best_move  = si->pv.line[0];
-        iter_best_score = iter_score;
+        best_depth = iter_depth;
 
-         // Seule la thread principale gère l'affichage UCI et le time management
+        // Historique par profondeur
+        pv_scores[iter_depth] = score;
+        pv_moves [iter_depth] = si->pv.line[0];
+
+        prev_score = score;
+
+        // Seule la thread principale gère l'affichage UCI et le time management
         if (index == 0)
         {
             auto elapsed = timer.elapsedTime();
@@ -107,8 +105,11 @@ void Search::iterative_deepening(Board& board, Timer& timer, SearchInfo* si)
             if (threadPool.get_logUci())
                 show_uci_result(elapsed, si->pv);
 
+            // Mise à jour de la stabilité de la PV
+            timer.update(iter_depth, pv_moves[iter_depth-1], pv_moves[iter_depth]);
+
             // If an iteration finishes after optimal time usage, stop the search
-            if (timer.finishOnThisDepth(elapsed, iter_depth, iter_best_move, nodes))
+            if (timer.finishOnThisDepth(elapsed, iter_depth, nodes, pv_scores, pv_moves))
                 break;
 
             seldepth = 0;
@@ -122,13 +123,13 @@ void Search::iterative_deepening(Board& board, Timer& timer, SearchInfo* si)
 //!
 //------------------------------------------------------
 template<Color C>
-int Search::aspiration_window(Board& board, Timer& timer, SearchInfo* si)
+int Search::aspiration_window(Board& board, Timer& timer, SearchInfo* si, int prev_score)
 {
     int alpha  = -INFINITE;
     int beta   = INFINITE;
     int depth  = iter_depth;
     int delta  = Tunable::AspirationWindowsDelta;
-    int score  = iter_score;
+    int score  = prev_score;
     const int initialWindow = Tunable::AspirationWindowsInitial;
 
     // After a few depths use a previous result to form the window
@@ -803,5 +804,5 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 template void Search::think<WHITE>(Board board, Timer timer, size_t _index);
 template void Search::think<BLACK>(Board board, Timer timer, size_t _index);
 
-template int Search::aspiration_window<WHITE>(Board& board, Timer& timer, SearchInfo* si);
-template int Search::aspiration_window<BLACK>(Board& board, Timer& timer, SearchInfo* si);
+template int Search::aspiration_window<WHITE>(Board& board, Timer& timer, SearchInfo* si, int prev_score);
+template int Search::aspiration_window<BLACK>(Board& board, Timer& timer, SearchInfo* si, int prev_score);

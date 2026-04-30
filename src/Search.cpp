@@ -45,6 +45,7 @@ Search::~Search()
 
 //=========================================================
 //! \brief  Affichage UCI du résultat de la recherche
+//!         N'est utilisé que pour le thread 0
 //!
 //! \param[in] depth        profondeur de la recherche
 //! \param[in] elapsed      temps passé pour la recherche, en millisecondes
@@ -72,7 +73,7 @@ void Search::show_uci_result(I64 elapsed, const PVariation& pv) const
     int hash_full  = table->hash_full();
 
     stream << "info "
-           << " depth "    << iter_best_depth
+           << " depth "    << best_depth
            << " seldepth " << seldepth
 
 // time     : the time searched in ms
@@ -84,6 +85,8 @@ void Search::show_uci_result(I64 elapsed, const PVariation& pv) const
            << " nps "        << all_nodes * 1000 / elapsed
            << " tbhits "     << all_tbhits
            << " hashfull "   << hash_full;
+
+    const int iter_best_score = pv_scores[best_depth];
 
     if (iter_best_score >= MATE_IN_X)
     {
@@ -107,13 +110,14 @@ void Search::show_uci_result(I64 elapsed, const PVariation& pv) const
 
 //=========================================================
 //! \brief  Affichage UCI du meilleur coup trouvé
+//!         N'est utilisé que pour le thread 0
 //!
 //! \param[in]  name   coup en notation UCI
 //---------------------------------------------------------
-void Search::show_uci_best() const
+void Search::show_uci_best(MOVE best_move) const
 {
     // ATTENTION AU FORMAT D'AFFICHAGE
-    std::cout << "bestmove " << Move::name(iter_best_move) << std::endl;
+    std::cout << "bestmove " << Move::name(best_move) << std::endl;
 }
 
 //=========================================================

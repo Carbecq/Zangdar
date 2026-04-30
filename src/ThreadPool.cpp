@@ -119,14 +119,16 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
         {
             search[i].stopFlagPtr     = &searchStopped;
             search[i].seldepth        = 0;
-            search[i].iter_depth      = timer.getSearchDepth();
-            search[i].iter_score      = -INFINITE;
             search[i].nodes           = 0;
             search[i].tbhits          = 0;
+            search[i].best_depth      = 0;
 
-            search[i].iter_best_depth = 0;
-            search[i].iter_best_move  = Move::MOVE_NONE;
-            search[i].iter_best_score = -INFINITE;
+            // Init de l'historique par profondeur
+            for (int d = 0; d <= MAX_PLY; d++)
+            {
+                search[i].pv_scores[d] = -INFINITE;
+                search[i].pv_moves [d] = Move::MOVE_NONE;
+            }
 
             search[i].table           = &transpositionTable;
         }
@@ -192,26 +194,29 @@ void ThreadPool::quit()
 //-------------------------------------------------
 int ThreadPool::get_best_thread() const
 {
-    /// Un thread est meilleur qu'un autre si l'une de ces conditions est vraie :
-    /// [1] Le thread a une profondeur égale et un score plus élevé.
-    /// [2] Le thread a un score de mat et est plus proche du mat.
-    /// [3] Le thread a une profondeur plus grande sans remplacer un mat plus proche.
+    // Hiérarchie de sélection :
+    //  - si best a un mat → on ne bascule que sur un mat plus court ;
+    //  - sinon si iter a un mat → on bascule ;
+    //  - sinon → priorité à la profondeur, départage au score.
 
     int best = 0;
 
     for (size_t i = 1; i < nbrThreads; i++)
     {
-        const int best_depth = search[best].iter_best_depth;
-        const int best_score = search[best].iter_best_score;
-        const int iter_depth = search[i].iter_best_depth;
-        const int iter_score = search[i].iter_best_score;
+        const int bd = search[best].best_depth;
+        const int bs = search[best].pv_scores[bd];
+        const int id = search[i].best_depth;
+        const int is = search[i].pv_scores[id];
 
-        if (   (iter_depth == best_depth && iter_score > best_score)
-            || (iter_score > MATE_IN_X && iter_score > best_score))
-            best = i;
+        bool better;
+        if (bs >= MATE_IN_X)
+            better = (is > bs);
+        else if (is >= MATE_IN_X)
+            better = true;
+        else
+            better = (id > bd) || (id == bd && is > bs);
 
-        if (    iter_depth > best_depth
-            && (iter_score > best_score || best_score < MATE_IN_X))
+        if (better)
             best = i;
     }
 
@@ -239,7 +244,7 @@ int ThreadPool::get_all_depths() const
     int total = 0;
     for (size_t i=0; i<nbrThreads; i++)
     {
-        total += search[i].iter_best_depth;
+        total += search[i].best_depth;
     }
     return(total);
 }

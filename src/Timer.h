@@ -54,7 +54,7 @@ public:
     void setup(Color color);
     void setup(U64 soft_limit, U64 hard_limit);
     bool check_limits(const int depth, const int index, const U64 total_nodes);
-    bool finishOnThisDepth(int elapsed, int depth, MOVE best_move, U64 total_nodes);
+    bool finishOnThisDepth(int elapsed, int depth, U64 total_nodes, const int* pv_scores, const MOVE *pv_moves);
 
     int  getSearchDepth() const { return(searchDepth); }
     I64  elapsedTime() const;
@@ -62,13 +62,10 @@ public:
     I64  getMoveOverhead() const { return MoveOverhead; }
 
     void updateMoveNodes(MOVE move, U64 nodes);
+    void update(int depth, MOVE last_move, MOVE this_move);
 
 private:
     Limits limits;
-
-     static constexpr std::array<double, 7> stabilityValues = {
-        2.2, 1.6, 1.4, 1.1, 1, 0.95, 0.9
-    };
 
     constexpr static U32 MAX_COUNTER = 2048;
     U32 counter {MAX_COUNTER};
@@ -85,7 +82,6 @@ private:
     U64  nodesForThisMove;        // noeuds pour une recherche "alpha-beta" ou "quiescence"
 
     std::array<U64, 4096>   MoveNodeCounts;
-    MOVE                    PrevBestMove;
     U32                     pv_stability;
 
 };

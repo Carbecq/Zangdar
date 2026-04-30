@@ -476,13 +476,15 @@ void DataGen::data_search(Board& board, Timer& timer, Search& search,
     move  = Move::MOVE_NONE;
     score = -INFINITE;
 
-    search.iter_score = -INFINITE;
     search.stopped    = false;
     search.nodes      = 0;
+    search.best_depth = 0;
 
-    search.iter_best_depth = 0;
-    search.iter_best_move  = Move::MOVE_NONE;
-    search.iter_best_score = -INFINITE;
+    for (int d = 0; d <= MAX_PLY; d++)
+    {
+        search.pv_scores[d] = -INFINITE;
+        search.pv_moves [d] = Move::MOVE_NONE;
+    }
 
 
 #if defined DEBUG_GEN
@@ -505,19 +507,25 @@ void DataGen::data_search(Board& board, Timer& timer, Search& search,
         (si + i)->cont_hist = &search.history.continuation_history[0][0];
     }
 
+    int prev_score = -INFINITE;
+
     for (search.iter_depth = 1; search.iter_depth <= std::max(1, timer.getSearchDepth()); search.iter_depth++)
     {
         // Search position, using aspiration windows for higher depths
-        search.iter_score = search.aspiration_window<C>(board, timer, si);
+        const int iter_score = search.aspiration_window<C>(board, timer, si, prev_score);
 
         if (search.is_stopped())
             break;
 
         // L'itération s'est terminée sans problème
         // On peut mettre à jour les infos UCI
-        search.iter_best_depth = search.iter_depth;
-        search.iter_best_move  = si->pv.line[0];
-        search.iter_best_score = search.iter_score;
+        search.best_depth = search.iter_depth;
+
+        // Historique par profondeur
+        search.pv_scores[search.iter_depth] = iter_score;
+        search.pv_moves [search.iter_depth] = si->pv.line[0];
+
+        prev_score = iter_score;
 
 #if defined DEBUG_GEN
         I64 elapsed = timer.elapsedTime();
@@ -531,16 +539,17 @@ void DataGen::data_search(Board& board, Timer& timer, Search& search,
 #else
         I64 elapsed = 0;
 #endif
+        // Timer::update n'est pas utilisé car on est soit "par node", soit "par depth".
 
         // If an iteration finishes after optimal time usage, stop the search
-        if (timer.finishOnThisDepth(elapsed, search.iter_depth, search.iter_best_move, search.nodes))
+        if (timer.finishOnThisDepth(elapsed, search.iter_depth, search.nodes, nullptr, nullptr))
             break;
 
         search.seldepth = 0;
     }
 
-    move  = search.iter_best_move;
-    score = search.iter_best_score;
+    move  = search.pv_moves[search.best_depth];
+    score = search.pv_scores[search.best_depth];
 }
 
 //===================================================

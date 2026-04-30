@@ -106,14 +106,6 @@ PARAM(HistoryMalusMax,     1882, 1024, 4096);
 //   Peut-on tuner les valeurs du Timer ??
 //   But be sure to tune especially time management parameters only at longer time controls
 //   TC type 40/4 ou 10+0.1 minimum
-// Timer 1, valeurs les plus critiques : définissent l'allocation de base
-PARAM(softTimeScale  ,  57,  20,  80);      // valeur * 100
-PARAM(hardTimeScale  ,  62,  20,  80);      // valeur * 100
-PARAM(baseTimeScale  ,  20,  10,  40);      // valeur simple
-// Timer 2, pondération de l'incrément et du node TM
-PARAM(incrementScale ,  83,  40, 100);      // valeur * 100
-PARAM(nodeTMBase     , 145, 100, 200);      // valeur * 100
-PARAM(nodeTMScale    , 167, 100, 200);      // valeur * 100
 
 //-------------------------------------------- Autres
 

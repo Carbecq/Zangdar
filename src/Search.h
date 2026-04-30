@@ -49,15 +49,16 @@ public:
     void signal_stop()       noexcept { stopFlagPtr->store(true, std::memory_order_relaxed); }
 
     int         iter_depth;     // profondeur demandée dans iterative  deepening
-    int         iter_score;
+    int         best_depth;     // profondeur du meilleur coup trouvé jusqu'à présent
 
-    MOVE        iter_best_move; // meilleur coup trouvé lors de iterative deepening
-    int         iter_best_score;
-    int         iter_best_depth;
+    // Historique par profondeur
+    // Sert au time management pour calculer le score_factor (delta entre depth-3 et depth)
+    int         pv_scores[MAX_PLY+1];
+    MOVE        pv_moves[MAX_PLY+1];
 
     // Point de départ de la recherche
     template <Color C> void think(Board board, Timer timer, size_t _index);
-    template <Color C> int  aspiration_window(Board& board, Timer& timer, SearchInfo* si);
+    template <Color C> int  aspiration_window(Board& board, Timer& timer, SearchInfo* si, int prev_score);
 
     inline const Accumulator& get_accumulator() const { return nnue.get_accumulator(); }
     inline       Accumulator& get_accumulator()       { return nnue.get_accumulator(); }
@@ -69,7 +70,7 @@ private:
     template <Color C> int  quiescence(Board& board, Timer& timer, int alpha, int beta, SearchInfo* si);
 
     void show_uci_result(I64 elapsed, const PVariation &pv) const;
-    void show_uci_best() const;
+    void show_uci_best(MOVE best_move) const;
     void update_pv(SearchInfo* si, const MOVE move) const;
     void init_reductions();
 

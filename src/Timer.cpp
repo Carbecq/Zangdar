@@ -58,7 +58,6 @@ void Timer::start()
     std::fill(MoveNodeCounts.begin(), MoveNodeCounts.end(), 0);
     pv_stability = 0;
     counter      = MAX_COUNTER;
-    PrevBestMove = Move::MOVE_NONE;
 }
 
 //===========================================================
@@ -105,13 +104,6 @@ void Timer::setup(Color color)
     }
     else if (limits.time[color] != 0)
     {
-        I64 time      = limits.time[color];
-        int increment = limits.incr[color];
-        int mtg       = limits.movestogo;
-
-        // Attention, on peut avoir time<0
-        I64 time_remaining = std::max(static_cast<I64>(1), time - MoveOverhead);
-
         // CCRL blitz : game in 2 minutes plus 1 second increment
         // CCRL 40/15 : 40 moves in 15 minutes
         // Amateur    : 12 minutes with 8 second increments.
@@ -141,31 +133,37 @@ void Timer::setup(Color color)
         //  tc = 12:00+8
         //  go wtime 728000 btime 728000 winc 8000 binc 8000
 
+        I64 time      = limits.time[color];
+        int increment = limits.incr[color];
+        int mtg       = limits.movestogo;
+
+        // Attention, on peut avoir time<0 (low time / lag)
+        I64 time_remaining = std::max(static_cast<I64>(1), time - MoveOverhead);
+
+        double tr  = static_cast<double>(time_remaining);
+        double inc = static_cast<double>(increment);
+
         // CCRL 40/15
+        // note : la cadence 40 coups en 15 minutes n'ets plus utilisée de nos jours.
+        //        c'est une relique obsolète du passé.
+        //        Maintenant les tournois utilisent une horloge avec incrément.
         if (mtg > 0)
         {
+            // X / Y + Z time control
             // Cadence à nombre de coups imposé (ex: 40/15)
-            // m_SoftBound : temps moyen par coup, pondéré par l'incrément
-            timeForThisDepth = Tunable::softTimeScale / 100.0 * (static_cast<double>(time_remaining) / mtg
-                             + static_cast<double>(increment) * Tunable::incrementScale / 100.0);
-            // m_HardBound : au plus 4x le temps moyen par coup
-            timeForThisMove  = std::min(time_remaining * (Tunable::hardTimeScale / 100.0), static_cast<double>(time_remaining) / mtg * 4.0);
-
-            // Cap de sécurité : tenir compte de l'incrément
-            I64 safetyCap = static_cast<I64>(time_remaining * 0.80 + increment * 0.50);
-            timeForThisMove = std::min(timeForThisMove, std::min(safetyCap, time_remaining));
+            timeForThisDepth =  1.80 * tr / (mtg +  5) + inc;   // SoftBound : temps moyen par coup, pondéré par l'incrément
+            timeForThisMove  = 10.00 * tr / (mtg + 10) + inc;   // HardBound
         }
         else
         {
-            // Sudden death (formules Stormphrax)
-            // m_SoftBound
-            timeForThisDepth = Tunable::softTimeScale / 100.0 * (static_cast<double>(time_remaining) / Tunable::baseTimeScale
-                             + static_cast<double>(increment) * Tunable::incrementScale / 100.0);
-            // m_HardBound
-            timeForThisMove = time_remaining * (Tunable::hardTimeScale / 100.0);
+            // Sudden death (X + Y)
+            timeForThisDepth =  2.50 * (tr + 25.0 * inc) / 50.0;
+            timeForThisMove  = 10.00 * (tr + 25.0 * inc) / 50.0;
         }
 
-        timeForThisDepth = std::min(timeForThisDepth, timeForThisMove);
+        // Cap par le temps disponible (overhead déjà retiré)
+        timeForThisDepth = std::min(timeForThisDepth, time_remaining);
+        timeForThisMove  = std::min(timeForThisMove,  time_remaining);
     }
 
 #if defined DEBUG_TIME
@@ -235,26 +233,37 @@ bool Timer::check_limits(const int depth, const int index, const U64 total_nodes
 //! \brief  Détermine si on a assez de temps pour effectuer
 //!         une nouvelle itération
 //! \param[in]  elapsed     temps en millisecondes
-//! \param[in]  best_move   meilleur coup trouvé
+//! \param[in]  depth       profondeur du meilleur coup
 //! \param[in]  total_nodes nombre total de noeuds calculés pour cette profondeur
+//! \param[in]  pv_scores   historique des meilleurs scores
+//! \param[in]  pv_moves    historique des meilleurs coups
 //!
 //-----------------------------------------------------------
-bool Timer::finishOnThisDepth(int elapsed, int depth, MOVE best_move, U64 total_nodes)
+bool Timer::finishOnThisDepth(int elapsed, int depth, U64 total_nodes, const int* pv_scores, const MOVE* pv_moves)
 {
-     // Don't terminate early at very low depths
+    // Formules provenant d'Ethereal
+
     if (mode == TimerMode::TIME && depth >= 4)
     {
-        if (best_move == PrevBestMove)
-            pv_stability++;
-        else
-            pv_stability = 0;
-        PrevBestMove = best_move;
+        // Scale time between 80% and 120%, based on stable best moves
+        const double pv_factor = 1.20 - 0.04 * pv_stability;
 
-        double bmNodes = (total_nodes > 0) ?
-                    static_cast<double>(MoveNodeCounts[Move::fromdest(best_move)]) / static_cast<double>(total_nodes) : 0.0;
-        double scale = ((Tunable::nodeTMBase / 100.0) - bmNodes) * (Tunable::nodeTMScale / 100.0);
-        scale *= stabilityValues[std::min(pv_stability, 6u)];
-        return (elapsed > timeForThisDepth * scale);
+        // score_change : positif si on s'est dégradé
+        assert(pv_scores != nullptr);
+        const int score_change = pv_scores[depth - 3] - pv_scores[depth];
+
+        // Scale time between 75% and 125%, based on score fluctuations
+        const double score_factor = std::max(0.75, std::min(1.25, 0.05 * score_change));
+
+        // Scale time between 50% and 240%, based on where nodes have been spent
+        assert(pv_moves != nullptr);
+        const double bmNodes = (total_nodes > 0)
+                ? static_cast<double>(MoveNodeCounts[Move::fromdest(pv_moves[depth])]) / static_cast<double>(total_nodes)
+                : 0.0;
+        const double non_best_pct = 1.0 - bmNodes;
+        const double nodes_factor = std::max(0.50, 2.0 * non_best_pct + 0.4);
+
+        return (elapsed > timeForThisDepth * pv_factor * score_factor * nodes_factor);
     }
     else if (mode == TimerMode::NODE)
     {
@@ -298,4 +307,14 @@ void Timer::debug(Color color) const
 void Timer::updateMoveNodes(MOVE move, U64 nodes)
 {
     MoveNodeCounts[Move::fromdest(move)] += nodes;
+}
+
+void Timer::update(int depth, MOVE last_move, MOVE this_move)
+{
+    // Don't update our Time Managment plans at very low depths
+    if (mode != TimerMode::TIME || depth < 4)
+        return;
+
+    // Track how long we've kept the same best move between iterations
+    pv_stability = (this_move == last_move) ? std::min(10U, pv_stability + 1) : 0;
 }
