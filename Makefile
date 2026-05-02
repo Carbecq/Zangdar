@@ -1,7 +1,7 @@
 CXX = clang++
 # CXX = /bin/g++-14
 
-.DEFAULT_GOAL := pgo
+.DEFAULT_GOAL := openbench
 
 ifeq ($(CXX),clang++)
 	COMP := clang
