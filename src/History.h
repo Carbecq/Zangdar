@@ -32,8 +32,11 @@ using PawnHistoryTable = I16[PAWNHIST_SIZE][N_PIECE][N_SQUARES];
 //      It is a history table indexed by moved piece, target square, and captured piece type.
 //      The history table receives a bonus for captures that failed high, and maluses for all capture moves that did not fail high.
 //      The history values is used as a replacement for LVA in MVV-LVA.
+//
+//      Indexée par threat_from / threat_to pour distinguer
+//      les captures fuyant ou entrant dans une case attaquée.
 //============================================================================
-using CaptureHistory = I16[N_PIECE][N_SQUARES][N_PIECE_TYPE];     // [moved piece][target square][captured piece type]
+using CaptureHistory = I16[N_PIECE][2][2][N_SQUARES][N_PIECE_TYPE];     // [moved piece][threat from][threat to][target square][captured piece type]
 
 
 //============================================================================
@@ -90,10 +93,15 @@ public:
 
     MOVE get_counter_move(const SearchInfo *info) const;
 
-    inline I16 get_capture_history(MOVE move) const {
-        return capture_history[Move::piece(move)][Move::dest(move)][Move::captured_type(move)];
+    inline I16 get_capture_history(const SearchInfo *info, MOVE move) const {
+        const SQUARE from = Move::from(move);
+        const SQUARE dest = Move::dest(move);
+        return capture_history[Move::piece(move)]
+                              [BB::test_bit(info->threats, from)]
+                              [BB::test_bit(info->threats, dest)]
+                              [dest][Move::captured_type(move)];
     }
-    void update_capture_history(MOVE best_move, I16 depth,
+    void update_capture_history(const SearchInfo *info, MOVE best_move, I16 depth,
                                 size_t capture_count, std::array<MOVE, MAX_MOVES>& capture_moves);
 
     int  get_quiet_history(Color color, const SearchInfo *info, const MOVE move, KEY pawnkey) const;
@@ -144,7 +152,7 @@ private:
 
     void update_main(Color color, SearchInfo *info, MOVE move, int bonus);
     void update_continuation(SearchInfo* info, MOVE move, int bonus);
-    void update_capture(MOVE move, int malus);
+    void update_capture(const SearchInfo *info, MOVE move, int delta);
     void update_correction(int& entry, int scaled_bonus, int weight);
 
     //*********************************************************************
@@ -161,8 +169,8 @@ private:
     // tableau des coups qui ont causé un cutoff au ply précédent
     CounterMoveTable counter_move = {{Move::MOVE_NONE}};
 
-    // capture history  : [moved piece][target square][captured piece type]
-    CaptureHistory capture_history = {{{0}}};
+    // capture history  : [moved piece][threat from][threat to][target square][captured piece type]
+    CaptureHistory capture_history = {{{{{0}}}}};
 
     // Correction History
     // Utilisé pour la correction de l'évaluation

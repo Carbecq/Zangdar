@@ -99,7 +99,6 @@ void History::update_quiet_history(Color color, SearchInfo* info, MOVE best_move
         }
     }
 
-    // credits to ethereal
     // only update quiet history if best move was important
     if (!depth || (depth <= 3 && quiet_count <= 1))
         return;
@@ -175,17 +174,17 @@ void History::update_continuation_history(SearchInfo* info, MOVE move, int score
 }
 
 //=================================================================
-//! \brief  Capture History : [moved piece][target square][captured piece type]
+//! \brief  Capture History : [moved piece][threat from][threat to][target square][captured piece type]
 //! \param[in] move
 //-----------------------------------------------------------------
-void History::update_capture_history(MOVE best_move, I16 depth,
+void History::update_capture_history(const SearchInfo *info, MOVE best_move, I16 depth,
                                      size_t capture_count, std::array<MOVE, MAX_MOVES>& capture_moves)
 {
     int bonus = stat_bonus(depth);
     int malus = stat_malus(depth);
 
     // Bonus pour le coup ayant provoqué un cutoff (fail-high)
-    update_capture(best_move, bonus);
+    update_capture(info, best_move, bonus);
 
     // Malus pour les autres coups
     for (size_t i = 0; i < capture_count; i++)
@@ -193,17 +192,22 @@ void History::update_capture_history(MOVE best_move, I16 depth,
         MOVE move = capture_moves[i];
         if (move == best_move)
             continue;
-        update_capture(move, malus);
+        update_capture(info, move, malus);
     }
 }
 
 //==================================================================
 //! \brief  Met à jour la capture history pour un coup
-//! \param[in]  malus   bonus (positif) ou malus (négatif)
+//! \param[in]  delta   bonus (positif) ou malus (négatif)
 //------------------------------------------------------------------
-void History::update_capture(MOVE move, int malus)
+void History::update_capture(const SearchInfo *info, MOVE move, int delta)
 {
-    gravity(capture_history[Move::piece(move)][Move::dest(move)][Move::captured_type(move)], malus);
+    const SQUARE from = Move::from(move);
+    const SQUARE dest = Move::dest(move);
+    gravity(capture_history[Move::piece(move)]
+                           [BB::test_bit(info->threats, from)]
+                           [BB::test_bit(info->threats, dest)]
+                           [dest][Move::captured_type(move)], delta);
 }
 
 //=================================================================

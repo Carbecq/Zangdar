@@ -41,6 +41,9 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
     if (si->ply >= MAX_PLY)
         return isInCheck ? VALUE_DRAW : evaluate(board);
 
+    // Threats : utilisés pour indexer la capture history
+    si->threats = board.squares_attacked<~C>();
+
     // Prefetch La table de transposition aussitôt que possible
     table->prefetch(board.get_key());
 
@@ -164,7 +167,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
                     if (Move::is_capturing(best_move))
                     {
                         int qs_depth = std::max(1, seldepth - si->ply);
-                        history.update_capture_history(best_move, qs_depth, capture_count, tried_captures);
+                        history.update_capture_history(si, best_move, qs_depth, capture_count, tried_captures);
                     }
                     break;
                 }

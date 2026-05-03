@@ -544,7 +544,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         if (isQuiet)
             hist = history.get_quiet_history(C, si, move, board.get_pawn_key());
         else
-            hist = history.get_capture_history(move);
+            hist = history.get_capture_history(si, move);
 
         //-------------------------------------------------
         // Futility Pruning.
@@ -756,7 +756,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 if (score >= beta)
                 {
                     history.update_quiet_history(C, si, best_move, board.get_pawn_key(), depth, quiet_count, quiet_moves);
-                    history.update_capture_history(best_move, depth, capture_count, capture_moves);
+                    history.update_capture_history(si, best_move, depth, capture_count, capture_moves);
 
                     // non, ce coup est trop bon pour l'adversaire
                     // ça ne sert à rien de rechercher plus loin

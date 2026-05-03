@@ -340,7 +340,7 @@ void MovePicker::score_noisy()
             value = MvvLvaScores[PieceType::PAWN][PieceType::PAWN];
         // eg_value[PAWN] -PieceType::PAWN;
 
-        mln.mlmoves[i].value = value + history.get_capture_history(move) ; //TODO à modérer ??
+        mln.mlmoves[i].value = value + history.get_capture_history(info, move) ; //TODO à modérer ??
     }
 }
 
