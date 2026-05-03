@@ -142,6 +142,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
 
         make_move<C, true>(board, move);
         si->move = move;
+        si->tactical = Move::is_tactical(move);
         si->cont_hist = &history.continuation_history[Move::piece(move)][Move::dest(move)];
         score = -quiescence<~C>(board, timer, -beta, -alpha, si+1);
         undo_move<C, true>(board);

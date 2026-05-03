@@ -436,9 +436,11 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 && board.getNonPawnMaterial<C>())
         {
             int R = Tunable::NMPReduction
-                    + (Tunable::NMPMargin*depth + std::min<int>(static_eval - beta, Tunable::NMPMax)) / Tunable::NMPDivisor;
+                    + (Tunable::NMPMargin*depth + std::min<int>(static_eval - beta, Tunable::NMPMax)) / Tunable::NMPDivisor
+                    + (si-1)->tactical;     // (Ethereal) le coup adverse précédent était tactical → réduire un cran de plus
 
             si->move = Move::MOVE_NULL;
+            si->tactical = false;
             si->cont_hist = &history.continuation_history[0][0];
             board.make_nullmove<C>();
             int null_score = -alpha_beta<~C>(board, timer, -beta, -beta + 1, depth - 1 - R, !cut_node, si+1);
@@ -472,6 +474,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             {
                 make_move<C, true>(board, pbMove);
                 si->move = pbMove;
+                si->tactical = true;        // ProbCut ne joue que des coups tactical
                 si->cont_hist = &history.continuation_history[Move::piece(pbMove)][Move::dest(pbMove)];
 
                 // Teste si une recherche de quiescence donne un score supérieur à betaCut
@@ -652,6 +655,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
         // execute current move
         si->move = move;
+        si->tactical = !isQuiet;
         si->cont_hist = &history.continuation_history[Move::piece(move)][Move::dest(move)];
         make_move<C, true>(board, move);
 
