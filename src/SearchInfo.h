@@ -12,6 +12,7 @@ struct SearchInfo {
     MOVE        killer1 = Move::MOVE_NONE;
     MOVE        killer2 = Move::MOVE_NONE;
     Bitboard    threats = 0ULL;             // menaces du camp ennemi
+    bool        tactical = false;           // si->move est-il tactical (capture / promo / ep)
 }__attribute__((aligned(64)));
 
 #endif // SEARCHINFO_H
