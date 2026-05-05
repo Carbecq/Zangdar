@@ -61,9 +61,10 @@ PARAM(FPHistoryLimit,         12000, 8000, 16000);
 PARAM(FPHistoryLimitImproving, 6000, 2000, 10000);
 
 // Static Exchange Evaluation Pruning
-PARAM(SEEPruningDepth,  9, 5, 12);
-PARAM(SEEQuietMargin, -64, -128, 0);
-PARAM(SEENoisyMargin, -19, -50, 50);
+PARAM(SEEPruningDepth,    9,   5,  12);
+PARAM(SEEQuietMargin,   -64, -128,   0);
+PARAM(SEENoisyMargin,   -19,  -50,  50);
+PARAM(SEEHistScale,     128,   64, 512);
 
 // History Pruning
 PARAM(HistoryPruningDepth,     3,   1,    6);

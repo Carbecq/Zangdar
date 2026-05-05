@@ -595,7 +595,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                &&  best_score > -TBWIN_IN_X
                &&  depth <= Tunable::SEEPruningDepth
                &&  movePicker.get_stage() > STAGE_GOOD_NOISY
-               && !board.fast_see(move, seeMargin[isQuiet]))
+               && !board.fast_see(move, seeMargin[isQuiet] - hist / Tunable::SEEHistScale))
         {
             continue;
         }
