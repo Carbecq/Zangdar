@@ -578,6 +578,9 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         //-------------------------------------------------
         // History Pruning.
         // Prune moves with a low history score moves at near-leaf nodes
+        // L'idée : un coup quiet avec un historique très négatif est inutile à chercher :
+        // c'est un coup que le moteur a démontré comme mauvais dans des positions similaires.
+        // À faible profondeur, on le prune.
         //-------------------------------------------------
         if (   !isRoot
             && isQuiet
@@ -585,7 +588,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             && depth <= (Tunable::HistoryPruningDepth - improving)
             && hist  < -(Tunable::HistoryPruningScale * depth))
         {
-             continue;
+            skipQuiets = true;
+            continue;
         }
 
         //-------------------------------------------------
