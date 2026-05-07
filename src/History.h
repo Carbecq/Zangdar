@@ -59,18 +59,25 @@ using CounterMoveTable = MOVE[N_PIECE][N_SQUARES];
 //============================================================================
 using ContinuationHistoryTable = I16[N_PIECE][N_SQUARES][N_PIECE][N_SQUARES];
 
-
 //============================================================================
 //  Correction History
 //
-// Static Evaluation Correction History, also known as Correction History or CorrHist for short.
-// It records the difference between static evaluation and search score of a position to a table
-// indexed by the corresponding board feature, then uses the difference to adjust future
-// static evaluations in positions with the same feature
+//  Enregistre l'écart moyen entre éval statique (NNUE) et score de recherche,
+//  indexé par feature de position : pawn structure, et non-pawn structure
+//  par couleur. corrected_eval = raw_eval + corr_pawn + corr_npw + corr_npb.
+//
+//  Affecte toutes les décisions basées sur l'éval statique :
+//  SNMP/RFP, NMP, razoring, futility pruning, LMR, singular extension.
+//
+//  Mise à jour (gravity formula) :
+//    change = clamp(eval_diff * depth * scale / 64, ±max_value/4)
+//    entry += change - entry * |change| / max_value
+//  → bonus proportionnel à la MAGNITUDE de l'écart (pas juste sa fréquence),
+//    saturation auto à ±max_value.
+//
 //============================================================================
-using PawnCorrectionHistoryTable       = int[N_COLORS][PAWN_HASH_SIZE];
-using NonPawnCorrectionHistoryTable    = int[N_COLORS][PAWN_HASH_SIZE];
-
+using PawnCorrectionHistoryTable       = I16[N_COLORS][PAWN_HASH_SIZE];
+using NonPawnCorrectionHistoryTable    = I16[N_COLORS][PAWN_HASH_SIZE];
 
 
 class History
@@ -89,7 +96,7 @@ public:
 
     ContinuationHistoryTable continuation_history {{{{0}}}};
 
-//--------------------------------------------
+    //--------------------------------------------
 
     MOVE get_counter_move(const SearchInfo *info) const;
 
@@ -97,9 +104,9 @@ public:
         const SQUARE from = Move::from(move);
         const SQUARE dest = Move::dest(move);
         return capture_history[Move::piece(move)]
-                              [BB::test_bit(info->threats, from)]
-                              [BB::test_bit(info->threats, dest)]
-                              [dest][Move::captured_type(move)];
+                [BB::test_bit(info->threats, from)]
+                [BB::test_bit(info->threats, dest)]
+                [dest][Move::captured_type(move)];
     }
     void update_capture_history(const SearchInfo *info, MOVE best_move, I16 depth,
                                 size_t capture_count, std::array<MOVE, MAX_MOVES>& capture_moves);
@@ -120,7 +127,7 @@ private:
 
     static constexpr int MAX_HISTORY = 16384;
 
-//----------------------------------------------------
+    //----------------------------------------------------
     //=====================================================
     //  Ajoute un bonus à l'historique
     //      history gravity
@@ -151,7 +158,7 @@ private:
     void update_main(Color color, SearchInfo *info, MOVE move, int bonus);
     void update_continuation(SearchInfo* info, MOVE move, int bonus);
     void update_capture(const SearchInfo *info, MOVE move, int delta);
-    void update_correction(int& entry, int eval_diff, int depth, int scale, int correction_max);
+    void update_correction(I16& entry, int eval_diff, int depth, int scale, int correction_max);
 
     //*********************************************************************
     //  Données initialisées une seule fois au début d'une nouvelle partie

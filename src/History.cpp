@@ -219,26 +219,28 @@ void History::update_correction_history(const Board& board, int depth, int best_
     const Color color = board.turn();
     const int eval_diff = best_score - static_eval;
 
-    int& pawn = pawn_correction_history[color][board.get_pawn_key() % PAWN_HASH_SIZE];
+    I16& pawn = pawn_correction_history[color][board.get_pawn_key() % PAWN_HASH_SIZE];
     update_correction(pawn, eval_diff, depth, Tunable::PawnCorrScale, Tunable::PawnCorrMax);
 
-    int& wmat = non_pawn_correction_history[WHITE][color][board.get_non_pawn_key(WHITE) % PAWN_HASH_SIZE];
+    I16& wmat = non_pawn_correction_history[WHITE][color][board.get_non_pawn_key(WHITE) % PAWN_HASH_SIZE];
     update_correction(wmat, eval_diff, depth, Tunable::NonPawnCorrScale, Tunable::NonPawnCorrMax);
 
-    int& bmat = non_pawn_correction_history[BLACK][color][board.get_non_pawn_key(BLACK) % PAWN_HASH_SIZE];
+    I16& bmat = non_pawn_correction_history[BLACK][color][board.get_non_pawn_key(BLACK) % PAWN_HASH_SIZE];
     update_correction(bmat, eval_diff, depth, Tunable::NonPawnCorrScale, Tunable::NonPawnCorrMax);
 }
 
 //==================================================================
-//! \brief  Met à jour une entrée de correction history
-//!         équivalent de la fonction "gravity"
-//------------------------------------------------------------------
-void History::update_correction(int& entry, int eval_diff, int depth, int scale, int correction_max)
+ //! \brief  Met à jour une entrée de correction history (gravity formula).
+ //! Le bonus reflète la magnitude de l'écart eval_diff, pondérée par
+ //! la profondeur. La gravity (entry * |change| / max_value) sature
+ //! naturellement vers ±max_value sans clamp explicite.
+ //------------------------------------------------------------------
+void History::update_correction(I16& entry, int eval_diff, int depth, int scale, int correction_max)
 {
-    const int eval_scale = 16384 / correction_max;
+    const int eval_scale = MAX_HISTORY / correction_max;
     const int max_value  = correction_max * eval_scale;
-    const int change     = std::clamp(eval_diff * depth * scale / 64, -max_value / 4, max_value / 4);
-    entry += change - entry * std::abs(change) / max_value;
+    const int bonus      = std::clamp(eval_diff * depth * scale / 64, -max_value / 4, max_value / 4);
+    entry += bonus - entry * std::abs(bonus) / max_value;
 }
 
 //=========================================================
@@ -250,8 +252,8 @@ int History::corrected_eval(const Board& board, int raw_eval)
     // règle des 50 coups : ramener l'évaluation vers 0 quand on s'approche de la nulle
     raw_eval = (raw_eval * (200 - board.get_fiftymove_counter())) / 200;
 
-    const int pawn_eval_scale     = 16384 / Tunable::PawnCorrMax;
-    const int non_pawn_eval_scale = 16384 / Tunable::NonPawnCorrMax;
+    const int pawn_eval_scale     = MAX_HISTORY / Tunable::PawnCorrMax;
+    const int non_pawn_eval_scale = MAX_HISTORY / Tunable::NonPawnCorrMax;
 
     int pawn = pawn_correction_history[board.turn()][board.get_pawn_key() % PAWN_HASH_SIZE];
     int wmat = non_pawn_correction_history[WHITE][board.turn()][board.get_non_pawn_key(WHITE) % PAWN_HASH_SIZE];
