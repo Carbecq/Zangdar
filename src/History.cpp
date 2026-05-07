@@ -217,50 +217,50 @@ void History::update_capture(const SearchInfo *info, MOVE move, int delta)
 void History::update_correction_history(const Board& board, int depth, int best_score, int static_eval)
 {
     const Color color = board.turn();
-
-    // Compute the new correction value, and retrieve the old value
-    const int scaled_bonus = (best_score - static_eval) * CorrectionHistoryScale;
-
-    // Weight the new value based on the search depth, and the old value based on the remaining weight
-    const int weight = std::min(depth + 1, 16);
+    const int eval_diff = best_score - static_eval;
 
     int& pawn = pawn_correction_history[color][board.get_pawn_key() % PAWN_HASH_SIZE];
-    update_correction(pawn, scaled_bonus, weight);
+    update_correction(pawn, eval_diff, depth, Tunable::PawnCorrScale, Tunable::PawnCorrMax);
 
     int& wmat = non_pawn_correction_history[WHITE][color][board.get_non_pawn_key(WHITE) % PAWN_HASH_SIZE];
-    update_correction(wmat, scaled_bonus, weight);
+    update_correction(wmat, eval_diff, depth, Tunable::NonPawnCorrScale, Tunable::NonPawnCorrMax);
 
     int& bmat = non_pawn_correction_history[BLACK][color][board.get_non_pawn_key(BLACK) % PAWN_HASH_SIZE];
-    update_correction(bmat, scaled_bonus, weight);
+    update_correction(bmat, eval_diff, depth, Tunable::NonPawnCorrScale, Tunable::NonPawnCorrMax);
 }
 
 //==================================================================
 //! \brief  Met à jour une entrée de correction history
-//! Moyenne pondérée entre ancienne et nouvelle valeur
+//!         équivalent de la fonction "gravity"
 //------------------------------------------------------------------
-void History::update_correction(int& entry, int scaled_bonus, int weight)
+void History::update_correction(int& entry, int eval_diff, int depth, int scale, int correction_max)
 {
-    // Compute the weighted sum of the old and new values, and clamp the result.
-
-    entry = (entry * (CorrectionHistoryScale - weight) + scaled_bonus * weight) / CorrectionHistoryScale;
-    entry = std::clamp(entry, -CorrectionHistoryMax, CorrectionHistoryMax);
+    const int eval_scale = 16384 / correction_max;
+    const int max_value  = correction_max * eval_scale;
+    const int change     = std::clamp(eval_diff * depth * scale / 64, -max_value / 4, max_value / 4);
+    entry += change - entry * std::abs(change) / max_value;
 }
 
 //=========================================================
 //! \brief  Retourne la valeur de l'évaluation statique corrigée
 //! en fonction de Correction_History
-//!
 //---------------------------------------------------------
 int History::corrected_eval(const Board& board, int raw_eval)
 {
     // règle des 50 coups : ramener l'évaluation vers 0 quand on s'approche de la nulle
     raw_eval = (raw_eval * (200 - board.get_fiftymove_counter())) / 200;
 
+    const int pawn_eval_scale     = 16384 / Tunable::PawnCorrMax;
+    const int non_pawn_eval_scale = 16384 / Tunable::NonPawnCorrMax;
+
     int pawn = pawn_correction_history[board.turn()][board.get_pawn_key() % PAWN_HASH_SIZE];
     int wmat = non_pawn_correction_history[WHITE][board.turn()][board.get_non_pawn_key(WHITE) % PAWN_HASH_SIZE];
     int bmat = non_pawn_correction_history[BLACK][board.turn()][board.get_non_pawn_key(BLACK) % PAWN_HASH_SIZE];
 
-    int corrected = raw_eval + (pawn + wmat + bmat) / CorrectionHistoryScale;
+    int corrected = raw_eval
+                  + pawn / pawn_eval_scale
+                  + wmat / non_pawn_eval_scale
+                  + bmat / non_pawn_eval_scale;
 
     return std::clamp(corrected, -TBWIN_IN_X+1, TBWIN_IN_X-1);
 }

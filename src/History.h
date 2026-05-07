@@ -119,8 +119,6 @@ public:
 private:
 
     static constexpr int MAX_HISTORY = 16384;
-    static constexpr int CorrectionHistoryScale = 256;
-    static constexpr int CorrectionHistoryMax   = 256 * 32;
 
 //----------------------------------------------------
     //=====================================================
@@ -153,7 +151,7 @@ private:
     void update_main(Color color, SearchInfo *info, MOVE move, int bonus);
     void update_continuation(SearchInfo* info, MOVE move, int bonus);
     void update_capture(const SearchInfo *info, MOVE move, int delta);
-    void update_correction(int& entry, int scaled_bonus, int weight);
+    void update_correction(int& entry, int eval_diff, int depth, int scale, int correction_max);
 
     //*********************************************************************
     //  Données initialisées une seule fois au début d'une nouvelle partie

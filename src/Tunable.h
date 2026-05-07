@@ -92,6 +92,12 @@ PARAM(SNMPDepth,                6,   2,  10);
 PARAM(SNMPMargin,              70,  50, 100);
 PARAM(SNMPCorrplexityScale,    60,   0, 128);
 
+// Correction History (constantes de Halogen)
+PARAM(PawnCorrScale,         109,   64,  256);
+PARAM(PawnCorrMax,            63,   32,  128);
+PARAM(NonPawnCorrScale,      126,   64,  256);
+PARAM(NonPawnCorrMax,         76,   32,  128);
+
 //-------------------------------------------- Bonus de l'history
 // History
 PARAM(HistoryBonusScale,    364,  128,  512);
