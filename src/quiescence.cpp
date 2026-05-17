@@ -131,8 +131,12 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
 
         if (!isInCheck && Move::is_capturing(move))
         {
-            if (static_eval + Tunable::DeltaPruningBias + EGPieceValue[Move::captured_type(move)] <= alpha)
+            int futility = static_eval + Tunable::DeltaPruningBias + EGPieceValue[Move::captured_type(move)];
+            if (futility <= alpha)
             {
+                // Safety : remonter best_score au niveau futility pour donner au parent
+                // une borne supérieure plus précise
+                best_score = std::max(best_score, futility);
                 continue;
             }
         }
