@@ -121,6 +121,7 @@ PARAM(AspirationWindowsDepth,    6, 3, 10);     // 6
 PARAM(AspirationWindowsInitial, 12, 5, 30); // 12
 PARAM(AspirationWindowsDelta,   16, 8, 40);     // 16
 PARAM(AspirationWindowsExpand, 6667, 4000, 9000);
+PARAM(AspirationWindowsScale, 15800, 5000, 50000);
 
 // Quiescence
 PARAM(DeltaPruningBias,    300, 100, 400);

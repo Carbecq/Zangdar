@@ -205,6 +205,8 @@ QMAKE_CXXFLAGS_DEBUG += $$CFLAGS_COM $$CFLAGS_ARCH $$CFLAGS_WARN $$CFLAGS_DBG
 #----------------------------------------------------------------------
 
 DISTFILES += \
+    CHANGELOG.md \
+    IDEAS.md \
     Makefile \
     README.md \
     VERSION.txt \

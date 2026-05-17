@@ -130,11 +130,16 @@ int Search::aspiration_window(Board& board, Timer& timer, SearchInfo* si, int pr
     int depth  = iter_depth;
     int delta  = Tunable::AspirationWindowsDelta;
     int score  = prev_score;
-    const int initialWindow = Tunable::AspirationWindowsInitial;
 
     // After a few depths use a previous result to form the window
     if (depth >= Tunable::AspirationWindowsDepth)
     {
+        // Initial window scales avec prev_score² (style Stockfish-16) : fenêtre
+        // initiale plus large pour scores extrêmes, anticipe une volatilité plus
+        // grande entre itérations.
+        const int safe_prev = std::clamp(score, -TBWIN_IN_X, TBWIN_IN_X);
+        const int initialWindow = Tunable::AspirationWindowsInitial
+                                + safe_prev * safe_prev / Tunable::AspirationWindowsScale;
         alpha = std::max(score - initialWindow, -INFINITE);
         beta  = std::min(score + initialWindow, INFINITE);
     }
