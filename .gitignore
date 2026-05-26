@@ -8,6 +8,9 @@ x64/
 gen/
 clang.txt
 
+# Réseaux NNUE : fetchés via Makefile (NETS_REPO → Carbecq/Zangdar-Networks)
+networks/*.bin
+
 
 
 
