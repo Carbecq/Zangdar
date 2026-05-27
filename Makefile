@@ -352,7 +352,8 @@ src/NNUE.o: $(EVALFILE)
 	@$(CXX) -o $@ -c $< $(CFLAGS)
 
 $(NETS_FILE):
-	$(info Downloading network $(NET_NAME))
+    @mkdir -p $(NETS_DIR)
+    $(info Downloading network $(NET_NAME))
 	curl -sL -o $@ $(NETS_REPO)/$(NET_NAME)/$(NET_NAME)
 
 download-net: $(NETS_FILE)
