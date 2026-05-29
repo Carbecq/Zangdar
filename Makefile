@@ -257,9 +257,28 @@ CFLAGS_DBG  = -g -O2
 CFLAGS_WARN = $(CFLAGS_WARN1) $(CFLAGS_WARN2) $(CFLAGS_WARN3) $(CFLAGS_WARN4) $(CFLAGS_WARN5) $(CFLAGS_WARN6)
 CFLAGS_PERF = $(CFLAGS_REL1) $(CFLAGS_WARN1)  -DNDEBUG -g -fno-omit-frame-pointer -DUSE_PROFILING
 
+# Sanitizer build : ASan + UBSan combinés (compatibles entre eux)
+# Pas de -flto, pas de -fomit-frame-pointer, pas de -static (incompatibles ASan).
+# -fno-sanitize-recover=all → le programme abort dès la 1re erreur (signal clair).
+CFLAGS_SAN  = -pthread -g -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls \
+              -fsanitize=undefined,address -fno-sanitize-recover=all \
+              $(CFLAGS_WARN1)
+
+# Release sans LTO ni whole-program-vtables : pour isoler les UB démasquées par
+# l'optimisation inter-modules. Conserve -O3 et le reste des flags release.
+CFLAGS_REL_NOLTO = $(filter-out -flto -fwhole-program-vtables -flto=auto -fwhole-program, $(CFLAGS_REL1)) \
+                   $(CFLAGS_WARN1) -DNDEBUG -fomit-frame-pointer
+
+# Release-nolto + auto-init des variables stack à zéro.
+# Si le bench devient déterministe avec ce flag, c'est confirmé que la cause
+# du non-déterminisme est une lecture de variable locale non initialisée.
+CFLAGS_REL_AUTOINIT = $(CFLAGS_REL_NOLTO) -ftrivial-auto-var-init=zero
+
 LDFLAGS_REL  = -s -flto -lm
 LDFLAGS_DBG  = -lm
 LDFLAGS_PERF = -pg -flto -lm
+LDFLAGS_SAN  = -fsanitize=undefined,address -lm
+LDFLAGS_REL_NOLTO = -s -lm
 
 PGO_FLAGS = -fno-asynchronous-unwind-tables
 
@@ -285,6 +304,21 @@ release: LDFLAGS = $(LDFLAGS_REL) $(LDFLAGS_WIN) $(LDFLAGS_STA)
 debug: EXEC    = $(EXE)-dbg$(SUF)
 debug: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_WARN) $(CFLAGS_DBG)
 debug: LDFLAGS = $(LDFLAGS_DBG) $(LDFLAGS_WIN) $(LDFLAGS_STA)
+
+# Pas de LDFLAGS_STA : -static est incompatible avec ASan.
+sanitize: EXEC    = $(EXE)-san$(SUF)
+sanitize: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_SAN)
+sanitize: LDFLAGS = $(LDFLAGS_SAN) $(LDFLAGS_WIN)
+
+# Release sans LTO ni whole-program — pour test déterminisme bench
+release-nolto: EXEC    = $(EXE)-rel-nolto$(SUF)
+release-nolto: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL_NOLTO)
+release-nolto: LDFLAGS = $(LDFLAGS_REL_NOLTO) $(LDFLAGS_WIN) $(LDFLAGS_STA)
+
+# Release-nolto avec auto-init des stack vars à zéro
+release-autoinit: EXEC    = $(EXE)-rel-autoinit$(SUF)
+release-autoinit: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL_AUTOINIT)
+release-autoinit: LDFLAGS = $(LDFLAGS_REL_NOLTO) $(LDFLAGS_WIN) $(LDFLAGS_STA)
 
 perf: EXEC    = $(EXE)-perf$(SUF)
 perf: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_PERF)
@@ -326,6 +360,19 @@ debug: $(EXE)
 	@mv $(EXE) $(EXEC)
 	@cp $(EXEC) $(ZANGDAR_DEV)
 	@echo "Génération en mode debug : $(EXEC)"
+
+sanitize: $(EXE)
+	@mv $(EXE) $(EXEC)
+	@echo "Génération en mode sanitize : $(EXEC)"
+	@echo "Lance avec : UBSAN_OPTIONS=print_stacktrace=1 ASAN_OPTIONS=detect_leaks=0 ./$(EXEC) bench 30 1 128"
+
+release-nolto: $(EXE)
+	@mv $(EXE) $(EXEC)
+	@echo "Génération en mode release sans LTO : $(EXEC)"
+
+release-autoinit: $(EXE)
+	@mv $(EXE) $(EXEC)
+	@echo "Génération release-nolto + auto-init stack : $(EXEC)"
 
 #---------------------------------------------------------------------
 #	PGO (code venant d'Ethereal)
