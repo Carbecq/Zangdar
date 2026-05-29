@@ -112,8 +112,8 @@ class Accumulator
 public:
     Accumulator() {}
 
-    alignas(ALIGN) std::array<I16, HIDDEN_LAYER_SIZE> white;
-    alignas(ALIGN) std::array<I16, HIDDEN_LAYER_SIZE> black;
+    alignas(ALIGN) std::array<I16, HIDDEN_LAYER_SIZE> white{};
+    alignas(ALIGN) std::array<I16, HIDDEN_LAYER_SIZE> black{};
 
     // Lazy Updates
     bool updated[N_COLORS]      = {false, false};

@@ -73,7 +73,7 @@ PARAM(HistoryPruningScale,  4500, 2000, 6000);
 //------------------------------------------------------ NMP
 //  NULL MOVE PRUNING
 PARAM(NMPDepth,     3, 1, 6);
-PARAM(NMPReduction, 3, 1, 6);
+PARAM(NMPReduction, 4, 1, 6);
 PARAM(NMPMargin,   32, 16, 48);
 PARAM(NMPMax,     384, 350, 450);
 PARAM(NMPDivisor, 128, 64, 192);

@@ -433,7 +433,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 depth >= Tunable::NMPDepth
                 && static_eval >= beta
                 && (si-1)->move != Move::MOVE_NULL
-                && board.getNonPawnMaterial<C>())
+                && board.getNonPawnMaterial<C>())           // protection contre le zugzwang
         {
             int R = Tunable::NMPReduction
                     + (Tunable::NMPMargin*depth + std::min<int>(static_eval - beta, Tunable::NMPMax)) / Tunable::NMPDivisor
@@ -442,8 +442,9 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             si->move = Move::MOVE_NULL;
             si->tactical = false;
             si->cont_hist = &history.continuation_history[0][0];
+
             board.make_nullmove<C>();
-            int null_score = -alpha_beta<~C>(board, timer, -beta, -beta + 1, depth - 1 - R, !cut_node, si+1);
+            int null_score = -alpha_beta<~C>(board, timer, -beta, -beta + 1, depth - R, !cut_node, si+1);
             board.undo_nullmove<C>();
 
             if (is_stopped())
