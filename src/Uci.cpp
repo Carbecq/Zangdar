@@ -593,6 +593,7 @@ setoption name <id> [value <x>]
             iss >> value;      // "value"
             iss >> param;
             Tunable::setParam(option_name, param);
+            threadPool.reinit_reductions();
         }
 #endif
 

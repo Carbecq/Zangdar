@@ -72,11 +72,14 @@ void ThreadPool::set_threads(U32 nbr)
 //-------------------------------------------------
 void ThreadPool::reset()
 {
-    // Libère toute la mémoire
     for (size_t i = 0; i < nbrThreads; i++)
-    {
         search[i].history.reset();
-    }
+}
+
+void ThreadPool::reinit_reductions()
+{
+    for (size_t i = 0; i < nbrThreads; i++)
+        search[i].init_reductions();
 }
 
 //=================================================

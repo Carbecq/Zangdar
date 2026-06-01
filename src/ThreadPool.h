@@ -15,6 +15,7 @@ public:
     explicit ThreadPool(U32 _nbr, bool _tb, bool _log);
     void set_threads(U32 nbr);
     void reset();
+    void reinit_reductions();
 
     void start_thinking(const Board &board, const Timer &timer);
     void main_thread_stopped();

@@ -63,6 +63,8 @@ public:
     inline const Accumulator& get_accumulator() const { return nnue.get_accumulator(); }
     inline       Accumulator& get_accumulator()       { return nnue.get_accumulator(); }
 
+    void init_reductions();
+
 private:
 
     template <Color C> void iterative_deepening(Board& board, Timer& timer, SearchInfo* si);
@@ -72,7 +74,6 @@ private:
     void show_uci_result(I64 elapsed, const PVariation &pv) const;
     void show_uci_best(MOVE best_move) const;
     void update_pv(SearchInfo* si, const MOVE move) const;
-    void init_reductions();
 
     static constexpr int LateMovePruningDepth = 7;
     static constexpr int LateMovePruningCount[2][8] = {
