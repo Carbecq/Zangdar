@@ -206,6 +206,9 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     // Ensure a fresh PV
     si->pv.length     = 0;
 
+    // Hindsight : par défaut, ce nœud n'a encore réduit aucun coup enfant
+    si->reduction     = 0;
+
     /* On a atteint la fin de la recherche
         Certains codes n'appellent la quiescence que si on n'est pas en échec
         ceci amène à une explosion des coups recherchés */
@@ -389,6 +392,42 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         return true;
     }();
 
+
+    //---------------------------------------------------------------------
+    //  HINDSIGHT EXTENSION / REDUCTION
+    //
+    //  On corrige à posteriori la réduction LMR appliquée par le parent à
+    //  ce coup. opp_worsening_rate = somme des deux static_eval consécutifs
+    //  (en negamax, ≈ 0 si la position est équilibrée) :
+    //   - se dégrade pour nous (rate < seuil bas) et le parent avait fortement
+    //     réduit  → on étend pour rendre la profondeur retirée à tort.
+    //   - confirme l'amélioration (rate > seuil haut) et le parent avait réduit
+    //     → on réduit encore (la réduction parente est validée).
+    //  Le cumul est borné par (si-1)->reduction : on ne peut que rendre ou
+    //  reprendre de la profondeur déjà retirée par le parent (pas d'explosion,
+    //  contrairement à l'out-of-check extension naïve).
+    //---------------------------------------------------------------------
+    const int opp_worsening_rate = (isRoot || isInCheck)
+                                 ? 0
+                                 : si->static_eval + (si-1)->static_eval;
+
+    if (   !isRoot && !isInCheck && !isExcluded
+        && abs((si-1)->static_eval) < TBWIN_IN_X)   // parent en échec → static_eval = -MATE+ply, à exclure
+    {
+        if (   depth >= Tunable::HindsightExtMinDepth
+            && (si-1)->reduction >= Tunable::HindsightExtMinReduction
+            && opp_worsening_rate < Tunable::HindsightExtEvalDiff)
+        {
+            depth++;
+        }
+        else if (   !isPV
+                 && depth >= Tunable::HindsightRedMinDepth
+                 && (si-1)->reduction >= Tunable::HindsightRedMinReduction
+                 && opp_worsening_rate > Tunable::HindsightRedEvalDiff)
+        {
+            depth--;
+        }
+    }
 
 
     if (!isInCheck && !isRoot && !isPV && !isExcluded)
@@ -709,7 +748,10 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             int lmrDepth = std::clamp(newDepth - R, 1, newDepth + 1);
 
             // Search this move with reduced depth:
+            // On mémorise la réduction pour la hindsight ext/red de l'enfant (§9.8.1)
+            si->reduction = R;
             score = -alpha_beta<~C>(board, timer, -alpha-1, -alpha, lmrDepth, true, si+1);
+            si->reduction = 0;
 
             // Do full depth search when reduced LMR search fails high
             if (score > alpha && lmrDepth < newDepth)

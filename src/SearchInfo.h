@@ -13,6 +13,7 @@ struct SearchInfo {
     MOVE        killer2 = Move::MOVE_NONE;
     Bitboard    threats = 0ULL;             // menaces du camp ennemi
     bool        tactical = false;           // si->move est-il tactical (capture / promo / ep)
+    int         reduction{};                // réduction LMR appliquée au coup menant à l'enfant (hindsight)
 }__attribute__((aligned(64)));
 
 #endif // SEARCHINFO_H
