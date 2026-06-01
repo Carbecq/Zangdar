@@ -47,6 +47,7 @@ static constexpr int MIN_HASH_SIZE  = 1;
 static constexpr int MAX_HASH_SIZE  = 1024;
 
 static constexpr int PAWN_HASH_SIZE = 16384;
+static constexpr int CORR_HASH_SIZE = 16384;        // puissance de 2 : accès par masque
 
 static constexpr U32 MAX_THREADS    = 256;  // borne de sécurité uniquement
 

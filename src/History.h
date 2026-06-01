@@ -19,10 +19,9 @@ using MainHistoryTable = I16[N_COLORS][2][2][N_SQUARES][N_SQUARES];
 //  Pawn History
 //      pawn_history[pawn_key & mask][piece][dest]
 //============================================================================
-static constexpr int PAWNHIST_SIZE = PAWN_HASH_SIZE;
-static constexpr int PAWNHIST_MASK = PAWNHIST_SIZE - 1;
+static constexpr int PAWNHIST_MASK = PAWN_HASH_SIZE - 1;
 
-using PawnHistoryTable = I16[PAWNHIST_SIZE][N_PIECE][N_SQUARES];
+using PawnHistoryTable = I16[PAWN_HASH_SIZE][N_PIECE][N_SQUARES];
 
 //============================================================================
 //  Capture History
@@ -76,8 +75,10 @@ using ContinuationHistoryTable = I16[N_PIECE][N_SQUARES][N_PIECE][N_SQUARES];
 //    saturation auto à ±max_value.
 //
 //============================================================================
-using PawnCorrectionHistoryTable       = I16[N_COLORS][PAWN_HASH_SIZE];
-using NonPawnCorrectionHistoryTable    = I16[N_COLORS][PAWN_HASH_SIZE];
+static constexpr int CORRHIST_MASK = CORR_HASH_SIZE - 1;    // CORR_HASH_SIZE est une puissance de 2
+
+using PawnCorrectionHistoryTable       = I16[N_COLORS][CORR_HASH_SIZE];
+using NonPawnCorrectionHistoryTable    = I16[N_COLORS][CORR_HASH_SIZE];
 
 
 class History
@@ -91,7 +92,7 @@ public:
         return main_history[color][BB::test_bit(info->threats, from)][BB::test_bit(info->threats, dest)][from][dest];
     }
     inline I16 get_pawn_history(const Board& board, MOVE move) const {
-        return pawn_history[get_index(board.get_pawn_key())][Move::piece(move)][Move::dest(move)];
+        return pawn_history[board.get_pawn_key() & PAWNHIST_MASK][Move::piece(move)][Move::dest(move)];
     }
 
     ContinuationHistoryTable continuation_history {{{{0}}}};
@@ -149,10 +150,6 @@ private:
     inline int stat_malus(int depth)
     {
         return -std::min<int>(Tunable::HistoryMalusMax, depth*Tunable::HistoryMalusScale - Tunable::HistoryMalusOffset);
-    }
-
-    [[nodiscard]] inline int get_index(const KEY pawnkey) const {
-        return pawnkey & PAWNHIST_MASK;
     }
 
     void update_main(Color color, SearchInfo *info, MOVE move, int bonus);

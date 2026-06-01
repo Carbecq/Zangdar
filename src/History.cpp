@@ -52,7 +52,7 @@ int History::get_quiet_history(Color color, const SearchInfo* info, const MOVE m
 
     int score = main_history[color][BB::test_bit(info->threats, from)][BB::test_bit(info->threats, dest)][from][dest];
 
-    score += pawn_history[get_index(pawnkey)][piece][dest];
+    score += pawn_history[pawnkey & PAWNHIST_MASK][piece][dest];
 
     /*
      * Continuation History
@@ -143,7 +143,7 @@ void History::update_main(Color color, SearchInfo* info, MOVE move, int bonus)
 //------------------------------------------------------------------
 void History::update_pawn(KEY pawnkey, MOVE move, int bonus)
 {
-    gravity(pawn_history[get_index(pawnkey)][Move::piece(move)][Move::dest(move)], bonus);
+    gravity(pawn_history[pawnkey & PAWNHIST_MASK][Move::piece(move)][Move::dest(move)], bonus);
 }
 
 //==================================================================
@@ -219,13 +219,13 @@ void History::update_correction_history(const Board& board, int depth, int best_
     const Color color = board.turn();
     const int eval_diff = best_score - static_eval;
 
-    I16& pawn = pawn_correction_history[color][board.get_pawn_key() % PAWN_HASH_SIZE];
+    I16& pawn = pawn_correction_history[color][board.get_pawn_key() & CORRHIST_MASK];
     update_correction(pawn, eval_diff, depth, Tunable::PawnCorrScale, Tunable::PawnCorrMax);
 
-    I16& wmat = non_pawn_correction_history[WHITE][color][board.get_non_pawn_key(WHITE) % PAWN_HASH_SIZE];
+    I16& wmat = non_pawn_correction_history[WHITE][color][board.get_non_pawn_key(WHITE) & CORRHIST_MASK];
     update_correction(wmat, eval_diff, depth, Tunable::NonPawnCorrScale, Tunable::NonPawnCorrMax);
 
-    I16& bmat = non_pawn_correction_history[BLACK][color][board.get_non_pawn_key(BLACK) % PAWN_HASH_SIZE];
+    I16& bmat = non_pawn_correction_history[BLACK][color][board.get_non_pawn_key(BLACK) & CORRHIST_MASK];
     update_correction(bmat, eval_diff, depth, Tunable::NonPawnCorrScale, Tunable::NonPawnCorrMax);
 }
 
@@ -255,9 +255,9 @@ int History::corrected_eval(const Board& board, int raw_eval)
     const int pawn_eval_scale     = MAX_HISTORY / Tunable::PawnCorrMax;
     const int non_pawn_eval_scale = MAX_HISTORY / Tunable::NonPawnCorrMax;
 
-    int pawn = pawn_correction_history[board.turn()][board.get_pawn_key() % PAWN_HASH_SIZE];
-    int wmat = non_pawn_correction_history[WHITE][board.turn()][board.get_non_pawn_key(WHITE) % PAWN_HASH_SIZE];
-    int bmat = non_pawn_correction_history[BLACK][board.turn()][board.get_non_pawn_key(BLACK) % PAWN_HASH_SIZE];
+    int pawn = pawn_correction_history[board.turn()][board.get_pawn_key() & CORRHIST_MASK];
+    int wmat = non_pawn_correction_history[WHITE][board.turn()][board.get_non_pawn_key(WHITE) & CORRHIST_MASK];
+    int bmat = non_pawn_correction_history[BLACK][board.turn()][board.get_non_pawn_key(BLACK) & CORRHIST_MASK];
 
     int corrected = raw_eval
                   + pawn / pawn_eval_scale
