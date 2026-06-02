@@ -129,13 +129,15 @@ PARAM(DeltaPruningBias,    300, 100, 400);
 PARAM(SEDepth, 8, 5, 10);
 
 //  HINDSIGHT EXTENSION / REDUCTION
-//  Corrige a posteriori la réduction LMR du parent. Réductions en plies.
 PARAM(HindsightExtMinDepth,      1,   1,   6);
 PARAM(HindsightExtMinReduction,  3,   1,   5);
 PARAM(HindsightExtEvalDiff,    -16, -50,  50);
 PARAM(HindsightRedMinDepth,      2,   1,   6);
 PARAM(HindsightRedMinReduction,  1,   1,   5);
 PARAM(HindsightRedEvalDiff,     49,   0, 120);
+
+//  HINDSIGHT NMP
+PARAM(NMPHindsightMargin,      114,   1, 200);
 
 
 

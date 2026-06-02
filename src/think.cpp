@@ -496,6 +496,14 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 //               car ce score ne serait pas prouvé
                 return(null_score >= TBWIN_IN_X ? beta : null_score);
             }
+            // Hindsight NMP : le parent nous a réduits en LMR, mais le
+            // null move échoue franchement → le nœud est sous-estimé, on rend un ply.
+            else if (   (si-1)->reduction
+                     && abs(null_score) < TBWIN_IN_X
+                     && null_score < beta - Tunable::NMPHindsightMargin)
+            {
+                depth++;
+            }
         }
 
         //---------------------------------------------------------------------
@@ -748,7 +756,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             int lmrDepth = std::clamp(newDepth - R, 1, newDepth + 1);
 
             // Search this move with reduced depth:
-            // On mémorise la réduction pour la hindsight ext/red de l'enfant (§9.8.1)
+            // On mémorise la réduction pour la hindsight ext/red de l'enfant
             si->reduction = R;
             score = -alpha_beta<~C>(board, timer, -alpha-1, -alpha, lmrDepth, true, si+1);
             si->reduction = 0;
