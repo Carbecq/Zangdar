@@ -105,7 +105,65 @@ public:
         return( Attacks::pawn_attacks<~C>(sq) & occupancy_cp<C, PieceType::PAWN>() );
     }
 
+    //! \brief  Retourne le bitboard des pièces du camp C menacées par l'adversaire (Clover pattern)
+    //! \note   Brique réutilisable fournie pour de futures heuristiques threat-aware (famille LMR
+    //!         enemy_has_no_threats). Actuellement non câblée : Ne pas supprimer comme « code mort ».
+    template<Color C> [[nodiscard]] Bitboard threatened_pieces() const noexcept
+    {
+        Bitboard our_pieces = occupancy_c<C>() ^ occupancy_cp<C, PieceType::PAWN>();
+        Bitboard threatened = 0;
+        Bitboard att = 0;
 
+        // on retire le roi ami de l'occupation : les sliders ennemis voient
+        // « à travers » le roi (cf. all.toggle_bit(get_king(color)) dans get_threats)
+        Bitboard occ = occupancy_all() ^ SQ::square_BB(get_king_square<C>());
+
+        // Pawn attacks (en masse, comme squares_attacked)
+        Bitboard enemy_pawns = occupancy_cp<~C, PieceType::PAWN>();
+        if constexpr (C == Color::WHITE)   // ennemi = NOIR, attaque vers le sud
+            att = BB::south_east(enemy_pawns) | BB::south_west(enemy_pawns);
+        else                               // ennemi = BLANC, attaque vers le nord
+            att = BB::north_east(enemy_pawns) | BB::north_west(enemy_pawns);
+        threatened |= att & our_pieces;
+
+        // Exclude Knight and Bishop allies before processing Knight/Bishop threats
+        our_pieces ^= occupancy_cp<C, PieceType::KNIGHT>() | occupancy_cp<C, PieceType::BISHOP>();
+
+        // Knight attacks
+        Bitboard enemy_knights = occupancy_cp<~C, PieceType::KNIGHT>();
+        while (enemy_knights)
+        {
+            SQUARE sq = BB::pop_lsb(enemy_knights);
+            att |= Attacks::knight_moves(sq);
+        }
+        threatened |= att & our_pieces;
+
+        // Bishop attacks
+        Bitboard enemy_bishops = occupancy_cp<~C, PieceType::BISHOP>();
+        while (enemy_bishops)
+        {
+            SQUARE sq = BB::pop_lsb(enemy_bishops);
+            att |= Attacks::bishop_moves(sq, occ);
+        }
+        threatened |= att & our_pieces;
+
+        // Exclude Rook allies before processing Rook threats
+        our_pieces ^= occupancy_cp<C, PieceType::ROOK>();
+
+        // Rook attacks
+        Bitboard enemy_rooks = occupancy_cp<~C, PieceType::ROOK>();
+        while (enemy_rooks)
+        {
+            SQUARE sq = BB::pop_lsb(enemy_rooks);
+            att |= Attacks::rook_moves(sq, occ);
+        }
+        threatened |= att & our_pieces;
+
+        // NOTE: Clover excludes Queen and King threats from threatened_pieces
+        // (they accumulate in all_threats but don't contribute to threatened_pieces)
+
+        return threatened;
+    }
 
     template <Color C> void calculate_checkers_pinned() noexcept;
     void calculate_hash(U64& key, U64& pawn_key, U64 non_pawn_key[2]) const;
@@ -148,7 +206,7 @@ public:
     [[nodiscard]] std::string get_fen() const noexcept;
     void mirror_fen(const std::string &fen, bool logTactics);
 
-      //! \brief  Retourne la position du roi
+    //! \brief  Retourne la position du roi
     template<Color C> [[nodiscard]] constexpr U32 get_king_square() const noexcept { return king_square[C]; }
 
     //! \brief Retourne le bitboard des cases attaquées
@@ -350,15 +408,15 @@ public:
     template<Color C, CastleSide side> [[nodiscard]] constexpr bool can_castle() const
     {
         if constexpr      (C == WHITE && side == CastleSide::KING_SIDE)
-                return get_status().castling & CASTLE_WK;
+            return get_status().castling & CASTLE_WK;
         else if constexpr (C == WHITE && side == CastleSide::QUEEN_SIDE)
-                return get_status().castling & CASTLE_WQ;
+            return get_status().castling & CASTLE_WQ;
         else if constexpr (C == BLACK && side == CastleSide::KING_SIDE)
-                return get_status().castling & CASTLE_BK;
+            return get_status().castling & CASTLE_BK;
         else if constexpr (C == BLACK && side == CastleSide::QUEEN_SIDE)
-                return get_status().castling & CASTLE_BQ;
+            return get_status().castling & CASTLE_BQ;
         else
-                static_assert(sizeof(C) == 0, "can_castle : Invalid Color/CastleSide");
+            static_assert(sizeof(C) == 0, "can_castle : Invalid Color/CastleSide");
     }
 
     template <Color C, CastleSide side> [[nodiscard]] constexpr Bitboard get_king_path() const noexcept  // cases ne devant pas être attaquées
@@ -438,8 +496,8 @@ public:
     template <Color C, CastleSide side> constexpr void gen_castle(MoveList& ml) const
     {
         if (   can_castle<C, side>()
-            && BB::empty(get_rook_path<C, side>() & occupancy_all())
-            && BB::empty(squares_attacked<~C>() & get_king_path<C, side>()) )
+               && BB::empty(get_rook_path<C, side>() & occupancy_all())
+               && BB::empty(squares_attacked<~C>() & get_king_path<C, side>()) )
         {
             add_quiet_move(ml, get_king_from<C>(), get_king_dest<C, side>(), Move::make_piece(C, PieceType::KING), Move::FLAG_CASTLE_MASK);
         }
