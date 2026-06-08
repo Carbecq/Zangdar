@@ -147,6 +147,23 @@ else ifeq ($(ARCH), bmi2)
     CFLAGS_ARCH += -mbmi -mbmi2
     CFLAGS_ARCH += -DUSE_PEXT $(SIMD)
 
+else ifeq ($(ARCH), avx512)
+    # AVX-512 = surensemble de bmi2 (avx2 + bmi2 + pext) + AVX-512 F/BW/DQ/VL.
+    # Le code NNUE active son chemin 512 bits sur __AVX512F__ && __AVX512BW__ (src/NNUE.h, src/simd.h).
+    # PAS de -mavx512vnni ici : le binaire doit tourner sur tout CPU AVX-512 (Skylake-X+, Ice/Tiger Lake, Zen 4).
+    # VNNI fera l'objet d'une cible distincte le jour du multi-couches.
+    DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
+    CFLAGS_ARCH += -msse -msse2
+    CFLAGS_ARCH += -msse3 -mpopcnt
+    CFLAGS_ARCH += -msse4.1 -msse4.2 -msse4a
+    CFLAGS_ARCH += -mssse3
+    CFLAGS_ARCH += -mmmx
+    CFLAGS_ARCH += -mavx
+    CFLAGS_ARCH += -mavx2 -mfma
+    CFLAGS_ARCH += -mbmi -mbmi2
+    CFLAGS_ARCH += -mavx512f -mavx512bw -mavx512dq -mavx512vl
+    CFLAGS_ARCH += -DUSE_PEXT $(SIMD)
+
 else ifeq ($(ARCH), native)
     DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(CPU_MODEL)
     CFLAGS_ARCH += -march=native -mtune=native
