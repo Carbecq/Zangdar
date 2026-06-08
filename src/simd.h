@@ -18,7 +18,8 @@
  *      Utilisé dans activation() : madd(product, clipped) = clipped² × weight → I32
  *      → évite l'overflow I16 et accumule directement en I32
  *
- *  _mm256_load_si256  : chargement depuis mémoire alignée (ALIGN=32 en AVX2)
+ *  load aligné (_mm512/256/_load_si*) : mémoire alignée sur ALIGN octets,
+ *      ALIGN = 64 (AVX-512) / 32 (AVX2) / 16 (SSE2) — défini dans NNUE.h
  *  _mm256_loadu_si256 : chargement depuis mémoire non alignée (plus lent)
  */
 
