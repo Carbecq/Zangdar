@@ -119,6 +119,20 @@ else ifeq ($(HAS_SSE2), yes)
     SIMD = -DUSE_SIMD
 endif
 
+# Guide des cibles ARCH publiées (échelle standard, même découpage que Stockfish).
+# Chaque cible correspond à une vraie différence fonctionnelle (kernel NNUE de
+# simd.h et/ou attaques PEXT), pas à de la granularité gratuite :
+#   sse2   : kernel NNUE SSE2, magics. Machines anciennes (~2008-2013) et VMs sans
+#            AVX. NB : -mpopcnt inclus => exige un CPU >= 2008 (Nehalem) ; un vrai
+#            pre-2008 est sans espoir pour un NNUE de toute facon.
+#   avx2   : kernel AVX2, magics. Le standard 2013+ (Intel Haswell+, et AMD Zen 1/2 !)
+#   bmi2   : kernel AVX2 + attaques PEXT. UNIQUEMENT Intel Haswell+ et AMD Zen 3+.
+#            PIÈGE : Zen 1/Zen 2 annoncent BMI2 mais leur pext est microcodé
+#            (~100+ cycles au lieu de 3) => bmi2 y est PLUS LENT que avx2.
+#   avx512 : kernel AVX-512 + PEXT. Zen 4/5, Intel serveur/HEDT (Ice Lake-SP+).
+#            Validé bit-exact 2026-06-12 (Tiger Lake). Voir le bloc avx512 pour
+#            la question VNNI.
+#   native : auto-détection du CPU hôte (pour compiler soi-même).
 ifeq ($(ARCH), sse2)
     DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
     CFLAGS_ARCH += -msse -msse2 -mpopcnt
@@ -150,8 +164,18 @@ else ifeq ($(ARCH), bmi2)
 else ifeq ($(ARCH), avx512)
     # AVX-512 = surensemble de bmi2 (avx2 + bmi2 + pext) + AVX-512 F/BW/DQ/VL.
     # Le code NNUE active son chemin 512 bits sur __AVX512F__ && __AVX512BW__ (src/NNUE.h, src/simd.h).
-    # PAS de -mavx512vnni ici : le binaire doit tourner sur tout CPU AVX-512 (Skylake-X+, Ice/Tiger Lake, Zen 4).
-    # VNNI fera l'objet d'une cible distincte le jour du multi-couches.
+    #
+    # PAS de -mavx512vnni ici, pour DEUX raisons (avant d'ajouter une cible vnni512, lire ceci) :
+    # 1. Portabilité : le binaire publié doit tourner sur tout CPU AVX-512 (Skylake-X+,
+    #    Ice/Tiger Lake, Zen 4+), y compris ceux sans VNNI.
+    # 2. Inutile en l'état : simd.h n'a AUCUN chemin dpbusd — l'inférence SCReLU actuelle
+    #    travaille en int16 (mullo/madd_epi16) et elle est memory-bound (mesuré 2026-06-12
+    #    sur Tiger Lake : 0 gain NPS du 512 bits, bit-exact 24 805 988). Le flag seul ne
+    #    changerait rien. Le VNNI ne paiera qu'avec une inférence écrite pour lui (poids
+    #    int8 + accumulation dpbusd, i.e. le chantier multi-couches) ; ce jour-là, créer
+    #    une cible vnni512 dédiée AVEC le nouveau code.
+    # NB : les macros affichées par la commande UCI "systeme" (__AVX512VNNI__, __BMI2__,
+    # USE_PEXT…) sont compile-time, pas une détection du CPU hôte.
     DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
     CFLAGS_ARCH += -msse -msse2
     CFLAGS_ARCH += -msse3 -mpopcnt
@@ -281,6 +305,14 @@ CFLAGS_SAN  = -pthread -g -O1 -fno-omit-frame-pointer -fno-optimize-sibling-call
               -fsanitize=undefined,address -fno-sanitize-recover=all \
               $(CFLAGS_WARN1)
 
+# ThreadSanitizer : détection des data races (incompatible avec ASan, d'où
+# une cible séparée). -O2 pour un débit acceptable (TSan ralentit 5-15x).
+# Les races VOLONTAIRES du Lazy SMP (TT lockless, lecture des compteurs
+# nodes pendant la recherche) sont masquées via tsan_suppressions.txt.
+CFLAGS_TSAN = -pthread -g -O2 -fno-omit-frame-pointer \
+              -fsanitize=thread \
+              $(CFLAGS_WARN1)
+
 # Release sans LTO ni whole-program-vtables : pour isoler les UB démasquées par
 # l'optimisation inter-modules. Conserve -O3 et le reste des flags release.
 CFLAGS_REL_NOLTO = $(filter-out -flto -fwhole-program-vtables -flto=auto -fwhole-program, $(CFLAGS_REL1)) \
@@ -327,6 +359,10 @@ sanitize: EXEC    = $(EXE)-san$(SUF)
 sanitize: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_SAN)
 sanitize: LDFLAGS = $(LDFLAGS_SAN) $(LDFLAGS_WIN)
 
+sanitize-thread: EXEC    = $(EXE)-tsan$(SUF)
+sanitize-thread: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_TSAN)
+sanitize-thread: LDFLAGS = -fsanitize=thread -lm $(LDFLAGS_WIN)
+
 # Release sans LTO ni whole-program — pour test déterminisme bench
 release-nolto: EXEC    = $(EXE)-rel-nolto$(SUF)
 release-nolto: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL_NOLTO)
@@ -336,6 +372,21 @@ release-nolto: LDFLAGS = $(LDFLAGS_REL_NOLTO) $(LDFLAGS_WIN) $(LDFLAGS_STA)
 release-autoinit: EXEC    = $(EXE)-rel-autoinit$(SUF)
 release-autoinit: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL_AUTOINIT)
 release-autoinit: LDFLAGS = $(LDFLAGS_REL_NOLTO) $(LDFLAGS_WIN) $(LDFLAGS_STA)
+
+# Release-nolto + -g, SANS auto-init et SANS strip : pour valgrind memcheck
+# (auto-init masquerait les lectures non-init ; -g pour les stack traces).
+release-valgrind: EXEC    = $(EXE)-rel-vg$(SUF)
+release-valgrind: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL_NOLTO) -g
+release-valgrind: LDFLAGS = -lm $(LDFLAGS_WIN) $(LDFLAGS_STA)
+
+# Release-nolto + UBSan bounds/object-size + FORTIFY=3 : détecte à l'exécution
+# les indices hors bornes Y COMPRIS intra-structure (invisibles pour ASan et
+# valgrind) et les memcpy débordant un membre (update_pv). Layout quasi-release
+# (pas de shadow memory) => bien moins heisenbug-prone que ASan. Abort + core
+# à la 1ère violation.
+release-bounds: EXEC    = $(EXE)-rel-bounds$(SUF)
+release-bounds: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL_NOLTO) -g -fsanitize=bounds,object-size -fno-sanitize-recover=all -D_FORTIFY_SOURCE=3
+release-bounds: LDFLAGS = -lm $(LDFLAGS_WIN) $(LDFLAGS_STA) -fsanitize=bounds,object-size
 
 perf: EXEC    = $(EXE)-perf$(SUF)
 perf: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_PERF)
@@ -360,6 +411,7 @@ endif
 # Target pour OpenBench : compile directement vers $(EXE) sans renommage
 # OpenBench appelle : make -j EXE=<chemin> [EVALFILE=<réseau>] [CXX=<compilateur>]
 openbench: $(EXE)
+	@if [ -n "$(SUF)" ] && [ -f "$(EXE)" ]; then mv $(EXE) $(EXEC); fi
 	@cp $(EXEC) $(ZANGDAR_DEV)
 	@echo "Génération pour OpenBench : $(EXEC)"
 
@@ -383,6 +435,11 @@ sanitize: $(EXE)
 	@echo "Génération en mode sanitize : $(EXEC)"
 	@echo "Lance avec : UBSAN_OPTIONS=print_stacktrace=1 ASAN_OPTIONS=detect_leaks=0 ./$(EXEC) bench 30 1 128"
 
+sanitize-thread: $(EXE)
+	@mv $(EXE) $(EXEC)
+	@echo "Génération en mode ThreadSanitizer : $(EXEC)"
+	@echo "Lance avec : TSAN_OPTIONS=suppressions=tsan_suppressions.txt ./$(EXEC) bench 14 4"
+
 release-nolto: $(EXE)
 	@mv $(EXE) $(EXEC)
 	@echo "Génération en mode release sans LTO : $(EXEC)"
@@ -390,6 +447,15 @@ release-nolto: $(EXE)
 release-autoinit: $(EXE)
 	@mv $(EXE) $(EXEC)
 	@echo "Génération release-nolto + auto-init stack : $(EXEC)"
+
+release-valgrind: $(EXE)
+	@mv $(EXE) $(EXEC)
+	@echo "Génération release-nolto + -g (sans auto-init, pour valgrind) : $(EXEC)"
+
+release-bounds: $(EXE)
+	@mv $(EXE) $(EXEC)
+	@echo "Génération release-nolto + UBSan bounds (intra-struct) + FORTIFY : $(EXEC)"
+	@echo "Lance avec : UBSAN_OPTIONS=print_stacktrace=1,abort_on_error=1 ./$(EXEC) bench 27"
 
 #---------------------------------------------------------------------
 #	PGO (code venant d'Ethereal)

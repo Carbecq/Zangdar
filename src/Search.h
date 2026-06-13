@@ -56,6 +56,12 @@ public:
     int         pv_scores[MAX_PLY+1];
     MOVE        pv_moves[MAX_PLY+1];
 
+    // PV complète de la dernière itération terminée. Permet de réafficher la
+    // ligne "info" de la thread retenue par get_best_thread() avant "bestmove" :
+    // sans cela, quand une helper est plus profonde que la thread 0, le bestmove
+    // ne correspond pas à la tête de la dernière PV affichée (warning cutechess).
+    PVariation  last_pv;
+
     // Point de départ de la recherche
     template <Color C> void think(Board board, Timer timer, size_t _index);
     template <Color C> int  aspiration_window(Board& board, Timer& timer, SearchInfo* si, int prev_score);

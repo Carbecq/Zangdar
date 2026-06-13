@@ -45,10 +45,15 @@ Search::~Search()
 
 //=========================================================
 //! \brief  Affichage UCI du résultat de la recherche
-//!         N'est utilisé que pour le thread 0
+//!         Appelé par le thread 0 à chaque itération terminée.
+//!         Aussi appelé une fois sur la thread retenue par
+//!         get_best_thread() quand ce n'est pas le thread 0, pour
+//!         réafficher sa PV avant le bestmove (sinon warning cutechess
+//!         "Bestmove does not match beginning of last PV"). Les champs
+//!         affichés (best_depth, seldepth, pv_scores) sont ceux de *this*.
 //!
-//! \param[in] depth        profondeur de la recherche
 //! \param[in] elapsed      temps passé pour la recherche, en millisecondes
+//! \param[in] pv           variation principale à afficher
 //---------------------------------------------------------
 void Search::show_uci_result(I64 elapsed, const PVariation& pv) const
 {

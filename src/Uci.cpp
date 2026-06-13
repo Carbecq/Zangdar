@@ -111,6 +111,10 @@ void Uci::run()
         {
             // the next search (started with "position" and "go") will be from
             // a different game.
+            // Arrêter une éventuelle recherche en cours AVANT de réinitialiser :
+            // sinon le thread UCI memset les tables history pendant que les
+            // workers les lisent (data race si la GUI n'attend pas readyok).
+            threadPool.stop();
             transpositionTable.clear();
             threadPool.reset();
         }
@@ -322,20 +326,56 @@ void Uci::run()
             printf("compilateur Clang \n");
 #endif
 
-#if defined(__AVX512F__)
-            std::cout << "__AVX512F__ OK " << std::endl;
-#endif
-#if defined (__AVX512BW__)
-            std::cout << "__AVX512BW__ OK " << std::endl;
-#endif
-#if defined(__AVX2__)
-            std::cout << "__AVX2__ OK " << std::endl;
+            // Jeux d'instructions, du plus ancien au plus récent
+#if defined(__SSE__)
+            std::cout << "__SSE__        OK " << std::endl;
 #endif
 #if defined(__SSE2__)
-            std::cout << "__SSE2__ OK " << std::endl;
+            std::cout << "__SSE2__       OK " << std::endl;
+#endif
+#if defined(__SSE3__)
+            std::cout << "__SSE3__       OK " << std::endl;
+#endif
+#if defined(__SSSE3__)
+            std::cout << "__SSSE3__      OK " << std::endl;
+#endif
+#if defined(__SSE4_1__)
+            std::cout << "__SSE4_1__     OK " << std::endl;
+#endif
+#if defined(__SSE4_2__)
+            std::cout << "__SSE4_2__     OK " << std::endl;
+#endif
+#if defined(__POPCNT__)
+            std::cout << "__POPCNT__     OK " << std::endl;
+#endif
+#if defined(__AVX__)
+            std::cout << "__AVX__        OK " << std::endl;
+#endif
+#if defined(__AVX2__)
+            std::cout << "__AVX2__       OK " << std::endl;
+#endif
+#if defined(__FMA__)
+            std::cout << "__FMA__        OK " << std::endl;
+#endif
+#if defined(__BMI2__)
+            std::cout << "__BMI2__       OK " << std::endl;
+#endif
+#if defined(__AVX512F__)
+            std::cout << "__AVX512F__    OK " << std::endl;
+#endif
+#if defined (__AVX512BW__)
+            std::cout << "__AVX512BW__   OK " << std::endl;
+#endif
+#if defined (__AVX512VNNI__)
+            std::cout << "__AVX512VNNI__ OK " << std::endl;
 #endif
 #if defined(__ARM_NEON)
-            std::cout << "__ARM_NEON OK " << std::endl;
+            std::cout << "__ARM_NEON     OK " << std::endl;
+#endif
+#if defined(USE_PEXT)
+            std::cout << "USE_PEXT       OK (attaques glisseurs par PEXT)" << std::endl;
+#else
+            std::cout << "USE_PEXT       absent (magic bitboards)" << std::endl;
 #endif
 
         }

@@ -1,16 +1,33 @@
-build*/*
+# Objets et répertoires de build
+build*/
 src/*.o
 src/*/*.o
+
+# Binaires générés par le Makefile (release, tsan, perf, ...)
+/Zangdar-*
+/Zangdar_dev
+
+# Qt Creator (réglages locaux ; Zangdar.pro reste versionné)
 Zangdar.pro.user*
-doc/
-.vs/
-x64/
-gen/
-clang.txt
+
+# Profiling (cible perf)
+gmon.out
+
+# Outils et notes perso : le dépôt ne contient que le code Zangdar et les
+# fichiers nécessaires (Makefile, réseaux). tsan_suppressions.txt est local
+# (débogage TSan uniquement).
+/References/
+/tools/
+/*.sh
+/*.py
+/*.txt
+!/VERSION.txt
+/bullet_examples/
+/tests
 
 # Réseaux NNUE : fetchés via Makefile (NETS_REPO → Carbecq/Zangdar-Networks)
 networks/*.bin
 
-
-
-
+# Instructions Claude Code (fichiers locaux, non versionnés)
+CLAUDE.md
+.claude/

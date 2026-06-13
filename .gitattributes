@@ -1,0 +1,7 @@
+# Normalise les fins de ligne en LF pour tous les fichiers texte
+* text=auto eol=lf
+
+# Fichiers binaires : pas de conversion
+*.bin binary
+*.o   binary
+*.exe binary

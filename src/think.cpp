@@ -62,7 +62,20 @@ void Search::think(Board board, Timer timer, size_t m_index)
 
         // Sélection et affichage du meilleur résultat parmi toutes les threads
         if (threadPool.get_logUci())
-            show_uci_best(threadPool.get_best_move());
+        {
+            const int     bt  = threadPool.get_best_thread();
+            const Search& bts = threadPool.search[bt];
+
+            // Si le meilleur résultat vient d'une thread helper, la dernière
+            // ligne "info" affichée est celle de la thread 0 et son premier
+            // coup peut différer du bestmove (warning cutechess "Bestmove does
+            // not match beginning of last PV"). On réaffiche donc la PV de la
+            // thread retenue avant le bestmove.
+            if (bt != 0 && bts.last_pv.length > 0)
+                bts.show_uci_result(timer.elapsedTime(), bts.last_pv);
+
+            show_uci_best(bts.pv_moves[bts.best_depth]);
+        }
 
         table->update_age();
     }
@@ -94,6 +107,7 @@ void Search::iterative_deepening(Board& board, Timer& timer, SearchInfo* si)
         // Historique par profondeur
         pv_scores[iter_depth] = score;
         pv_moves [iter_depth] = si->pv.line[0];
+        last_pv               = si->pv;
 
         prev_score = score;
 
