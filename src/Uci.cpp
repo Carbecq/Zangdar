@@ -552,6 +552,11 @@ setoption name <id> [value <x>]
             sprintf(message, "Uci::parse_options : Set Hash to %d MB", mb);
             printlog(message);
 #endif
+            // Stop avant de réallouer la TT : init_size() libère puis réalloue
+            // le std::vector sous-jacent. Si des workers probent/écrivent encore
+            // la TT (GUI n'attendant pas readyok), c'est un use-after-free.
+            // Symétrique du fix ucinewgame (d6c8840).
+            threadPool.stop();
             transpositionTable.init_size(mb);
         }
 
@@ -564,6 +569,9 @@ setoption name <id> [value <x>]
                 sprintf(message, "Uci::parse_options : Hash Clear");
                 printlog(message);
 #endif
+                // Même raison : clear() memset la TT, à ne pas faire pendant
+                // qu'un worker la lit (symétrique ucinewgame / d6c8840).
+                threadPool.stop();
                 transpositionTable.clear();
             }
         }
