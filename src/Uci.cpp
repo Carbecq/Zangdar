@@ -239,7 +239,7 @@ void Uci::run()
             if (nthreads > 1)
                 threadPool.set_threads(nthreads);
 
-            go_run(str, fen, dmax, tmax, nmax);
+            go_run(str, fen, dmax, tmax, nmax, nthreads);
         }
 
         else if (token == "test")
@@ -652,10 +652,10 @@ setoption name <id> [value <x>]
 //! \param[in]  nthreads = nombre de threads
 //!
 //-----------------------------------------------------------------
-void Uci::go_run(const std::string& abc, const std::string& fen, int dmax, int tmax, int nmax)
+void Uci::go_run(const std::string& abc, const std::string& fen, int dmax, int tmax, int nmax, int nthreads)
 {
     std::string auxi;
-    printf("go_run : abc=%s fen=%s depth_max=%d time_max=%d node_max=%d \n", abc.c_str(), fen.c_str(), dmax, tmax, nmax);
+    printf("go_run : abc=%s fen=%s depth_max=%d time_max=%d node_max=%d threads=%d \n", abc.c_str(), fen.c_str(), dmax, tmax, nmax, nthreads);
     transpositionTable.clear();
     threadPool.reset();
 

@@ -33,7 +33,12 @@ const std::string bool_name[2] = { "false", "true" };
  ** Les pièces
  **---------------------------------------------------*/
 
-constexpr int N_PIECE     = 15;
+// Durcissement : le champ "piece" d'un MOVE fait 4 bits (cf. Move.h), donc
+// piece(move) peut valoir jusqu'à 15. BLACK_KING=14 est le max légitime, mais
+// un coup malformé encodant 15 indexerait [15] sur toute table dimensionnée
+// [N_PIECE]. On dimensionne donc à 16 (ligne morte, jamais lue par un coup
+// légal) pour garantir l'absence d'OOB. Bit-exact : la ligne 15 reste à zéro.
+constexpr int N_PIECE     = 16;
 
 enum Piece : int
 {
@@ -62,7 +67,13 @@ constexpr std::initializer_list<Piece> all_PIECE = {
     Piece::BLACK_ROOK, Piece::BLACK_QUEEN,  Piece::BLACK_KING
 };
 
-constexpr int N_PIECE_TYPE = 7;
+// Durcissement (symétrique à N_PIECE) : piece_type(move) est extrait via
+// MOVE_PIECETYPE_MASK = 0b0111 (3 bits), donc jusqu'à 7. KING=6 est le max
+// légitime ; un coup malformé encodant 7 indexerait [7] sur toute table
+// dimensionnée [N_PIECE_TYPE]. On dimensionne à 8 (ligne morte). Bit-exact :
+// les slots 7 des tableaux de valeurs (SEE_VALUE, EGPieceValue, MvvLvaScores...)
+// sont zéro-remplis par l'agrégat et jamais lus par un coup légal.
+constexpr int N_PIECE_TYPE = 8;
 
 enum PieceType : int
 {
