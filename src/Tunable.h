@@ -77,6 +77,7 @@ PARAM(NMPReduction, 4, 1, 6);
 PARAM(NMPMargin,   32, 16, 48);
 PARAM(NMPMax,     384, 350, 450);
 PARAM(NMPDivisor, 128, 64, 192);
+PARAM(NMPVerifMinDepth, 14, 8, 20);   // seuil de profondeur déclenchant la recherche de vérification (NMP verify)
 
 //  ProbCut
 PARAM(ProbCutDepth,     5, 1, 8);

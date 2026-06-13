@@ -485,6 +485,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         if (
                 depth >= Tunable::NMPDepth
                 && static_eval >= beta
+                && (si->ply >= nmpMinPly || C != npmColor)   // NMP désactivé pour npmColor pendant un verify
                 && (si-1)->move != Move::MOVE_NULL
                 && board.getNonPawnMaterial<C>())           // protection contre le zugzwang
         {
@@ -508,7 +509,25 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             {
                 // (Stockfish) : on ne retourne pas un score proche du mat
                 //               car ce score ne serait pas prouvé
-                return(null_score >= TBWIN_IN_X ? beta : null_score);
+                const int ret = (null_score >= TBWIN_IN_X) ? beta : null_score;
+
+                // Petite profondeur, ou vérification déjà en cours (nmpMinPly != 0,
+                // récursion interdite) : on accepte le cutoff directement.
+                if (nmpMinPly || depth < Tunable::NMPVerifMinDepth)
+                    return ret;
+
+                // Recherche de vérification (Stockfish, ~35 Elo) : on re-cherche
+                // ce nœud à profondeur réduite, NMP désactivé jusqu'à ce que ply
+                // dépasse nmpMinPly. Filtre les cutoffs NMP erronés (zugzwang).
+                nmpMinPly = si->ply + 3 * (depth - R) / 4;
+                npmColor  = C;
+                const int verif = alpha_beta<C>(board, timer, beta - 1, beta, depth - R, false, si);
+                nmpMinPly = 0;
+
+                if (verif >= beta)
+                    return ret;
+                // sinon : vérification échouée → pas de cutoff, on poursuit la
+                // recherche normale de ce nœud.
             }
             // Hindsight NMP : le parent nous a réduits en LMR, mais le
             // null move échoue franchement → le nœud est sous-estimé, on rend un ply.

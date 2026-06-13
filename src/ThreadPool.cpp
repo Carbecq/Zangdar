@@ -126,6 +126,7 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
             search[i].tbhits          = 0;
             search[i].best_depth      = 0;
             search[i].last_pv.length  = 0;
+            search[i].nmpMinPly       = 0;
 
             // Init de l'historique par profondeur
             for (int d = 0; d <= MAX_PLY; d++)

@@ -51,6 +51,14 @@ public:
     int         iter_depth;     // profondeur demandée dans iterative  deepening
     int         best_depth;     // profondeur du meilleur coup trouvé jusqu'à présent
 
+    // NMP verify : tant que ply < nmpMinPly, le null move pruning est désactivé
+    // POUR LE CAMP npmColor uniquement (l'adversaire continue d'élaguer — raffi-
+    // nement Berserk, divise le coût du verify en zugzwang unilatéral). Mis à
+    // si->ply + 3*(depth-R)/4 le temps d'une recherche de vérification, puis
+    // remis à 0. Empêche aussi la vérification récursive (cf. think.cpp).
+    int         nmpMinPly = 0;
+    Color       npmColor  = WHITE;
+
     // Historique par profondeur
     // Sert au time management pour calculer le score_factor (delta entre depth-3 et depth)
     int         pv_scores[MAX_PLY+1];
