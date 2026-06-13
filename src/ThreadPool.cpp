@@ -1,4 +1,7 @@
 #include <cstring>
+#include <cstdlib>
+#include <algorithm>
+#include <map>
 #include "ThreadPool.h"
 #include "Board.h"
 #include "Search.h"
@@ -193,35 +196,66 @@ void ThreadPool::quit()
 
 //=================================================
 //! \brief  Retourne l'index de la meilleure thread
-//! Sélection par profondeur la plus grande,
-//! puis par score en cas d'égalité.
+//! Sélection par vote (schéma Stockfish / Berserk) : chaque thread vote pour
+//! son premier coup, pondéré par (score - pire_score + 14) × profondeur. Le
+//! coup le plus soutenu par l'ensemble des threads l'emporte → consensus, bien
+//! plus robuste qu'élire le seul thread le plus profond (un helper isolé ayant
+//! poussé d'un ply sur un coup douteux ne peut plus kidnapper le choix). Les
+//! scores prouvés (mat / table de finale) sont traités à part : mat gagnant le
+//! plus court, ou défense la plus longue.
 //-------------------------------------------------
 int ThreadPool::get_best_thread() const
 {
-    // Hiérarchie de sélection :
-    //  - si best a un mat → on ne bascule que sur un mat plus court ;
-    //  - sinon si iter a un mat → on bascule ;
-    //  - sinon → priorité à la profondeur, départage au score.
+    // À 1 thread, rien à départager : la thread principale (0) est retenue.
+    // (Garantit aussi un bench mono-thread bit-exact.)
+    if (nbrThreads == 1)
+        return 0;
+
+    // Score minimal parmi les threads : référence pour pondérer les votes.
+    int minScore = INFINITE;
+    for (size_t i = 0; i < nbrThreads; i++)
+        minScore = std::min(minScore, search[i].pv_scores[search[i].best_depth]);
+
+    // Poids d'un thread : avantage de score sur le pire × profondeur complétée.
+    auto thread_value = [&](size_t i) -> I64
+    {
+        const int d = search[i].best_depth;
+        return static_cast<I64>(search[i].pv_scores[d] - minScore + 14) * d;
+    };
+
+    // Chaque thread vote pour son premier coup, cumul des poids.
+    std::map<MOVE, I64> votes;
+    for (size_t i = 0; i < nbrThreads; i++)
+        votes[search[i].pv_moves[search[i].best_depth]] += thread_value(i);
 
     int best = 0;
-
     for (size_t i = 1; i < nbrThreads; i++)
     {
-        const int bd = search[best].best_depth;
-        const int bs = search[best].pv_scores[bd];
-        const int id = search[i].best_depth;
-        const int is = search[i].pv_scores[id];
+        const int  bd        = search[best].best_depth;
+        const int  id        = search[i].best_depth;
+        const int  bestScore = search[best].pv_scores[bd];
+        const int  iScore    = search[i].pv_scores[id];
+        const MOVE bestMove  = search[best].pv_moves[bd];
+        const MOVE iMove     = search[i].pv_moves[id];
 
-        bool better;
-        if (bs >= MATE_IN_X)
-            better = (is > bs);
-        else if (is >= MATE_IN_X)
-            better = true;
-        else
-            better = (id > bd) || (id == bd && is > bs);
-
-        if (better)
+        if (std::abs(bestScore) >= TBWIN_IN_X)
+        {
+            // best annonce un résultat prouvé (mat/TB) : on garde le score le
+            // plus élevé (mat gagnant le plus court, ou défaite la plus lointaine).
+            if (iScore > bestScore)
+                best = i;
+        }
+        else if (   iScore >= TBWIN_IN_X        // i a trouvé un gain prouvé
+                 || (   iScore > -TBWIN_IN_X     // i n'est pas en train de se faire mater
+                     && (   votes[iMove] > votes[bestMove]
+                         || (   votes[iMove] == votes[bestMove]
+                             // départage : poids, mais une PV trop courte (≤ 2)
+                             // est jugée peu fiable et perd le départage.
+                             &&   thread_value(i)    * (search[i].last_pv.length    > 2)
+                                > thread_value(best) * (search[best].last_pv.length > 2)))))
+        {
             best = i;
+        }
     }
 
     return best;
