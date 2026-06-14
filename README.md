@@ -1,69 +1,83 @@
 # Zangdar
-A UCI chess engine written in C++23.
 
-This project is somewhat a hobby, it will serve to learn the ropes of chess programming.
-I also play chess, very humbly; and I was always curious of how the programs work.
+A UCI chess engine written in C++23, featuring NNUE evaluation, Lazy SMP, and Syzygy tablebase support.
 
-I began some years ago, but without time, it never went far. I had only a move generator, a alpha-beta search, and that's almost all.
-I have now enough time to spend on the program. By luck, reading the forums, I discovered Vice, and the videos. Thay are great, and very instructive.
-So well, Im following the lessons, and Zangdar came to life. I found also the site from Bruce Moreland that explain a lot of things.
+Why *Zangdar*? Look up the Naheulbeuk dungeon!
 
-Why Zangdar ? Well look for the Naheulbeuk dungeon !!
+---
 
-I would like to thank specially the authors of Vice, TSCP, Gerbil. They helped me a lot understand several aspects of programmation.
-I also use the M42 library for generating attacks; and took inspiration from the Libchess library. 
+## Features
 
-Since then, I learned a lot, and Zangdar became a formidable opponent. It is now in the first 100 programs, and this represents a big achievement. I would never thought come this far some years ago.
+### Board
+- Magic Bitboard move generation
 
-It has the following features :
+### Search
+- Iterative Deepening with Aspiration Windows
+- Alpha-Beta (Fail Soft) + Quiescence Search
+- Transposition Table (4 buckets)
+- Null Move Pruning (with Hindsight NMP)
+- Late Move Reductions (LMR) with Hindsight Extension/Reduction
+- Futility Pruning, Reverse Futility Pruning, Razoring
+- ProbCut
+- Singular Extensions
+- Internal Iterative Reduction
+- SEE-based move pruning (weighted by history)
+- History Pruning
+- Correction History (pawn + non-pawn, gravity formula)
+- Killer Heuristic
+- QS Futility Pruning
 
-+ **Language** 
-  - Written in C++23
+### Move Ordering
+- MVV-LVA
+- Capture History (threat-indexed)
+- Quiet History, Continuation History
 
-+ **Board** 
-  - Magic Bitboard
+### Parallelism (Lazy SMP)
+- Multi-threaded search with persistent worker threads
+- Thread vote aggregation for best-move selection (Stockfish-style)
 
-+ **Search**
-  - Aspiration Window
-  - Iterative Deepening
-  - Alpha-Beta, Fail Soft
-  - Quiescence
-  - Killer Heuristic
-  - Transposition Table, with 4 buckets
-  - Null Move 
-  - Late Move Pruning
-  - Razoring
-  - Internal Iterative Deepening
-  - Uses several Histories
+### Evaluation — NNUE
+- Architecture: (768 × 8KB → 1024) × 2 → 1 × 8ob, SCReLU activation
+- 8 king buckets (horizontally mirrored), factorized weights
+- Trained with [Bullet](https://github.com/jnlt3/bullet); network embedded in the binary
+- Self-generated training data from successive engine versions (bootstrapped iteratively)
 
-+ **Move Ordering**
-  - MVVVLA
-  - Capture History
+### Endgame Tablebases
+- Syzygy tablebase support (3–6 pieces)
+- Configurable via UCI option
 
-+ **Parallelism**
-  - can use several threads
+### Communication
+- Full UCI protocol
+- Options: Hash size, Threads, Syzygy path, Move Overhead
 
-+ **Evaluation**
-  - Since version 3, Zangdar uses a network based on NNUE. 
- 
-+ **NNUE**
-  - The network is relatively simple, 768 Hidden Layer, no bucket.
-  - The first one was created with the HCE version of Zangdar. Successives versions were created with the precedent version.
+---
 
-+ **Syzygy Tables**
-  - Use of endgame tables is possible; you must use the UCI option. You also need a SSD to work correctly.
- 
-+ **Communication**
-  - UCI
-  - Options to change Hash size, Threads number, Syzygy tables usage, Move Overhead.
-    
-+ **Usage**
-  - The program is only an engine, so it needs one interface (Arena, Banksgui...).
-  - I provide binaries for Windows. I develop with Linux, but as binaries are not portable, I don't distribute it. A Makefile is given and should work without too much work. All are compiled in static, so you don't need extrernal libraries. 
+## Usage
 
-+ **Compilation**
-  - You must have a C++ compiler that use at least C++23. I use now MSYS2 for Windows 11, that compiles with clang++.
-I provide also binaries for several architectures.
+Zangdar is a pure engine — it requires a chess GUI (Arena, BanksGUI, CuteChess, etc.).
 
-+ **Old Releases**
-  - As I was very ignorant of git, the first repositery was extremely bad done. So I decided to redo it, and uses git tools. But the ancient one is still here, named Zangdar_0.
+Windows binaries are provided on the [Releases](../../releases) page for several CPU architectures (BMI2, AVX2, SSE4). Linux users can build from source.
+
+---
+
+## Compilation
+
+Requires a C++23 compiler. The default is `clang++`.
+
+```bash
+# Standard build
+make -j$(nproc)
+
+# For OpenBench
+make openbench -j$(nproc)
+```
+
+Other Makefile targets: `release`, `debug`, `sanitize`, `perf`, `pgo`, `release-nolto`.
+
+---
+
+## Thanks
+
+Special thanks to the authors of Vice, TSCP, and Gerbil for their public work that helped me understand the fundamentals. Also to the authors of Stockfish, Berserk, Obsidian, Clover, Halogen and many others whose open-source code continues to be an invaluable reference.
+
+The M42 library was used early on for attack generation.
