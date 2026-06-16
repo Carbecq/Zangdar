@@ -33,7 +33,7 @@ Why *Zangdar*? Look up the Naheulbeuk dungeon!
 - Quiet History, Continuation History
 
 ### Parallelism (Lazy SMP)
-- Multi-threaded search with persistent worker threads
+- Multi-threaded search sharing a lockless transposition table
 - Thread vote aggregation for best-move selection (Stockfish-style)
 
 ### Evaluation — NNUE
