@@ -129,11 +129,11 @@ PARAM(DeltaPruningBias,    300, 100, 400);
 PARAM(SEDepth, 8, 5, 10);
 
 //  HINDSIGHT EXTENSION / REDUCTION
-PARAM(HindsightExtMinDepth,      1,   1,   6);
-PARAM(HindsightExtMinReduction,  3,   1,   5);
+PARAM(HindsightExtMinDepth,      1,   0,   6);
+PARAM(HindsightExtMinReduction,  3,   1,   6);
 PARAM(HindsightExtEvalDiff,    -16, -50,  50);
 PARAM(HindsightRedMinDepth,      2,   1,   6);
-PARAM(HindsightRedMinReduction,  1,   1,   5);
+PARAM(HindsightRedMinReduction,  1,   0,   6);
 PARAM(HindsightRedEvalDiff,     49,   0, 120);
 
 //  HINDSIGHT NMP
