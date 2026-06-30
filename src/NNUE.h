@@ -25,10 +25,10 @@
 
 
 //------------------------------------------------------------------------------
-//  Description du réseau : (768×8kb → 1024)×2 → 1×8ob  SCReLU
+//  Description du réseau : (768×16kb → 1024)×2 → 1×8ob  SCReLU
 //
 //      Entrées              : 768 = 2 couleurs × 6 pièces × 64 cases
-//      Input Buckets        : 8 (king buckets, avec horizontal mirroring)
+//      Input Buckets        : 16 (king buckets, avec horizontal mirroring)
 //      Accumulateur         : 1024 neurones par perspective (incrémental)
 //      Output Buckets       : 8 (MaterialCount : selon le nb de pièces restantes)
 //      Activation           : SCReLU = clamp(x, 0, QA)² / QA  (Squared Clipped ReLU)
@@ -55,20 +55,23 @@ constexpr I32 QAB   = QA * QB;  // = 16320 : scale du biais de sortie
 // King buckets : chaque position du roi détermine quel jeu de poids utiliser.
 // La symétrie horizontale est gérée par get_square() (mirroring du fichier),
 // donc le layout est symétrique autour du centre (fichiers D/E identiques).
+// Map 16 buckets "standard" (Alexandria/Tarnished/Berserk/Viridithas/Stormphrax) :
+//   priorité à la FILE dans la bande rangs 3-4 (4 bandes verticales).
 // Vue du blanc (rank 1 = rangée du roi blanc) :
-//   rank 1 : coins (a/h) et flancs (b/g) = 0-3 (4 zones fines près de la base)
-//   rank 2 : flancs = 4, centre = 5
-//   rank 3-4 : tout = 6 (milieu de terrain)
-//   rank 5-8 : tout = 7 (terrain ennemi, roi avancé)
+//   rank 1   : 0-3   (4 zones fines par file, près de la base)
+//   rank 2   : 4-7   (4 zones fines)
+//   rank 3-4 : 8-11  (4 bandes par file, rangs 3 et 4 fusionnés)
+//   rank 5-6 : 12-13 (2 zones, blocs 2×2)
+//   rank 7-8 : 14-15 (2 zones, roi avancé en terrain ennemi)
 constexpr std::array<int, N_SQUARES> king_buckets_map = {
-    0, 1, 2, 3, 3, 2, 1, 0,   // rank 1
-    4, 4, 5, 5, 5, 5, 4, 4,   // rank 2
-    6, 6, 6, 6, 6, 6, 6, 6,   // rank 3
-    6, 6, 6, 6, 6, 6, 6, 6,   // rank 4
-    7, 7, 7, 7, 7, 7, 7, 7,   // rank 5
-    7, 7, 7, 7, 7, 7, 7, 7,   // rank 6
-    7, 7, 7, 7, 7, 7, 7, 7,   // rank 7
-    7, 7, 7, 7, 7, 7, 7, 7,   // rank 8
+     0,  1,  2,  3,  3,  2,  1,  0,   // rank 1
+     4,  5,  6,  7,  7,  6,  5,  4,   // rank 2
+     8,  9, 10, 11, 11, 10,  9,  8,   // rank 3
+     8,  9, 10, 11, 11, 10,  9,  8,   // rank 4
+    12, 12, 13, 13, 13, 13, 12, 12,   // rank 5
+    12, 12, 13, 13, 13, 13, 12, 12,   // rank 6
+    14, 14, 15, 15, 15, 15, 14, 14,   // rank 7
+    14, 14, 15, 15, 15, 15, 14, 14,   // rank 8
 };
 constexpr int KING_BUCKETS_COUNT = *std::ranges::max_element(king_buckets_map) + 1;
 
