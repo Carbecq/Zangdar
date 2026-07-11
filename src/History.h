@@ -27,21 +27,24 @@ using PawnHistoryTable = I16[PAWN_HASH_SIZE][N_PIECE][N_SQUARES];
 //  Capture History
 //      https://www.chessprogramming.org/History_Heuristic#Capture_History
 //
-//      Capture History, introduced by Stefan Geschwentner in 2016, is a variation on history heuristic applied on capture moves.
-//      It is a history table indexed by moved piece, target square, and captured piece type.
-//      The history table receives a bonus for captures that failed high, and maluses for all capture moves that did not fail high.
-//      The history values is used as a replacement for LVA in MVV-LVA.
+//      Capture History, introduite par Stefan Geschwentner en 2016, est une variante de l'history
+//      heuristic appliquée aux coups de capture.
+//      C'est une table d'historique indexée par la pièce jouée, la case d'arrivée, et le type de
+//      pièce capturée.
+//      La table reçoit un bonus pour les captures qui ont fail high, et des malus pour toutes les
+//      captures qui n'ont pas fail high.
+//      Les valeurs de l'historique remplacent LVA dans MVV-LVA.
 //
 //      Indexée par threat_from / threat_to pour distinguer
 //      les captures fuyant ou entrant dans une case attaquée.
 //============================================================================
-using CaptureHistory = I16[N_PIECE][2][2][N_SQUARES][N_PIECE_TYPE];     // [moved piece][threat from][threat to][target square][captured piece type]
+using CaptureHistory = I16[N_PIECE][2][2][N_SQUARES][N_PIECE_TYPE];     // [pièce jouée][threat from][threat to][case d'arrivée][type de pièce capturée]
 
 
 //============================================================================
 // Move Ordering : Countermove Heuristic
-// This heuristic assumes that many moves have a "natural" response
-//  indexed by [from][to] or by [piece][to] of the previous move
+// Cette heuristique suppose que beaucoup de coups ont une réponse "naturelle",
+//  indexée par [from][to] ou par [piece][to] du coup précédent
 //============================================================================
 using CounterMoveTable = MOVE[N_PIECE][N_SQUARES];
 
@@ -49,11 +52,13 @@ using CounterMoveTable = MOVE[N_PIECE][N_SQUARES];
 //============================================================================
 //  Continuation History
 /*
- * Continuation History is a generalization of Counter Moves History and Follow Up History.
- * An n-ply Continuation History is the history score indexed by the move played n-ply ago and the current move.
- * 1-ply and 2-ply continuation histories are most popular and correspond to Counter Moves History
- * and Follow Up History respectively.
- * Many programs, notably Stockfish, also makes use of 3, 4, 5, and 6-ply continuation histories.
+ * Continuation History généralise Counter Moves History et Follow Up History.
+ * Une Continuation History à n plies est le score d'historique indexé par le coup joué
+ * n plies plus tôt et le coup courant.
+ * Les continuation histories à 1 et 2 plies sont les plus utilisées et correspondent
+ * respectivement à Counter Moves History et Follow Up History.
+ * Zangdar cumule aussi la profondeur 4 plies (voir les 3 lignes ci-dessous) : elle capture
+ * le motif « ce coup répond bien au coup joué par le même camp il y a deux coups complets ».
  */
 //============================================================================
 using ContinuationHistoryTable = I16[N_PIECE][N_SQUARES][N_PIECE][N_SQUARES];
@@ -207,7 +212,7 @@ private:
     // tableau des coups qui ont causé un cutoff au ply précédent
     CounterMoveTable counter_move = {{Move::MOVE_NONE}};
 
-    // capture history  : [moved piece][threat from][threat to][target square][captured piece type]
+    // capture history  : [pièce jouée][threat from][threat to][case d'arrivée][type de pièce capturée]
     CaptureHistory capture_history = {{{{{0}}}}};
 
     // Correction History

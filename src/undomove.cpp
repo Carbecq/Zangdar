@@ -12,7 +12,7 @@ void Board::undo_move() noexcept
     constexpr Color Them     = ~Us;
     const MOVE move = get_status().move;
 
-    // Swap sides
+    // Change de camp
     side_to_move = ~side_to_move;
 
     const auto  dest     = Move::dest(move);
@@ -111,7 +111,7 @@ void Board::undo_move() noexcept
             {
                 move_piece(dest, from, Us, piece);
 
-                // Move the rook
+                // Déplace la tour
                 if constexpr (Us == WHITE)
                     move_piece(F1, H1, Us, Piece::WHITE_ROOK);
                 else
@@ -125,7 +125,7 @@ void Board::undo_move() noexcept
             {
                 move_piece(dest, from, Us, piece);
 
-                // Move the rook
+                // Déplace la tour
                 if constexpr (Us == WHITE)
                     move_piece(D1, A1, Us, Piece::WHITE_ROOK);
                 else
@@ -151,14 +151,14 @@ template <Color Us> void Board::undo_nullmove() noexcept
     side_to_move = ~side_to_move;   // Change de camp
 
 #if !defined NDEBUG && !defined USE_PROFILING
-    // on ne passe ici qu'en debug, et sans voulir le profiling
+    // on ne passe ici qu'en debug, et sans vouloir le profiling
     assert(valid());
 #endif
 }
 
 
 
-// Explicit instantiations.
+// Instanciations explicites.
 
 template void Board::undo_move<WHITE>() noexcept ;
 template void Board::undo_move<BLACK>() noexcept ;

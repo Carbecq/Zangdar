@@ -87,7 +87,7 @@ void TranspositionTable::clear(void)
 
     tt_age = 0;
 
-    // value-initialize each HashCluster element
+    // réinitialise chaque HashCluster à sa valeur par défaut
     std::fill(tt_entries.begin(), tt_entries.end(), HashCluster{});
 }
 
@@ -107,7 +107,7 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int boun
     assert(0 <= depth && depth <= MAX_PLY);
     assert(move != Move::MOVE_NULL);
 
-    // extract the 32-bit key from the 64-bit zobrist hash
+    // extrait la clé 32 bits à partir du hash Zobrist 64 bits
     // U32 key32 = (key >> 32);
     const U32 key32 = static_cast<U32>(key);
     //  static_cast<U16>(key);
@@ -126,17 +126,19 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int boun
 
     for (auto & entry : cluster.entries)
     {
-        // always take an empty entry, or one from the same position
-        // Question : But there are some entries with TtFlag=None , when it stores rawStaticEval.
-        // >>>"empty" just means no search score in this case (I think), in which one with a search score is better
-        // >>> in other words caching a static eval score and not a search score, to avoid calling eval
+        // on prend toujours une entrée vide, ou une entrée de la même position
+        // Question : mais il existe des entrées avec TtFlag=None quand seul rawStaticEval est stocké.
+        // >>> "vide" signifie ici simplement qu'il n'y a pas de score de recherche (je pense),
+        //     auquel cas une entrée avec un score de recherche est préférable
+        // >>> autrement dit on met en cache un score d'évaluation statique et non un score de
+        //     recherche, pour éviter d'appeler eval
         if (entry.key32 == key32 || entry.bound() == BOUND_NONE)
         {
             replace = &entry;
             break;
         }
 
-        // otherwise, take the lowest-weighted entry by depth and age
+        // sinon, on prend l'entrée de plus faible poids (profondeur et âge)
         I32 value = entry.depth - 2 * entry.relative_age(tt_age);
         if (value < minValue)
         {
@@ -147,17 +149,17 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int boun
 
     assert(replace != nullptr);
 
-    // Roughly the SF replacement scheme
-    // Don't overwrite an entry from the same position, unless we have
-    // an exact bound or depth that is nearly as good as the old one
+    // Approximativement le schéma de remplacement de SF
+    // On n'écrase pas une entrée de la même position, sauf si on a
+    // une borne exacte ou une profondeur presque aussi bonne que l'ancienne
     if ((bound == BOUND_EXACT
          || key32 != replace->key32
          || replace->relative_age(tt_age)           // replace->age() != tt_age
          || depth + 3 + 2*pv > replace->depth))
     {
-        // idea from Sirius, Stockfish and Ethereal
-        // Preserve any existing move for the same position
-        // Do not overwrite the move if there was no new best move
+        // idée de Sirius, Stockfish et Ethereal
+        // Préserve le coup existant pour la même position
+        // Ne pas écraser le coup s'il n'y a pas de nouveau meilleur coup
         if (move != Move::MOVE_NONE || replace->key32 != key32)
             replace->move = move;
 
@@ -183,7 +185,7 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int boun
 //--------------------------------------------------------
 bool TranspositionTable::probe(U64 key, int ply, MOVE& move, int &score, int& eval, int &bound, int& depth, bool& pv)
 {
-    // extract the 32-bit key from the 64-bit zobrist hash
+    // extrait la clé 32 bits à partir du hash Zobrist 64 bits
     const U32 key32 = static_cast<U32>(key);
     const HashCluster& cluster = tt_entries[index(key)];
     for (const HashEntry& entry : cluster.entries)

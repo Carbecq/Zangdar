@@ -17,7 +17,7 @@ https://github.com/AndyGrant/Pyrrhic
 
 
 //=========================================================================
-//! \brief Converts a tbresult into a score
+//! \brief Convertit un tbresult en score
 //! \param[in]  wdl     résultat WDL renvoyé par Pyrrhic
 //! \param[in]  dtz     distance to zeroing (ply)
 //! \param[out] score   score calculé à partir du résultat WDL
@@ -25,12 +25,12 @@ https://github.com/AndyGrant/Pyrrhic
 //-------------------------------------------------------------------------
 void Board::TBScore(const unsigned wdl, const unsigned dtz, int& score, int& bound) const
 {
-    // Convert the WDL value to a score. We consider blessed losses
-    // and cursed wins to be a draw, and thus set value to zero.
+    // Convertit la valeur WDL en score. Les blessed losses et cursed wins
+    // sont considérées comme des nulles, donc on met la valeur à zéro.
 
-    // Identify the bound based on WDL scores. For wins and losses the
-    // bound is not exact because we are dependent on the height, but
-    // for draws (and blessed / cursed) we know the tbresult to be exact
+    // Détermine la borne à partir des scores WDL. Pour les victoires et
+    // défaites, la borne n'est pas exacte car elle dépend de la hauteur (ply),
+    // mais pour les nulles (et blessed/cursed) le tbresult est exact
 
     switch (wdl)
     {
@@ -50,7 +50,7 @@ void Board::TBScore(const unsigned wdl, const unsigned dtz, int& score, int& bou
 }
 
 //=========================================================================
-//! \brief Probe the Win-Draw-Loss (WDL) table.
+//! \brief Sonde la table Win-Draw-Loss (WDL).
 //!
 //! \param[out] score   score déduit du résultat WDL sondé
 //! \param[out] bound   type de borne associée au score
@@ -60,9 +60,10 @@ void Board::TBScore(const unsigned wdl, const unsigned dtz, int& score, int& bou
 //-------------------------------------------------------------------------
 bool Board::probe_wdl(int& score, int& bound, int ply) const
 {
-    // Don't probe at root, when castling is possible, or when 50 move rule
-    // was not reset by the last move. Finally, there is obviously no point
-    // if there are more pieces than we have TBs for.
+    // Ne pas sonder à la racine, quand le roque est possible, ou quand la
+    // règle des 50 coups n'a pas été réinitialisée par le dernier coup.
+    // Enfin, cela n'a évidemment aucun sens s'il y a plus de pièces que ce
+    // que nos tables couvrent.
 
     int probeLimit = threadPool.get_syzygyProbeLimit();
     int pieceCount = BB::count_bit(occupancy_all());
@@ -74,9 +75,9 @@ bool Board::probe_wdl(int& score, int& bound, int ply) const
         || (probeLimit > 0 && pieceCount > probeLimit))
         return false;
 
-    // Tap into Pyrrhic's API. Pyrrhic takes the board representation, followed
-    // by the enpass square (0 if none set), and the turn. Pyrrhic defines WHITE
-    // as 1, and BLACK as 0, which is the opposite of how Ethereal defines them
+    // Appel à l'API de Pyrrhic. Pyrrhic prend la représentation de l'échiquier,
+    // suivie de la case en passant (0 si aucune), puis du trait. Pyrrhic définit
+    // WHITE comme 1 et BLACK comme 0, soit l'inverse de la convention d'Ethereal
 
     unsigned result = tb_probe_wdl(
         occupancy_c<WHITE>(),  occupancy_c<BLACK>(),
@@ -86,7 +87,7 @@ bool Board::probe_wdl(int& score, int& bound, int ply) const
         get_status().ep_square == SQUARE_NONE ? 0 : get_status().ep_square,
         turn() == WHITE ? 1 : 0);
 
-    // Probe failed
+    // Sondage échoué
     if (result == TB_RESULT_FAILED)
         return false;
 
@@ -96,13 +97,13 @@ bool Board::probe_wdl(int& score, int& bound, int ply) const
 }
 
 //=========================================================================
-//! \brief Probe Syzygy Tables at the root.
+//! \brief Sonde les tables Syzygy à la racine.
 //!
 //! Retourne true  → la position est dans la table Syzygy :
 //!                  'move' est le coup DTZ-optimal à jouer immédiatement.
 //! Retourne false → la position est hors de la table Syzygy
 //!
-//! This function should not be used during search.
+//! Cette fonction ne doit pas être utilisée pendant la recherche.
 //!
 //! \param[out] move    coup DTZ-optimal trouvé (MOVE_NONE si non trouvé)
 //!
@@ -112,8 +113,8 @@ bool Board::probe_root(MOVE& move) const
 {
     move = Move::MOVE_NONE;
 
-    // We cannot probe when there are castling rights, or when
-    // we have more pieces than our largest Tablebase has pieces
+    // On ne peut pas sonder s'il y a des droits de roque, ou si on a
+    // plus de pièces que ce que couvre notre plus grande tablebase
     int probeLimit = threadPool.get_syzygyProbeLimit();
     int pieceCount = BB::count_bit(occupancy_all());
 
@@ -132,7 +133,7 @@ bool Board::probe_root(MOVE& move) const
         turn() == WHITE ? 1 : 0,
         nullptr);
 
-    // Probe failed, or we are already in a finished position.
+    // Sondage échoué, ou la position est déjà terminée.
     if (   best == TB_RESULT_FAILED
         || best == TB_RESULT_CHECKMATE
         || best == TB_RESULT_STALEMATE)

@@ -49,18 +49,20 @@ constexpr U32 PYRRHIC_pop_lsb(Bitboard* b) noexcept {
 }
 
 //! \brief retourne la position du LSB
-//!     Get the first occupied square from a bitboard
-//!     Finds the least significant 1-bit
-//!     Returns the number of consecutive 0 bits in the value of x, starting from the least significant bit ("right").
+//! Returns the number of consecutive 0 bits in the value of x, starting from the least significant bit (“right”).
+//!
+//!     countr_zero( 00000000 ) = 8
+//!     countr_zero( 11111111 ) = 0
+//!     countr_zero( 00011100 ) = 2
+//!     countr_zero( 00011101 ) = 0
+//!
 //!     Fonction aussi nommée : bitScanForward, getlsb
 //!     Remplace __builtin_ctzll à partir de C++20
 [[nodiscard]] constexpr U32 get_lsb(Bitboard b) noexcept {
     return (std::countr_zero(b));
 }
 
-//! \brief
-//! bitScanReverse : Finds the most significant 1-bit
-//! Returns the number of consecutive 0 bits in the value of x, starting from the most significant bit ("left").
+//! \brief bitScanReverse : trouve la position du MSB
 //! countl_zero(0) = 64
 //! donc attention à : 63 - countl_zero(0) = -1 !!!
 [[nodiscard]] constexpr int get_msb(Bitboard b)  noexcept {

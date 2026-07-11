@@ -45,11 +45,10 @@ void ThreadPool::set_threads(U32 nbr)
 #endif
 
     U32 processorCount = static_cast<U32>(std::thread::hardware_concurrency());
-    // Check if the number of processors can be determined
     if (processorCount == 0)
         processorCount = MAX_THREADS;
 
-    // Clamp the number of threads to the number of processors
+    // Limite le nombre de threads au nombre de processeurs
     U32 newNbr = std::min(nbr, processorCount);
     newNbr     = std::max(newNbr, 1U);
     newNbr     = std::min(newNbr, MAX_THREADS);
@@ -116,8 +115,8 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
 
     MOVE best = Move::MOVE_NONE;
 
-    //  an opening is selected by the gui, from the book, and the engines play from there
-    //  that's how engine testing works, be it by devs, rating lists, or tournaments
+    //  une ouverture est choisie par la GUI, depuis le book, et les moteurs jouent à partir de là
+    //  c'est ainsi que fonctionnent les tests de moteurs, ou les tournois
 
     // Probe Syzygy TableBases : joue directement le coup DTZ-optimal si la position est dans les TB.
     if (useSyzygy && board.probe_root(best) == true)
@@ -212,67 +211,74 @@ void ThreadPool::quit()
 
 //=================================================
 //! \brief  Retourne l'index de la meilleure thread
-//! Sélection par vote (schéma Stockfish / Berserk) : chaque thread vote pour
-//! son premier coup, pondéré par (score - pire_score + 14) × profondeur. Le
-//! coup le plus soutenu par l'ensemble des threads l'emporte → consensus, bien
-//! plus robuste qu'élire le seul thread le plus profond (un helper isolé ayant
-//! poussé d'un ply sur un coup douteux ne peut plus kidnapper le choix). Les
-//! scores prouvés (mat / table de finale) sont traités à part : mat gagnant le
-//! plus court, ou défense la plus longue.
+//! Sélection par vote (schéma Stockfish / Berserk)
 //!
 //! \return Indice de la thread retenue
 //-------------------------------------------------
 int ThreadPool::get_best_thread() const
 {
     // À 1 thread, rien à départager : la thread principale (0) est retenue.
-    // (Garantit aussi un bench mono-thread bit-exact.)
     if (nbrThreads == 1)
         return 0;
 
-    // Score minimal parmi les threads : référence pour pondérer les votes.
+    // Accesseurs sur les données finales d'une thread
+    auto final_score = [&](size_t i) { return search[i].pv_scores[search[i].best_depth]; };
+    auto final_move  = [&](size_t i) { return search[i].pv_moves [search[i].best_depth]; };
+    auto final_depth = [&](size_t i) { return search[i].best_depth; };
+
+    // Score minimal parmi les threads
     int minScore = INFINITE;
     for (size_t i = 0; i < nbrThreads; i++)
-        minScore = std::min(minScore, search[i].pv_scores[search[i].best_depth]);
+        minScore = std::min(minScore, final_score(i));
 
-    // Poids d'un thread : avantage de score sur le pire × profondeur complétée.
+    // Poids du vote d'une thread : d'autant plus fort qu'elle a un bon score
+    // (relatif au plancher) et qu'elle a cherché profond. Le +14 garantit qu'une
+    // thread au score minimal conserve un poids non nul proportionnel à sa profondeur.
     auto thread_value = [&](size_t i) -> I64
     {
-        const int d = search[i].best_depth;
-        return static_cast<I64>(search[i].pv_scores[d] - minScore + 14) * d;
+        return static_cast<I64>(final_score(i) - minScore + 14) * final_depth(i);
     };
 
-    // Chaque thread vote pour son premier coup, cumul des poids.
+    // Poids retenu pour le départage à égalité de voix : une PV d'au moins 3 coups
+    // est jugée fiable ; une PV trop courte (≤ 2) voit son poids annulé.
+    auto tiebreak_value = [&](size_t i) -> I64
+    {
+        return search[i].last_pv.length > 2 ? thread_value(i) : 0;
+    };
+
+    // Chaque thread vote pour SON meilleur coup, avec son poids. Les threads ayant
+    // convergé vers le même coup cumulent leurs voix.
     std::map<MOVE, I64> votes;
     for (size_t i = 0; i < nbrThreads; i++)
-        votes[search[i].pv_moves[search[i].best_depth]] += thread_value(i);
+        votes[final_move(i)] += thread_value(i);
 
+    // On parcourt les threads pour élire la meilleure.
     int best = 0;
     for (size_t i = 1; i < nbrThreads; i++)
     {
-        const int  bd        = search[best].best_depth;
-        const int  id        = search[i].best_depth;
-        const int  bestScore = search[best].pv_scores[bd];
-        const int  iScore    = search[i].pv_scores[id];
-        const MOVE bestMove  = search[best].pv_moves[bd];
-        const MOVE iMove     = search[i].pv_moves[id];
-
-        if (std::abs(bestScore) >= TBWIN_IN_X)
+        if (std::abs(final_score(best)) >= TBWIN_IN_X)
         {
-            // best annonce un résultat prouvé (mat/TB) : on garde le score le
-            // plus élevé (mat gagnant le plus court, ou défaite la plus lointaine).
-            if (iScore > bestScore)
+            // La meilleure actuelle annonce un résultat prouvé (mat/TB) : on ne
+            // bascule que vers un score strictement plus élevé (mat gagnant le
+            // plus court, ou défaite repoussée le plus loin possible).
+            if (final_score(i) > final_score(best))
                 best = i;
         }
-        else if (   iScore >= TBWIN_IN_X        // i a trouvé un gain prouvé
-                 || (   iScore > -TBWIN_IN_X     // i n'est pas en train de se faire mater
-                     && (   votes[iMove] > votes[bestMove]
-                         || (   votes[iMove] == votes[bestMove]
-                             // départage : poids, mais une PV trop courte (≤ 2)
-                             // est jugée peu fiable et perd le départage.
-                             &&   thread_value(i)    * (search[i].last_pv.length    > 2)
-                                > thread_value(best) * (search[best].last_pv.length > 2)))))
+        else if (final_score(i) >= TBWIN_IN_X)
         {
+            // i a trouvé un gain prouvé alors que best n'en avait pas : i l'emporte.
             best = i;
+        }
+        else if (final_score(i) > -TBWIN_IN_X)   // et i n'est pas en train de se faire mater
+        {
+            // Aucune des deux n'a de résultat prouvé : on tranche aux voix,
+            // puis, à égalité de voix, au poids (PV fiable uniquement).
+            if (   votes[final_move(i)] > votes[final_move(best)]
+                || (   votes[final_move(i)] == votes[final_move(best)]
+                    && tiebreak_value(i) > tiebreak_value(best)))
+            {
+                best = i;
+            }
         }
     }
 

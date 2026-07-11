@@ -1,8 +1,8 @@
 #ifndef TUNABLE_H
 #define TUNABLE_H
 
-//  Tuning can be done with OpenBench (SPSA), Weather Factory, or chess-tuning-tools
-//  Compile with -DUSE_TUNING to expose parameters via UCI
+//  Le tuning peut se faire via OpenBench (SPSA), Weather Factory, ou chess-tuning-tools
+//  Compiler avec -DUSE_TUNING pour exposer les paramètres via UCI
 
 //  https://github.com/jnlt3/weather-factory
 
@@ -114,7 +114,7 @@ PARAM(HistoryMalusMax,     1882, 1024, 4096);
 //-------------------------------------------- Timer
 
 //   Peut-on tuner les valeurs du Timer ??
-//   But be sure to tune especially time management parameters only at longer time controls
+//   Mais s'assurer de tuner les paramètres de time management uniquement à des cadences plus longues
 //   TC type 40/4 ou 10+0.1 minimum
 
 //-------------------------------------------- Autres

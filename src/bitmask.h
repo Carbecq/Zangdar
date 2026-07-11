@@ -70,8 +70,6 @@ constexpr Bitboard StartingRank[N_COLORS]  = {RANK_2_BB, RANK_7_BB};
 
 namespace SQ {
 
-// The constexpr specifier declares that it is possible to evaluate the value of the function or variable at compile time.
-
 //! \brief  Calcule l'index de case à partir du fichier et de la rangée
 [[nodiscard]] constexpr inline int square(const int f, const int r) noexcept {
     return (8*r + f);

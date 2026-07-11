@@ -27,8 +27,8 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
         return 0;
     }
 
-    // If the position has a move that causes a repetition, and we are losing,
-    // then we can cut off early since we can secure a draw
+    // Si la position a un coup qui provoque une répétition, et que l'on perd,
+    // on peut couper tôt puisqu'on peut s'assurer la nulle
     if (
            board.get_fiftymove_counter() >= 3
            && alpha < VALUE_DRAW
@@ -44,7 +44,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
         return VALUE_DRAW;
 
     // profondeur de recherche max atteinte
-    // prevent overflows
+    // empêche les débordements
     const bool isInCheck = board.is_in_check();
     if (si->ply >= MAX_PLY)
         return isInCheck ? VALUE_DRAW : evaluate(board);
@@ -55,7 +55,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
     // Prefetch La table de transposition aussitôt que possible
     table->prefetch(board.get_key());
 
-    // Update node count and selective depth
+    // Met à jour le compteur de nodes et la profondeur sélective
     nodes++;
     seldepth = std::max(seldepth, si->ply);
 
@@ -130,11 +130,11 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
             break;
 
 
-        /* Delta Pruning, a technique similar in concept to futility pruning,
-            only used in the quiescence search.
-            It works as follows: before we make a capture, we test whether
-            the captured piece value plus some safety margin (typically around 200 centipawns)
-            are enough to raise alpha for the current node.
+        /* Delta Pruning, une technique conceptuellement proche du futility pruning,
+            utilisée uniquement en quiescence search.
+            Principe : avant de jouer une capture, on teste si la valeur de la pièce
+            capturée plus une marge de sécurité (typiquement environ 200 centipions)
+            suffit à faire dépasser alpha pour le nœud courant.
         */
 
         if (!isInCheck && Move::is_capturing(move))
@@ -162,18 +162,18 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
         if (is_stopped())
             return 0;
 
-        // Found a new best move in this position
+        // On a trouvé un nouveau meilleur coup dans cette position
         if (score > best_score)
         {
             best_score = score;
             best_move  = move;
 
-            // If score beats alpha we update alpha
+            // Si le score dépasse alpha, on met à jour alpha
             if (score > alpha)
             {
                 alpha = score;
 
-                // try for an early cutoff:
+                // tente une coupure anticipée :
                 if(score >= beta)
                 {
                     // QS History : bonus au meilleur coup, malus aux autres

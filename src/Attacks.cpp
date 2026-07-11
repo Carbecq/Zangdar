@@ -8,7 +8,7 @@ Bitboard BISHOP_ATTACKS[N_SQUARES][ 512]{};
 
 
 //======================================================
-//! \brief  set occupancies
+//! \brief  Définit les occupancies
 //!
 //! \param[in]  index           index de la variation d'occupancy à générer
 //! \param[in]  bits_in_mask    nombre de bits pertinents dans le masque
@@ -18,28 +18,21 @@ Bitboard BISHOP_ATTACKS[N_SQUARES][ 512]{};
 //------------------------------------------------------
 Bitboard set_occupancy(int index, int bits_in_mask, Bitboard attack_mask)
 {
-    // occupancy map
-    Bitboard occupany = 0;
+    Bitboard occupancy = 0;
 
-    // loop over the range of bits within attack mask
     for (int count = 0; count < bits_in_mask; count++)
     {
-        // get LS1B index of attacks mask
-        // pop LS1B in attack map
         SQUARE sq = BB::pop_lsb(attack_mask);
 
-        // make sure occupancy is on board
         if (index & (1 << count))
-            // populate occupancy map
-            occupany |= (1ULL << sq);
+            occupancy |= (1ULL << sq);
     }
 
-    // return occupancy map
-    return occupany;
+    return occupancy;
 }
 
 //======================================================
-//! \brief  generate bishop attacks on the fly
+//! \brief  Génère les attaques du fou à la volée
 //!
 //! \param[in]  sq      case de départ du fou
 //! \param[in]  block   bitboard des cases occupées (bloquantes)
@@ -48,14 +41,11 @@ Bitboard set_occupancy(int index, int bits_in_mask, Bitboard attack_mask)
 //------------------------------------------------------
 Bitboard bishop_attacks_on_the_fly(SQUARE sq, Bitboard block)
 {
-    // result attacks bitboard
     Bitboard attacks = 0;
 
-    // init target rank & files
     int sr = SQ::rank(sq);
     int sf = SQ::file(sq);
 
-    // generate bishop atacks
     for (int r = sr + 1, f = sf + 1; r <= 7 && f <= 7; r++, f++)
     {
         attacks |= (1ULL << (r * 8 + f));
@@ -81,7 +71,6 @@ Bitboard bishop_attacks_on_the_fly(SQUARE sq, Bitboard block)
             break;
     }
 
-    // return attack map
     return attacks;
 }
 
@@ -91,26 +80,17 @@ Bitboard bishop_attacks_on_the_fly(SQUARE sq, Bitboard block)
 //------------------------------------------------------
 void init_bishop_attacks()
 {
-    // loop over 64 board squares
     for (SQUARE sq = A1; sq < N_SQUARES; ++sq)
     {
-        // init current mask
         Bitboard mask = bishop_masks[sq];
-
-        // init relevant occupancy bit count
         int bits      = bishop_relevant_bits[sq];
-
-        // init occupancy indicies
         int indicies  = (1 << bits);
 
-        // loop over occupancy indicies
         for (int index = 0; index < indicies; index++)
         {
-            // init current occupancy variation
             Bitboard occupancy = set_occupancy(index, bits, mask);
 
 #ifndef USE_PEXT
-            // init magic index
             int idx                 = (occupancy * bishop_magics[sq]) >> (64 - bits);
             BISHOP_ATTACKS[sq][idx] = bishop_attacks_on_the_fly(sq, occupancy);
 #else
@@ -121,7 +101,7 @@ void init_bishop_attacks()
 }
 
 //======================================================
-//! \brief  generate rook attacks on the fly
+//! \brief  Génère les attaques de la tour à la volée
 //!
 //! \param[in]  sq      case de départ de la tour
 //! \param[in]  block   bitboard des cases occupées (bloquantes)
@@ -130,14 +110,11 @@ void init_bishop_attacks()
 //------------------------------------------------------
 Bitboard rook_attacks_on_the_fly(SQUARE sq, Bitboard block)
 {
-    // result attacks bitboard
     Bitboard attacks = 0;
 
-    // init target rank & files
     int sr = SQ::rank(sq);
     int sf = SQ::file(sq);
 
-    // generate rook attacks
     for (int r = sr + 1; r <= 7; r++) {
         attacks |= (1ULL << (r * 8 + sf));
         if (BB::get_bit(block, SQ::square(sf, r)))
@@ -162,7 +139,6 @@ Bitboard rook_attacks_on_the_fly(SQUARE sq, Bitboard block)
             break;
     }
 
-    // return attack map
     return attacks;
 }
 
@@ -172,26 +148,17 @@ Bitboard rook_attacks_on_the_fly(SQUARE sq, Bitboard block)
 //------------------------------------------------------
 void init_rook_attacks()
 {
-    // loop over 64 board squares
     for (SQUARE sq = A1; sq < N_SQUARES; ++sq)
     {
-        // init current mask
         Bitboard mask = rook_masks[sq];
-
-        // init relevant occupancy bit count
         int bits      = rook_relevant_bits[sq];
-
-        // init occupancy indicies
         int indicies  = (1 << bits);
 
-        // loop over occupancy indicies
         for (int index = 0; index < indicies; index++)
         {
-            // init current occupancy variation
             Bitboard occupancy = set_occupancy(index, bits, mask);
 
 #ifndef USE_PEXT
-            // init magic index
             int idx               = (occupancy * rook_magics[sq]) >> (64 - bits);
             ROOK_ATTACKS[sq][idx] = rook_attacks_on_the_fly(sq, occupancy);
 #else

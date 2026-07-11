@@ -114,7 +114,7 @@ void History::update_quiet_history(Color color, SearchInfo* info, MOVE best_move
         }
     }
 
-    // only update quiet history if best move was important
+    // ne met à jour le quiet history que si le meilleur coup était significatif
     if (!depth || (depth <= 3 && quiet_count <= 1))
         return;
 

@@ -62,7 +62,7 @@ void Board::legal_moves(MoveList& ml) const
 
     //    std::cout << "legal_gen 1 ; ch=%d " << BB::count_bit(checkersBB) << std::endl;
 
-    // in check: capture or block the (single) checker if any;
+    // en échec : capturer ou bloquer l'unique pièce qui donne échec, s'il y en a une ;
     if (checkersBB)
     {
         if (BB::count_bit(checkersBB) == 1)
@@ -76,7 +76,7 @@ void Board::legal_moves(MoveList& ml) const
     }
     else
     {
-        // not in check: castling & pinned pieces moves
+        // pas en échec : roques & coups des pièces clouées
 
         // castling
         if constexpr (GenQuiet)
@@ -144,7 +144,7 @@ void Board::legal_moves(MoveList& ml) const
             }
         }
 
-        // rook or queen (pinned)
+        // tour ou dame (clouée)
         pieceBB = rq & pinnedBB;
 
         while (pieceBB)
@@ -222,7 +222,7 @@ void Board::legal_moves(MoveList& ml) const
         }
     }
 
-    // pawn
+    // pion
     pieceBB = typePiecesBB[PieceType::PAWN] & unpinnedBB;
 
     if constexpr (GenNoisy)
@@ -266,7 +266,7 @@ void Board::legal_moves(MoveList& ml) const
         push_pawn_quiet_moves(ml, attackBB, 2 * pawn_push, US, Move::FLAG_DOUBLE_MASK);
     }
 
-    // knight
+    // Cavalier
 
     pieceBB = typePiecesBB[PieceType::KNIGHT] & unpinnedBB;
     while (pieceBB)
@@ -277,7 +277,7 @@ void Board::legal_moves(MoveList& ml) const
         if constexpr (GenQuiet) push_piece_quiet_moves(ml,   attackBB & emptyBB, from, US, PieceType::KNIGHT);
     }
 
-    // bishop or queen
+    // Fou or Dame
     pieceBB = bq & unpinnedBB;
     while (pieceBB)
     {
@@ -287,7 +287,7 @@ void Board::legal_moves(MoveList& ml) const
         if constexpr (GenQuiet) push_quiet_moves(ml,   attackBB & emptyBB, from);
     }
 
-    // rook or queen
+    // Tour ou Dame
     pieceBB = rq & unpinnedBB;
     while (pieceBB)
     {
@@ -297,7 +297,7 @@ void Board::legal_moves(MoveList& ml) const
         if constexpr (GenQuiet) push_quiet_moves(ml,   attackBB & emptyBB, from);
     }
 
-    // king
+    // Roi
     /* on enlève le roi de l'échiquier :
      * Dans cette position
      *   ..R...t.

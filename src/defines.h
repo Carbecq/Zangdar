@@ -12,10 +12,10 @@
  **	Généralités
  **---------------------------------------------------*/
 
-using I08   = int8_t;           //   -128 to 127
-using U08   = uint8_t;          //      0 to 255
-using I16   = int16_t;          // −32768 to 32767
-using U16   = uint16_t;         //      0 to 65535
+using I08   = int8_t;           //   -128 à 127
+using U08   = uint8_t;          //      0 à 255
+using I16   = int16_t;          // −32768 à 32767
+using U16   = uint16_t;         //      0 à 65535
 using I32   = int32_t;
 using U32   = uint32_t;
 using I64   = int64_t;
@@ -39,7 +39,7 @@ using Array2D = std::array<std::array<T, y>, x>;
 
 static constexpr int MAX_PLY    =  128;     // profondeur max de recherche (en demi-coups)
 static constexpr int MAX_HISTO  = 1024;     // longueur max de l'historique (partie + recherche) (en demi-coups)
-static constexpr int MAX_MOVES  =  400;     // Number of moves in the candidate move array.
+static constexpr int MAX_MOVES  =  400;     // taille max d'une liste de coups (largement au-dessus du max théorique)
 static constexpr int MAX_TIME   = 60*60*1000;   // 1 heure en ms
 
 static constexpr int HASH_SIZE      = 128;      // en Mo

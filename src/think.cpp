@@ -71,8 +71,7 @@ void Search::think(Board board, Timer timer, size_t m_index)
 
             // Si le meilleur résultat vient d'une thread helper, la dernière
             // ligne "info" affichée est celle de la thread 0 et son premier
-            // coup peut différer du bestmove (warning cutechess "Bestmove does
-            // not match beginning of last PV"). On réaffiche donc la PV de la
+            // coup peut différer du bestmove. On réaffiche donc la PV de la
             // thread retenue avant le bestmove.
             if (bt != 0 && bts.last_pv.length > 0)
                 bts.show_uci_result(timer.elapsedTime(), bts.last_pv);
@@ -102,7 +101,7 @@ void Search::iterative_deepening(Board& board, Timer& timer, SearchInfo* si)
 
     for (iter_depth = 1; iter_depth <= timer.getSearchDepth(); iter_depth++)
     {
-        // Search position, using aspiration windows for higher depths
+        // Recherche la position, avec des aspiration windows pour les profondeurs élevées
         const int score = aspiration_window<C>(board, timer, si, prev_score);
 
         if (is_stopped())
@@ -130,7 +129,7 @@ void Search::iterative_deepening(Board& board, Timer& timer, SearchInfo* si)
             // Mise à jour de la stabilité de la PV
             timer.update(iter_depth, pv_moves[iter_depth-1], pv_moves[iter_depth]);
 
-            // If an iteration finishes after optimal time usage, stop the search
+            // Si une itération se termine après le temps optimal, on arrête la recherche
             if (timer.finishOnThisDepth(elapsed, iter_depth, nodes, pv_scores, pv_moves))
                 break;
 
@@ -163,7 +162,7 @@ int Search::aspiration_window(Board& board, Timer& timer, SearchInfo* si, int pr
     int score  = prev_score;
     const int initialWindow = Tunable::AspirationWindowsInitial;
 
-    // After a few depths use a previous result to form the window
+    // Après quelques profondeurs, on utilise un résultat précédent pour former la fenêtre
     if (depth >= Tunable::AspirationWindowsDepth)
     {
         alpha = std::max(score - initialWindow, -INFINITE);
@@ -177,7 +176,7 @@ int Search::aspiration_window(Board& board, Timer& timer, SearchInfo* si, int pr
         if (is_stopped())
             break;
 
-        // Search failed low, adjust window and reset depth
+        // Fail low : on élargit la fenêtre vers le bas et on réinitialise la profondeur
         if (score <= alpha)
         {
             alpha = std::max(score - delta, -INFINITE); // alpha/score-delta
@@ -185,8 +184,8 @@ int Search::aspiration_window(Board& board, Timer& timer, SearchInfo* si, int pr
             depth = iter_depth;
         }
 
-        // Search failed high, adjust window and reduce depth
-        else if(score >= beta)  // Fail High
+        // Fail high : on élargit la fenêtre vers le haut et on réduit la profondeur
+        else if(score >= beta)
         {
             beta  = std::min(score + delta, INFINITE);   // beta/score+delta
             // idée de Berserk
@@ -194,7 +193,7 @@ int Search::aspiration_window(Board& board, Timer& timer, SearchInfo* si, int pr
                 depth = std::max(depth-1, 1);
         }
 
-        // Score within the bounds is accepted as correct
+        // Le score est dans les bornes : il est accepté comme correct
         else
         {
             return score;
@@ -248,8 +247,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     if (depth <= 0)
         return (quiescence<C>(board, timer, alpha, beta, si));
 
-    // If the position has a move that causes a repetition, and we are losing,
-    // then we can cut off early since we can secure a draw
+    // Si la position a un coup qui provoque une répétition, et que l'on perd,
+    // on peut couper tôt puisqu'on peut s'assurer la nulle
     if (   !isRoot
            && board.get_fiftymove_counter() >= 3
            && alpha < VALUE_DRAW
@@ -284,18 +283,18 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     const bool isExcluded = si->excluded != Move::MOVE_NONE;
     si->threats           = board.squares_attacked<THEM>();
 
-    // For PVS, the node is a PV node if beta - alpha != 1 (full-window = not a null window)
-    // We do not want to do most pruning techniques on PV nodes
+    // Pour la PVS, le nœud est un PV node si beta - alpha != 1 (full-window = pas une null window)
+    // On ne veut pas appliquer la plupart des techniques de pruning sur les PV nodes
     // Ne pas confondre avec PV NODE (notation Knuth)
     // Utiliser plutôt la notation : EXACT
     const bool isPV = ((beta - alpha) != 1);
 
-     // Update node count and selective depth
+     // Met à jour le compteur de nodes et la profondeur sélective
     nodes++;
     seldepth = isRoot ? 0 : std::max(seldepth, si->ply);
 
     int  score      = -INFINITE;
-    int  best_score = -INFINITE;        // initially assume the worst case
+    int  best_score = -INFINITE;        // on suppose d'abord le pire cas
     MOVE best_move  = Move::MOVE_NONE;  // meilleur coup local
 
 
@@ -313,10 +312,11 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     bool  tt_pv    = false;
     bool  tt_hit   = isExcluded ? false : table->probe(board.get_key(), si->ply, tt_move, tt_score, tt_eval, tt_bound, tt_depth, tt_pv);
 
-    // Trust TT if not a pvnode and the entry depth is sufficiently high
-    // At non-PV nodes we check for an early TT cutoff
-    //    (we do not return immediately on full PVS windows since this cuts
-    //     short the PV line)
+    // On fait confiance à la TT si ce n'est pas un pvnode et que la profondeur
+    // de l'entrée est suffisamment élevée.
+    // Dans les nœuds non-PV, on vérifie une coupure TT anticipée
+    //    (on ne retourne pas immédiatement sur une fenêtre PVS complète,
+    //     car cela raccourcirait la ligne PV)
     if (tt_hit && !isPV && tt_depth >= depth)
     {
         if (   (tt_bound == BOUND_EXACT)
@@ -328,7 +328,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     }
 
 
-    // Probe the Syzygy Tablebases
+    // Sonde les tablebases Syzygy
     int tb_score = VALUE_NONE;
     int tb_bound = BOUND_NONE;
     int max_score = MATE;
@@ -338,7 +338,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     {
         tbhits++;
 
-        // Check to see if the WDL value would cause a cutoff
+        // Vérifie si la valeur WDL provoquerait une coupure
         if (    tb_bound == BOUND_EXACT
                 || (tb_bound == BOUND_LOWER && tb_score >= beta)
                 || (tb_bound == BOUND_UPPER && tb_score <= alpha))
@@ -347,17 +347,17 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             return tb_score;
         }
 
-        // Limit the score of this node based on the tb result
+        // Limite le score de ce nœud d'après le résultat des tablebases
         if (isPV)
         {
-            // Never score something worse than the known Syzygy value
+            // Ne jamais donner un score pire que la valeur Syzygy connue
             if (tb_bound == BOUND_LOWER)
             {
                 best_score = tb_score;
                 alpha = std::max(alpha, tb_score);
             }
 
-            // Never score something better than the known Syzygy value
+            // Ne jamais donner un score meilleur que la valeur Syzygy connue
             else if (tb_bound == BOUND_UPPER)
             {
                 max_score = tb_score;
@@ -428,17 +428,6 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
     //---------------------------------------------------------------------
     //  HINDSIGHT EXTENSION / REDUCTION
-    //
-    //  On corrige à posteriori la réduction LMR appliquée par le parent à
-    //  ce coup. opp_worsening_rate = somme des deux static_eval consécutifs
-    //  (en negamax, ≈ 0 si la position est équilibrée) :
-    //   - se dégrade pour nous (rate < seuil bas) et le parent avait fortement
-    //     réduit  → on étend pour rendre la profondeur retirée à tort.
-    //   - confirme l'amélioration (rate > seuil haut) et le parent avait réduit
-    //     → on réduit encore (la réduction parente est validée).
-    //  Le cumul est borné par (si-1)->reduction : on ne peut que rendre ou
-    //  reprendre de la profondeur déjà retirée par le parent (pas d'explosion,
-    //  contrairement à l'out-of-check extension naïve).
     //---------------------------------------------------------------------
     const int opp_worsening_rate = (isRoot || isInCheck)
                                  ? 0
@@ -658,7 +647,6 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
         //-------------------------------------------------
         // History Pruning.
-        // Prune moves with a low history score moves at near-leaf nodes
         // L'idée : un coup quiet avec un historique très négatif est inutile à chercher :
         // c'est un coup que le moteur a démontré comme mauvais dans des positions similaires.
         // À faible profondeur, on le prune.
@@ -692,14 +680,14 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
         if (   depth > Tunable::SEDepth
                && si->ply < 2 * depth
-               && !isExcluded  // Avoid recursive singular search
+               && !isExcluded  // évite une recherche singulière récursive
                && !isRoot
                && move == tt_move
                && tt_depth > depth - 3
                && tt_bound == BOUND_LOWER
                && abs(tt_score) < TBWIN_IN_X)
         {
-            // Search to reduced depth with a zero window a bit lower than ttScore
+            // Recherche à profondeur réduite avec une zero window un peu sous ttScore
             int sing_beta  = tt_score - depth*2;
             int sing_depth = (depth-1)/2;
 
@@ -711,7 +699,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             {
                 if (   !isPV
                        && SE_score < sing_beta - 50
-                       && si->doubleExtensions <= 20)  // Avoid search explosion by limiting the number of double extensions
+                       && si->doubleExtensions <= 20)  // évite une explosion de la recherche en limitant le nombre de double extensions
                 {
                     extension = 2;
                     si->doubleExtensions++;
@@ -738,7 +726,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         }
 
 
-        // execute current move
+        // joue le coup courant
         si->move = move;
         si->tactical = !isQuiet;
         si->cont_hist = &history.continuation_history[Move::piece(move)][Move::dest(move)];
@@ -763,38 +751,38 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         if (   depth > 2
                && move_count > (2 + isPV) )
         {
-            // Base reduction
+            // Réduction de base
             int R = Reductions[isQuiet][std::min(31, depth)][std::min(31, move_count)];
 
-            // Reduce less in pv nodes
+            // Réduit moins dans les PV nodes
             R -= ttPV + isPV;
 
-            // Reduce less when improving
+            // Réduit moins quand on improving
             R += !improving;
 
             if (cut_node)
                 R += 2 - ttPV;
 
-            // Reduce more if ttMove is a capture
+            // Réduit plus si ttMove est une capture
             R += Move::is_capturing(tt_move);
 
-            // Reduce more when opponent has few pieces
+            // Réduit plus quand l'adversaire a peu de pièces
             R += board.getNonPawnMaterialCount<THEM>() < 2;
 
-            // Adjust based on history
+            // Ajuste en fonction de l'history
             R -= std::max(-2, std::min(2, hist / Tunable::LMR_HistReductionDivisor));
 
-            // Depth after reductions, avoiding going straight to quiescence
+            // Profondeur après réductions, en évitant de tomber directement en quiescence
             // TODO vérifier ce newDepth+1
             int lmrDepth = std::clamp(newDepth - R, 1, newDepth + 1);
 
-            // Search this move with reduced depth:
+            // Recherche ce coup à profondeur réduite :
             // On mémorise la réduction pour la hindsight ext/red de l'enfant
             si->reduction = R;
             score = -alpha_beta<~C>(board, timer, -alpha-1, -alpha, lmrDepth, true, si+1);
             si->reduction = 0;
 
-            // Do full depth search when reduced LMR search fails high
+            // Refait une recherche à pleine profondeur si la recherche LMR réduite fail high
             if (score > alpha && lmrDepth < newDepth)
             {
                 newDepth += (score > best_score + Tunable::LMR_DeeperMargin + Tunable::LMR_DeeperScale*newDepth);
@@ -818,10 +806,10 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             score = -alpha_beta<~C>(board, timer, -beta, -alpha, newDepth, false, si+1);
         }
 
-        // retract current move
+        // annule le coup courant
         undo_move<C, true>(board);
 
-        // Track where nodes were spent in the Main thread at the Root
+        // Suit où les nodes ont été dépensés dans la thread principale, à la racine
         if (isRoot && index==0)
             timer.updateMoveNodes(move, nodes - starting_nodes);
 
@@ -834,17 +822,17 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         {
             best_score = score; // le meilleur que l'on ait trouvé, pas forcément intéressant
 
-            // If score beats alpha we update alpha
+            // Si le score dépasse alpha, on met à jour alpha
             if (score > alpha)
             {
                 best_move  = move;
                 alpha = score;
                 bound = BOUND_EXACT;
 
-                // update the PV
+                // met à jour la PV
                 update_pv(si, move);
 
-                // If score beats beta we have a cutoff
+                // Si le score dépasse beta, on a une coupure
                 if (score >= beta)
                 {
                     history.update_quiet_history(C, si, best_move, board.get_pawn_key(), depth, quiet_count, quiet_moves);

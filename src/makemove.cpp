@@ -84,13 +84,13 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
     if (Move::type(piece) == PieceType::KING)
         king_square[US] = dest;
 
-    // Droit au roque, remove ancient value
+    // Droit au roque, retire l'ancienne valeur
     newStatus.key ^= castle_key[previousStatus.castling];
 
-    // Castling permissions
+    // Droits de roque
     newStatus.castling = previousStatus.castling & castle_mask[from] & castle_mask[dest];
 
-    // Droit au roque; add new value
+    // Droit au roque; ajoute la nouvelle valeur
     newStatus.key ^= castle_key[newStatus.castling];
 
     //====================================================================================
@@ -294,7 +294,7 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
             newStatus.pawn_key ^= piece_key[piece][from] ^ piece_key[piece][dest];
             newStatus.fiftymove_counter = 0;
 
-            // Remove the captured pawn
+            // Retire le pion capturé
             if constexpr (US == Color::WHITE)
             {
                 remove_piece(SQ::south(dest), Color::BLACK, captured);
@@ -339,7 +339,7 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
             {
                 assert((dest == get_king_dest<US, CastleSide::KING_SIDE>())  );
 
-                // Move the King
+                // Déplace le Roi
                 move_piece(from, dest, US, piece);
 
                 assert(Move::type(piece_on(get_king_dest<US, CastleSide::KING_SIDE>())) == PieceType::KING);
@@ -347,7 +347,7 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
                 newStatus.key              ^= piece_key[piece][from] ^ piece_key[piece][dest];
                 newStatus.non_pawn_key[US] ^= piece_key[piece][from] ^ piece_key[piece][dest];
 
-                // Move the Rook
+                // Déplace la Tour
                 if constexpr (US == WHITE)
                 {
                     move_piece(H1, F1, US, Piece::WHITE_ROOK);
@@ -387,7 +387,7 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
             {
                 assert((dest == get_king_dest<US, CastleSide::QUEEN_SIDE>() ));
 
-                // Move the King
+                // Déplace le Roi
                 move_piece(from, dest, US, piece);
 
                 assert(Move::type(piece_on(get_king_dest<US, CastleSide::QUEEN_SIDE>())) == PieceType::KING);
@@ -395,7 +395,7 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
                 newStatus.key              ^= piece_key[piece][from] ^ piece_key[piece][dest];
                 newStatus.non_pawn_key[US] ^= piece_key[piece][from] ^ piece_key[piece][dest];
 
-                // Move the Rook
+                // Déplace la Tour
                 if constexpr (US == WHITE)
                 {
                     move_piece(A1, D1, US, Piece::WHITE_ROOK);
@@ -601,7 +601,7 @@ void Board::promocapt_piece(const SQUARE from,
     BB::toggle_bit(typePiecesBB[PieceType::PAWN], from); // suppression du pion
     BB::toggle_bit(colorPiecesBB[color], from);
 
-    BB::toggle_bit(typePiecesBB[Move::type(captured)], dest); // Remove the captured piece
+    BB::toggle_bit(typePiecesBB[Move::type(captured)], dest); // suppression de la pièce prise
     BB::toggle_bit(colorPiecesBB[~color], dest);
 
     BB::toggle_bit(typePiecesBB[Move::type(promoted)], dest); // Ajoute la pièce promue

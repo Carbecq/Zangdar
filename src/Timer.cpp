@@ -50,7 +50,7 @@ Timer::Timer(bool infinite,
 
 
 //===========================================================
-//! \brief Start the timer
+//! \brief Démarre le timer
 //-----------------------------------------------------------
 void Timer::start()
 {
@@ -105,9 +105,9 @@ void Timer::setup(Color color)
     }
     else if (limits.time[color] != 0)
     {
-        // CCRL blitz : game in 2 minutes plus 1 second increment
-        // CCRL 40/15 : 40 moves in 15 minutes
-        // Amateur    : 12 minutes with 8 second increments.
+        // CCRL blitz : partie en 2 minutes avec 1 seconde d'incrément
+        // CCRL 40/15 : 40 coups en 15 minutes
+        // Amateur    : 12 minutes avec 8 secondes d'incrément.
 
         //  CCRL 40/15 : 40 coups en 15 minutes, sans incrément
         //  TC=40/15:00
@@ -204,7 +204,7 @@ bool Timer::check_limits(const int depth, const int index, const U64 total_nodes
         {
             // ce mode est utilisé :
             //  > pour le jeu normal
-            // Every MAX_COUNTER , check if our time has expired.
+            // Toutes les MAX_COUNTER itérations, on vérifie si le temps est écoulé.
             if (--counter > 0)
                 return false;
             counter = MAX_COUNTER;
@@ -252,17 +252,17 @@ bool Timer::finishOnThisDepth(int elapsed, int depth, U64 total_nodes, const int
 
     if (mode == TimerMode::TIME && depth >= 4)
     {
-        // Scale time between 80% and 120%, based on stable best moves
+        // Échelonne le temps entre 80% et 120%, selon la stabilité du meilleur coup
         const double pv_factor = 1.20 - 0.04 * pv_stability;
 
         // score_change : positif si on s'est dégradé
         assert(pv_scores != nullptr);
         const int score_change = pv_scores[depth - 3] - pv_scores[depth];
 
-        // Scale time between 75% and 125%, based on score fluctuations
+        // Échelonne le temps entre 75% et 125%, selon les fluctuations du score
         const double score_factor = std::max(0.75, std::min(1.25, 0.05 * score_change));
 
-        // Scale time between 50% and 240%, based on where nodes have been spent
+        // Échelonne le temps entre 50% et 240%, selon où les nodes ont été dépensés
         assert(pv_moves != nullptr);
         const double bmNodes = (total_nodes > 0)
                 ? static_cast<double>(MoveNodeCounts[Move::fromdest(pv_moves[depth])]) / static_cast<double>(total_nodes)
@@ -324,10 +324,10 @@ void Timer::updateMoveNodes(MOVE move, U64 nodes)
 //------------------------------------------------------------------
 void Timer::update(int depth, MOVE last_move, MOVE this_move)
 {
-    // Don't update our Time Managment plans at very low depths
+    // Ne met pas à jour la gestion du temps aux profondeurs très basses
     if (mode != TimerMode::TIME || depth < 4)
         return;
 
-    // Track how long we've kept the same best move between iterations
+    // Suit depuis combien d'itérations le meilleur coup est resté le même
     pv_stability = (this_move == last_move) ? std::min(10U, pv_stability + 1) : 0;
 }

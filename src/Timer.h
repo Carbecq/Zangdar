@@ -14,13 +14,13 @@ enum TimerMode {
 };
 
 struct Limits {
-    int  time[2];     // time left for black and white
-    int  incr[2];     // increment for black and white
-    int  movestogo;   // moves
-    int  depth;       // limit search by depth
-    U64  nodes;       // limit search by nodes searched
-    int  movetime;    // limit search by time
-    bool infinite;    // ignore limits (infinite search)
+    int  time[2];     // temps restant pour Noirs et Blancs
+    int  incr[2];     // incrément pour Noirs et Blancs
+    int  movestogo;   // coups restants
+    int  depth;       // limite la recherche par profondeur
+    U64  nodes;       // limite la recherche par nombre de nodes cherchés
+    int  movetime;    // limite la recherche par temps
+    bool infinite;    // ignore les limites (recherche infinie)
 
     Limits() : time{}, incr{}, movestogo(0), depth(0), nodes(0), movetime(0), infinite(false) {}
 };
@@ -84,7 +84,7 @@ private:
     constexpr static U32 MAX_COUNTER = 2048;
     U32 counter {MAX_COUNTER};
 
-    // gives the exact moment this search was started.
+    // donne le moment exact où cette recherche a démarré.
     TimePoint::time_point startTime;
 
     int  mode;

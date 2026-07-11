@@ -111,9 +111,9 @@ public:
         return( Attacks::pawn_attacks<~C>(sq) & occupancy_cp<C, PieceType::PAWN>() );
     }
 
-    //! \brief  Retourne le bitboard des pièces du camp C menacées par l'adversaire (Clover pattern)
-    //! \note   Brique réutilisable fournie pour de futures heuristiques threat-aware (famille LMR
-    //!         enemy_has_no_threats). Actuellement non câblée : Ne pas supprimer comme « code mort ».
+    //! \brief  Retourne le bitboard des pièces du camp C menacées par l'adversaire (implémentation de Clover)
+    //! \note   Cette fonction pourrait servir pour de futures heuristiques utilisant les menaces.
+    //!  Actuellement non utilisée : Ne pas supprimer comme « code mort ».
     template<Color C> [[nodiscard]] Bitboard threatened_pieces() const noexcept
     {
         Bitboard our_pieces = occupancy_c<C>() ^ occupancy_cp<C, PieceType::PAWN>();
@@ -121,10 +121,10 @@ public:
         Bitboard att = 0;
 
         // on retire le roi ami de l'occupation : les sliders ennemis voient
-        // « à travers » le roi (cf. all.toggle_bit(get_king(color)) dans get_threats)
+        // « à travers » le roi
         Bitboard occ = occupancy_all() ^ SQ::square_BB(get_king_square<C>());
 
-        // Pawn attacks (en masse, comme squares_attacked)
+        // Attaques des pions (en masse, comme squares_attacked)
         Bitboard enemy_pawns = occupancy_cp<~C, PieceType::PAWN>();
         if constexpr (C == Color::WHITE)   // ennemi = NOIR, attaque vers le sud
             att = BB::south_east(enemy_pawns) | BB::south_west(enemy_pawns);
@@ -132,10 +132,10 @@ public:
             att = BB::north_east(enemy_pawns) | BB::north_west(enemy_pawns);
         threatened |= att & our_pieces;
 
-        // Exclude Knight and Bishop allies before processing Knight/Bishop threats
+        // Exclut les cavaliers et fous alliés avant de traiter leurs menaces
         our_pieces ^= occupancy_cp<C, PieceType::KNIGHT>() | occupancy_cp<C, PieceType::BISHOP>();
 
-        // Knight attacks
+        // Attaques des cavaliers
         Bitboard enemy_knights = occupancy_cp<~C, PieceType::KNIGHT>();
         while (enemy_knights)
         {
@@ -144,7 +144,7 @@ public:
         }
         threatened |= att & our_pieces;
 
-        // Bishop attacks
+        // Attaques des fous
         Bitboard enemy_bishops = occupancy_cp<~C, PieceType::BISHOP>();
         while (enemy_bishops)
         {
@@ -153,10 +153,10 @@ public:
         }
         threatened |= att & our_pieces;
 
-        // Exclude Rook allies before processing Rook threats
+        // Exclut les tours alliées avant de traiter leurs menaces
         our_pieces ^= occupancy_cp<C, PieceType::ROOK>();
 
-        // Rook attacks
+        // Attaques des tours
         Bitboard enemy_rooks = occupancy_cp<~C, PieceType::ROOK>();
         while (enemy_rooks)
         {
@@ -165,8 +165,7 @@ public:
         }
         threatened |= att & our_pieces;
 
-        // NOTE: Clover excludes Queen and King threats from threatened_pieces
-        // (they accumulate in all_threats but don't contribute to threatened_pieces)
+        // NOTE : Clover exclut les menaces Dame et Roi de threatened_pieces
 
         return threatened;
     }
@@ -735,15 +734,15 @@ public:
         int gamemove_counter = statusHistory.size() - 1;
         int halfmove_counter = get_status().fiftymove_counter;
 
-        // Look through hash histories for our moves
+        // Parcourt l'historique des hash à la recherche de nos coups
         for (int i = gamemove_counter - 2; i >= 0; i -= 2)
         {
-            // No draw can occur before a zeroing move
+            // Aucune nulle ne peut survenir avant un coup qui remet le compteur à zéro
             if (i < gamemove_counter - halfmove_counter)
                 break;
 
-            // Check for matching hash with a two fold after the root,
-            // or a three fold which occurs in part before the root move
+            // Recherche un hash identique : soit un 2-fold après la racine,
+            // soit un 3-fold survenant en partie avant le coup racine
             if (    statusHistory[i].key == current_key
                     && (   i > gamemove_counter - ply   // 2-fold : on considère des positions dans l'arbre de recherche
                            || ++reps == 2) )               // 3-fold : on considère toutes les positions de la partie

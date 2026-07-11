@@ -32,7 +32,7 @@ void printlog(const std::string& message)
     std::string str(MAISON);
     str += "/debug.txt";
 
-    myfile.open(str, std::ios_base::app); // append instead of overwrite
+    myfile.open(str, std::ios_base::app); // ajoute à la suite plutôt que d'écraser
     myfile << message << std::endl;
     myfile.close();
 }

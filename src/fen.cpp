@@ -10,24 +10,24 @@
 //    rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 //                                                1 2    3 4 5
 //
-//      1) w       white to move
+//      1) w       trait aux Blancs
 //      2) KQkq    roques possibles, ou '-'
 //      3) -       case en passant
 //      4) 0       demi-coups pour la règle des 50 coups   : halfmove_counter
 //      5) 1       nombre de coups de la partie            : fullmove_counter
 
-// The halfmove clock specifies a decimal number of half moves with respect to the 50 move draw rule.
-// It is reset to zero after a capture or a pawn move and incremented otherwise.
+// Le halfmove clock indique un nombre décimal de demi-coups vis-à-vis de la règle des 50 coups.
+// Il est remis à zéro après une capture ou un coup de pion, et incrémenté sinon.
 
-// The number of the full moves in a game.
-// It starts at 1, and is incremented after each Black's move
+// Le nombre de coups complets de la partie.
+// Il commence à 1, et est incrémenté après chaque coup des Noirs
 
 // EPD notation : extension de FEN
 
 //    rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - <opération>;
 //                                                1 2    3
 //
-//      1) w       white to move
+//      1) w       trait aux Blancs
 //      2) KQkq    roques possibles, ou '-'
 //      3) -       case en passant
 //      4) ...     opération, par exemple : bm Re6; id WAC10";
@@ -49,7 +49,7 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
     }
 
     //-------------------------------------
-    // Reset the board
+    // Réinitialise l'échiquier
     // >>> doit être fait en dehors de set_fen
 
     //-------------------------------------
@@ -157,7 +157,7 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
     }
 
     //----------------------------------------------------------
-    // Side to move
+    // Trait
     ss >> word;
     if (word == "w") {
         side_to_move = Color::WHITE;
@@ -215,7 +215,7 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
         //       am Rd6; bm Rb6 Rg5+; id "WAC.274";
         //       bm Bg4 Re2; c0 "Bg4 wins, but Re2 is far better."; id "WAC.252";
 
-        // best move
+        // meilleur coup
         std::string op, auxi;
         size_t p;
 
@@ -223,7 +223,7 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
         {
             ss >> op;
 
-            if (op == "bm") // Best Move
+            if (op == "bm") // best move
             {
                 while(true)
                 {
@@ -241,7 +241,7 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
                     }
                 }
             }
-            else if (op == "am")    // Avoid Move
+            else if (op == "am")    // avoid move
             {
                 while(true)
                 {
@@ -301,15 +301,15 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
     else
     {
         // Halfmove clock
-        // The halfmove clock specifies a decimal number of half moves with respect to the 50 move draw rule.
-        // It is reset to zero after a capture or a pawn move and incremented otherwise.
+        // Indique un nombre décimal de demi-coups vis-à-vis de la règle des 50 coups.
+        // Remis à zéro après une capture ou un coup de pion, incrémenté sinon.
         ss >> get_status().fiftymove_counter;
 
         // Fullmove clock
-        // The number of the full moves in a game. It starts at 1, and is incremented after each Black's move.
+        // Nombre de coups complets de la partie. Commence à 1, incrémenté après chaque coup des Noirs.
         ss >> get_status().fullmove_counter;
 
-        // Move count: ignore and use zero, as we count since root
+        // Nombre de coups : ignoré, on utilise zéro car on compte depuis la racine
     }
 
     //-----------------------------------------
@@ -357,7 +357,7 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
 
     //-------------------------------------
 
-    // Reset the board
+    // Réinitialise l'échiquier
     avoid_moves.clear();
     best_moves.clear();
 
@@ -369,7 +369,7 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     std::stringstream ss(fen);
     std::string word;
 
-    // Parse board positions
+    // Analyse la position de l'échiquier
     // On inverse les couleurs : P (blanc) -> pion noir, p (noir) -> pion blanc
     // et on inverse verticalement les cases
     ss >> word;
@@ -445,7 +445,7 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     }
 
     //----------------------------------------------------------
-    // Set the side to move (inversé)
+    // Définit le trait (inversé)
     ss >> word;
     if (word == "w") {
         side_to_move = Color::BLACK;
@@ -502,12 +502,12 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     {
         // iss : bm Rd6; id "WAC12";
 
-        // best move
+        // meilleur coup
         std::string op, auxi;
         size_t p;
 
         ss >> op;
-        if (op == "bm") // Best Move
+        if (op == "bm") // meilleur coup
         {
             // on peut avoir plusieurs meilleurs coups !
             best_moves.clear();
@@ -527,7 +527,7 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
                 }
             }
         }
-        else if (op == "am")    // Avoid Move
+        else if (op == "am")    // coup à éviter
         {
             avoid_moves.clear();
             while(true)
@@ -562,15 +562,15 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     else
     {
         // Halfmove clock
-        // The halfmove clock specifies a decimal number of half moves with respect to the 50 move draw rule.
-        // It is reset to zero after a capture or a pawn move and incremented otherwise.
+        // Indique un nombre décimal de demi-coups vis-à-vis de la règle des 50 coups.
+        // Remis à zéro après une capture ou un coup de pion, incrémenté sinon.
         ss >> get_status().fiftymove_counter;
 
         // Fullmove clock
-        // The number of the full moves in a game. It starts at 1, and is incremented after each Black's move.
+        // Nombre de coups complets de la partie. Commence à 1, incrémenté après chaque coup des Noirs.
         ss >> get_status().fullmove_counter;
 
-        // Move count: ignore and use zero, as we count since root
+        // Nombre de coups : ignoré, on utilise zéro car on compte depuis la racine
         // get_status().gamemove_counter = 0;
     }
 
@@ -613,7 +613,7 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
             if (piece == Piece::PIECE_NONE) {
                 num_empty++;
             } else {
-                // Add the number of empty squares so far
+                // Ajoute le nombre de cases vides accumulées jusqu'ici
                 if (num_empty > 0) {
                     fen += std::to_string(num_empty);
                 }
@@ -624,7 +624,7 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
             }
         }
 
-        // Add the number of empty squares when we reach the end of the rank
+        // Ajoute le nombre de cases vides en fin de rangée
         if (num_empty > 0) {
             fen += std::to_string(num_empty);
         }

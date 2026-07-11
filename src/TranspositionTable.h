@@ -10,7 +10,7 @@
 static constexpr int BOUND_NONE  = 0;   //
 static constexpr int BOUND_UPPER = 1;   // All-nodes (Knuth's Type 3) : score <= alpha        ; appelé aussi FAIL-LOW
 static constexpr int BOUND_LOWER = 2;   // Cut-nodes (Knuth's Type 2) : score >= beta         ; appelé aussi FAIL-HIGH
-static constexpr int BOUND_EXACT = 3;   // PV-node   (Knuth's Type 1) : alpha < score < beta  ; the value returned is EXACT (not a BOUND)
+static constexpr int BOUND_EXACT = 3;   // PV-node   (Knuth's Type 1) : alpha < score < beta  ; la valeur stockée est EXACTE (pas une simple borne)
 
 class TranspositionTable;
 
@@ -133,7 +133,7 @@ private:
     //! \return Index du cluster dans tt_entries
     //--------------------------------------------------
     inline U64 index(U64 key) const noexcept {
-        // this emits a single mul on both x64 and arm64
+        // ceci génère une unique multiplication, aussi bien sur x64 que sur arm64
         return static_cast<U64>((static_cast<U128>(key) * static_cast<U128>(nbr_cluster)) >> 64);
     }
 
@@ -166,7 +166,7 @@ public:
     int  hash_full() const;
 
     //==================================================
-    //! \brief  Store terminal scores as distance from the current position to mate/TB
+    //! \brief  Stocke les scores terminaux comme une distance depuis la position courante jusqu'au mat/TB
     //! \param[in]  score  score à convertir avant stockage en TT
     //! \param[in]  ply    profondeur (distance à la racine) de la position
     //! \return Score converti, prêt à être stocké dans l'entrée de la TT
@@ -180,7 +180,7 @@ public:
     }
 
     //==================================================
-    //! \brief  Add the distance from root to terminal scores get the total distance to mate/TB
+    //! \brief  Ajoute la distance depuis la racine pour obtenir la distance totale jusqu'au mat/TB
     //! \param[in]  score  score lu depuis la TT
     //! \param[in]  ply    profondeur (distance à la racine) de la position
     //! \return Score converti, utilisable directement par la recherche
@@ -194,9 +194,9 @@ public:
     }
 
     //==================================================
-    //! \brief  prefetch() preloads the given address in L1/L2 cache. This is a
-    //!         non-blocking function that doesn't stall the CPU waiting for data
-    //!         to be loaded from memory, which can be quite slow.
+    //! \brief  prefetch() précharge l'adresse donnée dans le cache L1/L2. C'est une
+    //!         fonction non bloquante qui n'immobilise pas le CPU en attente du
+    //!         chargement des données depuis la mémoire, ce qui peut être assez lent.
     //! \param[in]  key  clé de hachage (Zobrist) de la position à précharger
     //--------------------------------------------------
     inline void prefetch(const U64 key)

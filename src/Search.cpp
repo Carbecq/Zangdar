@@ -45,12 +45,6 @@ Search::~Search()
 
 //=========================================================
 //! \brief  Affichage UCI du résultat de la recherche
-//!         Appelé par le thread 0 à chaque itération terminée.
-//!         Aussi appelé une fois sur la thread retenue par
-//!         get_best_thread() quand ce n'est pas le thread 0, pour
-//!         réafficher sa PV avant le bestmove (sinon warning cutechess
-//!         "Bestmove does not match beginning of last PV"). Les champs
-//!         affichés (best_depth, seldepth, pv_scores) sont ceux de *this*.
 //!
 //! \param[in] elapsed      temps passé pour la recherche, en millisecondes
 //! \param[in] pv           variation principale à afficher
@@ -66,13 +60,13 @@ void Search::show_uci_result(I64 elapsed, const PVariation& pv) const
 
     /*  score
      *      cp <x>
-     *          the score from the engine's point of view in centipawns.
+     *          le score du point de vue du moteur, en centipions.
      *      mate <y>
-     *          mate in y moves, not plies.
-     *          If the engine is getting mated use negative values for y.
+     *          mat en y coups, pas en plies.
+     *          Si le moteur se fait mater, utiliser des valeurs négatives pour y.
      */
 
-    //collect info about nodes from all Threads
+    // Rassemble les infos sur les nodes de toutes les threads
     U64 all_nodes  = threadPool.get_all_nodes();
     U64 all_tbhits = threadPool.get_all_tbhits();
     int hash_full  = table->hash_full();
@@ -81,9 +75,9 @@ void Search::show_uci_result(I64 elapsed, const PVariation& pv) const
            << " depth "    << best_depth
            << " seldepth " << seldepth
 
-// time     : the time searched in ms
+// time     : le temps de recherche, en ms
 // nodes    : noeuds calculés
-// nps      : nodes per second searched
+// nps      : nodes par seconde recherchés
 
            << " time "       << elapsed
            << " nodes "      << all_nodes
@@ -95,7 +89,7 @@ void Search::show_uci_result(I64 elapsed, const PVariation& pv) const
 
     if (iter_best_score >= MATE_IN_X)
     {
-        stream << " score mate " << (MATE - iter_best_score) / 2 + 1;             // score mate <y> mate in y moves, not plies.
+        stream << " score mate " << (MATE - iter_best_score) / 2 + 1;             // score mate <y> : mat en y coups, pas en plies.
     }
     else if (iter_best_score <= -MATE_IN_X)
     {
@@ -192,7 +186,7 @@ void Search::update_pv(SearchInfo* si, const MOVE move) const
 
     value = value * (ScoreBias + phase) / ScoreDivisor;
 
-    // Make sure the evaluation does not mix with guaranteed win/loss scores
+    // S'assure que l'évaluation ne se mélange pas avec les scores garantis de victoire/défaite
     value = std::clamp(value, -TBWIN_IN_X + 1, TBWIN_IN_X - 1);
 
     return value;
@@ -221,7 +215,7 @@ void Search::make_move(Board& board, const MOVE move) noexcept
     // Update de la position
     board.make_move<US, Update_NNUE>(accum, move);
 
-    // Push the accumulator change
+    // Empile le changement d'accumulateur
     accum.updated[WHITE] = false;
     accum.updated[BLACK] = false;
     accum.king_square    = board.king_square;
@@ -242,7 +236,7 @@ void Search::undo_move(Board& board) noexcept
     board.undo_move<US>();
 }
 
-// Explicit instantiations.
+// Instanciations explicites.
 template void Search::make_move<WHITE, true>(Board& board, const U32 move) noexcept;
 template void Search::make_move<BLACK, true>(Board& board, const U32 move) noexcept;
 template void Search::make_move<WHITE, false>(Board& board, const U32 move) noexcept;

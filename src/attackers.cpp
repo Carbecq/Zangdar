@@ -21,14 +21,14 @@ void Board::calculate_checkers_pinned() noexcept
     U32 s;
     Bitboard b1;
 
-    //Checkers of each piece type are identified by:
-    //1. Projecting attacks FROM the king square
-    //2. Intersecting this bitboard with the enemy bitboard of that piece type
+    //Les pièces donnant échec, pour chaque type de pièce, sont identifiées en :
+    //1. Projetant les attaques DEPUIS la case du roi
+    //2. Croisant ce bitboard avec le bitboard ennemi de ce type de pièce
     get_status().checkers = (Attacks::knight_moves(K)     & occupancy_cp<THEM, PieceType::KNIGHT>())
             | (Attacks::pawn_attacks<US>(K) & occupancy_cp<THEM, PieceType::PAWN>());
 
-    //Here, we identify slider checkers and pinners simultaneously, and candidates for such pinners
-    //and checkers are represented by the bitboard <candidates>
+    //Ici, on identifie simultanément les glisseurs donnant échec et les cloueurs ;
+    //les candidats à ces deux rôles sont représentés par le bitboard <candidates>
     Bitboard candidates = (Attacks::rook_moves(K, enemyBB)   & their_orth_sliders) |
             (Attacks::bishop_moves(K, enemyBB) & their_diag_sliders);
 
@@ -38,12 +38,12 @@ void Board::calculate_checkers_pinned() noexcept
         s  = BB::pop_lsb(candidates);
         b1 = squares_between(K, s) & usBB;
 
-        //Do the squares in between the enemy slider and our king contain any of our pieces?
-        //If not, add the slider to the checker bitboard
+        //Les cases entre le glisseur ennemi et notre roi contiennent-elles une de nos pièces ?
+        //Si non, on ajoute le glisseur au bitboard des pièces donnant échec
         if (b1 == 0)
             get_status().checkers |= SQ::square_BB(s);
 
-        //If there is only one of our pieces between them, add our piece to the pinned bitboard
+        //S'il n'y a qu'une seule de nos pièces entre les deux, on l'ajoute au bitboard des pièces clouées
         else if ((b1 & (b1 - 1)) == 0)
             get_status().pinned |= b1;
     }
@@ -69,7 +69,7 @@ template <Color C>
     Bitboard bishops = friendly & (typePiecesBB[PieceType::BISHOP] | typePiecesBB[PieceType::QUEEN]);
     Bitboard rooks   = friendly & (typePiecesBB[PieceType::ROOK]   | typePiecesBB[PieceType::QUEEN]);
 
-    // Pawns
+    // Pions
     if constexpr (C == Color::WHITE) {
         mask |= BB::north_east(pawns);
         mask |= BB::north_west(pawns);
@@ -78,25 +78,25 @@ template <Color C>
         mask |= BB::south_west(pawns);
     }
 
-    // Knights
+    // Cavaliers
     while (knights)
         mask |= Attacks::knight_moves(BB::pop_lsb(knights));
 
-    // Bishops and Queens
+    // Fous et Dames
     while (bishops)
         mask |= Attacks::bishop_moves(BB::pop_lsb(bishops), occupied);
 
-    // Rooks and Queens
+    // Tours et Dames
     while (rooks)
         mask |= Attacks::rook_moves(BB::pop_lsb(rooks), occupied);
 
-    // King
+    // Roi
     mask |= Attacks::king_moves(get_king_square<C>());
 
     return mask;
 }
 
-// Explicit instantiations.
+// Instanciations explicites.
 template Bitboard Board::squares_attacked<WHITE>() const noexcept ;
 template Bitboard Board::squares_attacked<BLACK>() const noexcept ;
 
@@ -120,7 +120,7 @@ template <Color C>
     Bitboard bishops = friendly & (typePiecesBB[PieceType::BISHOP] | typePiecesBB[PieceType::QUEEN]);
     Bitboard rooks   = friendly & (typePiecesBB[PieceType::ROOK]   | typePiecesBB[PieceType::QUEEN]);
 
-    // Pawns
+    // Pions
     if constexpr (C == Color::WHITE) {
         mask |= BB::north_east(pawns);
         mask |= BB::north_west(pawns);
@@ -129,19 +129,19 @@ template <Color C>
         mask |= BB::south_west(pawns);
     }
 
-    // Knights
+    // Cavaliers
     while (knights)
         mask |= Attacks::knight_moves(BB::pop_lsb(knights));
 
-    // Bishops and Queens
+    // Fous et Dames
     while (bishops)
         mask |= Attacks::bishop_moves(BB::pop_lsb(bishops), occ);
 
-    // Rooks and Queens
+    // Tours et Dames
     while (rooks)
         mask |= Attacks::rook_moves(BB::pop_lsb(rooks), occ);
 
-    // King
+    // Roi
     mask |= Attacks::king_moves(get_king_square<C>());
 
     return mask;

@@ -61,7 +61,7 @@ bool Board::fast_see(const MOVE move, const int threshold) const
     while (true)
     {
         // On enlève des attaquants les occupants
-        // Make sure we did not add any already used attacks
+        // S'assure qu'on n'a pas ajouté d'attaques déjà utilisées
         all_attackersBB &= occupiedBB;
 
         // Bitboard de mes attaquants
@@ -84,8 +84,8 @@ bool Board::fast_see(const MOVE move, const int threshold) const
         // Change de camp
         color = ~color;
 
-        // Negamax the balance with alpha = balance, beta = balance+1 and
-        // add nextVictim's value.
+        // Negamax du solde avec alpha = balance, beta = balance+1, et
+        // on ajoute la valeur de la prochaine victime.
         //
         //      (balance, balance+1) -> (-balance-1, -balance)
         //
@@ -95,9 +95,9 @@ bool Board::fast_see(const MOVE move, const int threshold) const
         // alors on a gagné
         if (v >= 0)
         {
-            // As a slide speed up for move legality checking, if our last attacking
-            // piece is a king, and our opponent still has attackers, then we've
-            // lost as the move we followed would be illegal
+            // Raccourci pour la vérification de légalité : si notre dernière pièce
+            // attaquante est un roi et que l'adversaire a encore des attaquants,
+            // alors on a perdu, car le coup suivi serait illégal
             if (piece == PieceType::KING && (all_attackersBB & colorPiecesBB[color]))
                 color = ~color;
 
@@ -118,7 +118,7 @@ bool Board::fast_see(const MOVE move, const int threshold) const
             all_attackersBB |= Attacks::rook_moves(dest, occupiedBB) & rqBB;
     }
 
-    // Side to move after the loop loses
+    // Le camp au trait après la boucle perd
     return (color != turn());
 }
 

@@ -1,3 +1,3 @@
-VERSION  = 6.34
-NET_NAME = net_13a_300.bin
+VERSION  = 6.35
+NET_NAME = net_20a_1000.bin
 

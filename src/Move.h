@@ -71,7 +71,7 @@ constexpr U32 MOVE_PROMOTYPE_MASK     = 0b0000011100000000000000000000;
 //                                  0b0fffPPPPCCCCMMMMDDDDDDFFFFFF
 constexpr U32 MOVE_FLAGS_MASK     = 0b0111000000000000000000000000;
 
-// Special move flags
+// Flags de coups spéciaux
 constexpr U32 FLAG_NONE           = 0;
 
 //                                  0b0fffPPPPCCCCMMMMDDDDDDFFFFFF

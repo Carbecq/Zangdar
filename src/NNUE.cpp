@@ -6,11 +6,26 @@
 #include "Move.h"
 #include "Board.h"
 
+/*   INCBIN est une macro (de la bibliothèque incbin) qui insère le contenu brut du fichier EVALFILE
+ *   directement dans une section de données de l'exécutable, au moment de la compilation.
+ *   À partir du nom network qu'on lui donne, la macro génère trois symboles :
+ *      - gnetworkData  : pointeur (const unsigned char*) vers le premier octet du fichier embarqué, aligné en mémoire ;
+ *      - gnetworkEnd   : pointeur juste après le dernier octet ;
+ *      - gnetworkSize  : la taille en octets.
+ *
+ *  Après le passage du préprocesseur, il existe donc trois identifiants distincts dans ce fichier :
+ *      - Network       : le type, la struct définie dans NNUE.h ;
+ *      - gnetworkxxx   : les 3 symboles générés par la macro ;
+ *      - network       : pointeur sur le réseau
+ *
+ *  Tout est dans un namespace anonyme : network est privé à NNUE.cpp.
+ */
+
 namespace {
 
 #include "incbin/incbin.h"
-INCBIN(networkData, EVALFILE);
-const Network *network = reinterpret_cast<const Network *>(gnetworkDataData);
+INCBIN(network, EVALFILE);
+const Network *network = reinterpret_cast<const Network *>(gnetworkData);
 
 }
 
@@ -72,37 +87,14 @@ void NNUE::start_search(const Board& board)
 }
 
 //====================================================
-//! \brief  Rebase le stack NNUE : copie l'accumulateur courant
-//!         en position 0 et remet head_idx à 0.
-//!         Réinitialise les finny tables (elles référencent
-//!         des positions de stack qui ne sont plus valides).
-//!         Utilisé dans DataGen pour éviter l'overflow du stack
-//!         quand start_search() n'est appelé qu'une fois par partie.
+//! \brief  Rebase le stack NNUE :
+//!         1) copie l'accumulateur courant en position 0 et remet head_idx à 0.
+//!         2) Réinitialise les finny tables (elles référencent des positions
+//!             de stack qui ne sont plus valides).
+//!         3) N'est utilisé que par DataGen pour éviter l'overflow du stack
+//!             car start_search() n'est appelé qu'une fois par partie.
 //!
 //! \param[in] board    position courante (pour appliquer les lazy updates en attente)
-//!
-//!  C'est utile. Voici pourquoi.
-//!
-//! Le problème sans rebase
-//!
-//! Dans DataGen, start_search() n'est appelé qu'une seule fois par partie
-//!  (pour éviter de recalculer l'accumulateur de zéro à chaque coup).
-//! La boucle de jeu enchaîne les make_move, et chaque coup fait un push() → head_idx monte de 1 à chaque demi-coup.
-//! Sur une longue partie (50-100 coups), head_idx atteindrait la taille du stack (MAX_PLY+1) → overflow
-//! et comportement indéfini.
-//!
-//! Ce que fait rebase
-//!
-//!     1. Applique les lazy updates en attente sur l'accumulateur courant (lazy_updates)
-//!     2. Copie cet accumulateur en stack[0] et remet head_idx = 0
-//!     3. Réinitialise les Finny tables — elles contiennent des références aux positions du stack
-//!         (buckets de roi, bitboards), qui deviennent obsolètes après le décalage
-//!
-//! Le résultat : le stack repart de zéro avec l'état correct, sans recalculer l'accumulateur
-//!   depuis la position initiale.
-//!
-//! Donc oui, c'est nécessaire dans le contexte DataGen où start_search() n'est pas rappelé à chaque coup.
-//!   Sans ça, overflow garanti sur les parties longues.
 //!
 //----------------------------------------------------
 void NNUE::rebase(const Board& board)
@@ -186,18 +178,7 @@ void NNUE::add(Accumulator& accu, Piece piece, SQUARE from, SQUARE wking, SQUARE
 
 
 //=========================================
-//! \brief  Évaluation SCReLU + produit matrice-vecteur (activations × output_weights) → score en centipions
-//!
-//! Algorithme "Lizard" (SCReLU dual perspective) :
-//!   1. SCReLU SIMD : clipped = clamp(acc, 0, QA)
-//!      product = clipped × weight  (I16, safe : 255×127 = 32385 < 32767)
-//!      result  = madd(product, clipped) → I32  (= clipped² × weight)
-//!      → sum accumule clipped² × weight sur toutes les paires
-//!
-//!   2. Mise à l'échelle :
-//!      sum est à l'échelle QA² × QB
-//!      eval = sum / QA + bias   (bias à QAB = QA×QB → cohérent après /QA)
-//!      eval = eval × SCALE / QAB
+//! \brief  Calcul de la valeur résultante des 2 accumulateurs et de leur poids
 //!
 //! \param[in] us       accumulateur (HIDDEN_LAYER_SIZE) de la perspective du joueur actif
 //! \param[in] them     accumulateur (HIDDEN_LAYER_SIZE) de la perspective de l'adversaire
@@ -207,6 +188,7 @@ void NNUE::add(Accumulator& accu, Piece piece, SQUARE from, SQUARE wking, SQUARE
 //! \return Score en centipions
 //!
 //! Ref : https://cosmo.tardis.ac/files/2024-06-01-nnue.html
+//! On va utiliser l'algorithme "Lizard"
 //-----------------------------------------
 #if defined USE_SIMD
 
@@ -859,7 +841,7 @@ void NNUE::refresh_accumulator(const Board &board, Accumulator& acc)
             const Bitboard old_pieces = entry.colorPiecesBB[side][color] & entry.typePiecesBB[side][piece];
             const Bitboard new_pieces = board.colorPiecesBB[color]       & board.typePiecesBB[piece];
 
-            // rechreche des pièces à supprimer
+            // recherche des pièces à supprimer
             Bitboard to_remove = ~new_pieces & old_pieces;
             while (to_remove)
             {
@@ -867,7 +849,7 @@ void NNUE::refresh_accumulator(const Board &board, Accumulator& acc)
                 sub<side>(entry.accumulator, Move::make_piece(color, piece), square, king_square);
             }
 
-            // rechreche des pièces à ajouter
+            // recherche des pièces à ajouter
             Bitboard to_add = new_pieces & ~old_pieces;
             while (to_add)
             {

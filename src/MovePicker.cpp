@@ -136,8 +136,8 @@ MLMove MovePicker::next_move(bool skipQuiets)
 
     case STAGE_TABLE:
 
-        // Play the table move if it is from this
-        // position, also advance to the next stage
+        // Joue le coup de la table s'il est légal dans cette
+        // position, puis passe à l'étape suivante
 
         stage = STAGE_GENERATE_NOISY;
         if (is_legal(tt_move))
@@ -147,9 +147,9 @@ MLMove MovePicker::next_move(bool skipQuiets)
 
     case STAGE_GENERATE_NOISY:
 
-        // Generate all noisy moves and evaluate them. Set up the
-        // split in the array to store quiet and noisy moves. Also,
-        // this stage is only a helper. Advance to the next one.
+        // Génère tous les coups noisy et les évalue. Met en place
+        // la séparation dans le tableau pour stocker coups quiets et noisy.
+        // Cette étape n'est qu'un helper : on passe directement à la suivante.
 
         if (board.turn() == WHITE)
             board.legal_moves<WHITE, MoveGenType::NOISY>(mln);
@@ -162,12 +162,12 @@ MLMove MovePicker::next_move(bool skipQuiets)
 
     case STAGE_GOOD_NOISY:
 
-        // Check to see if there are still more noisy moves
+        // Vérifie s'il reste des coups noisy
         if (mln.count != 0)
         {
             size_t  best     = get_best(mln);
 
-            // Don't play the table move twice
+            // Ne pas jouer deux fois le coup de la table
             if (mln.mlmoves[best].move == tt_move)
             {
                 shift_move(mln, best);
@@ -195,8 +195,8 @@ MLMove MovePicker::next_move(bool skipQuiets)
 
     case STAGE_KILLER_1:
 
-        // Play the killer move if it is from this position.
-        // position, and also advance to the next stage
+        // Joue le killer s'il est légal dans cette position,
+        // puis passe à l'étape suivante
         stage = STAGE_KILLER_2;
 
         if (   !skipQuiets
@@ -210,8 +210,8 @@ MLMove MovePicker::next_move(bool skipQuiets)
 
     case STAGE_KILLER_2:
 
-        // Play the killer move if it is from this position.
-        // position, and also advance to the next stage
+        // Joue le killer s'il est légal dans cette position,
+        // puis passe à l'étape suivante
         stage = STAGE_COUNTER_MOVE;
 
         if (   !skipQuiets
@@ -225,8 +225,8 @@ MLMove MovePicker::next_move(bool skipQuiets)
 
     case STAGE_COUNTER_MOVE:
 
-        // Play the counter move if it is from this position.
-        // position, and also advance to the next stage
+        // Joue le counter move s'il est légal dans cette position,
+        // puis passe à l'étape suivante
         stage = STAGE_GENERATE_QUIET;
 
         if (   !skipQuiets
@@ -242,8 +242,8 @@ MLMove MovePicker::next_move(bool skipQuiets)
 
     case STAGE_GENERATE_QUIET:
 
-        // Generate all quiet moves and evaluate them
-        // and also advance to the final fruitful stage
+        // Génère tous les coups quiets et les évalue,
+        // puis passe à la dernière étape utile
         if (!skipQuiets)
         {
             if (gen_quiet == false)
@@ -262,7 +262,7 @@ MLMove MovePicker::next_move(bool skipQuiets)
 
     case STAGE_QUIET:
 
-        // Check to see if there are still more quiet moves
+        // Vérifie s'il reste des coups quiets
         if (mlq.count != 0 && !skipQuiets)
         {
             size_t  best     = get_best(mlq);
@@ -277,7 +277,7 @@ MLMove MovePicker::next_move(bool skipQuiets)
                 return bestMove;
         }
 
-        // If no quiet moves left, advance stages
+        // S'il ne reste plus de coups quiets, on passe à l'étape suivante
         stage = STAGE_BAD_NOISY;
 
         [[fallthrough]];
@@ -289,7 +289,7 @@ MLMove MovePicker::next_move(bool skipQuiets)
             size_t  best     = get_best(mlb);
             MLMove bestMove = pop_move(mlb, best);
 
-            // Don't play the table move twice
+            // Ne pas rejouer un coup déjà proposé (table, killer, counter)
             if (   bestMove.move == tt_move
                    || bestMove.move == killer1
                    || bestMove.move == killer2
@@ -323,7 +323,7 @@ void MovePicker::score_noisy()
     {
         move     = mln.mlmoves[i].move;
 
-        // Use the standard MVV-LVA
+        // Utilise le MVV-LVA standard
         // PieceType dest_type = board.piece_on(Move::dest(move));  // pièce prise ou promotion
 
         // std::cout << "i= " << i << "  " << Move::name(move) << std::endl;
@@ -335,11 +335,11 @@ void MovePicker::score_noisy()
         //    value = mg_value[dest_type] - Move::piece(move);
         value = MvvLvaScores[Move::captured_type(move)][Move::piece_type(move)];
 
-        // A bonus is in order for queen promotions
+        // Un bonus est de mise pour les promotions en dame
         if (Move::is_promoting(move))
             value += EGPieceValue[Move::promoted_type(move)];
 
-        // Enpass is a special case of MVV-LVA
+        // La prise en passant est un cas particulier du MVV-LVA
         else if (Move::is_enpassant(move))
             value = MvvLvaScores[PieceType::PAWN][PieceType::PAWN];
         // eg_value[PAWN] -PieceType::PAWN;
@@ -356,7 +356,7 @@ void MovePicker::score_quiet()
     MOVE move;
     int value;
 
-    // Use the History score for sorting
+    // Utilise le score d'history pour le tri
     for (size_t i = 0; i < mlq.count; i++)
     {
         move = mlq.mlmoves[i].move;
@@ -389,7 +389,7 @@ size_t MovePicker::get_best(const MoveList& ml)
 {
     size_t best_index = 0;
 
-    // Find highest scoring move
+    // Trouve le coup ayant la valeur la plus haute
     for (size_t i = 1; i < ml.count; i++)
     {
         if (ml.mlmoves[i].value > ml.mlmoves[best_index].value)
@@ -445,11 +445,11 @@ void MovePicker::shift_move(MoveList& ml, size_t idx)
 //------------------------------------------------------
 void MovePicker::shift_bad(size_t idx)
 {
-    // Put the bad capture in the "bad" list
+    // Place la mauvaise capture dans la liste des "bad"
     std::memcpy(&mlb.mlmoves[mlb.count], &mln.mlmoves[idx], sizeof(MLMove));
     mlb.count++;
 
-    // put the last good capture here instead
+    // met la dernière bonne capture à sa place
     mln.count--;
     std::memcpy(&mln.mlmoves[idx], &mln.mlmoves[mln.count], sizeof(MLMove));
 }

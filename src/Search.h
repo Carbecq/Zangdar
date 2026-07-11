@@ -56,14 +56,10 @@ public:
     int         best_depth;     // profondeur du meilleur coup trouvé jusqu'à présent
 
     // Historique par profondeur
-    // Sert au time management pour calculer le score_factor (delta entre depth-3 et depth)
     int         pv_scores[MAX_PLY+1];
     MOVE        pv_moves[MAX_PLY+1];
 
-    // PV complète de la dernière itération terminée. Permet de réafficher la
-    // ligne "info" de la thread retenue par get_best_thread() avant "bestmove" :
-    // sans cela, quand une helper est plus profonde que la thread 0, le bestmove
-    // ne correspond pas à la tête de la dernière PV affichée (warning cutechess).
+    // PV complète de la dernière itération terminée.
     PVariation  last_pv;
 
     // Point de départ de la recherche

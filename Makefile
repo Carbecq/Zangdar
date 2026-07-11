@@ -481,10 +481,12 @@ src/NNUE.o: $(EVALFILE)
 %.o: %.cpp
 	@$(CXX) -o $@ -c $< $(CFLAGS)
 
+.DELETE_ON_ERROR:
+
 $(NETS_FILE):
 	@mkdir -p $(NETS_DIR)
 	$(info Downloading network $(NET_NAME))
-	curl -sL -o $@ $(NETS_REPO)/$(NET_NAME)/$(NET_NAME)
+	curl -sSfL -o $@ $(NETS_REPO)/$(NET_NAME)/$(NET_NAME)
 
 download-net: $(NETS_FILE)
 

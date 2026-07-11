@@ -21,13 +21,13 @@ enum {
 };
 
 constexpr int MvvLvaScores[N_PIECE_TYPE][N_PIECE_TYPE] = {
-    {0,  0,  0,  0,  0,  0,  0}, // victim No_Piece
-    {0, 16, 15, 14, 13, 12, 11}, // victim PAWN
-    {0, 26, 25, 24, 23, 22, 21}, // victim Knight
-    {0, 36, 35, 34, 33, 32, 31}, // victim Bishop
-    {0, 46, 45, 44, 43, 42, 41}, // vitcim Rook
-    {0, 56, 55, 54, 53, 52, 51}, // victim Queen
-    {0,  0,  0,  0,  0,  0,  0}  // victim King
+    {0,  0,  0,  0,  0,  0,  0}, // victime Aucune_pièce
+    {0, 16, 15, 14, 13, 12, 11}, // victime Pion
+    {0, 26, 25, 24, 23, 22, 21}, // victime Cavalier
+    {0, 36, 35, 34, 33, 32, 31}, // victime Fou
+    {0, 46, 45, 44, 43, 42, 41}, // victime Tour
+    {0, 56, 55, 54, 53, 52, 51}, // victime Dame
+    {0,  0,  0,  0,  0,  0,  0}  // victime Roi
 };
 
 // https://www.nextptr.com/question/a6212599/passing-cplusplus-arrays-to-function-by-reference

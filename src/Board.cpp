@@ -142,7 +142,7 @@ void Board::calculate_hash(U64& key, U64& pawn_key, U64 non_pawn_key[N_COLORS]) 
 
     Bitboard bb;
 
-    // Turn
+    // Trait
     if (turn() == Color::BLACK) {
         key ^= side_key;
     }
@@ -225,10 +225,10 @@ void Board::calculate_hash(U64& key, U64& pawn_key, U64 non_pawn_key[N_COLORS]) 
         non_pawn_key[BLACK] ^= piece_key[static_cast<U32>(Piece::BLACK_KING)][sq];
     }
 
-    // Castling
+    // Roque
     key ^= castle_key[get_status().castling];
 
-    // EP
+    // Prise en passant
     if (get_status().ep_square != SQUARE_NONE) {
         key ^= ep_key[get_status().ep_square];
     }
@@ -247,11 +247,11 @@ void Board::calculate_hash(U64& key, U64& pawn_key, U64 non_pawn_key[N_COLORS]) 
 //------------------------------------------------------------------
 bool Board::upcoming_repetition(int ply) const
 {
-    // Adapted from Obsidian
+    // Adapté d'Obsidian
 
     const auto distance = std::min(get_fiftymove_counter(), static_cast<I32>(statusHistory.size()-1));
 
-    // Enough reversible moves played
+    // Assez de coups réversibles joués
     if (distance < 3)
         return false;
 
@@ -261,7 +261,8 @@ bool Board::upcoming_repetition(int ply) const
     const Bitboard occupied = occupancy_all();
     const U64 originalKey   = get_key();      // StatusHistory[StatusHistory.size() - 1].key
 
-    /* StatusHistory : array of board status, for all moves, including the last move played
+    /* StatusHistory : tableau des états de l'échiquier, pour tous les coups,
+     * y compris le dernier coup joué
      */
     assert(originalKey == statusHistory[index].key);
 
@@ -276,17 +277,17 @@ bool Board::upcoming_repetition(int ply) const
             const SQUARE  from = Move::from(move);
             const SQUARE  dest = Move::dest(move);
 
-            // Test if the squares between a and b are all empty (a and b themselves excluded)
+            // Teste si les cases entre a et b sont toutes vides (a et b elles-mêmes exclues)
             if (BB::empty(occupied & squares_between(from, dest)))
             {
-                // repetition is after root, done
+                // la répétition est après la racine, c'est bon
                 if (ply > d)
                     return true;
 
-                // For nodes before or at the root, check that the move is a
-                // repetition rather than a move to the current position.
-                // In the cuckoo table, both moves Rc1c5 and Rc5c1 are stored in
-                // the same location, so we have to select which square to check.
+                // Pour les nœuds avant ou à la racine, on vérifie que le coup est
+                // bien une répétition et non un coup menant à la position courante.
+                // Dans la table cuckoo, les coups Rc1c5 et Rc5c1 sont stockés au
+                // même emplacement, il faut donc choisir quelle case vérifier.
                 if (Move::color(piece_at( empty(from) ? dest : from)) != turn() )
                     continue;
             }

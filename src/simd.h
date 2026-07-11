@@ -293,7 +293,7 @@ inline Vepi16 Clip(Vepi16 vector, int l1q) {
 }
 
 
-// Implementation from Alexandria
+// Implémentation venant d'Alexandria
 //=======================================================
 //! \brief  Réduction horizontale : somme tous les I32 d'un vecteur 256 bits en un scalaire
 //! Découpe le __m256i en 2 __m128i, les additionne, puis réduit
@@ -302,23 +302,23 @@ inline Vepi16 Clip(Vepi16 vector, int l1q) {
 //! \return Somme scalaire des 8 éléments I32
 //-------------------------------------------------------
 inline int ReduceAddEpi32(Vepi32 vector) {
-    // Split the __m256i into 2 __m128i vectors, and add them together
+    // Découpe le __m256i en 2 vecteurs __m128i, et les additionne
     __m128i lower128 = _mm256_castsi256_si128(vector);
     __m128i upper128 = _mm256_extracti128_si256(vector, 1);
     __m128i sum128 = _mm_add_epi32(lower128, upper128);
 
-    // Store the high 64 bits of sum128 in the low 64 bits of this vector,
-    // then add them together (only the lowest 64 bits are relevant)
+    // Place les 64 bits hauts de sum128 dans les 64 bits bas de ce vecteur,
+    // puis les additionne (seuls les 64 bits bas sont pertinents)
     __m128i upper64 = _mm_unpackhi_epi64(sum128, sum128);
     __m128i sum64 = _mm_add_epi32(upper64, sum128);
 
-    // Store the high 32 bits of the relevant part of sum64 in the low 32 bits of
-    // the vector, and then add them together (only the lowest 32 bits are
-    // relevant)
+    // Place les 32 bits hauts de la partie pertinente de sum64 dans les 32 bits
+    // bas du vecteur, puis les additionne (seuls les 32 bits bas sont
+    // pertinents)
     __m128i upper32 = _mm_shuffle_epi32(sum64, 1);
     __m128i sum32 = _mm_add_epi32(upper32, sum64);
 
-    // Return the bottom 32 bits of sum32
+    // Retourne les 32 bits bas de sum32
     return _mm_cvtsi128_si32(sum32);
 }
 

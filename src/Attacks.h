@@ -32,7 +32,7 @@ constexpr Bitboard KING_ATTACKS[64] = {
     0x2838000000000000, 0x5070000000000000, 0xa0e0000000000000, 0x40c0000000000000,
 };
 
-//A lookup table for knight move bitboards
+// Table précalculée des bitboards de coups de cavalier
 constexpr Bitboard KNIGHT_ATTACKS[64] = {
     0x20400, 0x50800, 0xa1100, 0x142200,
     0x284400, 0x508800, 0xa01000, 0x402000,
@@ -52,7 +52,7 @@ constexpr Bitboard KNIGHT_ATTACKS[64] = {
     0x44280000000000, 0x0088500000000000, 0x0010a00000000000, 0x20400000000000
 };
 
-//A lookup table for white pawn move bitboards
+// Table précalculée des bitboards de coups de pion
 constexpr Bitboard PAWN_ATTACKS[2][64] = {
     {
         0x200, 0x500, 0xa00, 0x1400,
@@ -154,7 +154,7 @@ constexpr Bitboard rook_masks[64] {
     0x6e10101010101000ULL, 0x5e20202020202000ULL, 0x3e40404040404000ULL, 0x7e80808080808000ULL,
 };
 
-// bishop relevant occupancy bit count for every square on board
+// nombre de bits pertinents de l'occupancy du fou, pour chaque case de l'échiquier
 //  on utilise en fait le shift = 64 - relevant_bit
 constexpr int bishop_shifts[64] {
     58, 59, 59, 59, 59, 59, 59, 58,
@@ -167,7 +167,7 @@ constexpr int bishop_shifts[64] {
     58, 59, 59, 59, 59, 59, 59, 58,
 };
 
-// rook relevant occupancy bit count for every square on board
+// nombre de bits pertinents de l'occupancy de la tour, pour chaque case de l'échiquier
 //  on utilise en fait le shift = 64 - relevant_bit
 constexpr int rook_shifts[64] {
     52, 53, 53, 53, 53, 53, 53, 52,
@@ -180,7 +180,7 @@ constexpr int rook_shifts[64] {
     52, 53, 53, 53, 53, 53, 53, 52,
 };
 
-// bishop magic numbers
+// nombres magiques du fou
 constexpr U64 bishop_magics[64] {
     0x40106000a1160020ULL, 0x0020010250810120ULL, 0x2010010220280081ULL, 0x002806004050c040ULL,
     0x0002021018000000ULL, 0x2001112010000400ULL, 0x0881010120218080ULL, 0x1030820110010500ULL,
@@ -200,7 +200,7 @@ constexpr U64 bishop_magics[64] {
     0xa408002140028204ULL, 0x0010006020322084ULL, 0x0210401044110050ULL, 0x40106000a1160020ULL,
 };
 
-// rook magic numbers
+// nombres magiques de la tour
 constexpr U64 rook_magics[64] {
     0x0a80004000801220ULL, 0x8040004010002008ULL, 0x2080200010008008ULL, 0x1100100008210004ULL,
     0xc200209084020008ULL, 0x2100010004000208ULL, 0x0400081000822421ULL, 0x0200010422048844ULL,
@@ -221,10 +221,10 @@ constexpr U64 rook_magics[64] {
 };
 
 
-// bishop attacks table [square][occupancies]
+// table d'attaques du fou [case][occupancies]
 extern Bitboard BISHOP_ATTACKS[64][512];
 
-// rook attacks table [square][occupancies]
+// table d'attaques de la tour [case][occupancies]
 extern Bitboard ROOK_ATTACKS[64][4096];
 
 //======================================================
@@ -333,9 +333,9 @@ template <Color C>
 }
 
 //======================================================
-//! \brief attacks_bb(Square, Bitboard) returns the attacks by the given piece
-//! assuming the board is occupied according to the passed Bitboard.
-//! Sliding piece attacks do not continue passed an occupied square.
+//! \brief attacks_bb(Square, Bitboard) retourne les attaques de la pièce donnée,
+//! en supposant l'échiquier occupé selon le Bitboard passé en paramètre.
+//! Les attaques des pièces glissantes ne continuent pas au-delà d'une case occupée.
 //!
 //! \param[in]  sq        case occupée par la pièce
 //! \param[in]  occupied  bitboard de toutes les cases occupées

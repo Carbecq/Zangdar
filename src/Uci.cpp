@@ -33,55 +33,58 @@ void Uci::run()
 
     // Note de Stockfish
 
-    /// UCI::loop() waits for a command from the stdin, parses it and then calls the appropriate
-    /// function. It also intercepts an end-of-file (EOF) indication from the stdin to ensure a
-    /// graceful exit if the GUI dies unexpectedly.
+    /// UCI::loop() attend une commande depuis stdin, l'analyse puis appelle la
+    /// fonction appropriée. Elle intercepte aussi une indication de fin de
+    /// fichier (EOF) sur stdin pour garantir une sortie propre si la GUI
+    /// meurt de façon inattendue.
 
 
-    // main loop
+    // boucle principale
     std::string token;
     std::string line;
     std::string fen  = START_FEN;
-    int         dmax = 6;       // depth
-    int         tmax = 0;       // time
+    int         dmax = 6;       // profondeur
+    int         tmax = 0;       // temps
     int         nmax = 0;       // nodes
     int         nthreads = 1;   // threads
 
     do
     {
-        if (!std::getline(std::cin, line))   // Wait for an input or an end-of-file (EOF) indication
+        if (!std::getline(std::cin, line))   // attend une entrée, ou détecte une fin de fichier (EOF)
             line = "quit";
 
         std::istringstream iss(line);
-        token.clear();                      // Avoid a stale if getline() returns nothing or a blank line
+        token.clear();                      // évite un token périmé si getline() ne renvoie rien ou une ligne vide
         iss >> std::skipws >> token;
 
         //-------------------------------------------- gui -> engine
 
         if (token == "isready")
         {
-            /* "isready" is meant as ping/pong replacement AND feature done with init,
-             * and the UCI spec explicitely mentions tablebase initialistion as example
-             * that may take some time.
-             * The engine only responds with "readyok" after it has processed the setoptions commands.
-             * The case where "isready" must be answered immediately is only after init
-             * and during search because then there is no reason why the engine should be hanging.
+            /* "isready" sert à la fois de remplacement ping/pong ET signale que
+             * l'init est terminée ; la spec UCI cite explicitement l'init des
+             * tablebases comme exemple pouvant prendre du temps.
+             * Le moteur ne répond "readyok" qu'après avoir traité les commandes
+             * setoption en attente.
+             * Le seul cas où "isready" doit être répondu immédiatement, c'est
+             * après l'init et pendant la recherche : rien ne justifie alors
+             * que le moteur reste bloqué.
              */
 
-            // synchronize the engine with the GUI
+            // synchronise le moteur avec la GUI
             std::cout << "readyok" << std::endl;
         }
 
         else if (token == "uci")
         {
-            // "uciok" has to appear quickly after the GUI sent "uci",
-            // and lengthy init stuff is not allowed.
+            // "uciok" doit apparaître rapidement après que la GUI ait envoyé "uci",
+            // un init long n'est pas autorisé ici.
 
-            // print engine info
+            // affiche les infos du moteur
             std::cout << "id name Zangdar " << VERSION  << std::endl;
             std::cout << "id author Philippe Chevalier" << std::endl;
 
-            // This command tells the GUI which parameters can be changed in the engine.
+            // Cette commande indique à la GUI quels paramètres du moteur peuvent être modifiés.
 
             // Quand dans Arena, on fait "Configure", on fait apparaitre une interface
             // contenant les options données ici.
@@ -104,18 +107,16 @@ void Uci::run()
 
         else if (token == "position")
         {
-            // set up the position described in fenstring
+            // met en place la position décrite par la chaîne fen
             uci_board.initialisation();
             uci_board.parse_position(iss);
         }
 
         else if (token == "ucinewgame" || token == "new")
         {
-            // the next search (started with "position" and "go") will be from
-            // a different game.
-            // Arrêter une éventuelle recherche en cours AVANT de réinitialiser :
-            // sinon le thread UCI memset les tables history pendant que les
-            // workers les lisent (data race si la GUI n'attend pas readyok).
+            // La prochaine recherche (lancée par "position" puis "go") viendra
+            // d'une partie différente.
+            // Il faut arrêter une éventuelle recherche en cours AVANT de réinitialiser.
             threadPool.stop();
             transpositionTable.clear();
             threadPool.reset();
@@ -133,13 +134,13 @@ void Uci::run()
 
         else if (token == "stop")
         {
-            // stop calculating as soon as possible
+            // arrête le calcul au plus vite
             stop();
         }
 
         else if (token == "quit")
         {
-            // quit the program as soon as possible
+            // quitte le programme au plus vite
             quit();
             break;
         }
@@ -387,9 +388,9 @@ void Uci::run()
 
 
 //==============================================================
-//! \brief uci command: stop
-//! stops the current search.
-//! This will usually print a last info string and the best move.
+//! \brief commande uci : stop
+//! Arrête la recherche en cours.
+//! Cela affiche en général une dernière info string et le meilleur coup.
 //--------------------------------------------------------------
 void Uci::stop()
 {
@@ -397,7 +398,7 @@ void Uci::stop()
 }
 
 //==============================================================
-//! \brief uci command: quit
+//! \brief commande uci : quit
 //! Quitte le programme.
 //--------------------------------------------------------------
 void Uci::quit()
@@ -406,7 +407,7 @@ void Uci::quit()
 }
 
 //==============================================================
-//! \brief uci command: go
+//! \brief commande uci : go
 //! Lance la recherche
 //!
 //! \param[in]  iss  flux contenant les paramètres de la commande "go"
@@ -423,68 +424,68 @@ void Uci::parse_go(std::istringstream& iss)
     U64 nodes       = 0;
     int movetime    = 0;
 
-    // Stop any running search
+    // Arrête toute recherche en cours
     Uci::stop();
 
     std::string token;
     token.clear();
 
-    // We received a start command. Extract all parameters from the
-    // command and start the search.
+    // On a reçu une commande de lancement. On extrait tous les paramètres de
+    // la commande puis on démarre la recherche.
 
     while (iss >> token)
     {
         if (token == "infinite")
         {
-            // search until the "stop" command. Do not exit the search without being told so in this mode!
+            // recherche jusqu'à la commande "stop". Ne pas sortir de la recherche sans y être invité dans ce mode !
             infinite = true;
         }
         else if (token == "wtime")
         {
-            // white has x msec left on the clock
+            // il reste x msec sur la pendule des Blancs
             iss >> wtime;
         }
         else if (token == "btime")
         {
-            // black has x msec left on the clock
+            // il reste x msec sur la pendule des Noirs
             iss >> btime;
         }
         else if (token == "winc")
         {
-            // white increment per move in mseconds
+            // incrément des Blancs par coup, en ms
             iss >> winc;
         }
         else if (token == "binc")
         {
-            // black increment per move in mseconds
+            // incrément des Noirs par coup, en ms
             iss >> binc;
         }
         else if (token == "movestogo")
         {
-            // there are x moves to the next time control
+            // il reste x coups avant la prochaine cadence
             iss >> movestogo;
         }
         else if (token == "depth")
         {
-            // search x plies only.
+            // recherche x plies seulement.
             iss >> depth;
             depth = std::min(depth, MAX_PLY);
         }
         else if (token == "nodes")
         {
-            // search x nodes max.
+            // recherche x nodes maximum.
             iss >> nodes;
         }
         else if (token == "movetime")
         {
-            // search exactly x mseconds
+            // recherche exactement x millisecondes
             uint64_t searchTime;
             iss >> searchTime;
             movetime = searchTime;
         }
     }
 
-    // Init the time manager
+    // Initialise le gestionnaire de temps
     uci_timer = Timer(infinite, wtime, btime, winc, binc, movestogo, depth, nodes, movetime);
     uci_timer.start();
     uci_timer.setup(uci_board.side_to_move);
@@ -500,7 +501,7 @@ void Uci::parse_go(std::istringstream& iss)
     printlog(message);
 #endif
 
-    // start the search
+    // démarre la recherche
     threadPool.start_thinking(uci_board, uci_timer);
 }
 
@@ -515,13 +516,14 @@ void Uci::parse_options(std::istringstream& iss)
 
     /*
 setoption name <id> [value <x>]
-    this is sent to the engine when the user wants to change the internal parameters
-    of the engine. For the "button" type no value is needed.
-    One string will be sent for each parameter and this will only be sent when the engine is waiting.
-    The name and value of the option in <id> should not be case sensitive and can inlude spaces.
-    The substrings "value" and "name" should be avoided in <id> and <x> to allow unambiguous parsing,
-    for example do not use <name> = "draw value".
-    Here are some strings for the example below:
+    Cette commande est envoyée au moteur quand l'utilisateur veut changer un paramètre
+    interne du moteur. Pour le type "button", aucune valeur n'est nécessaire.
+    Une chaîne est envoyée par paramètre, et uniquement quand le moteur est en attente.
+    Le nom et la valeur de l'option dans <id> ne devraient pas être sensibles à la casse
+    et peuvent contenir des espaces.
+    Les sous-chaînes "value" et "name" devraient être évitées dans <id> et <x> pour permettre
+    une analyse non ambiguë, par exemple ne pas utiliser <name> = "draw value".
+    Voici quelques exemples de chaînes :
        "setoption name Nullmove value true\n"
        "setoption name Selectivity value 3\n"
        "setoption name Style value Risky\n"
@@ -562,10 +564,7 @@ setoption name <id> [value <x>]
             sprintf(message, "Uci::parse_options : Set Hash to %d MB", mb);
             printlog(message);
 #endif
-            // Stop avant de réallouer la TT : init_size() libère puis réalloue
-            // le std::vector sous-jacent. Si des workers probent/écrivent encore
-            // la TT (GUI n'attendant pas readyok), c'est un use-after-free.
-            // Symétrique du fix ucinewgame (d6c8840).
+            // Il faut arrêter la recherche avant de réallouer.
             threadPool.stop();
             transpositionTable.init_size(mb);
         }
@@ -579,8 +578,7 @@ setoption name <id> [value <x>]
                 sprintf(message, "Uci::parse_options : Hash Clear");
                 printlog(message);
 #endif
-                // Même raison : clear() memset la TT, à ne pas faire pendant
-                // qu'un worker la lit (symétrique ucinewgame / d6c8840).
+                // Il faut arrêter la recherche avant de clear la TT.
                 threadPool.stop();
                 transpositionTable.clear();
             }
@@ -613,11 +611,11 @@ setoption name <id> [value <x>]
 #endif
                 tb_init(path);
 
-                // only use TB if loading was successful
+                // n'utilise les TB que si le chargement a réussi
                 if (TB_LARGEST > 0)
                 {
                     threadPool.set_useSyzygy(true);
-                    // Initialize probeLimit to TB_LARGEST if not explicitly set
+                    // Initialise probeLimit à TB_LARGEST si non défini explicitement
                     if (threadPool.get_syzygyProbeLimit() == 0)
                         threadPool.set_syzygyProbeLimit(TB_LARGEST);
                 }
@@ -634,7 +632,7 @@ setoption name <id> [value <x>]
 
         else if (option_name == "MoveOverhead")
         {
-            int MoveOverhead;       // Overhead on time allocation to avoid time losses
+            int MoveOverhead;       // marge de sécurité sur le temps alloué, pour éviter de perdre au temps
 
             iss >> value;      // "value"
             iss >> MoveOverhead;
@@ -940,7 +938,7 @@ void Uci::go_tactics(const std::string& line, int dmax, int tmax, U64& total_nod
     std::stringstream ss;
     std::string found[2] = { "   : ", "OK : "};
 
-    // NOTE : il est possible que dans certains cas, il faut donner
+    // NOTE : il est possible que dans certains cas, il faille donner
     // à la fois la case de départ et celle d'arrivée pour déterminer
     // réellement le coup.
     bool found_bm = false;
@@ -1057,7 +1055,7 @@ void Uci::bench(int argCount, char* argValue[])
         const auto start = TimePoint::now();
 
         //============================================== Lance le calcul
-        // Initialize a "go depth <x>" search
+        // Initialise une recherche "go depth <x>"
         Uci::stop();
 
         uci_timer = Timer(false, 0, 0, 0, 0, 0, depth, 0, 0);

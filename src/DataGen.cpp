@@ -59,7 +59,7 @@ DataGen::DataGen(const U32 _nbr_threads, const U32 _max_fens, const std::string&
     // 3) SYZYGY est défini dans le Makefile
     tb_init(SYZYGY);
 
-    // only use TB if loading was successful
+    // n'utilise les TB que si le chargement a réussi
     if (TB_LARGEST > 0)
     {
         threadPool.set_useSyzygy(true);
@@ -186,7 +186,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
     std::random_device rd;
     std::mt19937_64 generator(rd());
 
-    // Set the time manager
+    // Configure le gestionnaire de temps
     // On va utiliser une limite par "node",
     // sauf dans "random_game" où on va utiliser une limite par "depth".
     Timer timer(false, 0, 0, 0, 0, 0, MAX_RANDOM_DEPTH, 0, 0);
@@ -212,7 +212,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
     int      winCount = 0;
     bool     use_syzygy;
 
-    std::string  result;  // 0.5 for draw, 1.0 for white win, 0.0 for black win. = ~Color = 1 - Color
+    std::string  result;  // 0.5 = nulle, 1.0 = victoire Blanc, 0.0 = victoire Noir. = ~Color = 1 - Color
     MOVE    move;
     I32     score;
 
@@ -255,7 +255,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
             const int index = distribution(generator);
             search->make_move<C, false>(board, movelist.mlmoves[index].move);
 
-            // Prevent the last ply being checkmate/stalemate
+            // Empêche que le dernier ply soit un mat ou un pat
             if (++current_ply == random_plies)
             {
                 board.legal_moves<~C, MoveGenType::ALL>(movelist);
@@ -532,7 +532,7 @@ void DataGen::data_search(Board& board, Timer& timer, Search& search,
 
     for (search.iter_depth = 1; search.iter_depth <= std::max(1, timer.getSearchDepth()); search.iter_depth++)
     {
-        // Search position, using aspiration windows for higher depths
+        // Recherche la position, avec des aspiration windows pour les profondeurs élevées
         const int iter_score = search.aspiration_window<C>(board, timer, si, prev_score);
 
         if (search.is_stopped())
@@ -562,7 +562,7 @@ void DataGen::data_search(Board& board, Timer& timer, Search& search,
 #endif
         // Timer::update n'est pas utilisé car on est soit "par node", soit "par depth".
 
-        // If an iteration finishes after optimal time usage, stop the search
+        // Si une itération se termine après le temps optimal, on arrête la recherche
         if (timer.finishOnThisDepth(elapsed, search.iter_depth, search.nodes, nullptr, nullptr))
             break;
 
@@ -585,11 +585,10 @@ U32 DataGen::set_threads(const U32 nbr)
     U32 nbr_threads = nbr;
 
     U32 processorCount = static_cast<U32>(std::thread::hardware_concurrency());
-    // Check if the number of processors can be determined
     if (processorCount == 0)
         processorCount = MAX_THREADS;
 
-    // Clamp the number of threads to the number of processors
+    // Limite le nombre de threads au nombre de processeurs
     nbr_threads     = std::min(nbr, processorCount);
     nbr_threads     = std::max(nbr_threads, 1U);
     nbr_threads     = std::min(nbr_threads, MAX_THREADS);

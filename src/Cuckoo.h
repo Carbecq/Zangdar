@@ -3,24 +3,25 @@
 
 #include "defines.h"
 
-// Marcel van Kervinck's cuckoo algorithm for fast detection of "upcoming repetition"
-// situations. Description of the algorithm in the following paper:
+// Algorithme cuckoo de Marcel van Kervinck, pour une détection rapide des
+// situations d'« upcoming repetition ».
+// Description de l'algorithme dans le papier suivant :
 // http://web.archive.org/web/20201107002606/https://marcelk.net/2013-04-06/paper/upcoming-rep-v2.pdf
 
 /*
-    cuckoo tables are mainly used to return a draw score if you're currently worse.
-    if alpha > draw score is the best you have, then you should still continue the search
-    even if a repetition is possible to claim. meaning, just because a possible repetition
-    is upcoming, doesnt mean you can say the position is a draw.
-    whereas with threefold repetition, that is an actual rule of chess that adjudicates the game.
-    but, the addition of cuckoo tables is somewhere between 5-10 elo in most engines.
-    if that's what you meant to ask
+    Les tables cuckoo servent surtout à sécuriser un score de nulle quand on
+     est en train de perdre.
+    Si on a déjà mieux qu'une nulle (alpha > score_de_nulle), il faut quand même
+     continuer à chercher même si une répétition est "imminente" :
+     une répétition qui n'a pas encore eu lieu ne rend pas la position nulle pour autant.
+    La vraie règle des échecs (triple répétition déjà survenue), elle, adjuge réellement la partie.
+    Le gain apporté par les tables cuckoo est de l'ordre de 5-10 Elo dans la plupart des moteurs.
 
 */
 
 namespace Cuckoo {
 
-// First and second hash functions for indexing the cuckoo tables
+// Première et seconde fonctions de hachage pour indexer les tables cuckoo
 
 //! \brief  Première fonction de hachage pour indexer les tables cuckoo
 inline U64 h1(U64 key) { return key & 0x1FFF; }
@@ -28,7 +29,7 @@ inline U64 h1(U64 key) { return key & 0x1FFF; }
 //! \brief  Seconde fonction de hachage pour indexer les tables cuckoo
 inline U64 h2(U64 key) { return (key >> 16) & 0x1FFF; }
 
-// Cuckoo tables with Zobrist hashes of valid reversible moves, and the moves themselves
+// Tables cuckoo : hashs Zobrist des coups réversibles valides, et les coups eux-mêmes
 extern std::array<U64, 8192>  keys;
 extern std::array<MOVE, 8192> moves;
 

@@ -33,11 +33,8 @@ const std::string bool_name[2] = { "false", "true" };
  ** Les pièces
  **---------------------------------------------------*/
 
-// Durcissement : le champ "piece" d'un MOVE fait 4 bits (cf. Move.h), donc
-// piece(move) peut valoir jusqu'à 15. BLACK_KING=14 est le max légitime, mais
-// un coup malformé encodant 15 indexerait [15] sur toute table dimensionnée
-// [N_PIECE]. On dimensionne donc à 16 (ligne morte, jamais lue par un coup
-// légal) pour garantir l'absence d'OOB. Bit-exact : la ligne 15 reste à zéro.
+// Sécurisation : le champ "piece" d'un MOVE fait 4 bits, donc
+// piece(move) peut valoir jusqu'à 15. Evite d'avoir un OutOfBounds.
 constexpr int N_PIECE     = 16;
 
 enum Piece : int
@@ -67,12 +64,7 @@ constexpr std::initializer_list<Piece> all_PIECE = {
     Piece::BLACK_ROOK, Piece::BLACK_QUEEN,  Piece::BLACK_KING
 };
 
-// Durcissement (symétrique à N_PIECE) : piece_type(move) est extrait via
-// MOVE_PIECETYPE_MASK = 0b0111 (3 bits), donc jusqu'à 7. KING=6 est le max
-// légitime ; un coup malformé encodant 7 indexerait [7] sur toute table
-// dimensionnée [N_PIECE_TYPE]. On dimensionne à 8 (ligne morte). Bit-exact :
-// les slots 7 des tableaux de valeurs (SEE_VALUE, EGPieceValue, MvvLvaScores...)
-// sont zéro-remplis par l'agrégat et jamais lus par un coup légal.
+// Sécurisation (idem N_PIECE)
 constexpr int N_PIECE_TYPE = 8;
 
 enum PieceType : int
@@ -321,14 +313,14 @@ enum MoveGenType {
 //  Roque
 //--------------------------------------------------
 
-/* This is the castle_mask array. We can use it to determine
-the castling permissions after a move. What we do is
-logical-AND the castle bits with the castle_mask bits for
-both of the move's ints. Let's say castle is 1, meaning
-that white can still castle kingside. Now we play a move
-where the rook on h1 gets captured. We AND castle with
-castle_mask[63], so we have 1&14, and castle becomes 0 and
-white can't castle kingside anymore.
+/* Ceci est le tableau castle_mask. Il permet de déterminer les
+droits de roque après un coup. Le principe : on fait un ET logique
+entre les bits de castle et les bits de castle_mask pour les deux
+cases du coup. Disons que castle vaut 1, ce qui signifie que les
+Blancs peuvent encore roquer côté roi. On joue maintenant un coup
+où la tour en h1 est capturée. On fait castle AND castle_mask[63],
+soit 1&14, et castle devient 0 : les Blancs ne peuvent plus roquer
+côté roi.
  (TSCP) */
 
 constexpr U32 castle_mask[N_SQUARES] = {
