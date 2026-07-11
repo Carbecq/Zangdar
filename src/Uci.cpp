@@ -4,6 +4,8 @@
 #include <string>
 #include <algorithm>
 #include <iomanip>
+#include <unordered_set>
+#include <unordered_map>
 
 #include "defines.h"
 #include "Uci.h"
@@ -711,10 +713,32 @@ void Uci::go_run(const std::string& abc, const std::string& fen, int dmax, int t
 }
 
 //=================================================================
+//! \brief  Clé de position d'une ligne EPD/FEN : les 4 premiers champs
+//!         (placement, trait, roque, e.p.), sans les annotations (bm/am/id...)
+//!         ni les éventuels compteurs demi-coups/coups. Sert à détecter les
+//!         positions en double dans une suite de tests.
+//-----------------------------------------------------------------
+static std::string position_key(const std::string& epd_line)
+{
+    std::istringstream iss(epd_line);
+    std::string tok, key;
+    for (int i = 0; i < 4 && (iss >> tok); ++i)
+        key += (i ? " " : "") + tok;
+    return key;
+}
+
+//=================================================================
 //! \brief  Lancement d'une recherche sur un ensemble de positions
 //-----------------------------------------------------------------
 void Uci::go_test(int dmax, int tmax)
 {
+    // Détection de doublons de position sur TOUTE la suite (tous fichiers confondus) :
+    // hash set -> O(1) par position (au lieu de l'ancien std::find linéaire, O(n²)).
+    // On mémorise aussi la 1ʳᵉ apparition pour un message utile, et on saute le doublon.
+    std::unordered_set<std::string>              seen_positions;
+    std::unordered_map<std::string, std::string> first_location;
+    int total_dup = 0;
+
     // le fichier tests/0000.txt contient la liste des fichiers de test
     // les noms non commentés seront utilisés.
 
@@ -792,27 +816,21 @@ void Uci::go_test(int dmax, int tmax)
             if (aux == "#" || aux == "/" || aux == " ")
                 continue;
 
+            // Doublon de position ? (suite entière, tous fichiers confondus)
+            const std::string key = position_key(line);
+            if (seen_positions.insert(key).second == false)
+            {
+                total_dup++;
+                std::cout << "  DOUBLON ignoré : position déjà vue en "
+                          << first_location.at(key) << "  [" << key << "]" << std::endl;
+                continue;   // on ne re-teste pas la même position
+            }
+            first_location[key] = str_line + " test " + std::to_string(numero + 1);
+
             numero++;
             printf("test %3d : ", numero);
 
-            // Extraction des éléments de la ligne
-            //  0= position
-            //  1= D1 20
-            //  2= D2 400
-            //            liste1 = split(line, tag);
-
-            // Extraction de la position
-            //            aa = liste1[0];
-
-            // Vérification d'unicité de la position
-            //            if (std::find(poslist.begin(), poslist.end(), aa) ==  poslist.end())
-            //                poslist.push_back(aa);
-            //            else
-            //            {
-            //                std::cout << "--------------------position en double : "      << aa << std::endl;
-            //            }
-
-            // Exécution du test
+            // Exécution du test (la ligne EPD est parsée directement dans go_tactics)
             go_tactics(line, dmax, tmax, total_nodes, total_time, total_depths, total_bm, total_am, total_ko);
 
         } // boucle position
@@ -839,6 +857,18 @@ void Uci::go_test(int dmax, int tmax)
     } // boucle fichiers epd
 
     f.close();
+
+    //-------------------------------------------------
+    // Bilan des doublons de position sur toute la suite
+    std::cout << "===============================================" << std::endl;
+    if (total_dup > 0)
+        std::cout << total_dup << " position(s) en double détectée(s) et ignorée(s) ; "
+                  << seen_positions.size() << " positions uniques testées." << std::endl;
+    else
+        std::cout << "Aucune position en double (" << seen_positions.size()
+                  << " positions uniques)." << std::endl;
+    std::cout << "===============================================" << std::endl;
+
     threadPool.set_logUci(true);
 }
 
