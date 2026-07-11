@@ -149,7 +149,15 @@ DataGen::DataGen(const U32 _nbr_threads, const U32 _max_fens, const std::string&
     std::signal(SIGTERM, prev_sigterm);
     g_datagen_run = nullptr;
 
-    std::cout << "total fens generated = " << total_fens << std::endl;
+    auto total_elapsed = std::max(std::chrono::duration_cast<std::chrono::milliseconds>(TimePoint::now() - start_time).count(), decltype(start_time)::duration::rep(1));
+    int total_r = total_elapsed / 1000;
+    int total_h = total_r / 3600;
+    int total_m = (total_r - total_h*3600) / 60;
+    int total_s = total_r - total_h*3600 - total_m*60;
+
+    std::cout << "total fens generated = " << total_fens
+               << " ; total time = " << total_h << " hours " << total_m << " min " << total_s << " sec"
+               << std::endl;
 }
 
 //====================================================================
