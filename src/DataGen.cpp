@@ -229,6 +229,11 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
         // printf("-------------------------------------------init random  \n");
 
+        // Nombre de plies aléatoires tiré par partie dans [MIN,MAX] : alterne le camp
+        // qui joue le premier coup réel (supprime un biais de parité de trait) + diversifie.
+        std::uniform_int_distribution<> ply_distribution{MIN_RANDOM_PLIES, MAX_RANDOM_PLIES};
+        const size_t random_plies = static_cast<size_t>(ply_distribution(generator));
+
         auto random_ply = [&]<Color C>(size_t& current_ply) -> bool {
             board.legal_moves<C, MoveGenType::ALL>(movelist);
             if (movelist.size() == 0)
@@ -243,7 +248,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
             search->make_move<C, false>(board, movelist.mlmoves[index].move);
 
             // Prevent the last ply being checkmate/stalemate
-            if (++current_ply == MAX_RANDOM_PLIES)
+            if (++current_ply == random_plies)
             {
                 board.legal_moves<~C, MoveGenType::ALL>(movelist);
                 if (movelist.size() == 0)
@@ -257,7 +262,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
         };
 
         size_t current_ply = 0;
-        while (current_ply < MAX_RANDOM_PLIES)
+        while (current_ply < random_plies)
         {
             bool ok = board.turn() == WHITE
                 ? random_ply.template operator()<WHITE>(current_ply)
@@ -268,7 +273,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
         // printf("-------------------------------------------generated OK  \n");
 
-        // Evaluation de la position, en fin des MAX_RANDOM_PLIES moves
+        // Evaluation de la position, en fin des plies aléatoires
         // Si elle est trop déséquilibrée, on passe à une nouvelle partie
 
         // Initialisation NNUE une seule fois par partie (au lieu de à chaque data_search)

@@ -28,7 +28,8 @@ private:
     template <Color color> void data_search(Board& board, Timer& timer, Search& search,
                      MOVE &move, I32 &score);
 
-    constexpr static int MAX_RANDOM_PLIES =     8;   // nombre maximum de plies joués au hasard
+    constexpr static int MIN_RANDOM_PLIES =     8;   // borne basse du tirage [MIN,MAX] par partie
+    constexpr static int MAX_RANDOM_PLIES =     9;   // borne haute : 1 ply de plus alterne le camp du 1er coup réel
     constexpr static int MAX_RANDOM_SCORE =  1000;   // score maximum accepté pour la position résultant
     constexpr static int MAX_RANDOM_DEPTH =     5;   // profondeur maximum pour la recherche
 
