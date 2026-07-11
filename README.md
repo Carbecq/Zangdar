@@ -34,11 +34,11 @@ Why *Zangdar*? Look up the Naheulbeuk dungeon!
 
 ### Parallelism (Lazy SMP)
 - Multi-threaded search sharing a lockless transposition table
-- Thread vote aggregation for best-move selection (Stockfish-style)
+- Thread vote aggregation for best-move selection
 
 ### Evaluation — NNUE
-- Architecture: (768 × 8KB → 1024) × 2 → 1 × 8ob, SCReLU activation
-- 8 king buckets (horizontally mirrored), factorized weights
+- Architecture: (768 × 16KB → 1024) × 2 → 1 × 8ob, SCReLU activation
+- 16 king buckets (horizontally mirrored), factorized weights
 - Trained with [Bullet](https://github.com/jnlt3/bullet); network embedded in the binary
 - Self-generated training data from successive engine versions (bootstrapped iteratively)
 
