@@ -28,6 +28,9 @@
 // Pointeur global pour permettre au handler de signal d'arrêter proprement le datagen
 static std::atomic<bool>* g_datagen_run = nullptr;
 
+//===========================================================================
+//! \brief  Handler de signal (SIGINT/SIGTERM) pour arrêter proprement le datagen
+//---------------------------------------------------------------------------
 static void datagen_signal_handler(int /*sig*/)
 {
     if (g_datagen_run)
@@ -151,8 +154,10 @@ DataGen::DataGen(const U32 _nbr_threads, const U32 _max_fens, const std::string&
 
 //====================================================================
 //! \brief  Lancement d'une génération de fens , dans une thread donnée
-//! \param[in]  total_fens  somme des fens collectées sur toutes les threads
-//! \param[in]  run         true = continuer la génération, false = arrêter
+//! \param[in]      thread_id   identifiant de la thread
+//! \param[in]      str_file    chemin du fichier de sortie des fens
+//! \param[in,out]  total_fens  somme des fens collectées sur toutes les threads
+//! \param[in]      run         true = continuer la génération, false = arrêter
 //--------------------------------------------------------------------
 void DataGen::genfens(int thread_id, const std::string& str_file,
                       std::atomic<size_t>& total_fens,
@@ -466,8 +471,11 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 //============================================================================
 //! \brief  Recherche dans la position actuelle
 //! Lance un iterative deepening avec aspiration windows
-//! \param[out] move    meilleur coup trouvé
-//! \param[out] score   score du meilleur coup
+//! \param[in]      board   échiquier courant
+//! \param[in]      timer   gestionnaire de temps/limite de profondeur
+//! \param[in,out]  search  contexte de recherche (nodes, pv, etc.)
+//! \param[out]     move    meilleur coup trouvé
+//! \param[out]     score   score du meilleur coup
 //----------------------------------------------------------------------------
 template <Color C>
 void DataGen::data_search(Board& board, Timer& timer, Search& search,
@@ -555,6 +563,9 @@ void DataGen::data_search(Board& board, Timer& timer, Search& search,
 //===================================================
 //! \brief  Calcule le nombre de threads à utiliser
 //! Limité au nombre de processeurs disponibles
+//! \param[in]  nbr     nombre de threads demandé
+//!
+//! \return Nombre de threads effectivement utilisables, entre 1 et MAX_THREADS
 //---------------------------------------------------
 U32 DataGen::set_threads(const U32 nbr)
 {

@@ -72,43 +72,60 @@ namespace SQ {
 
 // The constexpr specifier declares that it is possible to evaluate the value of the function or variable at compile time.
 
+//! \brief  Calcule l'index de case à partir du fichier et de la rangée
 [[nodiscard]] constexpr inline int square(const int f, const int r) noexcept {
     return (8*r + f);
 }
 
+//! \brief  Calcule l'index de case à partir de sa notation algébrique (ex : "e4")
 [[nodiscard]] inline int square(const std::string& str) noexcept {
     const int file = str[0] - 'a';
     const int rank = str[1] - '1';
     return (rank * 8 + file);
 }
 
+//! \brief  Teste si la case est dans les limites de l'échiquier (A1..H8)
 [[nodiscard]] constexpr inline bool is_ok(SQUARE sq) noexcept { return sq >= A1 && sq <= H8; }
 
+//! \brief  Affiche le nom d'une case (ex : "e4") dans un flux
 [[nodiscard]] inline std::ostream &operator<<(std::ostream &os, const int square) noexcept {
     os << square_name[square];
     return os;
 }
 
+//! \brief  Donne la rangée (0-7) de la case
 [[nodiscard]] constexpr inline U32 rank(SQUARE square) noexcept { return (square >> 3);   }   // sq / 8
+//! \brief  Donne le fichier (0-7) de la case
 [[nodiscard]] constexpr inline U32 file(SQUARE square) noexcept { return (square & 7);    }   // sq % 8
 
+//! \brief  Case voisine au nord (assert si hors échiquier)
 [[nodiscard]] constexpr inline SQUARE north(SQUARE square)       noexcept { assert(is_ok(square + NORTH)) ;         return (square + NORTH);         }
+//! \brief  Case voisine au nord-ouest (assert si hors échiquier)
 [[nodiscard]] constexpr inline SQUARE north_west(SQUARE square)  noexcept { assert(is_ok(square + NORTH_WEST)) ;    return (square + NORTH_WEST);  }
+//! \brief  Case voisine à l'ouest (assert si hors échiquier)
 [[nodiscard]] constexpr inline SQUARE west(SQUARE square)        noexcept { assert(is_ok(square + WEST)) ;          return (square + WEST);          }
+//! \brief  Case voisine au sud-ouest (assert si hors échiquier)
 [[nodiscard]] constexpr inline SQUARE south_west(SQUARE square)  noexcept { assert(is_ok(square + SOUTH_WEST)) ;    return (square + SOUTH_WEST);  }
+//! \brief  Case voisine au sud (assert si hors échiquier)
 [[nodiscard]] constexpr inline SQUARE south(SQUARE square)       noexcept { assert(is_ok(square + SOUTH)) ;         return (square + SOUTH);         }
+//! \brief  Case voisine au sud-est (assert si hors échiquier)
 [[nodiscard]] constexpr inline SQUARE south_east(SQUARE square)  noexcept { assert(is_ok(square + SOUTH_EAST)) ;    return (square + SOUTH_EAST);  }
+//! \brief  Case voisine à l'est (assert si hors échiquier)
 [[nodiscard]] constexpr inline SQUARE east(SQUARE square)        noexcept { assert(is_ok(square + EAST)) ;          return (square + EAST);          }
+//! \brief  Case voisine au nord-est (assert si hors échiquier)
 [[nodiscard]] constexpr inline SQUARE north_east(SQUARE square)  noexcept { assert(is_ok(square + NORTH_EAST)) ;    return (square + NORTH_EAST);  }
+//! \brief  Case à deux rangées au sud (assert si hors échiquier)
 [[nodiscard]] constexpr inline SQUARE south_south(SQUARE square) noexcept { assert(is_ok(square + SOUTH_SOUTH)) ;   return (square + SOUTH_SOUTH);   }
+//! \brief  Case à deux rangées au nord (assert si hors échiquier)
 [[nodiscard]] constexpr inline SQUARE north_north(SQUARE square) noexcept { assert(is_ok(square + NORTH_NORTH)) ;   return (square + NORTH_NORTH);   }
 
-// flip vertically
+//! \brief  Symétrie verticale de la case (flip haut/bas)
 [[nodiscard]] constexpr inline SQUARE mirrorVertically(SQUARE sq) noexcept { return (sq ^ 56); } // 0b111000
 
-// flip horizontally
+//! \brief  Symétrie horizontale de la case (flip gauche/droite)
 [[nodiscard]] constexpr inline SQUARE  mirrorHorizontally(SQUARE  sq) noexcept { return (sq ^ 7); } // 0b111
 
+//! \brief  Case relative à la couleur : identité pour les Blancs, symétrie verticale pour les Noirs
 template <Color C>
 [[nodiscard]] constexpr inline SQUARE relative_square(SQUARE sq) noexcept {
     if constexpr ( C == WHITE)
@@ -151,6 +168,7 @@ template <Color C>
 //================================================================================
 
 // ATTENTION : std::abs n'est PAS constexpr (jusquà C++23 ??)
+//! \brief  Valeur absolue utilisable en contexte constexpr
 template<typename T>
 constexpr T myabs(T t) {
     return ( (t) < T(0) ? -(t) : (t));
@@ -243,7 +261,7 @@ struct Mask
 };
 
 
-/* Make a square from file & rank if inside the board */
+//! \brief  Calcule l'index de case à partir du fichier et de la rangée, ou SQUARE_NONE si hors échiquier
 [[nodiscard]] constexpr int square_safe(const int f, const int r) {
     if (0 <= f && f < 8 && 0 <= r && r < 8)
         return SQ::square(f, r);
@@ -288,6 +306,7 @@ constexpr std::array<Mask, N_SQUARES> DirectionMask = [] {
 //  Fonctions
 //------------------------------------------------------------------------
 
+//! \brief  Retourne le bitboard des cases situées entre sq1 et sq2 (alignées en ligne, colonne ou diagonale), bornes exclues
 [[nodiscard]] constexpr Bitboard squares_between(size_t sq1, size_t sq2) {
     return SQUARES_BETWEEN_MASK[sq1][sq2];
 }

@@ -96,6 +96,18 @@ constexpr U32 MOVE_NULL           = 65; // 1000001
 constexpr U32 MOVE_NONE           = 0;
 
 
+//=================================================
+//! \brief  Encode un coup dans le format interne 32 bits
+//!
+//! \param[in]  _from       case de départ
+//! \param[in]  _dest       case d'arrivée
+//! \param[in]  _piece      pièce qui se déplace
+//! \param[in]  _captured   pièce prise (PIECE_NONE si aucune)
+//! \param[in]  _promotion  pièce de promotion (PIECE_NONE si aucune)
+//! \param[in]  _flags      flags spéciaux (double poussée, en-passant, roque)
+//!
+//! \return Le coup codé sur 32 bits
+//-------------------------------------------------
 [[nodiscard]] constexpr MOVE CODE(
     const SQUARE _from,
     const SQUARE _dest,
@@ -331,6 +343,7 @@ constexpr U32 MOVE_NONE           = 0;
     return(s);
 }
 
+//! \brief  Affiche un coup dans le flux de sortie
 inline std::ostream &operator<<(std::ostream &os, const U32 move) noexcept
 {
     os << name(move);

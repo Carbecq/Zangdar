@@ -8,6 +8,10 @@ namespace Tunable
 
 //==================================================
 //! \brief  Constructeur d'un paramètre tunable
+//! \param[in]  _name   nom du paramètre
+//! \param[in]  _value  valeur initiale du paramètre
+//! \param[in]  _min    borne minimale
+//! \param[in]  _max    borne maximale
 //--------------------------------------------------
 TunableParam::TunableParam(const std::string& _name, int _value, int _min, int _max)
     : name(_name),
@@ -23,6 +27,15 @@ TunableParam::TunableParam(const std::string& _name, int _value, int _min, int _
     params.push_back(this);
 }
 
+//==================================================
+//! \brief  Vérifie la cohérence des bornes/step d'un paramètre tunable
+//! \param[in]  name    nom du paramètre (pour les messages d'erreur)
+//! \param[in]  value   valeur courante du paramètre
+//! \param[in]  min     borne minimale
+//! \param[in]  max     borne maximale
+//! \param[in]  step    pas de variation (perturbation SPSA)
+//! \return Retourne "false" si le paramètre est incohérent (et l'exclut de la liste)
+//--------------------------------------------------
 bool verifParam(const std::string &name, int value, int min, int max, int step)
 {
     int range = max - min;
@@ -74,6 +87,8 @@ bool verifParam(const std::string &name, int value, int min, int max, int step)
 
 //==================================================
 //! \brief  Modifie la valeur d'un paramètre par son nom
+//! \param[in]  name    nom du paramètre à modifier
+//! \param[in]  value   nouvelle valeur (doit être dans [min, max])
 //--------------------------------------------------
 void setParam(const std::string &name, int value)
 {
@@ -94,7 +109,8 @@ void setParam(const std::string &name, int value)
 }
 
 //==================================================
-//  Ecriture des paramètres au format "Option UCI"
+//! \brief  Ecriture des paramètres au format "Option UCI"
+//! \return Chaîne contenant une ligne "option name ..." par paramètre
 //--------------------------------------------------
 std::string paramsToUci()
 {
@@ -110,8 +126,8 @@ std::string paramsToUci()
 }
 
 //==================================================
-//  Ecriture des paramètres au format json
-//  Pour être utilisé dans le fichier config.json
+//! \brief  Ecriture des paramètres au format json
+//!         Pour être utilisé dans le fichier config.json
 //--------------------------------------------------
 void paramsToJSON()
 {
@@ -141,8 +157,9 @@ void paramsToJSON()
 }
 
 //==================================================
-//  Ecriture des paramètres au format SPSA
-//  Format OpenBench : name, int, value, min, max, c_end, r_end
+//! \brief  Ecriture des paramètres au format SPSA
+//!         Format OpenBench : name, int, value, min, max, c_end, r_end
+//! \return Chaîne CSV contenant une ligne par paramètre
 //--------------------------------------------------
 std::string paramsToSpsa()
 {

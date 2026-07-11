@@ -62,6 +62,7 @@ void Timer::start()
 
 //===========================================================
 //! \brief Initialisation des limites en temps pour la recherche
+//! \param[in]  color   couleur au trait (pour lire limits.time/incr[color])
 //-----------------------------------------------------------
 void Timer::setup(Color color)
 {
@@ -174,6 +175,8 @@ void Timer::setup(Color color)
 
 //============================================================
 //! \brief  Impose des limites en mode "NODE"
+//! \param[in]  soft_limit  nombre de noeuds pour "iterative deepening"
+//! \param[in]  hard_limit  nombre de noeuds pour une recherche
 //------------------------------------------------------------
 void Timer::setup(U64 soft_limit, U64 hard_limit)
 {
@@ -185,6 +188,9 @@ void Timer::setup(U64 soft_limit, U64 hard_limit)
 
 //=========================================================
 //! \brief  Controle du time-out
+//! \param[in]  depth       profondeur de recherche courante
+//! \param[in]  index       index du thread (le contrôle n'est fait que pour le thread 0)
+//! \param[in]  total_nodes nombre total de noeuds calculés
 //! \return Retourne "true" si la recherche a dépassé sa limite de temps
 //!
 //! De façon à éviter un nombre important de mesure de temps , on ne fera
@@ -238,6 +244,7 @@ bool Timer::check_limits(const int depth, const int index, const U64 total_nodes
 //! \param[in]  pv_scores   historique des meilleurs scores
 //! \param[in]  pv_moves    historique des meilleurs coups
 //!
+//! \return Retourne "true" si on a assez de temps pour une nouvelle itération
 //-----------------------------------------------------------
 bool Timer::finishOnThisDepth(int elapsed, int depth, U64 total_nodes, const int* pv_scores, const MOVE* pv_moves)
 {
@@ -309,6 +316,12 @@ void Timer::updateMoveNodes(MOVE move, U64 nodes)
     MoveNodeCounts[Move::fromdest(move)] += nodes;
 }
 
+//==================================================================
+//! \brief  Met à jour la stabilité de la PV (pv_stability)
+//! \param[in] depth      profondeur de recherche courante
+//! \param[in] last_move  meilleur coup de l'itération précédente
+//! \param[in] this_move  meilleur coup de l'itération courante
+//------------------------------------------------------------------
 void Timer::update(int depth, MOVE last_move, MOVE this_move)
 {
     // Don't update our Time Managment plans at very low depths

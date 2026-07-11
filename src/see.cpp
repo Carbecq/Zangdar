@@ -9,6 +9,11 @@ constexpr int SEE_VALUE[N_PIECE_TYPE] = {0, 100, 300, 300, 500, 900, 9999};
 //! \brief  Détermine si le coup est avantageux :
 //! Teste si la valeur SEE du coup est supérieure ou égale au threshold.
 //! Basé sur l'algorithme "Swap"
+//!
+//! \param[in]  move       coup à évaluer (SEE)
+//! \param[in]  threshold  seuil à atteindre ou dépasser
+//!
+//! \return true si la valeur SEE du coup est >= threshold
 //---------------------------------------------------------------------------
 bool Board::fast_see(const MOVE move, const int threshold) const
 {

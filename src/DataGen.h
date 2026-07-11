@@ -16,6 +16,8 @@ class DataGen
 {
 public:
     DataGen(const U32 _nbr_threads=4, const U32 _max_fens=1, const std::string &_output="./fens");
+
+    //! \brief  Destructeur
     ~DataGen() {}
 
 private:

@@ -11,6 +11,9 @@
 //! itérative deepening
 //! alpha-beta
 //!
+//! \param[in]  board     position de départ de la recherche (copie locale à la thread)
+//! \param[in]  timer     gestion du temps de la recherche
+//! \param[in]  m_index   indice de la thread qui exécute cette recherche
 //------------------------------------------------------
 template<Color C>
 void Search::think(Board board, Timer timer, size_t m_index)
@@ -84,8 +87,13 @@ void Search::think(Board board, Timer timer, size_t m_index)
 //======================================================
 //! \brief  iterative deepening
 //!
-//! alpha-beta
+//! Boucle sur les profondeurs croissantes, en s'appuyant
+//! sur aspiration_window() pour chaque itération, et gère
+//! l'affichage UCI et le time management pour la thread principale.
 //!
+//! \param[in,out]  board   position racine de la recherche
+//! \param[in,out]  timer   gestion du temps de la recherche
+//! \param[in,out]  si      pile d'information de recherche (nœud racine)
 //------------------------------------------------------
 template<Color C>
 void Search::iterative_deepening(Board& board, Timer& timer, SearchInfo* si)
@@ -134,7 +142,16 @@ void Search::iterative_deepening(Board& board, Timer& timer, SearchInfo* si)
 //======================================================
 //! \brief  Aspiration Window
 //!
+//! Recherche alpha_beta() avec une fenêtre initialement
+//! resserrée autour du score de l'itération précédente,
+//! ré-élargie progressivement en cas de fail low/fail high.
 //!
+//! \param[in,out]  board        position racine de la recherche
+//! \param[in,out]  timer        gestion du temps de la recherche
+//! \param[in,out]  si           pile d'information de recherche (nœud racine)
+//! \param[in]      prev_score   score obtenu à l'itération précédente
+//!
+//! \return Score de la position à la profondeur iter_depth
 //------------------------------------------------------
 template<Color C>
 int Search::aspiration_window(Board& board, Timer& timer, SearchInfo* si, int prev_score)
@@ -194,11 +211,13 @@ int Search::aspiration_window(Board& board, Timer& timer, SearchInfo* si, int pr
 //!
 //!     Méthode Apha-Beta - Fail Soft
 //!
-//! \param[in]  ply     profondeur actuelle de recherche
-//! \param[in]  alpha   borne inférieure : on est garanti d'avoir au moins alpha
-//! \param[in]  beta    borne supérieure : meilleur coup pour l'adversaire
-//! \param[in]  depth   profondeur maximum de recherche
-//! \param[out] pv      tableau de stockage de la Variation Principale
+//! \param[in,out]  board      position courante de la recherche
+//! \param[in,out]  timer      gestion du temps de la recherche
+//! \param[in]      alpha      borne inférieure : on est garanti d'avoir au moins alpha
+//! \param[in]      beta       borne supérieure : meilleur coup pour l'adversaire
+//! \param[in]      depth      profondeur maximum de recherche
+//! \param[in]      cut_node   true si ce nœud est attendu comme un nœud de coupure (fail-high)
+//! \param[in,out]  si         pile d'information de recherche (nœud courant, PV mise à jour)
 //!
 //! \return Valeur du score
 //-----------------------------------------------------

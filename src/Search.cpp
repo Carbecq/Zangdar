@@ -117,7 +117,7 @@ void Search::show_uci_result(I64 elapsed, const PVariation& pv) const
 //! \brief  Affichage UCI du meilleur coup trouvé
 //!         N'est utilisé que pour le thread 0
 //!
-//! \param[in]  name   coup en notation UCI
+//! \param[in]  best_move   meilleur coup trouvé, en notation UCI
 //---------------------------------------------------------
 void Search::show_uci_best(MOVE best_move) const
 {
@@ -128,7 +128,8 @@ void Search::show_uci_best(MOVE best_move) const
 //=========================================================
 //! \brief  Mise à jour de la Principal variation
 //!
-//! \param[in]  name   coup en notation UCI
+//! \param[in,out]  si     nœud courant de la pile de recherche (sa PV est reconstruite)
+//! \param[in]      move   coup joué à ce nœud, placé en tête de la PV
 //---------------------------------------------------------
 void Search::update_pv(SearchInfo* si, const MOVE move) const
 {
@@ -140,6 +141,9 @@ void Search::update_pv(SearchInfo* si, const MOVE move) const
 
 //==========================================
 //! \brief  Evaluation de la position
+//!
+//! \param[in]  board   position à évaluer
+//!
 //! \return Evaluation statique de la position
 //! du point de vue du camp au trait.
 //------------------------------------------
@@ -156,7 +160,11 @@ void Search::update_pv(SearchInfo* si, const MOVE move) const
 }
 
 //==========================================
-//! \brief  Evaluation de la position
+//! \brief  Evaluation de la position à partir d'un accumulateur déjà à jour
+//!
+//! \param[in]  board   position à évaluer
+//! \param[in]  acc     accumulateur NNUE correspondant à la position
+//!
 //! \return Evaluation statique de la position
 //! du point de vue du camp au trait.
 //------------------------------------------
@@ -193,6 +201,9 @@ void Search::update_pv(SearchInfo* si, const MOVE move) const
 //==================================================
 //! \brief  Réalise un coup
 //! On met à jour à la fois la position, et le réseau
+//!
+//! \param[in,out]  board   position sur laquelle jouer le coup
+//! \param[in]      move    coup à jouer
 //--------------------------------------------------
 template <Color US, bool Update_NNUE>
 void Search::make_move(Board& board, const MOVE move) noexcept
@@ -219,6 +230,8 @@ void Search::make_move(Board& board, const MOVE move) noexcept
 //=============================================================
 //! \brief  Enlève un coup
 //! On met à jour à la fois la position, et le réseau
+//!
+//! \param[in,out]  board   position sur laquelle annuler le dernier coup joué
 //-------------------------------------------------------------
 template <Color US, bool Update_NNUE>
 void Search::undo_move(Board& board) noexcept

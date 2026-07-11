@@ -113,6 +113,7 @@ struct DirtyPieces {
 class Accumulator
 {
 public:
+    //! \brief  Construit un accumulateur non initialisé (biais ajoutés via init_biases)
     Accumulator() {}
 
     alignas(ALIGN) std::array<I16, HIDDEN_LAYER_SIZE> white{};
@@ -123,6 +124,8 @@ public:
     DirtyPieces dirtyPieces     = DirtyPieces{};
     std::array<SQUARE, N_COLORS> king_square = {SQUARE_NONE, SQUARE_NONE};     // position des rois
 
+    //! \brief  Initialise les 2 perspectives (white/black) avec les biais du réseau
+    //! \param[in] biases   biais de la couche d'entrée (feature_biases du réseau)
     void init_biases(std::span<const I16, HIDDEN_LAYER_SIZE> biases)
     {
         std::copy(biases.begin(), biases.end(), white.begin());
@@ -152,10 +155,13 @@ class Board;
 class NNUE
 {
 public:
+    //! \brief  Construit NNUE avec un stack d'accumulateurs vide (head_idx = 0)
     explicit NNUE() : head_idx(0) {}
     ~NNUE() = default;
 
+    //! \brief  Retourne l'accumulateur courant (sommet du stack), en lecture seule
     inline const Accumulator& get_accumulator() const { return stack[head_idx]; }
+    //! \brief  Retourne l'accumulateur courant (sommet du stack), modifiable
     inline Accumulator& get_accumulator()             { return stack[head_idx]; }
 
     void start_search(const Board& board);
@@ -214,15 +220,19 @@ private:
                          Piece add_piece_2, SQUARE add_2,
                          SQUARE king);
 
-    // Output bucket selon le nb de pièces restantes (MaterialCount).
-    // count ∈ [2, 32] → bucket ∈ [0, 7]  (BUCKET_DIVISOR = 4)
-    // count=2 → bucket=0 (finale), count=32 → bucket≤7 (partie pleine)
+    //! \brief  Output bucket selon le nb de pièces restantes (MaterialCount).
+    //! count ∈ [2, 32] → bucket ∈ [0, 7]  (BUCKET_DIVISOR = 4)
+    //! count=2 → bucket=0 (finale), count=32 → bucket≤7 (partie pleine)
+    //! \param[in] count    nombre de pièces restantes sur l'échiquier
+    //! \return Indice du bucket de sortie
     inline int get_bucket(size_t count) const {
         assert(count >= 2);
         return (count - 2) / BUCKET_DIVISOR;
     }
 
      //! \brief Retourne la case relative à la perspective
+     //! \param[in] square   case à convertir
+     //! \return Case inchangée pour WHITE, miroir vertical pour BLACK
     template <Color side>
     inline SQUARE get_relative_square(SQUARE square) const {
         if constexpr (side == WHITE)
@@ -231,10 +241,13 @@ private:
             return SQ::mirrorVertically(square);
     }
 
-    // Horizontal mirroring : si le roi est sur les fichiers E-H (bit 2 = 1),
-    // on miroire horizontalement toutes les cases pour ramener le roi côté A-D.
-    // Cela permet de partager les poids entre les deux flancs (symétrie du roi).
-    // Note : le test inverse (miroir si A-D) est empiriquement moins bon en Elo.
+    //! \brief  Horizontal mirroring : si le roi est sur les fichiers E-H (bit 2 = 1),
+    //! on miroire horizontalement toutes les cases pour ramener le roi côté A-D.
+    //! Cela permet de partager les poids entre les deux flancs (symétrie du roi).
+    //! Note : le test inverse (miroir si A-D) est empiriquement moins bon en Elo.
+    //! \param[in] square       case à éventuellement miroiter
+    //! \param[in] king_square  case du roi qui détermine le camp du miroir
+    //! \return Case miroitée horizontalement si le roi est sur les fichiers E-H, sinon inchangée
     inline SQUARE get_square(SQUARE square, SQUARE king_square) const {
         return king_square & 0b100 ? SQ::mirrorHorizontally(square) : square;
     }
@@ -243,8 +256,10 @@ private:
     template <Color side>U32 get_indice(Piece piece, SQUARE square, SQUARE king);
 
 
-    // SCReLU scalaire (fallback non-SIMD) : clamp(x, 0, QA)²
-    // Le résultat est à l'échelle QA² → divisé par QA dans activation()
+    //! \brief  SCReLU scalaire (fallback non-SIMD) : clamp(x, 0, QA)²
+    //! Le résultat est à l'échelle QA² → divisé par QA dans activation()
+    //! \param[in] x    valeur brute de l'accumulateur (I16)
+    //! \return clamp(x, 0, QA) au carré (I32)
     inline I32 screlu(I16 x) {
         auto clamped = std::clamp(static_cast<I32>(x), 0, QA);
         return clamped * clamped;

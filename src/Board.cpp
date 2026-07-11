@@ -15,6 +15,8 @@ Board::Board()
 
 //=======================================
 //! \brief  Constructeur
+//!
+//! \param[in]  fen     position de départ au format FEN
 //---------------------------------------
 Board::Board(const std::string& fen)
 {
@@ -126,6 +128,10 @@ std::string Board::display() const noexcept
 
 //=============================================================
 //! \brief  Calcule la valeur du hash
+//!
+//! \param[out] key             hash global de la position
+//! \param[out] pawn_key        hash de la position des pions
+//! \param[out] non_pawn_key    hash des pièces autres que les pions, par camp
 //-------------------------------------------------------------
 void Board::calculate_hash(U64& key, U64& pawn_key, U64 non_pawn_key[N_COLORS]) const
 {
@@ -234,6 +240,10 @@ void Board::calculate_hash(U64& key, U64& pawn_key, U64 non_pawn_key[N_COLORS]) 
 //! Vérifie si un coup réversible peut amener une position déjà vue.
 //! http://www.open-chess.org/viewtopic.php?f=5&t=2300
 //! Paper : http://marcelk.net/2013-04-06/paper/upcoming-rep-v2.pdf
+//!
+//! \param[in]  ply     profondeur actuelle de recherche
+//!
+//! \return true si une répétition est imminente
 //------------------------------------------------------------------
 bool Board::upcoming_repetition(int ply) const
 {

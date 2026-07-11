@@ -45,7 +45,11 @@ public:
     std::atomic<bool>  stopped{false};  // flag local (DataGen)
     std::atomic<bool>* stopFlagPtr;     // pointe vers stopped (DataGen) ou ThreadPool::searchStopped (engine)
 
+    //! \brief  Indique si la recherche doit s'arrêter
+    //! \return true si le flag d'arrêt est levé
     bool is_stopped()  const noexcept { return stopFlagPtr->load(std::memory_order_relaxed); }
+
+    //! \brief  Lève le flag d'arrêt de la recherche
     void signal_stop()       noexcept { stopFlagPtr->store(true, std::memory_order_relaxed); }
 
     int         iter_depth;     // profondeur demandée dans iterative  deepening
@@ -66,7 +70,10 @@ public:
     template <Color C> void think(Board board, Timer timer, size_t _index);
     template <Color C> int  aspiration_window(Board& board, Timer& timer, SearchInfo* si, int prev_score);
 
+    //! \brief  Accès en lecture seule à l'accumulateur NNUE courant
     inline const Accumulator& get_accumulator() const { return nnue.get_accumulator(); }
+
+    //! \brief  Accès en lecture/écriture à l'accumulateur NNUE courant
     inline       Accumulator& get_accumulator()       { return nnue.get_accumulator(); }
 
     void init_reductions();

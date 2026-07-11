@@ -51,6 +51,7 @@ public:
 
     void shift_bad(size_t idx);
     size_t get_best(const MoveList &ml);
+    //! \brief Retourne l'étape courante du sélecteur de coups
     int  get_stage() const { return stage;}
 
     bool hasNext() const;

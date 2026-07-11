@@ -10,6 +10,10 @@
 
 //=================================================
 //! \brief  Constructeur avec arguments
+//!
+//! \param[in]  _nbr    nombre de threads de recherche à créer
+//! \param[in]  _tb     utilisation des tables Syzygy
+//! \param[in]  _log    affichage des informations UCI pendant la recherche
 //-------------------------------------------------
 ThreadPool::ThreadPool(U32 _nbr, bool _tb, bool _log) :
     nbrThreads(0),
@@ -28,6 +32,9 @@ ThreadPool::ThreadPool(U32 _nbr, bool _tb, bool _log) :
 
 //=================================================
 //! \brief  Initialisation du nombre de threads
+//!
+//! \param[in]  nbr   nombre de threads demandé (sera borné entre 1 et
+//!                   le nombre de processeurs disponibles / MAX_THREADS)
 //-------------------------------------------------
 void ThreadPool::set_threads(U32 nbr)
 {
@@ -79,6 +86,10 @@ void ThreadPool::reset()
         search[i].history.reset();
 }
 
+//=================================================
+//! \brief  Réinitialise la table de réductions LMR de toutes les threads
+//! Utilisé après un changement des TunableParam (setoption)
+//-------------------------------------------------
 void ThreadPool::reinit_reductions()
 {
     for (size_t i = 0; i < nbrThreads; i++)
@@ -88,6 +99,9 @@ void ThreadPool::reinit_reductions()
 //=================================================
 //! \brief  Lance la recherche
 //! Fonction lancée par Uci::parse_go
+//!
+//! \param[in]  board   position de départ de la recherche
+//! \param[in]  timer   gestion du temps alloué à la recherche
 //-------------------------------------------------
 void ThreadPool::start_thinking(const Board& board, const Timer& timer)
 {
@@ -166,6 +180,8 @@ void ThreadPool::main_thread_stopped()
 //=================================================
 //! \brief  Blocage du programme en attendant
 //! les threads.
+//!
+//! \param[in]  start   indice de la première thread à attendre
 //-------------------------------------------------
 void ThreadPool::wait(size_t start)
 {
@@ -203,6 +219,8 @@ void ThreadPool::quit()
 //! poussé d'un ply sur un coup douteux ne peut plus kidnapper le choix). Les
 //! scores prouvés (mat / table de finale) sont traités à part : mat gagnant le
 //! plus court, ou défense la plus longue.
+//!
+//! \return Indice de la thread retenue
 //-------------------------------------------------
 int ThreadPool::get_best_thread() const
 {

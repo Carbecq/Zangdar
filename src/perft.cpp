@@ -3,6 +3,19 @@
 #include "defines.h"
 #include "Move.h"
 
+//=======================================================
+//! \brief  Dénombrement des positions atteignables (perft)
+//!
+//! Parcourt récursivement l'arbre des coups légaux jusqu'à
+//! la profondeur donnée. Utilise le bulk-counting à depth==1.
+//! Si divide==true, affiche le nombre de nœuds pour chaque
+//! coup joué à la racine de l'appel.
+//!
+//! \param[in,out]  board   échiquier sur lequel les coups sont joués/annulés
+//! \param[in]      depth   profondeur restante à explorer
+//!
+//! \return Nombre de nœuds (feuilles) dénombrés
+//-------------------------------------------------------
 template <Color C, bool divide=false>
 [[nodiscard]] std::uint64_t perft(Board& board, const int depth) noexcept
 {

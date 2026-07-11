@@ -6,6 +6,13 @@
 
 //==================================================
 //! \brief  Réalise un coup sur la position
+//!
+//! Met à jour l'échiquier, le status (clés Zobrist, roque, en-passant,
+//! compteurs), et si Update_NNUE est vrai, renseigne les DirtyPieces
+//! de l'accumulateur pour la mise à jour incrémentale du réseau NNUE.
+//!
+//! \param[in,out]  accum   accumulateur NNUE du thread (DirtyPieces mis à jour)
+//! \param[in]      move    coup à jouer, encodé sur 32 bits
 //--------------------------------------------------
 template <Color US, bool Update_NNUE>
 void Board::make_move(Accumulator& accum, const MOVE move) noexcept
@@ -494,6 +501,10 @@ template <Color Us> void Board::make_nullmove() noexcept
 
 //=============================================================================
 //! \brief  Met une pièce à la case indiquée
+//!
+//! \param[in]  square  case où poser la pièce
+//! \param[in]  color   couleur de la pièce
+//! \param[in]  piece   pièce à poser
 //-----------------------------------------------------------------------------
 void Board::add_piece(const SQUARE square, const Color color, const Piece piece) noexcept
 {
@@ -504,6 +515,10 @@ void Board::add_piece(const SQUARE square, const Color color, const Piece piece)
 
 //=============================================================================
 //! \brief  Bascule une pièce sur une case (toggle)
+//!
+//! \param[in]  square  case concernée
+//! \param[in]  color   couleur de la pièce
+//! \param[in]  piece   pièce concernée
 //-----------------------------------------------------------------------------
 void Board::set_piece(const SQUARE square, const Color color, const Piece piece) noexcept
 {
@@ -514,6 +529,10 @@ void Board::set_piece(const SQUARE square, const Color color, const Piece piece)
 
 //=============================================================================
 //! \brief  Retire une pièce de la case indiquée
+//!
+//! \param[in]  square  case dont on retire la pièce
+//! \param[in]  color   couleur de la pièce
+//! \param[in]  piece   pièce retirée
 //-----------------------------------------------------------------------------
 void Board::remove_piece(const SQUARE square, const Color color, const Piece piece) noexcept
 {
@@ -523,7 +542,12 @@ void Board::remove_piece(const SQUARE square, const Color color, const Piece pie
 }
 
 //=============================================================================
-//! \brief  Déplace une pièce à la case indiquée
+//! \brief  Déplace une pièce d'une case à une autre (case de départ vidée)
+//!
+//! \param[in]  from    case de départ
+//! \param[in]  dest    case d'arrivée
+//! \param[in]  color   couleur de la pièce
+//! \param[in]  piece   pièce déplacée
 //-----------------------------------------------------------------------------
 void Board::move_piece(const SQUARE from,
                        const SQUARE dest,
@@ -537,7 +561,12 @@ void Board::move_piece(const SQUARE from,
 }
 
 //=============================================================================
-//! \brief  Déplace une pièce à la case indiquée
+//! \brief  Remplace un pion par la pièce de promotion (sans capture)
+//!
+//! \param[in]  from      case de départ du pion
+//! \param[in]  dest      case d'arrivée (où apparaît la pièce promue)
+//! \param[in]  color     couleur du camp qui promeut
+//! \param[in]  promoted  pièce de promotion
 //-----------------------------------------------------------------------------
 void Board::promotion_piece(const SQUARE from,
                             const SQUARE dest,
@@ -554,6 +583,15 @@ void Board::promotion_piece(const SQUARE from,
     piece_square[dest] = promoted;
 }
 
+//=============================================================================
+//! \brief  Remplace un pion par la pièce de promotion, en capturant la pièce adverse présente
+//!
+//! \param[in]  from      case de départ du pion
+//! \param[in]  dest      case d'arrivée (case de la pièce prise, où apparaît la pièce promue)
+//! \param[in]  color     couleur du camp qui promeut
+//! \param[in]  captured  pièce adverse prise sur la case d'arrivée
+//! \param[in]  promoted  pièce de promotion
+//-----------------------------------------------------------------------------
 void Board::promocapt_piece(const SQUARE from,
                             const SQUARE dest,
                             const Color color,
@@ -574,7 +612,13 @@ void Board::promocapt_piece(const SQUARE from,
 }
 
 //=============================================================================
-//! \brief  Déplace une pièce à la case indiquée
+//! \brief  Déplace une pièce vers une case occupée par une pièce adverse, qui est capturée
+//!
+//! \param[in]  from      case de départ
+//! \param[in]  dest      case d'arrivée (case de la pièce prise)
+//! \param[in]  color     couleur de la pièce qui capture
+//! \param[in]  piece     pièce qui se déplace et capture
+//! \param[in]  captured  pièce adverse prise sur la case d'arrivée
 //-----------------------------------------------------------------------------
 void Board::capture_piece(const SQUARE from,
                           const SQUARE dest,

@@ -6,6 +6,8 @@
 //==================================================================
 //! \brief  Vérifie la cohérence interne de la position
 //! Utilisé en mode debug (assertions)
+//!
+//! \return true si la position est valide, false sinon (avec message d'erreur affiché)
 //------------------------------------------------------------------
 bool Board::valid() const noexcept
 {

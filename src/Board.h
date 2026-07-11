@@ -75,6 +75,8 @@ public:
     template<Color C> [[nodiscard]] constexpr Bitboard orthogonal_sliders() const noexcept { return occupancy_cp<C, PieceType::ROOK>() | occupancy_cp<C, PieceType::QUEEN>(); }
 
     //! \brief Retourne le bitboard de toutes les pièces du camp "C" attaquant la case "sq"
+    //! \param[in]  sq  case à examiner
+    //! \return bitboard des attaquants
     template <Color C> [[nodiscard]] constexpr Bitboard attackers(const SQUARE sq) const noexcept
     {
         assert(SQ::is_ok(sq));
@@ -87,6 +89,8 @@ public:
     }
 
     //! \brief Retourne le bitboard de toutes les pièces du camp "C", sauf le roi, attaquant la case "sq"
+    //! \param[in]  sq  case à examiner
+    //! \return bitboard des attaquants (roi exclu)
     template <Color C> [[nodiscard]] constexpr Bitboard attackersButKing(const SQUARE sq) const noexcept
     {
         assert(SQ::is_ok(sq));
@@ -98,6 +102,8 @@ public:
     }
 
     //! \brief Retourne le bitboard de tous les pions du camp "C" attaquant la case "sq"
+    //! \param[in]  sq  case à examiner
+    //! \return bitboard des pions attaquants
     template <Color C> [[nodiscard]] constexpr Bitboard pawn_attackers(const SQUARE sq) const noexcept
     {
         assert(SQ::is_ok(sq));
@@ -169,6 +175,9 @@ public:
     void calculate_hash(U64& key, U64& pawn_key, U64 non_pawn_key[2]) const;
 
     //! \brief  Retourne le Bitboard de TOUS les attaquants (Blancs et Noirs) de la case "sq"
+    //! \param[in]  sq   case à examiner
+    //! \param[in]  occ  bitboard d'occupation à utiliser
+    //! \return bitboard de tous les attaquants
     [[nodiscard]] Bitboard all_attackers(const SQUARE sq, const Bitboard occ) const noexcept
     {
         assert(SQ::is_ok(sq));
@@ -180,21 +189,31 @@ public:
                 (Attacks::rook_moves(sq,   occ)   & (typePiecesBB[PieceType::ROOK]   | typePiecesBB[PieceType::QUEEN])) );
     }
 
-    //! \brief Returns an attack bitboard where sliders are allowed
-    //! to xray other sliders moving the same directions
+    //! \brief  Retourne un bitboard d'attaque où les sliders peuvent voir
+    //! « à travers » d'autres sliders se déplaçant dans les mêmes directions
     //  code venant de Weiss
+    //! \param[in]  sq  case à examiner
+    //! \return bitboard d'attaque du Fou, avec xray sur les Fous/Dames amis
     template<Color C> [[nodiscard]] Bitboard XRayBishopAttack(const SQUARE sq) const noexcept
     {
         assert(SQ::is_ok(sq));
         Bitboard occ = occupancy_all() ^ occupancy_p<PieceType::QUEEN>() ^ occupancy_cp<C, PieceType::BISHOP>();
         return(Attacks::bishop_moves(sq, occ));
     }
+    //! \brief  Retourne un bitboard d'attaque où les sliders peuvent voir
+    //! « à travers » d'autres sliders se déplaçant dans les mêmes directions
+    //! \param[in]  sq  case à examiner
+    //! \return bitboard d'attaque de la Tour, avec xray sur les Tours/Dames amies
     template<Color C> [[nodiscard]] Bitboard XRayRookAttack(const SQUARE sq) const noexcept
     {
         assert(SQ::is_ok(sq));
         Bitboard occ = occupancy_all() ^ occupancy_p<PieceType::QUEEN>() ^ occupancy_cp<C, PieceType::ROOK>();
         return(Attacks::rook_moves(sq, occ));
     }
+    //! \brief  Retourne un bitboard d'attaque où les sliders peuvent voir
+    //! « à travers » d'autres sliders se déplaçant dans les mêmes directions
+    //! \param[in]  sq  case à examiner
+    //! \return bitboard d'attaque de la Dame, avec xray sur les Tours/Fous/Dames amis
     template<Color C> [[nodiscard]] Bitboard XRayQueenAttack(const SQUARE sq) const noexcept
     {
         assert(SQ::is_ok(sq));
@@ -215,6 +234,8 @@ public:
     template<Color C> [[nodiscard]] Bitboard squares_attacked(Bitboard occ) const noexcept;
 
     //! \brief  Détermine si la case sq est attaquée par le camp C
+    //! \param[in]  sq  case à examiner
+    //! \return true si la case est attaquée
     template<Color C> [[nodiscard]] constexpr bool square_attacked(const SQUARE sq) const noexcept {
         assert(SQ::is_ok(sq));
         return attackers<C>(sq) != 0;
@@ -227,6 +248,8 @@ public:
     template<Color C>
     [[nodiscard]] constexpr bool is_doing_check() const noexcept { return attackersButKing<C>(get_king_square<~C>()) != 0; }
 
+    //! \brief  Génère les coups légaux pour le camp au trait
+    //! \param[out] ml  MoveList de stockage des coups
     template<MoveGenType MGType> void legal_moves(MoveList &ml) const
     {
         if (turn() == WHITE)
@@ -272,11 +295,11 @@ public:
     //=================================================================
     //! \brief  Ajoute un coup tranquille de promotion à la liste des coups
     //!
-    //! \param[in]  ml      MoveList de stockage des coups
-    //! \param[in]  from    position de départ de la pièce
-    //! \param[in]  dest    position d'arrivée de la pièce
-    //! \param[in]  promo   type de la pièce promue
-    //! \param[in]  flags   flags du coup (avance double, prise en-passant, roque)
+    //! \param[in]  ml         MoveList de stockage des coups
+    //! \param[in]  from       position de départ de la pièce
+    //! \param[in]  dest       position d'arrivée de la pièce
+    //! \param[in]  color      camp jouant le coup
+    //! \param[in]  promoted   type de la pièce promue
     //-----------------------------------------------------------------
     inline void add_quiet_promotion(MoveList& ml, const SQUARE from, const SQUARE dest, Color color, Piece promoted) const noexcept
     {
@@ -290,13 +313,12 @@ public:
     //=================================================================
     //! \brief  Ajoute un coup de capture et de promotion à la liste des coups
     //!
-    //! \param[in]  ml      MoveList de stockage des coups
-    //! \param[in]  from    position de départ de la pièce
-    //! \param[in]  dest    position d'arrivée de la pièce
-    //! \param[in]  piece   type de la pièce jouant
+    //! \param[in]  ml         MoveList de stockage des coups
+    //! \param[in]  from       position de départ de la pièce
+    //! \param[in]  dest       position d'arrivée de la pièce
+    //! \param[in]  color      camp jouant le coup
     //! \param[in]  captured   type de la pièce capturée
-    //! \param[in]  promo   type de la pièce promue
-    //! \param[in]  flags   flags du coup (avance double, prise en-passant, roque)
+    //! \param[in]  promoted   type de la pièce promue
     //-----------------------------------------------------------------
     inline void add_capture_promotion(MoveList& ml, const SQUARE from, const SQUARE dest, Color color, Piece captured, Piece promoted) const noexcept
     {
@@ -308,7 +330,11 @@ public:
     }
 
     //===================================================================
-    //! \brief  Ajoute une série de coups
+    //! \brief  Ajoute une série de coups tranquilles vers les cases du bitboard attack
+    //!
+    //! \param[in]  ml      MoveList de stockage des coups
+    //! \param[in]  attack  bitboard des cases d'arrivée
+    //! \param[in]  from    position de départ de la pièce
     //-------------------------------------------------------------------
     inline void push_quiet_moves(MoveList& ml, Bitboard attack, const SQUARE from) const noexcept
     {
@@ -316,12 +342,28 @@ public:
             add_quiet_move(ml, from, BB::pop_lsb(attack), piece_square[from], Move::FLAG_NONE);
         }
     }
+    //===================================================================
+    //! \brief  Ajoute une série de coups tranquilles pour une pièce donnée
+    //!
+    //! \param[in]  ml      MoveList de stockage des coups
+    //! \param[in]  attack  bitboard des cases d'arrivée
+    //! \param[in]  from    position de départ de la pièce
+    //! \param[in]  color   camp jouant le coup
+    //! \param[in]  piece   type de la pièce jouant
+    //-------------------------------------------------------------------
     inline void push_piece_quiet_moves(MoveList& ml, Bitboard attack, const SQUARE from, Color color, PieceType piece) const noexcept
     {
         while (attack) {
             add_quiet_move(ml, from, BB::pop_lsb(attack), Move::make_piece(color, piece), Move::FLAG_NONE);
         }
     }
+    //===================================================================
+    //! \brief  Ajoute une série de coups de capture vers les cases du bitboard attack
+    //!
+    //! \param[in]  ml      MoveList de stockage des coups
+    //! \param[in]  attack  bitboard des cases d'arrivée (occupées par l'adversaire)
+    //! \param[in]  from    position de départ de la pièce
+    //-------------------------------------------------------------------
     inline void push_capture_moves(MoveList& ml, Bitboard attack, const SQUARE from) const noexcept
     {
         SQUARE to;
@@ -330,6 +372,15 @@ public:
             add_capture_move(ml, from, to, piece_square[from], piece_square[to], Move::FLAG_NONE);
         }
     }
+    //===================================================================
+    //! \brief  Ajoute une série de coups de capture pour une pièce donnée
+    //!
+    //! \param[in]  ml      MoveList de stockage des coups
+    //! \param[in]  attack  bitboard des cases d'arrivée (occupées par l'adversaire)
+    //! \param[in]  from    position de départ de la pièce
+    //! \param[in]  color   camp jouant le coup
+    //! \param[in]  piece   type de la pièce jouant
+    //-------------------------------------------------------------------
     inline void push_piece_capture_moves(MoveList& ml, Bitboard attack, const SQUARE from, Color color, PieceType piece) const noexcept
     {
         SQUARE to;
@@ -341,6 +392,15 @@ public:
 
     //--------------------------------------------------------------------
     //  Promotions
+
+    //===================================================================
+    //! \brief  Ajoute une série de coups tranquilles de promotion
+    //!
+    //! \param[in]  ml      MoveList de stockage des coups
+    //! \param[in]  attack  bitboard des cases d'arrivée
+    //! \param[in]  dir     décalage entre la case de départ et la case d'arrivée
+    //! \param[in]  color   camp jouant le coup
+    //-------------------------------------------------------------------
     inline void push_quiet_promotions(MoveList& ml, Bitboard attack, const int dir, Color color) const noexcept
     {
         SQUARE to;
@@ -349,6 +409,14 @@ public:
             push_quiet_promotion(ml, to - dir, to, color);
         }
     }
+    //===================================================================
+    //! \brief  Ajoute une série de coups de capture avec promotion
+    //!
+    //! \param[in]  ml      MoveList de stockage des coups
+    //! \param[in]  attack  bitboard des cases d'arrivée
+    //! \param[in]  dir     décalage entre la case de départ et la case d'arrivée
+    //! \param[in]  color   camp jouant le coup
+    //-------------------------------------------------------------------
     inline void push_capture_promotions(MoveList& ml, Bitboard attack, const int dir, Color color) const noexcept
     {
         SQUARE to;
@@ -360,6 +428,16 @@ public:
 
     //--------------------------------------
     //  Coups de pions
+
+    //===================================================================
+    //! \brief  Ajoute une série de coups tranquilles de pion (simple ou double avance)
+    //!
+    //! \param[in]  ml      MoveList de stockage des coups
+    //! \param[in]  attack  bitboard des cases d'arrivée
+    //! \param[in]  dir     décalage entre la case de départ et la case d'arrivée
+    //! \param[in]  color   camp jouant le coup
+    //! \param[in]  flags   flags du coup (avance double, prise en-passant, roque)
+    //-------------------------------------------------------------------
     inline void push_pawn_quiet_moves(MoveList& ml, Bitboard attack, const int dir, Color color, U32 flags) const noexcept
     {
         SQUARE to;
@@ -368,6 +446,14 @@ public:
             add_quiet_move(ml, to - dir, to, Move::make_piece(color, PieceType::PAWN), flags);
         }
     }
+    //===================================================================
+    //! \brief  Ajoute une série de coups de capture de pion
+    //!
+    //! \param[in]  ml      MoveList de stockage des coups
+    //! \param[in]  attack  bitboard des cases d'arrivée
+    //! \param[in]  dir     décalage entre la case de départ et la case d'arrivée
+    //! \param[in]  color   camp jouant le coup
+    //-------------------------------------------------------------------
     inline void push_pawn_capture_moves(MoveList& ml, Bitboard attack, const int dir, Color color) const noexcept
     {
         SQUARE to;
@@ -379,6 +465,15 @@ public:
 
     //--------------------------------------
     //  Promotions générales
+
+    //===================================================================
+    //! \brief  Ajoute les 4 coups tranquilles de promotion (Dame, Cavalier, Tour, Fou)
+    //!
+    //! \param[in]  ml      MoveList de stockage des coups
+    //! \param[in]  from    position de départ de la pièce
+    //! \param[in]  to      position d'arrivée de la pièce
+    //! \param[in]  color   camp jouant le coup
+    //-------------------------------------------------------------------
     inline void push_quiet_promotion(MoveList& ml, const SQUARE from, const U32 to, Color color) const noexcept
     {
         add_quiet_promotion(ml, from, to, color, Move::make_piece(color, PieceType::QUEEN));
@@ -386,6 +481,14 @@ public:
         add_quiet_promotion(ml, from, to, color, Move::make_piece(color, PieceType::ROOK));
         add_quiet_promotion(ml, from, to, color, Move::make_piece(color, PieceType::BISHOP));
     }
+    //===================================================================
+    //! \brief  Ajoute les 4 coups de capture avec promotion (Dame, Cavalier, Tour, Fou)
+    //!
+    //! \param[in]  ml      MoveList de stockage des coups
+    //! \param[in]  from    position de départ de la pièce
+    //! \param[in]  to      position d'arrivée de la pièce
+    //! \param[in]  color   camp jouant le coup
+    //-------------------------------------------------------------------
     inline void push_capture_promotion(MoveList& ml, const SQUARE from, const U32 to,  Color color) const noexcept
     {
         add_capture_promotion(ml, from, to, color, piece_square[to], Move::make_piece(color, PieceType::QUEEN));
@@ -397,6 +500,8 @@ public:
     //------------------------------------------------------------
     //  le Roque
 
+    //! \brief  Détermine si le camp C possède encore un droit de roque (petit ou grand)
+    //! \return true si au moins un roque est encore possible
     template<Color C> [[nodiscard]] constexpr bool can_castle() const
     {
         if constexpr (C == WHITE)
@@ -405,6 +510,8 @@ public:
             return get_status().castling & (CASTLE_BK | CASTLE_BQ);
     }
 
+    //! \brief  Détermine si le camp C possède encore le droit de roque du côté "side"
+    //! \return true si ce roque est encore possible
     template<Color C, CastleSide side> [[nodiscard]] constexpr bool can_castle() const
     {
         if constexpr      (C == WHITE && side == CastleSide::KING_SIDE)
@@ -419,6 +526,9 @@ public:
             static_assert(sizeof(C) == 0, "can_castle : Invalid Color/CastleSide");
     }
 
+    //! \brief  Retourne le bitboard des cases traversées par le roi lors du roque "side",
+    //! qui ne doivent pas être attaquées par l'adversaire
+    //! \return bitboard du chemin du roi
     template <Color C, CastleSide side> [[nodiscard]] constexpr Bitboard get_king_path() const noexcept  // cases ne devant pas être attaquées
     {
         if constexpr      (C == WHITE && side == CastleSide::KING_SIDE)
@@ -433,6 +543,9 @@ public:
             static_assert(sizeof(C) == 0, "get_king_path : Invalid Color/CastleSide");
     }
 
+    //! \brief  Retourne le bitboard des cases devant être libres entre le roi
+    //! et la tour pour le roque "side"
+    //! \return bitboard du chemin de la tour
     template <Color C, CastleSide side> [[nodiscard]] constexpr Bitboard get_rook_path() const  noexcept // cases devant être libres
     {
         if constexpr      (C == WHITE && side == CastleSide::KING_SIDE)
@@ -447,6 +560,8 @@ public:
             static_assert(sizeof(C) == 0, "get_rook_path : Invalid Color/CastleSide");
     }
 
+    //! \brief  Retourne la case de départ du roi du camp C (case initiale avant roque)
+    //! \return case de départ du roi
     template <Color C> [[nodiscard]] constexpr SQUARE get_king_from() const noexcept
     {
         if constexpr (C == WHITE)
@@ -455,6 +570,8 @@ public:
             return (E8);
     }
 
+    //! \brief  Retourne la case d'arrivée du roi du camp C pour le roque "side"
+    //! \return case d'arrivée du roi
     template <Color C, CastleSide side> [[nodiscard]] constexpr SQUARE get_king_dest() const noexcept
     {
         if constexpr      (C == WHITE && side == CastleSide::KING_SIDE)
@@ -492,6 +609,8 @@ public:
 
     //=======================================================================
     //! \brief  Ajoute les coups du roque
+    //!
+    //! \param[out] ml  MoveList de stockage des coups
     //-----------------------------------------------------------------------
     template <Color C, CastleSide side> constexpr void gen_castle(MoveList& ml) const
     {
@@ -512,18 +631,26 @@ public:
 
     //! \brief  Retourne la couleur de la pièce située sur la case sq
     //! SUPPOSE qu'il y a une pièce sur cette case !!
+    //! \param[in]  sq  case à examiner
+    //! \return couleur de la pièce
     [[nodiscard]] constexpr inline Color color_on(const SQUARE sq) const noexcept
     {
         assert(sq != SQUARE_NONE);
         return( (colorPiecesBB[WHITE] & SQ::square_BB(sq)) ? WHITE : BLACK);
     }
 
+    //! \brief  Retourne la pièce (type + couleur) située sur la case sq
+    //! \param[in]  sq  case à examiner
+    //! \return pièce présente sur la case (PIECE_NONE si vide)
     [[nodiscard]] constexpr inline Piece piece_at(const SQUARE sq) const noexcept
     {
         assert(sq != SQUARE_NONE);
         return piece_square[sq];
     }
 
+    //! \brief  Détermine si la case sq est vide
+    //! \param[in]  sq  case à examiner
+    //! \return true si la case ne contient aucune pièce
     [[nodiscard]] constexpr inline bool empty(const SQUARE sq) const noexcept {
         assert(sq != SQUARE_NONE);
         return piece_at(sq) == Piece::PIECE_NONE;
@@ -532,6 +659,8 @@ public:
     //! \brief  Retourne le type de la pièce située sur la case sq
     //! Routine servant au debug
     //! Sinon, utiliser piece_at
+    //! \param[in]  sq  case à examiner
+    //! \return pièce présente sur la case (PIECE_NONE si vide)
     [[nodiscard]] constexpr Piece piece_on(const SQUARE sq) const noexcept
     {
         for (Piece e : all_PIECE) {
@@ -546,6 +675,9 @@ public:
         }
         return Piece::PIECE_NONE;
     }
+    //! \brief  Retourne le type de la pièce située sur la case sq
+    //! \param[in]  sq  case à examiner
+    //! \return type de la pièce (NONE si vide)
     [[nodiscard]] constexpr PieceType piecetype_on(const SQUARE sq) const noexcept
     {
         for (PieceType e : all_PIECE_TYPE) {
@@ -560,6 +692,8 @@ public:
     bool valid() const noexcept;
     [[nodiscard]] std::string display() const noexcept;
 
+    //! \brief  Retourne le bitboard du matériel du camp C hors pions et roi
+    //! \return bitboard des pièces autres que pions et roi
     template<Color C> [[nodiscard]] Bitboard getNonPawnMaterial() const noexcept
     {
         return (  colorPiecesBB[C]
@@ -567,6 +701,8 @@ public:
                   ^ occupancy_cp<C, PieceType::KING>() ) ;
     }
 
+    //! \brief  Retourne le nombre de pièces du camp C hors pions et roi
+    //! \return nombre de pièces autres que pions et roi
     template<Color C> [[nodiscard]] int getNonPawnMaterialCount() const noexcept
     {
         return (BB::count_bit(colorPiecesBB[C]
@@ -587,6 +723,10 @@ public:
     //! Voir Ethereal
     //! + lors du calcul de répétitions, il faut distinguer les positions de recherche,
     //!   et les positions de la partie.
+    //!
+    //! \param[in]  ply     profondeur actuelle de recherche
+    //!
+    //! \return true si la position est en répétition
     //--------------------------------------------------------------------
     [[nodiscard]] inline bool is_repetition(int ply) const noexcept
     {
@@ -628,6 +768,8 @@ public:
 
     //=============================================================================
     //! \brief  Détermine si la position est nulle
+    //! \param[in]  ply     profondeur actuelle de recherche
+    //! \return true si la position est nulle (répétition ou règle des 50 coups)
     //-----------------------------------------------------------------------------
     [[nodiscard]] inline bool is_draw(int ply) const noexcept { return ((is_repetition(ply) || fiftymoves())); }
 
@@ -674,18 +816,32 @@ public:
 
     //==============================================
     //  Status
+
+    //! \brief  Retourne le Status courant (position en tête de l'historique), version const
     [[nodiscard]] inline const Status& get_status() const { return statusHistory.back(); }
+    //! \brief  Retourne le Status courant (position en tête de l'historique), version modifiable
     [[nodiscard]] inline Status& get_status()             { return statusHistory.back(); }
 
+    //! \brief  Retourne le nombre de demi-coups depuis la dernière prise ou le dernier coup de pion
     [[nodiscard]] inline int get_fiftymove_counter()  const noexcept { return get_status().fiftymove_counter; }
+    //! \brief  Retourne le numéro du coup complet courant
     [[nodiscard]] inline int get_fullmove_counter()   const noexcept { return get_status().fullmove_counter;  }
+    //! \brief  Retourne la case de prise en-passant courante (SQUARE_NONE si aucune)
     [[nodiscard]] inline SQUARE get_ep_square()       const noexcept { return get_status().ep_square;         }
+    //! \brief  Retourne le hash global de la position courante
     [[nodiscard]] inline KEY get_key()                const noexcept { return get_status().key;               }
+    //! \brief  Retourne le hash de la position des pions
     [[nodiscard]] inline KEY get_pawn_key()                 const noexcept { return get_status().pawn_key;          }
+    //! \brief  Retourne le hash des pièces autres que les pions, pour le camp indiqué
+    //! \param[in]  color   camp concerné
     [[nodiscard]] inline KEY get_non_pawn_key(Color color)  const noexcept { return get_status().non_pawn_key[color];   }
+    //! \brief  Retourne le bitboard des pièces ennemies donnant échec
     [[nodiscard]] inline Bitboard get_checkers()      const noexcept { return get_status().checkers;          }
+    //! \brief  Retourne le bitboard des pièces amies clouées
     [[nodiscard]] inline Bitboard get_pinned()        const noexcept { return get_status().pinned;            }
 
+    //! \brief  Réserve la capacité de l'historique des positions
+    //! (la capacité ne passe pas avec la copie de l'objet Board)
     inline void reserve_capacity() {    // la capacité ne passe pas avec la copie
         statusHistory.reserve(MAX_HISTO);
     }

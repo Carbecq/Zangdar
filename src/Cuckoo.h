@@ -21,7 +21,11 @@
 namespace Cuckoo {
 
 // First and second hash functions for indexing the cuckoo tables
+
+//! \brief  Première fonction de hachage pour indexer les tables cuckoo
 inline U64 h1(U64 key) { return key & 0x1FFF; }
+
+//! \brief  Seconde fonction de hachage pour indexer les tables cuckoo
 inline U64 h2(U64 key) { return (key >> 16) & 0x1FFF; }
 
 // Cuckoo tables with Zobrist hashes of valid reversible moves, and the moves themselves

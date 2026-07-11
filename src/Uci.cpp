@@ -396,6 +396,10 @@ void Uci::stop()
     threadPool.stop();
 }
 
+//==============================================================
+//! \brief uci command: quit
+//! Quitte le programme.
+//--------------------------------------------------------------
 void Uci::quit()
 {
     threadPool.quit();
@@ -404,6 +408,8 @@ void Uci::quit()
 //==============================================================
 //! \brief uci command: go
 //! Lance la recherche
+//!
+//! \param[in]  iss  flux contenant les paramètres de la commande "go"
 //--------------------------------------------------------------
 void Uci::parse_go(std::istringstream& iss)
 {
@@ -501,6 +507,8 @@ void Uci::parse_go(std::istringstream& iss)
 //=========================================================
 //! \brief  Parse les commandes UCI relatives au changement
 //! d'option.
+//!
+//! \param[in]  iss  flux contenant le nom et la valeur de l'option
 //---------------------------------------------------------
 void Uci::parse_options(std::istringstream& iss)
 {
@@ -656,6 +664,8 @@ setoption name <id> [value <x>]
 
 //=================================================================
 //! \brief  Lancement d'une recherche sur une position
+//! \param[in]  abc      = code de la position à tester (s/k/q/f/w/r/p21/b1/b2) ou "n" pour garder la position courante
+//! \param[in]  fen      = fen à utiliser si abc ne correspond à aucun code connu
 //! \param[in]  dmax     = depth max
 //! \param[in]  tmax     = time max
 //! \param[in]  nmax     = nodes max
@@ -717,6 +727,10 @@ void Uci::go_run(const std::string& abc, const std::string& fen, int dmax, int t
 //!         (placement, trait, roque, e.p.), sans les annotations (bm/am/id...)
 //!         ni les éventuels compteurs demi-coups/coups. Sert à détecter les
 //!         positions en double dans une suite de tests.
+//!
+//! \param[in]  epd_line  ligne EPD/FEN à analyser
+//!
+//! \return Clé (4 premiers champs concaténés) identifiant la position
 //-----------------------------------------------------------------
 static std::string position_key(const std::string& epd_line)
 {
@@ -729,6 +743,9 @@ static std::string position_key(const std::string& epd_line)
 
 //=================================================================
 //! \brief  Lancement d'une recherche sur un ensemble de positions
+//!
+//! \param[in]  dmax  profondeur max de recherche
+//! \param[in]  tmax  temps max de recherche
 //-----------------------------------------------------------------
 void Uci::go_test(int dmax, int tmax)
 {
@@ -876,6 +893,16 @@ void Uci::go_test(int dmax, int tmax)
 //=============================================================
 //! \brief Réalisaion d'un test tactique
 //! et comparaison avec le résultat
+//!
+//! \param[in]      line          ligne EPD/FEN décrivant la position et le(s) coup(s) attendu(s)
+//! \param[in]      dmax          profondeur max de recherche
+//! \param[in]      tmax          temps max de recherche
+//! \param[in,out]  total_nodes   cumul du nombre de nodes calculés
+//! \param[in,out]  total_time    cumul du temps de calcul (ms)
+//! \param[in,out]  total_depths  cumul des profondeurs atteintes
+//! \param[in,out]  total_bm      cumul du nombre de "best move" trouvés
+//! \param[in,out]  total_am      cumul du nombre de "avoid move" évités
+//! \param[in,out]  total_ko      cumul du nombre d'échecs
 //-------------------------------------------------------------
 void Uci::go_tactics(const std::string& line, int dmax, int tmax, U64& total_nodes, U64& total_time, int& total_depths, int& total_bm, int& total_am, int& total_ko)
 {
@@ -991,6 +1018,9 @@ void Uci::go_tactics(const std::string& line, int dmax, int tmax, U64& total_nod
 //! \brief  Benchmark
 //!         Les tests du fichier bench.csv proviennent d'Ethereal
 //! commande : bench depth threads hash
+//!
+//! \param[in]  argCount  nombre d'arguments de la ligne de commande
+//! \param[in]  argValue  arguments de la ligne de commande (depth, threads, hash)
 //-----------------------------------------------------------------
 void Uci::bench(int argCount, char* argValue[])
 {

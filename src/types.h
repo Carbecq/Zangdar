@@ -18,7 +18,7 @@ enum Color : int
     BLACK    = 1,
 };
 
-//Inverts the color (WHITE -> BLACK) and (BLACK -> WHITE)
+//! \brief  Inverse la couleur (WHITE -> BLACK et BLACK -> WHITE)
 constexpr Color operator~(Color C) { return Color(C ^ Color::BLACK); }
 
 const std::string side_name[N_COLORS] = {"White", "Black"};
@@ -99,6 +99,13 @@ constexpr int EGPieceValue[N_PIECE_TYPE] = {
 };
 
 
+//=====================================================
+//! \brief  Convertit un caractère FEN en Piece (majuscule = Blanc, minuscule = Noir)
+//!
+//! \param[in]  c   caractère FEN de la pièce
+//!
+//! \return la Piece correspondante, ou PIECE_NONE si le caractère est inconnu
+//-----------------------------------------------------
 [[nodiscard]] constexpr auto pieceFromChar(char c)
 {
     switch (c)
@@ -119,6 +126,13 @@ constexpr int EGPieceValue[N_PIECE_TYPE] = {
     }
 }
 
+//=====================================================
+//! \brief  Convertit une Piece en caractère FEN (majuscule = Blanc, minuscule = Noir)
+//!
+//! \param[in]  piece   la pièce à convertir
+//!
+//! \return le caractère FEN correspondant, ' ' pour PIECE_NONE, '?' si inconnu
+//-----------------------------------------------------
 [[nodiscard]] constexpr auto pieceToChar(Piece piece)
 {
     switch (piece)
@@ -140,6 +154,13 @@ constexpr int EGPieceValue[N_PIECE_TYPE] = {
     }
 }
 
+//=====================================================
+//! \brief  Convertit un caractère FEN en PieceType (indépendant de la couleur)
+//!
+//! \param[in]  c   caractère FEN de la pièce (minuscule)
+//!
+//! \return le PieceType correspondant, ou NONE si le caractère est inconnu
+//-----------------------------------------------------
 [[nodiscard]] constexpr auto pieceTypeFromChar(char c)
 {
     switch (c)
@@ -154,6 +175,13 @@ constexpr int EGPieceValue[N_PIECE_TYPE] = {
     }
 }
 
+//=====================================================
+//! \brief  Convertit un PieceType en caractère minuscule
+//!
+//! \param[in]  piece   le type de pièce à convertir
+//!
+//! \return le caractère minuscule correspondant, ' ' pour NONE, '?' si inconnu
+//-----------------------------------------------------
 [[nodiscard]] constexpr auto pieceTypeToCharMin(PieceType piece)
 {
     switch (piece)
@@ -169,6 +197,13 @@ constexpr int EGPieceValue[N_PIECE_TYPE] = {
     }
 }
 
+//=====================================================
+//! \brief  Convertit un PieceType en caractère majuscule
+//!
+//! \param[in]  piece   le type de pièce à convertir
+//!
+//! \return le caractère majuscule correspondant, ' ' pour NONE, '?' si inconnu
+//-----------------------------------------------------
 [[nodiscard]] constexpr auto pieceTypeToCharMax(PieceType piece)
 {
     switch (piece)
@@ -184,6 +219,13 @@ constexpr int EGPieceValue[N_PIECE_TYPE] = {
     }
 }
 
+//=====================================================
+//! \brief  Convertit un PieceType en son nom complet (anglais)
+//!
+//! \param[in]  piece   le type de pièce à convertir
+//!
+//! \return le nom de la pièce ("Pawn", "Knight", ...), "None" pour NONE, "???" si inconnu
+//-----------------------------------------------------
 [[nodiscard]] constexpr auto pieceTypeToChar(PieceType piece)
 {
     switch (piece)
@@ -257,7 +299,7 @@ struct PVariation {
 
 
 //! \brief  Détermination du signe d'une valeur
-//! \return -1 ou +1
+//! \return -1, 0 ou +1
 template <typename T>
 [[nodiscard]] constexpr int Sign(T val) {
     return (T(0) < val) - (val < T(0));

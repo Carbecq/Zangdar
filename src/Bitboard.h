@@ -41,6 +41,7 @@ constexpr void unset_lsb(Bitboard& b) noexcept { b &= b-1; }
     return index;
 }
 
+//! \brief  met le LSB à zéro, modifie le bitboard pointé, retourne la position du LSB (variante pointeur pour Pyrrhic)
 constexpr U32 PYRRHIC_pop_lsb(Bitboard* b) noexcept {
     U32 index = std::countr_zero(*b);
     *b &= *b - 1;
@@ -84,7 +85,7 @@ constexpr U32 PYRRHIC_pop_lsb(Bitboard* b) noexcept {
 
 
 
-/* Byte swap (= vertical mirror) */
+//! \brief  Byte swap (= symétrie verticale du bitboard)
 [[nodiscard]] constexpr Bitboard byte_swap(Bitboard b) noexcept
 {
 #if defined(__GNUC__)
@@ -100,6 +101,7 @@ constexpr U32 PYRRHIC_pop_lsb(Bitboard* b) noexcept {
 #endif
 }
 
+//! \brief  Retourne le bitboard des cases de la même couleur (claire/sombre) que "sq"
 [[nodiscard]] constexpr Bitboard squaresOfMatchingColour(SQUARE sq) noexcept {
     assert(A1 <= sq && sq < N_SQUARES);
     return BB::test_bit(LightSquares, sq) ? LightSquares : DarkSquares;
@@ -107,28 +109,46 @@ constexpr U32 PYRRHIC_pop_lsb(Bitboard* b) noexcept {
 
 
 
+//! \brief  Décale le bitboard d'une case vers le nord
 [[nodiscard]] constexpr Bitboard north(Bitboard b)      noexcept { return (b << 8); }
+//! \brief  Décale le bitboard d'une case vers le sud
 [[nodiscard]] constexpr Bitboard south(Bitboard b)      noexcept { return (b >> 8); }
+//! \brief  Décale le bitboard d'une case vers l'est (sans wrap sur la colonne A)
 [[nodiscard]] constexpr Bitboard east(Bitboard b)       noexcept { return ((b << 1) & NOT_FILE_A_BB); }
+//! \brief  Décale le bitboard d'une case vers l'ouest (sans wrap sur la colonne H)
 [[nodiscard]] constexpr Bitboard west(Bitboard b)       noexcept { return ((b >> 1) & NOT_FILE_H_BB); }
+//! \brief  Décale le bitboard d'une case vers le nord-est (sans wrap sur la colonne A)
 [[nodiscard]] constexpr Bitboard north_east(Bitboard b) noexcept { return ((b << 9) & NOT_FILE_A_BB); }
+//! \brief  Décale le bitboard d'une case vers le sud-est (sans wrap sur la colonne A)
 [[nodiscard]] constexpr Bitboard south_east(Bitboard b) noexcept { return ((b >> 7) & NOT_FILE_A_BB); }
+//! \brief  Décale le bitboard d'une case vers le sud-ouest (sans wrap sur la colonne H)
 [[nodiscard]] constexpr Bitboard south_west(Bitboard b) noexcept { return ((b >> 9) & NOT_FILE_H_BB); }
+//! \brief  Décale le bitboard d'une case vers le nord-ouest (sans wrap sur la colonne H)
 [[nodiscard]] constexpr Bitboard north_west(Bitboard b) noexcept { return ((b << 7) & NOT_FILE_H_BB); }
 
+//! \brief  Décale le bitboard de deux cases vers le nord
 [[nodiscard]] constexpr Bitboard north_north(Bitboard b)  noexcept { return (b << 16); }
+//! \brief  Décale le bitboard de deux cases vers le sud
 [[nodiscard]] constexpr Bitboard south_south(Bitboard b)  noexcept { return (b >> 16); }
 
+//! \brief  Décale le bitboard façon "saut de cavalier" nord-nord-est (sans wrap colonne A)
 [[nodiscard]] constexpr Bitboard north_north_east(Bitboard b) noexcept { return ((b << 17) & NOT_FILE_A_BB); }
+//! \brief  Décale le bitboard façon "saut de cavalier" nord-nord-ouest (sans wrap colonne H)
 [[nodiscard]] constexpr Bitboard north_north_west(Bitboard b) noexcept { return ((b << 15) & NOT_FILE_H_BB); }
 
+//! \brief  Décale le bitboard façon "saut de cavalier" sud-sud-est (sans wrap colonne A)
 [[nodiscard]] constexpr Bitboard south_south_east(Bitboard b) noexcept { return ((b >> 15) & NOT_FILE_A_BB); }
+//! \brief  Décale le bitboard façon "saut de cavalier" sud-sud-ouest (sans wrap colonne H)
 [[nodiscard]] constexpr Bitboard south_south_west(Bitboard b) noexcept { return ((b >> 17) & NOT_FILE_H_BB); }
 
+//! \brief  Décale le bitboard façon "saut de cavalier" est-est-nord (sans wrap colonnes A/B)
 [[nodiscard]] constexpr Bitboard east_east_north(Bitboard b)  noexcept { return ((b << 10) & NOT_FILE_AB_BB); }
+//! \brief  Décale le bitboard façon "saut de cavalier" est-est-sud (sans wrap colonnes A/B)
 [[nodiscard]] constexpr Bitboard east_east_south(Bitboard b)  noexcept { return ((b >> 6)  & NOT_FILE_AB_BB); }
 
+//! \brief  Décale le bitboard façon "saut de cavalier" ouest-ouest-nord (sans wrap colonnes H/G)
 [[nodiscard]] constexpr Bitboard west_west_north(Bitboard b)  noexcept { return ((b << 6)  & NOT_FILE_HG_BB); }
+//! \brief  Décale le bitboard façon "saut de cavalier" ouest-ouest-sud (sans wrap colonnes H/G)
 [[nodiscard]] constexpr Bitboard west_west_south(Bitboard b)  noexcept { return ((b >> 10) & NOT_FILE_HG_BB); }
 
 //! \brief Décale d'une case dans la direction donnée

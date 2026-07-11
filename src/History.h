@@ -86,11 +86,28 @@ class History
 public:
     History();
     void reset();
+
+    //============================================================================
+    //! \brief  Retourne le score de main history (butterfly) d'un coup
+    //! \param[in]  color   camp qui joue
+    //! \param[in]  info    recherche actuelle
+    //! \param[in]  move    coup quiet évalué
+    //!
+    //! \return Score de main history, indexé par threat from/to et from/to du coup
+    //----------------------------------------------------------------------------
     inline I16 get_main_history(Color color, const SearchInfo *info, MOVE move) const {
         SQUARE from = Move::from(move);
         SQUARE dest = Move::dest(move);
         return main_history[color][BB::test_bit(info->threats, from)][BB::test_bit(info->threats, dest)][from][dest];
     }
+
+    //============================================================================
+    //! \brief  Retourne le score de pawn history d'un coup
+    //! \param[in]  board   échiquier courant
+    //! \param[in]  move    coup quiet évalué
+    //!
+    //! \return Score de pawn history, indexé par clé de pions/pièce/case d'arrivée
+    //----------------------------------------------------------------------------
     inline I16 get_pawn_history(const Board& board, MOVE move) const {
         return pawn_history[board.get_pawn_key() & PAWNHIST_MASK][Move::piece(move)][Move::dest(move)];
     }
@@ -101,6 +118,13 @@ public:
 
     MOVE get_counter_move(const SearchInfo *info) const;
 
+    //============================================================================
+    //! \brief  Retourne le score de capture history d'un coup
+    //! \param[in]  info    recherche actuelle
+    //! \param[in]  move    coup de capture évalué
+    //!
+    //! \return Score de capture history, indexé par pièce/threat from/to/case/pièce capturée
+    //----------------------------------------------------------------------------
     inline I16 get_capture_history(const SearchInfo *info, MOVE move) const {
         const SQUARE from = Move::from(move);
         const SQUARE dest = Move::dest(move);
@@ -128,10 +152,10 @@ private:
 
     static constexpr int MAX_HISTORY = 16384;
 
-    //----------------------------------------------------
     //=====================================================
-    //  Ajoute un bonus à l'historique
-    //      history gravity
+    //! \brief  Ajoute un bonus à l'historique (history gravity)
+    //! \param[in,out]  entry   entrée de la table à mettre à jour
+    //! \param[in]      bonus   bonus (positif) ou malus (négatif)
     //-----------------------------------------------------
     inline void gravity(I16& entry, int bonus)
     {
@@ -142,11 +166,23 @@ private:
         entry += bonus - static_cast<int>(entry) * abs(bonus) / MAX_HISTORY;
     }
 
+    //=====================================================
+    //! \brief  Calcule le bonus d'historique en fonction de la profondeur
+    //! \param[in]  depth   profondeur de recherche du nœud
+    //!
+    //! \return Bonus, plafonné à Tunable::HistoryBonusMax
+    //-----------------------------------------------------
     inline int stat_bonus(int depth)
     {
         return std::min<int>(Tunable::HistoryBonusMax, depth*Tunable::HistoryBonusScale - Tunable::HistoryBonusOffset);
     }
 
+    //=====================================================
+    //! \brief  Calcule le malus d'historique en fonction de la profondeur
+    //! \param[in]  depth   profondeur de recherche du nœud
+    //!
+    //! \return Malus (négatif), plafonné en valeur absolue à Tunable::HistoryMalusMax
+    //-----------------------------------------------------
     inline int stat_malus(int depth)
     {
         return -std::min<int>(Tunable::HistoryMalusMax, depth*Tunable::HistoryMalusScale - Tunable::HistoryMalusOffset);

@@ -9,6 +9,12 @@ Bitboard BISHOP_ATTACKS[N_SQUARES][ 512]{};
 
 //======================================================
 //! \brief  set occupancies
+//!
+//! \param[in]  index           index de la variation d'occupancy à générer
+//! \param[in]  bits_in_mask    nombre de bits pertinents dans le masque
+//! \param[in]  attack_mask     masque des cases pertinentes (hors bord)
+//!
+//! \return Bitboard d'occupancy correspondant à l'index donné
 //------------------------------------------------------
 Bitboard set_occupancy(int index, int bits_in_mask, Bitboard attack_mask)
 {
@@ -34,6 +40,11 @@ Bitboard set_occupancy(int index, int bits_in_mask, Bitboard attack_mask)
 
 //======================================================
 //! \brief  generate bishop attacks on the fly
+//!
+//! \param[in]  sq      case de départ du fou
+//! \param[in]  block   bitboard des cases occupées (bloquantes)
+//!
+//! \return Bitboard des cases attaquées par le fou
 //------------------------------------------------------
 Bitboard bishop_attacks_on_the_fly(SQUARE sq, Bitboard block)
 {
@@ -111,6 +122,11 @@ void init_bishop_attacks()
 
 //======================================================
 //! \brief  generate rook attacks on the fly
+//!
+//! \param[in]  sq      case de départ de la tour
+//! \param[in]  block   bitboard des cases occupées (bloquantes)
+//!
+//! \return Bitboard des cases attaquées par la tour
 //------------------------------------------------------
 Bitboard rook_attacks_on_the_fly(SQUARE sq, Bitboard block)
 {
@@ -186,7 +202,7 @@ void init_rook_attacks()
 }
 
 //================================================
-//  Initialisation des attaques
+//! \brief  Initialisation des attaques
 //------------------------------------------------
 void init_masks()
 {

@@ -124,6 +124,10 @@ MovePicker::MovePicker(Board& _board, const History& _history, const SearchInfo 
 
 //=====================================================
 //! \brief  Sélection du prochain coup
+//!
+//! \param[in]  skipQuiets  si vrai, saute les coups tranquilles (et les mauvaises captures)
+//!
+//! \return Le coup sélectionné (MLMove{MOVE_NONE, 0} si aucun coup restant)
 //-----------------------------------------------------
 MLMove MovePicker::next_move(bool skipQuiets)
 {
@@ -376,6 +380,10 @@ void MovePicker::score_quiet()
 
 //====================================================
 //! \brief  Retourne l'indice du meilleur élément
+//!
+//! \param[in]  ml  liste de coups dans laquelle chercher
+//!
+//! \return Indice du coup ayant la plus haute valeur
 //-----------------------------------------------------
 size_t MovePicker::get_best(const MoveList& ml)
 {
@@ -395,6 +403,11 @@ size_t MovePicker::get_best(const MoveList& ml)
 //! \brief  Retourne le coup indiqué
 //! puis déplace le dernier élément à la position
 //! du coup indiqué
+//!
+//! \param[in,out]  ml   liste de coups modifiée (élément retiré)
+//! \param[in]      idx  indice du coup à extraire
+//!
+//! \return Le coup extrait
 //--------------------------------------------------------
 MLMove MovePicker::pop_move(MoveList& ml, size_t idx)
 {
@@ -414,6 +427,9 @@ MLMove MovePicker::pop_move(MoveList& ml, size_t idx)
 
 //========================================================
 //! \brief  Déplace le dernier élément à la position indiquée
+//!
+//! \param[in,out]  ml   liste de coups modifiée
+//! \param[in]      idx  indice de la position à écraser
 //--------------------------------------------------------
 void MovePicker::shift_move(MoveList& ml, size_t idx)
 {
@@ -424,6 +440,8 @@ void MovePicker::shift_move(MoveList& ml, size_t idx)
 //======================================================
 //! \brief  Déplace le coup indiqué dans la liste mlb
 //! Puis enlève le coup de la liste mln
+//!
+//! \param[in]  idx  indice du coup (dans mln) à déplacer vers mlb
 //------------------------------------------------------
 void MovePicker::shift_bad(size_t idx)
 {
@@ -439,6 +457,10 @@ void MovePicker::shift_bad(size_t idx)
 
 //==================================================================
 //! \brief  Vérification de la légalité d'un coup
+//!
+//! \param[in]  move  coup à vérifier
+//!
+//! \return true si le coup est légal dans la position courante
 //------------------------------------------------------------------
 bool MovePicker::is_legal(MOVE move)
 {

@@ -34,6 +34,9 @@
 
 //-----------------------------------------------------
 //! \brief Initialisation depuis une position FEN
+//!
+//! \param[in]  fen         chaîne FEN (ou EPD) décrivant la position
+//! \param[in]  logTactics  affiche l'identifiant EPD sur la sortie standard si true
 //-----------------------------------------------------
 void Board::set_fen(const std::string &fen, bool logTactics) noexcept
 {
@@ -329,8 +332,12 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
 
 
 //=========================================================================
-//  Lecture d'une position fen, mais on va inverser l'Ã©chiquier
-//  Ceci permet de tester l'Ã©valuation, qui doit Ãªtre symÃ©trique.
+//! \brief  Lecture d'une position fen, mais en inversant l'échiquier
+//!
+//! Ceci permet de tester l'évaluation, qui doit être symétrique.
+//!
+//! \param[in]  fen         chaîne FEN (ou EPD) décrivant la position
+//! \param[in]  logTactics  affiche l'identifiant EPD sur la sortie standard si true
 //-------------------------------------------------------------------------
 void Board::mirror_fen(const std::string& fen, bool logTactics)
 {
@@ -588,6 +595,8 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
 //============================================================
 //! \brief  Retourne la chaine fen correspondant
 //! à la position
+//!
+//! \return Chaîne FEN représentant la position courante
 //------------------------------------------------------------
 [[nodiscard]] std::string Board::get_fen() const noexcept
 {
@@ -671,6 +680,8 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
 //! \brief Commande UCI : position
 //!         Entrée d'une position
 //!         et d'une série de coups
+//!
+//! \param[in]  is  flux contenant la position et la liste des coups à jouer
 //-----------------------------------------------------
 void Board::parse_position(std::istringstream &is)
 {
@@ -711,6 +722,8 @@ void Board::parse_position(std::istringstream &is)
 //==========================================================================
 //! \brief  recherche si le coup "token" est un coup légal,
 //!         puis l'exécute
+//!
+//! \param[in]  token  coup au format texte (notation UCI) à rechercher et jouer
 //--------------------------------------------------------------------------
 template <Color C>
 void Board::apply_token(const std::string& token)

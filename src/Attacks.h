@@ -227,28 +227,67 @@ extern Bitboard BISHOP_ATTACKS[64][512];
 // rook attacks table [square][occupancies]
 extern Bitboard ROOK_ATTACKS[64][4096];
 
-// donne l'attaque du pion, pas le déplacement
+//======================================================
+//! \brief  Donne l'attaque du pion (pas le déplacement) pour la couleur C
+//!
+//! \param[in]  sq  case occupée par le pion
+//!
+//! \return Bitboard des cases attaquées par le pion
+//------------------------------------------------------
 template <Color C>
 [[nodiscard]] constexpr Bitboard pawn_attacks(const SQUARE sq) noexcept {
     assert(SQ::is_ok(sq));
     return(PAWN_ATTACKS[C][sq]);
 }
+
+//======================================================
+//! \brief  Donne l'attaque du pion (pas le déplacement) pour la couleur C
+//!         (variante avec couleur passée en paramètre d'exécution)
+//!
+//! \param[in]  C   couleur du pion (0 = WHITE, 1 = BLACK)
+//! \param[in]  sq  case occupée par le pion
+//!
+//! \return Bitboard des cases attaquées par le pion
+//------------------------------------------------------
 [[nodiscard]] constexpr Bitboard pawn_attacks(const int C, const SQUARE sq) noexcept {
     assert(SQ::is_ok(sq));
     return(PAWN_ATTACKS[C][sq]);
 }
 
 
+//======================================================
+//! \brief  Donne les cases attaquées par un cavalier
+//!
+//! \param[in]  sq  case occupée par le cavalier
+//!
+//! \return Bitboard des cases attaquées
+//------------------------------------------------------
 [[nodiscard]] constexpr Bitboard knight_moves(const SQUARE sq) noexcept {
     assert(SQ::is_ok(sq));
     return(KNIGHT_ATTACKS[sq]);
 }
 
+//======================================================
+//! \brief  Donne les cases attaquées par un roi
+//!
+//! \param[in]  sq  case occupée par le roi
+//!
+//! \return Bitboard des cases attaquées
+//------------------------------------------------------
 [[nodiscard]] constexpr Bitboard king_moves(const SQUARE sq) noexcept {
     assert(SQ::is_ok(sq));
     return(KING_ATTACKS[sq]);
 }
 
+//======================================================
+//! \brief  Donne les cases attaquées par un fou, via les tables
+//!         magic bitboards (ou PEXT)
+//!
+//! \param[in]  sq        case occupée par le fou
+//! \param[in]  occupied  bitboard de toutes les cases occupées
+//!
+//! \return Bitboard des cases attaquées
+//------------------------------------------------------
 [[nodiscard]] inline U64 bishop_moves(const SQUARE sq, const U64 occupied) noexcept {
     assert(SQ::is_ok(sq));
 #if defined USE_PEXT
@@ -259,6 +298,15 @@ template <Color C>
 #endif
 }
 
+//======================================================
+//! \brief  Donne les cases attaquées par une tour, via les tables
+//!         magic bitboards (ou PEXT)
+//!
+//! \param[in]  sq        case occupée par la tour
+//! \param[in]  occupied  bitboard de toutes les cases occupées
+//!
+//! \return Bitboard des cases attaquées
+//------------------------------------------------------
 [[nodiscard]] inline U64 rook_moves(const SQUARE sq, const U64 occupied) noexcept {
     assert(SQ::is_ok(sq));
 #if defined USE_PEXT
@@ -270,15 +318,30 @@ template <Color C>
 }
 
 
+//======================================================
+//! \brief  Donne les cases attaquées par une dame
+//!         (union des attaques tour et fou)
+//!
+//! \param[in]  sq        case occupée par la dame
+//! \param[in]  occupied  bitboard de toutes les cases occupées
+//!
+//! \return Bitboard des cases attaquées
+//------------------------------------------------------
 [[nodiscard]] inline U64 queen_moves(const SQUARE sq, const U64 occupied) noexcept {
     assert(SQ::is_ok(sq));
     return(Attacks::rook_moves(sq, occupied) | Attacks::bishop_moves(sq, occupied));
 }
 
+//======================================================
 //! \brief attacks_bb(Square, Bitboard) returns the attacks by the given piece
 //! assuming the board is occupied according to the passed Bitboard.
 //! Sliding piece attacks do not continue passed an occupied square.
-
+//!
+//! \param[in]  sq        case occupée par la pièce
+//! \param[in]  occupied  bitboard de toutes les cases occupées
+//!
+//! \return Bitboard des cases attaquées
+//------------------------------------------------------
 template<PieceType Pt>
 inline Bitboard attacks_bb(SQUARE sq, Bitboard occupied) noexcept
 {
@@ -298,6 +361,17 @@ inline Bitboard attacks_bb(SQUARE sq, Bitboard occupied) noexcept
         return 0;
 }
 
+//======================================================
+//! \brief  Donne les cases attaquées par une pièce, type donné en paramètre
+//!         d'exécution (dispatch runtime, cf. attacks_bb<Pt> pour la
+//!         version template)
+//!
+//! \param[in]  pt        type de la pièce
+//! \param[in]  sq        case occupée par la pièce
+//! \param[in]  occupied  bitboard de toutes les cases occupées
+//!
+//! \return Bitboard des cases attaquées
+//------------------------------------------------------
 inline Bitboard attacks_bb(PieceType pt, SQUARE sq, Bitboard occupied) noexcept
 {
     assert((pt != PieceType::PAWN) && (SQ::is_ok(sq)));

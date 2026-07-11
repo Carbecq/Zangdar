@@ -19,6 +19,9 @@ struct TunableParam
     std::string name;
     int value, min, max, step;
 
+    //==================================================
+    //! \brief  Conversion implicite vers la valeur courante du paramètre
+    //--------------------------------------------------
     operator int() const { return value; }
 };
 

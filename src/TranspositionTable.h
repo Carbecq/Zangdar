@@ -29,27 +29,47 @@ struct HashEntry {
     U08   depth;        //  8 bits
     U08   agePvBound;   //  8 bits  (5 bits age : 1 bit pv ; 2 bits bound)      : 0-31
 
+    //==================================================
+    //! \brief  Extrait l'âge stocké dans agePvBound
+    //--------------------------------------------------
     [[nodiscard]] inline auto age() const
     {
         return static_cast<U32>(agePvBound >> 3);
     }
 
+    //==================================================
+    //! \brief  Extrait le drapeau "pv" stocké dans agePvBound
+    //--------------------------------------------------
     [[nodiscard]] inline auto pv() const
     {
         return (static_cast<U32>(agePvBound >> 2) & 1) != 0;
     }
 
+    //==================================================
+    //! \brief  Extrait le type de borne (bound) stocké dans agePvBound
+    //--------------------------------------------------
     [[nodiscard]] inline auto bound() const
     {
         return static_cast<U08>(agePvBound & 0x3);
     }
 
+    //==================================================
+    //! \brief  Encode l'âge, le drapeau pv et le type de borne dans agePvBound
+    //! \param[in]  age    âge courant de la table de transposition
+    //! \param[in]  pv     "true" si l'entrée provient d'une ligne principale
+    //! \param[in]  bound  type de borne (BOUND_NONE/UPPER/LOWER/EXACT)
+    //--------------------------------------------------
     inline void setAgePvBound(U32 age, bool pv, U08 bound)
     {
         assert(age < (1 << AgeBits));
         agePvBound = (age << 3) | (static_cast<U32>(pv) << 2) | static_cast<U32>(bound);
     }
 
+    //==================================================
+    //! \brief  Calcule l'âge relatif de l'entrée par rapport à l'âge courant de la table
+    //! \param[in]  tt_age  âge courant de la table de transposition
+    //! \return Âge relatif (plus la valeur est grande, plus l'entrée est ancienne)
+    //--------------------------------------------------
     [[nodiscard]] inline auto relative_age(U32 tt_age) const
     {
         return (HashEntry::AgeCycle + tt_age - age()) & HashEntry::AgeMask;
@@ -107,21 +127,36 @@ private:
     U32                         tt_age{};
     std::vector<HashCluster>    tt_entries = {};
 
+    //==================================================
+    //! \brief  Calcule l'index du cluster correspondant à une clé de hachage
+    //! \param[in]  key  clé de hachage (Zobrist) de la position
+    //! \return Index du cluster dans tt_entries
+    //--------------------------------------------------
     inline U64 index(U64 key) const noexcept {
         // this emits a single mul on both x64 and arm64
         return static_cast<U64>((static_cast<U128>(key) * static_cast<U128>(nbr_cluster)) >> 64);
     }
 
 public:
+    //==================================================
+    //! \brief  Constructeur par défaut
+    //! Utilise la taille de hash par défaut (HASH_SIZE)
+    //--------------------------------------------------
     TranspositionTable() : TranspositionTable(HASH_SIZE) {}
     TranspositionTable(int MB);
     ~TranspositionTable();
 
     void init_size(int mbsize);
+    //==================================================
+    //! \brief  Retourne le nombre de clusters de la table
+    //--------------------------------------------------
     int  get_hash_size(void) const { return nbr_cluster; }
     std::string info();
 
     void clear(void);
+    //==================================================
+    //! \brief  Incrémente l'âge courant de la table de transposition (nouvelle recherche)
+    //--------------------------------------------------
     inline void update_age() noexcept {
         tt_age = (tt_age + 1) & HashEntry::AgeMask;
     }
@@ -130,7 +165,12 @@ public:
     bool probe(U64 hash, int ply, MOVE &code, int &score, int &eval, int &bound, int &depth, bool &pv);
     int  hash_full() const;
 
-    //! \brief Store terminal scores as distance from the current position to mate/TB
+    //==================================================
+    //! \brief  Store terminal scores as distance from the current position to mate/TB
+    //! \param[in]  score  score à convertir avant stockage en TT
+    //! \param[in]  ply    profondeur (distance à la racine) de la position
+    //! \return Score converti, prêt à être stocké dans l'entrée de la TT
+    //--------------------------------------------------
     int ScoreToTT (const int score, const int ply)
     {
         return   score == VALUE_NONE ? VALUE_NONE
@@ -139,7 +179,12 @@ public:
                : score;
     }
 
-    //! \brief Add the distance from root to terminal scores get the total distance to mate/TB
+    //==================================================
+    //! \brief  Add the distance from root to terminal scores get the total distance to mate/TB
+    //! \param[in]  score  score lu depuis la TT
+    //! \param[in]  ply    profondeur (distance à la racine) de la position
+    //! \return Score converti, utilisable directement par la recherche
+    //--------------------------------------------------
     int ScoreFromTT (const int score, const int ply)
     {
         return   score == VALUE_NONE ? VALUE_NONE
@@ -148,10 +193,12 @@ public:
                : score;
     }
 
-    //------------------------------------------------
-    /// prefetch() preloads the given address in L1/L2 cache. This is a non-blocking
-    /// function that doesn't stall the CPU waiting for data to be loaded from memory,
-    /// which can be quite slow.
+    //==================================================
+    //! \brief  prefetch() preloads the given address in L1/L2 cache. This is a
+    //!         non-blocking function that doesn't stall the CPU waiting for data
+    //!         to be loaded from memory, which can be quite slow.
+    //! \param[in]  key  clé de hachage (Zobrist) de la position à précharger
+    //--------------------------------------------------
     inline void prefetch(const U64 key)
     {
         __builtin_prefetch(&tt_entries[index(key)]);

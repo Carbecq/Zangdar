@@ -20,6 +20,7 @@ template <Color C, bool divide=false>
 //!
 //! On va faire, pour chaque position, plusieurs tests
 //!
+//! \param[in]  abc     suffixe du fichier perftsuite_<abc>.epd à charger
 //! \param[in]  dmax    profondeur max
 //----------------------------------------------------
 void test_suite(const std::string& abc, int dmax)
@@ -185,7 +186,12 @@ void test_suite(const std::string& abc, int dmax)
 
 //========================================================
 //! \brief  lancement d'un test perft sur une position
-//! \param  depth   profondeur max de recherche
+//!
+//! \param[in]  str     code désignant une position de référence
+//!                      (r, k, s, f, p21, pos3...pos6) ; sinon m_fen est utilisé
+//! \param[in]  m_fen   FEN de la position à tester si str ne correspond
+//!                      à aucun code connu
+//! \param[in]  depth   profondeur max de recherche
 //---------------------------------------------------------
 template <bool divide>
 void test_perft(const std::string& str, const std::string& m_fen, int depth)
@@ -289,6 +295,8 @@ void test_perft(const std::string& str, const std::string& m_fen, int depth)
 //======================================================
 //! \brief  Affiche tous les coups possibles ainsi que leur évaluation NNUE
 //!         L'affichage est trié par évaluation décroissante
+//!
+//! \param[in]  fen     position de départ au format FEN
 //------------------------------------------------------
 void test_eval(const std::string& fen)
 {
@@ -377,6 +385,8 @@ void test_eval(const std::string& fen)
 //====================================================
 //! \brief Test Syzygy : sonde les tables pour la position
 //!        donnée en FEN et affiche le résultat détaillé.
+//!
+//! \param[in]  fen     position à sonder au format FEN
 //----------------------------------------------------
 void test_syzygy(const std::string& fen)
 {
@@ -441,6 +451,13 @@ void test_mirror(void)
 //! \brief  Test vérifiant la symétrie de l'évaluation
 //! L'évaluation de la position originale doit être identique
 //! à celle de la position miroir (couleurs inversées).
+//!
+//! \param[in,out]  board   échiquier de travail, réinitialisé
+//!                          puis positionné successivement sur
+//!                          la position et sa position miroir
+//! \param[in]      line    ligne du fichier de test contenant la FEN
+//!
+//! \return true si les deux évaluations sont identiques, false sinon
 //-----------------------------------------------------------
 bool test_mirror(Board& board, const std::string& line)
 {

@@ -49,7 +49,11 @@ void Board::calculate_checkers_pinned() noexcept
     }
 }
 
-//! \brief Retourne le Bitboard des cases attaquées
+//===========================================================================
+//! \brief  Retourne le Bitboard des cases attaquées par la couleur C
+//!
+//! \return Bitboard des cases attaquées
+//---------------------------------------------------------------------------
 template <Color C>
 [[nodiscard]] Bitboard Board::squares_attacked() const noexcept
 {
@@ -96,8 +100,14 @@ template <Color C>
 template Bitboard Board::squares_attacked<WHITE>() const noexcept ;
 template Bitboard Board::squares_attacked<BLACK>() const noexcept ;
 
-//! \brief Retourne le Bitboard des cases attaquées par C avec une occupancy explicite
-//! (utilisé pour les mouvements du roi, sans le roi dans l'occupancy)
+//===========================================================================
+//! \brief  Retourne le Bitboard des cases attaquées par C avec une occupancy explicite
+//!         (utilisé pour les mouvements du roi, sans le roi dans l'occupancy)
+//!
+//! \param[in]  occ     occupancy explicite à utiliser pour les pièces glissantes
+//!
+//! \return Bitboard des cases attaquées
+//---------------------------------------------------------------------------
 template <Color C>
 [[nodiscard]] Bitboard Board::squares_attacked(Bitboard occ) const noexcept
 {

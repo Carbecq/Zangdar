@@ -38,6 +38,10 @@ public:
           U64 nodes,
           int movetime);
 
+    //===========================================================
+    //! \brief  Constructeur par défaut
+    //! Délègue au constructeur principal avec toutes les limites à zéro
+    //-----------------------------------------------------------
     Timer() : Timer(false,
                0,
                0,
@@ -56,9 +60,19 @@ public:
     bool check_limits(const int depth, const int index, const U64 total_nodes);
     bool finishOnThisDepth(int elapsed, int depth, U64 total_nodes, const int* pv_scores, const MOVE *pv_moves);
 
+    //===========================================================
+    //! \brief  Retourne la profondeur de recherche imposée
+    //-----------------------------------------------------------
     int  getSearchDepth() const { return(searchDepth); }
     I64  elapsedTime() const;
+    //===========================================================
+    //! \brief  Fixe le "move overhead" (temps de réserve pour l'interface)
+    //! \param[in]  n   nouvelle valeur du move overhead, en millisecondes
+    //-----------------------------------------------------------
     void setMoveOverhead(I64 n) { MoveOverhead = n;     }
+    //===========================================================
+    //! \brief  Retourne le "move overhead" (temps de réserve pour l'interface)
+    //-----------------------------------------------------------
     I64  getMoveOverhead() const { return MoveOverhead; }
 
     void updateMoveNodes(MOVE move, U64 nodes);

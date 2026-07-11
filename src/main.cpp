@@ -13,6 +13,18 @@ ThreadPool          threadPool(1, false, true);
 
 extern void init_bitmasks();
 
+//=======================================================
+//! \brief  Point d'entrée du programme
+//!
+//! Initialise les tables d'attaques et Cuckoo, puis lance
+//! soit le bench, soit le datagen, soit la boucle UCI,
+//! selon les arguments de la ligne de commande.
+//!
+//! \param[in]  argCount    nombre d'arguments
+//! \param[in]  argValue    tableau des arguments
+//!
+//! \return Code de retour du programme
+//-------------------------------------------------------
 int main(int argCount, char* argValue[])
 {
     Attacks::init_masks();

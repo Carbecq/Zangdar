@@ -17,6 +17,11 @@ const Network *network = reinterpret_cast<const Network *>(gnetworkDataData);
 
 //======================================================
 //! \brief  Retourne l'évaluation du réseau
+//!
+//! \param[in] current  accumulateur courant (2 perspectives)
+//! \param[in] count    nombre de pièces restantes (pour l'output bucket)
+//!
+//! \return Score en centipions du point de vue de "color"
 //------------------------------------------------------
 template<Color color>
 int NNUE::evaluate(const Accumulator& current, size_t count)
@@ -34,6 +39,8 @@ int NNUE::evaluate(const Accumulator& current, size_t count)
 
 //====================================================
 //! \brief  Initialise NNUE pour une nouvelle recherche
+//!
+//! \param[in] board    position de départ de la recherche
 //----------------------------------------------------
 void NNUE::start_search(const Board& board)
 {
@@ -71,6 +78,8 @@ void NNUE::start_search(const Board& board)
 //!         des positions de stack qui ne sont plus valides).
 //!         Utilisé dans DataGen pour éviter l'overflow du stack
 //!         quand start_search() n'est appelé qu'une fois par partie.
+//!
+//! \param[in] board    position courante (pour appliquer les lazy updates en attente)
 //!
 //!  C'est utile. Voici pourquoi.
 //!
@@ -135,6 +144,8 @@ void NNUE::pop()
 
 //====================================================
 //! \brief  Re-initalise toutes les perspectives
+//!
+//! \param[out] acc   accumulateur à réinitialiser (biais du réseau)
 //----------------------------------------------------
 void NNUE::init_accumulator(Accumulator& acc)
 {
@@ -152,7 +163,13 @@ void FinnyEntry::init()
 }
 
 //========================================================================
-//! \brief  Ajout d'une feature
+//! \brief  Ajout d'une feature (variante non-SIMD, les 2 perspectives à la fois)
+//!
+//! \param[in,out] accu     accumulateur mis à jour (white et black)
+//! \param[in]     piece    pièce ajoutée
+//! \param[in]     from     case de cette pièce
+//! \param[in]     wking    case du roi blanc
+//! \param[in]     bking    case du roi noir
 //------------------------------------------------------------------------
 void NNUE::add(Accumulator& accu, Piece piece, SQUARE from, SQUARE wking, SQUARE bking)
 {
@@ -181,6 +198,13 @@ void NNUE::add(Accumulator& accu, Piece piece, SQUARE from, SQUARE wking, SQUARE
 //!      sum est à l'échelle QA² × QB
 //!      eval = sum / QA + bias   (bias à QAB = QA×QB → cohérent après /QA)
 //!      eval = eval × SCALE / QAB
+//!
+//! \param[in] us       accumulateur (HIDDEN_LAYER_SIZE) de la perspective du joueur actif
+//! \param[in] them     accumulateur (HIDDEN_LAYER_SIZE) de la perspective de l'adversaire
+//! \param[in] weights  output_weights du réseau (toutes perspectives, tous buckets)
+//! \param[in] bucket   output bucket sélectionné (selon le nb de pièces restantes)
+//!
+//! \return Score en centipions
 //!
 //! Ref : https://cosmo.tardis.ac/files/2024-06-01-nnue.html
 //-----------------------------------------
@@ -248,7 +272,18 @@ I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
 
 #else
 
-// Fallback scalaire (sans SIMD) — même algorithme SCReLU Lizard
+//=========================================
+//! \brief  Évaluation SCReLU + produit matrice-vecteur (activations × output_weights) → score en centipions
+//!
+//! Fallback scalaire (sans SIMD) — même algorithme SCReLU Lizard que la version SIMD ci-dessus
+//!
+//! \param[in] us       accumulateur (HIDDEN_LAYER_SIZE) de la perspective du joueur actif
+//! \param[in] them     accumulateur (HIDDEN_LAYER_SIZE) de la perspective de l'adversaire
+//! \param[in] weights  output_weights du réseau (toutes perspectives, tous buckets)
+//! \param[in] bucket   output bucket sélectionné (selon le nb de pièces restantes)
+//!
+//! \return Score en centipions
+//-----------------------------------------
 I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
                      const std::array<I16, HIDDEN_LAYER_SIZE>& them,
                      const std::array<I16, HIDDEN_LAYER_SIZE * N_COLORS * OUTPUT_BUCKETS>& weights,
@@ -276,6 +311,9 @@ I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
 //============================================================
 //! \brief  Utilisation de l'optimisation Lazy Updates
 //! https://www.chessprogramming.org/NNUE#Lazy_Updates
+//!
+//! \param[in]     board    position courante
+//! \param[in,out] acc      accumulateur à mettre à jour (2 perspectives)
 //------------------------------------------------------------
 void NNUE::lazy_updates(const Board& board, Accumulator& acc)
 {
@@ -283,6 +321,17 @@ void NNUE::lazy_updates(const Board& board, Accumulator& acc)
     lazy_update<BLACK>(board, acc);
 }
 
+//============================================================
+//! \brief  Met à jour paresseusement une perspective de l'accumulateur courant
+//!
+//! Remonte le stack à la recherche du dernier accumulateur à jour pour
+//! cette perspective. Si un changement de king bucket ou de flanc est
+//! détecté en chemin, déclenche un rafraîchissement complet (Finny table)
+//! au lieu d'accumuler les updates incrémentales.
+//!
+//! \param[in]     board    position courante (pour le rafraîchissement complet)
+//! \param[in,out] acc      accumulateur courant (sommet du stack) à mettre à jour
+//------------------------------------------------------------
 template <Color side>
 void NNUE::lazy_update(const Board &board, Accumulator& acc)
 {
@@ -323,6 +372,12 @@ void NNUE::lazy_update(const Board &board, Accumulator& acc)
 
 //======================================================
 //! \brief  Faut-il raffraichir l'accumulateur ?
+//!
+//! \param[in] old_king     ancienne case du roi de cette perspective
+//! \param[in] new_king     nouvelle case du roi de cette perspective
+//!
+//! \return true si le changement de flanc (mirroring) ou de king bucket
+//!         impose un rafraîchissement complet plutôt qu'une update incrémentale
 //------------------------------------------------------
 template <Color side>
 bool NNUE::need_refresh(SQUARE old_king, SQUARE new_king)
@@ -341,7 +396,14 @@ bool NNUE::need_refresh(SQUARE old_king, SQUARE new_king)
 }
 
 //===================================================================
-//  Prise en compte des modifications apportées à la perspective
+//! \brief  Prise en compte des modifications apportées à la perspective
+//!
+//! Répartit vers sub_add / sub_sub_add / sub_sub_add_add selon le type
+//! de coup enregistré dans dst.dirtyPieces (NORMAL / CAPTURE / CASTLING).
+//!
+//! \param[in]  src     accumulateur source (précédent, à jour)
+//! \param[out] dst     accumulateur destination (contient les dirtyPieces du coup)
+//! \param[in]  king    case du roi de cette perspective
 //--------------------------------------------------------------------
 template <Color side>
 void NNUE::update(const Accumulator& src, Accumulator& dst, SQUARE king)
@@ -379,6 +441,13 @@ void NNUE::update(const Accumulator& src, Accumulator& dst, SQUARE king)
 //========================================================================
 //! \brief  Calcule l'indice du triplet (couleur, piece, case)
 //! dans l'Input Layer
+//!
+//! \param[in] piece    pièce concernée
+//! \param[in] square   case de cette pièce
+//! \param[in] wking    case du roi blanc
+//! \param[in] bking    case du roi noir
+//!
+//! \return Paire (indice perspective blanche, indice perspective noire)
 //------------------------------------------------------------------------
 std::pair<size_t, size_t> NNUE::get_indices(Piece piece, SQUARE square, SQUARE wking, SQUARE bking)
 {
@@ -424,7 +493,12 @@ std::pair<size_t, size_t> NNUE::get_indices(Piece piece, SQUARE square, SQUARE w
 //========================================================================
 //! \brief  Calcule l'indice du triplet (couleur, piece, case)
 //!         pour une perspective
-//! \param[in] side     perspective
+//! \param[in] side     perspective (template)
+//! \param[in] piece    pièce concernée
+//! \param[in] square   case de cette pièce
+//! \param[in] king     case du roi de cette perspective
+//!
+//! \return Indice dans l'Input Layer (feature_weights)
 //------------------------------------------------------------------------
 template <Color side>
 U32 NNUE::get_indice(Piece piece, SQUARE square, SQUARE king)
@@ -457,11 +531,11 @@ U32 NNUE::get_indice(Piece piece, SQUARE square, SQUARE king)
 }
 
 //================================================================
-//! \brief  Ajoute une pièce
-//! \param[in] piece    pièce à ajouter
-//! \param[in] color    couleur de cette pièce
-//! \param[in] from     position de cette pièce
-//! \param[in] king     position du roi de couleur "US"
+//! \brief  Ajoute une pièce (SIMD, une seule perspective)
+//! \param[in,out] accu     accumulateur de cette perspective à mettre à jour
+//! \param[in]     piece    pièce à ajouter
+//! \param[in]     from     position de cette pièce
+//! \param[in]     king     position du roi de couleur "US"
 //----------------------------------------------------------------
 template <Color side>
 void NNUE::add(Accumulator& accu, Piece piece, SQUARE from, SQUARE king)
@@ -497,6 +571,13 @@ void NNUE::add(Accumulator& accu, Piece piece, SQUARE from, SQUARE king)
 #endif
 }
 
+//================================================================
+//! \brief  Supprime une pièce (SIMD, une seule perspective)
+//! \param[in,out] accu     accumulateur de cette perspective à mettre à jour
+//! \param[in]     piece    pièce à supprimer
+//! \param[in]     from     position de cette pièce
+//! \param[in]     king     position du roi de couleur "US"
+//----------------------------------------------------------------
 template <Color side>
 void NNUE::sub(Accumulator& accu, Piece piece, SQUARE from, SQUARE king)
 {
@@ -532,8 +613,13 @@ void NNUE::sub(Accumulator& accu, Piece piece, SQUARE from, SQUARE king)
 
 //=================================================================================
 //! \brief  Update combiné : Ajout + Suppression
-//! \param[in]  sub_piece       pièce supprimée de from
-//! \param[in]  add_piece       pièce ajoutée en dest
+//! \param[in]  src         accumulateur source (précédent, à jour)
+//! \param[out] dst         accumulateur destination
+//! \param[in]  sub_piece   pièce supprimée de from
+//! \param[in]  sub         case de la pièce supprimée
+//! \param[in]  add_piece   pièce ajoutée en dest
+//! \param[in]  add         case de la pièce ajoutée
+//! \param[in]  king        position du roi de couleur "US"
 //---------------------------------------------------------------------------------
 template <Color side>
 void NNUE::sub_add(const Accumulator& src, Accumulator& dst,
@@ -595,9 +681,15 @@ void NNUE::sub_add(const Accumulator& src, Accumulator& dst,
 //! \brief  Update combiné : Ajout + Suppression + Suppression
 //! La pièce supprimée en dest appartient au camp ennemi
 //! Cette routine est utilisée pour la prise en passant
+//! \param[in]  src             accumulateur source (précédent, à jour)
+//! \param[out] dst             accumulateur destination
 //! \param[in]  sub_piece_1     pièce supprimée de from
+//! \param[in]  sub_1           case de la pièce supprimée de from
 //! \param[in]  sub_piece_2     pièce ennemie supprimée de sub
-//! \param[in]  add_piece       pièce ajoutée en dest
+//! \param[in]  sub_2           case de la pièce ennemie supprimée
+//! \param[in]  add_piece_1     pièce ajoutée en dest
+//! \param[in]  add_1           case de la pièce ajoutée
+//! \param[in]  king            position du roi de couleur "US"
 //!
 //---------------------------------------------------------------------------------
 template <Color side>
@@ -660,6 +752,21 @@ void NNUE::sub_sub_add(const Accumulator& src, Accumulator& dst,
 #endif
 }
 
+//=================================================================================
+//! \brief  Update combiné : Ajout + Ajout + Suppression + Suppression
+//! Utilisé pour le roque (tour et roi bougent tous les deux)
+//! \param[in]  src             accumulateur source (précédent, à jour)
+//! \param[out] dst             accumulateur destination
+//! \param[in]  sub_piece_1     1ère pièce supprimée (position de départ)
+//! \param[in]  sub_1           case de la 1ère pièce supprimée
+//! \param[in]  sub_piece_2     2ème pièce supprimée (position de départ)
+//! \param[in]  sub_2           case de la 2ème pièce supprimée
+//! \param[in]  add_piece_1     1ère pièce ajoutée (position d'arrivée)
+//! \param[in]  add_1           case de la 1ère pièce ajoutée
+//! \param[in]  add_piece_2     2ème pièce ajoutée (position d'arrivée)
+//! \param[in]  add_2           case de la 2ème pièce ajoutée
+//! \param[in]  king            position du roi de couleur "US"
+//---------------------------------------------------------------------------------
 template <Color side>
 void NNUE::sub_sub_add_add(const Accumulator& src, Accumulator& dst,
                            Piece sub_piece_1, SQUARE sub_1,
@@ -730,6 +837,8 @@ void NNUE::sub_sub_add_add(const Accumulator& src, Accumulator& dst,
 //==========================================================================
 //! \brief  Raffaichissement de l'accumulateur
 //! De façon à minimiser le travail, on utilise les finny tables
+//! \param[in]  board   position courante
+//! \param[out] acc     accumulateur de cette perspective à rafraîchir
 //--------------------------------------------------------------------------
 template <Color side>
 void NNUE::refresh_accumulator(const Board &board, Accumulator& acc)

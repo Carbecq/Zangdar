@@ -18,8 +18,10 @@ https://github.com/AndyGrant/Pyrrhic
 
 //=========================================================================
 //! \brief Converts a tbresult into a score
-//! \param[in] wdl  result
-//! \param[in] dtz  ply
+//! \param[in]  wdl     résultat WDL renvoyé par Pyrrhic
+//! \param[in]  dtz     distance to zeroing (ply)
+//! \param[out] score   score calculé à partir du résultat WDL
+//! \param[out] bound   type de borne associée au score (exact/lower/upper)
 //-------------------------------------------------------------------------
 void Board::TBScore(const unsigned wdl, const unsigned dtz, int& score, int& bound) const
 {
@@ -49,6 +51,12 @@ void Board::TBScore(const unsigned wdl, const unsigned dtz, int& score, int& bou
 
 //=========================================================================
 //! \brief Probe the Win-Draw-Loss (WDL) table.
+//!
+//! \param[out] score   score déduit du résultat WDL sondé
+//! \param[out] bound   type de borne associée au score
+//! \param[in]  ply     profondeur de recherche courante (0 = racine, exclue)
+//!
+//! \return true si le sondage a réussi, false sinon
 //-------------------------------------------------------------------------
 bool Board::probe_wdl(int& score, int& bound, int ply) const
 {
@@ -95,6 +103,10 @@ bool Board::probe_wdl(int& score, int& bound, int ply) const
 //! Retourne false → la position est hors de la table Syzygy
 //!
 //! This function should not be used during search.
+//!
+//! \param[out] move    coup DTZ-optimal trouvé (MOVE_NONE si non trouvé)
+//!
+//! \return true si la position a été trouvée dans les tables Syzygy, false sinon
 //-------------------------------------------------------------------------
 bool Board::probe_root(MOVE& move) const
 {
@@ -266,6 +278,13 @@ void Board::probe_root_test() const
     }
 }
 
+//=========================================================================
+//! \brief Convertit un coup au format Pyrrhic en coup au format Zangdar
+//!
+//! \param[in]  result  résultat Pyrrhic encodant from/to/ep/promotion
+//!
+//! \return Le coup correspondant, codé au format MOVE de Zangdar
+//-------------------------------------------------------------------------
 MOVE Board::convertPyrrhicMove(unsigned result) const
 {
     // Extraction de la représentation de coup de Pyrrhic
@@ -292,6 +311,9 @@ MOVE Board::convertPyrrhicMove(unsigned result) const
     }
 }
 
+//=========================================================================
+//! \brief Affiche l'état de la configuration Syzygy (debug)
+//-------------------------------------------------------------------------
 void Board::syzygy_info()
 {
     std::cout << "useSyzygy  = " << threadPool.get_useSyzygy() << std::endl;

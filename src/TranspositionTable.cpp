@@ -19,6 +19,7 @@
 
 //========================================================
 //! \brief  Constructeur avec argument
+//! \param[in]  MB  taille de la table de transposition, en mégaoctets
 //--------------------------------------------------------
 TranspositionTable::TranspositionTable(int MB) :
     nbr_cluster(0),
@@ -42,6 +43,7 @@ TranspositionTable::~TranspositionTable()
 
 //========================================================
 //! \brief  Initialisation de la table
+//! \param[in]  mbsize  taille de la table de transposition, en mégaoctets
 //--------------------------------------------------------
 void TranspositionTable::init_size(int mbsize)
 {
@@ -91,6 +93,14 @@ void TranspositionTable::clear(void)
 
 //========================================================
 //! \brief  Ecriture dans la hashtable d'une nouvelle donnée
+//! \param[in]  key    code hash (Zobrist) de la position
+//! \param[in]  move   meilleur coup trouvé pour cette position
+//! \param[in]  score  score de la position (converti avant stockage)
+//! \param[in]  eval   évaluation statique de la position
+//! \param[in]  bound  type de borne (BOUND_NONE/UPPER/LOWER/EXACT)
+//! \param[in]  depth  profondeur de recherche atteinte
+//! \param[in]  ply    profondeur (distance à la racine) de la position
+//! \param[in]  pv     "true" si le nœud provient d'une ligne principale
 //--------------------------------------------------------
 void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int bound, int depth, int ply, bool pv)
 {
@@ -160,14 +170,16 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int boun
 }
 
 //========================================================
-//! \brief  Recherche d'une donnée
-//! \param[in]  hash    code hash de la position recherchée
-//! \param{out] code    coup trouvé
-//! \param{out] score   score de ce coup
-//! \param{in]  alpha
-//! \param{in]  beta
-//! \param{in]  depth
-//! \param{in]  ply
+//! \brief  Recherche d'une donnée dans la table de transposition
+//! \param[in]  key     code hash (Zobrist) de la position recherchée
+//! \param[in]  ply     profondeur (distance à la racine) de la position
+//! \param[out] move    coup trouvé
+//! \param[out] score   score de la position (converti depuis le format TT)
+//! \param[out] eval    évaluation statique stockée
+//! \param[out] bound   type de borne (BOUND_NONE/UPPER/LOWER/EXACT)
+//! \param[out] depth   profondeur de recherche associée à l'entrée
+//! \param[out] pv      "true" si l'entrée provient d'une ligne principale
+//! \return Retourne "true" si une entrée correspondant à "key" a été trouvée
 //--------------------------------------------------------
 bool TranspositionTable::probe(U64 key, int ply, MOVE& move, int &score, int& eval, int &bound, int& depth, bool& pv)
 {
@@ -216,6 +228,11 @@ int TranspositionTable::hash_full() const
 }
 
 
+//=======================================================================
+//! \brief  Construit une chaîne décrivant la configuration de la table
+//!         de transposition (taille, nombre de clusters/entrées)
+//! \return Chaîne de description, prête à être affichée ou loguée
+//-----------------------------------------------------------------------
 std::string TranspositionTable::info()
 {
     std::stringstream sstr;

@@ -28,7 +28,9 @@ void History::reset()
 
 //==================================================================
 //! \brief  Récupère le counter_move
-//! \param[in] info         recherche actuelle
+//! \param[in]  info    recherche actuelle
+//!
+//! \return Coup ayant provoqué un cutoff au coup précédent, MOVE_NONE si aucun
 //------------------------------------------------------------------
 MOVE History::get_counter_move(const SearchInfo* info) const
 {
@@ -42,6 +44,12 @@ MOVE History::get_counter_move(const SearchInfo* info) const
 //==============================================================
 //! \brief  Retourne la somme de tous les history "quiet"
 //! Utilisé pour la recherche
+//! \param[in]  color   camp qui joue
+//! \param[in]  info    recherche actuelle
+//! \param[in]  move    coup quiet évalué
+//! \param[in]  pawnkey clé de hachage de la structure de pions
+//!
+//! \return Somme des scores main history, pawn history et continuation history
 //--------------------------------------------------------------
 int History::get_quiet_history(Color color, const SearchInfo* info, const MOVE move, KEY pawnkey) const
 {
@@ -79,6 +87,13 @@ int History::get_quiet_history(Color color, const SearchInfo* info, const MOVE m
 
 //==============================================================
 //! \brief  Mise à jour de tous les history "quiet"
+//! \param[in]  color       camp qui joue
+//! \param[in,out] info     recherche actuelle (killer moves mis à jour)
+//! \param[in]  best_move   coup quiet ayant provoqué le cutoff (fail-high)
+//! \param[in]  pawnkey     clé de hachage de la structure de pions
+//! \param[in]  depth       profondeur de recherche du nœud
+//! \param[in]  quiet_count nombre de coups quiets essayés à ce nœud
+//! \param[in]  quiet_moves liste des coups quiets essayés à ce nœud
 //--------------------------------------------------------------
 void History::update_quiet_history(Color color, SearchInfo* info, MOVE best_move, KEY pawnkey, I16 depth,
                                    size_t quiet_count, std::array<MOVE, MAX_MOVES>& quiet_moves)
@@ -127,6 +142,9 @@ void History::update_quiet_history(Color color, SearchInfo* info, MOVE best_move
 
 //==================================================================
 //! \brief  Met à jour la main history
+//! \param[in]  color   camp qui joue
+//! \param[in]  info    recherche actuelle
+//! \param[in]  move    coup quiet concerné
 //! \param[in]  bonus   bonus (positif) ou malus (négatif)
 //------------------------------------------------------------------
 void History::update_main(Color color, SearchInfo* info, MOVE move, int bonus)
@@ -139,6 +157,8 @@ void History::update_main(Color color, SearchInfo* info, MOVE move, int bonus)
 
 //==================================================================
 //! \brief  Met à jour la pawn history
+//! \param[in]  pawnkey clé de hachage de la structure de pions
+//! \param[in]  move    coup quiet concerné
 //! \param[in]  bonus   bonus (positif) ou malus (négatif)
 //------------------------------------------------------------------
 void History::update_pawn(KEY pawnkey, MOVE move, int bonus)
@@ -148,6 +168,8 @@ void History::update_pawn(KEY pawnkey, MOVE move, int bonus)
 
 //==================================================================
 //! \brief  Met à jour la continuation history (1-ply, 2-ply, 4-ply)
+//! \param[in]  info    recherche actuelle
+//! \param[in]  move    coup quiet concerné
 //! \param[in]  bonus   bonus (positif) ou malus (négatif)
 //------------------------------------------------------------------
 void History::update_continuation(SearchInfo* info, MOVE move, int bonus)
@@ -163,6 +185,12 @@ void History::update_continuation(SearchInfo* info, MOVE move, int bonus)
 //==================================================================
 //! \brief  Met à jour la continuation history après LMR
 //! Bonus si score >= beta, malus si score <= alpha
+//! \param[in]  info    recherche actuelle
+//! \param[in]  move    coup concerné
+//! \param[in]  score   score retourné par la recherche
+//! \param[in]  alpha   borne inférieure de la fenêtre de recherche
+//! \param[in]  beta    borne supérieure de la fenêtre de recherche
+//! \param[in]  depth   profondeur de recherche du nœud
 //------------------------------------------------------------------
 void History::update_continuation_history(SearchInfo* info, MOVE move, int score, int alpha, int beta, int depth)
 {
@@ -174,8 +202,13 @@ void History::update_continuation_history(SearchInfo* info, MOVE move, int score
 }
 
 //=================================================================
-//! \brief  Capture History : [moved piece][threat from][threat to][target square][captured piece type]
-//! \param[in] move
+//! \brief  Mise à jour de la capture history
+//! Bonus pour le coup ayant provoqué un cutoff, malus pour les autres captures essayées
+//! \param[in]  info            recherche actuelle
+//! \param[in]  best_move       coup de capture ayant provoqué le cutoff (fail-high)
+//! \param[in]  depth           profondeur de recherche du nœud
+//! \param[in]  capture_count   nombre de coups de capture essayés à ce nœud
+//! \param[in]  capture_moves   liste des coups de capture essayés à ce nœud
 //-----------------------------------------------------------------
 void History::update_capture_history(const SearchInfo *info, MOVE best_move, I16 depth,
                                      size_t capture_count, std::array<MOVE, MAX_MOVES>& capture_moves)
@@ -198,6 +231,8 @@ void History::update_capture_history(const SearchInfo *info, MOVE best_move, I16
 
 //==================================================================
 //! \brief  Met à jour la capture history pour un coup
+//! \param[in]  info    recherche actuelle
+//! \param[in]  move    coup de capture concerné
 //! \param[in]  delta   bonus (positif) ou malus (négatif)
 //------------------------------------------------------------------
 void History::update_capture(const SearchInfo *info, MOVE move, int delta)
@@ -211,8 +246,12 @@ void History::update_capture(const SearchInfo *info, MOVE move, int delta)
 }
 
 //=================================================================
-//! \brief  Correction History : [color][pawn_key_index]
-//! \param[in] move
+//! \brief  Mise à jour des tables de correction history (pawn et non-pawn)
+//! en fonction de l'écart entre le score de recherche et l'éval statique
+//! \param[in]  board       échiquier courant
+//! \param[in]  depth       profondeur de recherche du nœud
+//! \param[in]  best_score  score retourné par la recherche
+//! \param[in]  static_eval éval statique (NNUE) du nœud
 //-----------------------------------------------------------------
 void History::update_correction_history(const Board& board, int depth, int best_score, int static_eval)
 {
@@ -234,6 +273,11 @@ void History::update_correction_history(const Board& board, int depth, int best_
  //! Le bonus reflète la magnitude de l'écart eval_diff, pondérée par
  //! la profondeur. La gravity (entry * |change| / max_value) sature
  //! naturellement vers ±max_value sans clamp explicite.
+ //! \param[in,out] entry           entrée de la table à mettre à jour
+ //! \param[in]      eval_diff      écart entre score de recherche et éval statique
+ //! \param[in]      depth          profondeur de recherche du nœud
+ //! \param[in]      scale          facteur d'échelle du bonus (tunable)
+ //! \param[in]      correction_max valeur maximale de correction (tunable)
  //------------------------------------------------------------------
 void History::update_correction(I16& entry, int eval_diff, int depth, int scale, int correction_max)
 {
@@ -246,6 +290,10 @@ void History::update_correction(I16& entry, int eval_diff, int depth, int scale,
 //=========================================================
 //! \brief  Retourne la valeur de l'évaluation statique corrigée
 //! en fonction de Correction_History
+//! \param[in]  board       échiquier courant
+//! \param[in]  raw_eval    éval statique (NNUE) brute
+//!
+//! \return Éval corrigée, clampée à ±(TBWIN_IN_X-1)
 //---------------------------------------------------------
 int History::corrected_eval(const Board& board, int raw_eval)
 {

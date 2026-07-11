@@ -6,6 +6,14 @@
 //=============================================================
 //! \brief  Recherche jusqu'à obtenir une position calme,
 //!         donc sans prise ou promotion.
+//!
+//! \param[in,out]  board   plateau de jeu (joue/annule les coups testés)
+//! \param[in]      timer   gestion des limites de temps/nœuds
+//! \param[in]      alpha   borne inférieure de la fenêtre de recherche
+//! \param[in]      beta    borne supérieure de la fenêtre de recherche
+//! \param[in,out]  si      informations de recherche du ply courant
+//!
+//! \return Score de la position (évaluation quiescente)
 //-------------------------------------------------------------
 template <Color C>
 int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchInfo* si)
