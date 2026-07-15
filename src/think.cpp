@@ -559,7 +559,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 // Coupure si cette dernière recherche bat betaCut
                 if (pbScore >= betaCut)
                 {
-                    table->store(board.get_key(), pbMove, pbScore, static_eval, BOUND_LOWER, depth-(Tunable::ProbcutReduction-1), si->ply, false);
+                    table->store(board.get_key(), pbMove, pbScore, raw_eval, BOUND_LOWER, depth-(Tunable::ProbcutReduction-1), si->ply, false);
                     return pbScore;
                 }
             }
@@ -875,7 +875,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         //  si score >  alpha    : c'est un bon coup : HASH_EXACT
         //  si score <= alpha    : c'est un coup qui n'améliore pas alpha : HASH_ALPHA
 
-        table->store(board.get_key(), best_move, best_score, static_eval, bound, depth, si->ply, ttPV);
+        table->store(board.get_key(), best_move, best_score, raw_eval, bound, depth, si->ply, ttPV);
     }
 
     return best_score;
