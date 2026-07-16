@@ -865,7 +865,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
           && !(bound == BOUND_LOWER && best_score <= si->static_eval)
           && !(bound == BOUND_UPPER && best_score >= si->static_eval))
     {
-        history.update_correction_history(board, depth, best_score, static_eval );
+        history.update_correction_history(board, depth, best_score, si->static_eval );
     }
 
     if (!is_stopped() && !isExcluded)
