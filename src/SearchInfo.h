@@ -9,6 +9,7 @@ struct SearchInfo {
     PVariation  pv{};                       // Principale Variation
     int         doubleExtensions{};
     PieceTo*    cont_hist{};                // pointeur sur History::continuation_history[piece(info-x)][dest(info-x)]
+    PieceTo*    cont_corr{};                // pointeur sur History::continuation_correction_history[piece][dest]
     MOVE        killer1 = Move::MOVE_NONE;
     MOVE        killer2 = Move::MOVE_NONE;
     Bitboard    threats = 0ULL;             // menaces du camp ennemi

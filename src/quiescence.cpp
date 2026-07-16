@@ -93,7 +93,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
     if (!isInCheck)
     {
         raw_eval = (tt_hit && tt_eval != VALUE_NONE) ? tt_eval : evaluate(board);
-        static_eval = si->static_eval = history.corrected_eval(board, raw_eval);
+        static_eval = si->static_eval = history.corrected_eval(board, si, raw_eval);
 
         // le score est trop mauvais pour moi, on n'a pas besoin
         // de chercher plus loin
@@ -156,6 +156,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
         si->move = move;
         si->tactical = Move::is_tactical(move);
         si->cont_hist = &history.continuation_history[Move::piece(move)][Move::dest(move)];
+        si->cont_corr = &history.continuation_correction_history[Move::piece(move)][Move::dest(move)];
         score = -quiescence<~C>(board, timer, -beta, -alpha, si+1);
         undo_move<C, true>(board);
 

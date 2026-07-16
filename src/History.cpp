@@ -24,6 +24,7 @@ void History::reset()
     std::memset(capture_history,        0, sizeof(CaptureHistory));
     std::memset(pawn_correction_history,     0, sizeof(PawnCorrectionHistoryTable));
     std::memset(non_pawn_correction_history, 0, N_COLORS*sizeof(NonPawnCorrectionHistoryTable));
+    std::memset(continuation_correction_history, 0, sizeof(ContinuationCorrectionHistoryTable));
 }
 
 //==================================================================
@@ -246,14 +247,16 @@ void History::update_capture(const SearchInfo *info, MOVE move, int delta)
 }
 
 //=================================================================
-//! \brief  Mise à jour des tables de correction history (pawn et non-pawn)
-//! en fonction de l'écart entre le score de recherche et l'éval statique
+//! \brief  Mise à jour des tables de correction history (pawn, non-pawn
+//! et continuation) en fonction de l'écart entre le score de recherche
+//! et l'éval statique
 //! \param[in]  board       échiquier courant
+//! \param[in]  info        recherche actuelle (accès aux coups précédents)
 //! \param[in]  depth       profondeur de recherche du nœud
 //! \param[in]  best_score  score retourné par la recherche
 //! \param[in]  static_eval éval statique (NNUE) du nœud
 //-----------------------------------------------------------------
-void History::update_correction_history(const Board& board, int depth, int best_score, int static_eval)
+void History::update_correction_history(const Board& board, const SearchInfo* info, int depth, int best_score, int static_eval)
 {
     const Color color = board.turn();
     const int eval_diff = best_score - static_eval;
@@ -266,6 +269,15 @@ void History::update_correction_history(const Board& board, int depth, int best_
 
     I16& bmat = non_pawn_correction_history[BLACK][color][board.get_non_pawn_key(BLACK) & CORRHIST_MASK];
     update_correction(bmat, eval_diff, depth, Tunable::NonPawnCorrScale, Tunable::NonPawnCorrMax);
+
+    if ((info - 2)->cont_corr)
+    {
+        const MOVE prev_move = (info - 1)->move;
+        const Piece  piece = Move::is_ok(prev_move) ? Move::piece(prev_move) : PIECE_NONE;
+        const SQUARE dest  = Move::is_ok(prev_move) ? Move::dest(prev_move)  : A1;
+        update_correction((*(info - 2)->cont_corr)[piece][dest], eval_diff, depth,
+                          Tunable::ContCorrScale, Tunable::ContCorrMax);
+    }
 }
 
 //==================================================================
@@ -291,26 +303,38 @@ void History::update_correction(I16& entry, int eval_diff, int depth, int scale,
 //! \brief  Retourne la valeur de l'évaluation statique corrigée
 //! en fonction de Correction_History
 //! \param[in]  board       échiquier courant
+//! \param[in]  info        recherche actuelle (accès aux coups précédents)
 //! \param[in]  raw_eval    éval statique (NNUE) brute
 //!
 //! \return Éval corrigée, clampée à ±(TBWIN_IN_X-1)
 //---------------------------------------------------------
-int History::corrected_eval(const Board& board, int raw_eval)
+int History::corrected_eval(const Board& board, const SearchInfo* info, int raw_eval)
 {
     // règle des 50 coups : ramener l'évaluation vers 0 quand on s'approche de la nulle
     raw_eval = (raw_eval * (200 - board.get_fiftymove_counter())) / 200;
 
     const int pawn_eval_scale     = MAX_HISTORY / Tunable::PawnCorrMax;
     const int non_pawn_eval_scale = MAX_HISTORY / Tunable::NonPawnCorrMax;
+    const int cont_eval_scale     = MAX_HISTORY / Tunable::ContCorrMax;
 
     int pawn = pawn_correction_history[board.turn()][board.get_pawn_key() & CORRHIST_MASK];
     int wmat = non_pawn_correction_history[WHITE][board.turn()][board.get_non_pawn_key(WHITE) & CORRHIST_MASK];
     int bmat = non_pawn_correction_history[BLACK][board.turn()][board.get_non_pawn_key(BLACK) & CORRHIST_MASK];
 
+    int cont = 0;
+    if ((info - 2)->cont_corr)
+    {
+        const MOVE prev_move = (info - 1)->move;
+        const Piece  piece = Move::is_ok(prev_move) ? Move::piece(prev_move) : PIECE_NONE;
+        const SQUARE dest  = Move::is_ok(prev_move) ? Move::dest(prev_move)  : A1;
+        cont = (*(info - 2)->cont_corr)[piece][dest];
+    }
+
     int corrected = raw_eval
                   + pawn / pawn_eval_scale
                   + wmat / non_pawn_eval_scale
-                  + bmat / non_pawn_eval_scale;
+                  + bmat / non_pawn_eval_scale
+                  + cont / cont_eval_scale;
 
     return std::clamp(corrected, -TBWIN_IN_X+1, TBWIN_IN_X-1);
 }

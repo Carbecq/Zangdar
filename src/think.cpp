@@ -51,6 +51,7 @@ void Search::think(Board board, Timer timer, size_t m_index)
     {
         (si + i)->ply = i;
         (si + i)->cont_hist = &history.continuation_history[0][0];
+        (si + i)->cont_corr = nullptr;
     }
 
     // iterative deepening
@@ -388,7 +389,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 raw_eval = evaluate(board);
             }
 
-            static_eval = si->static_eval = history.corrected_eval(board, raw_eval);
+            static_eval = si->static_eval = history.corrected_eval(board, si, raw_eval);
 
             // Amélioration de static-eval, au cas où tt_score est assez bon
             if(tt_hit
@@ -503,6 +504,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             si->move = Move::MOVE_NULL;
             si->tactical = false;
             si->cont_hist = &history.continuation_history[0][0];
+            si->cont_corr = nullptr;
 
             board.make_nullmove<C>();
             int null_score = -alpha_beta<~C>(board, timer, -beta, -beta + 1, depth - R, !cut_node, si+1);
@@ -546,6 +548,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 si->move = pbMove;
                 si->tactical = true;        // ProbCut ne joue que des coups tactiques
                 si->cont_hist = &history.continuation_history[Move::piece(pbMove)][Move::dest(pbMove)];
+                si->cont_corr = &history.continuation_correction_history[Move::piece(pbMove)][Move::dest(pbMove)];
 
                 // Teste si une recherche de quiescence donne un score supérieur à betaCut
                 int pbScore = -quiescence<~C>(board, timer, -betaCut, -betaCut+1, si+1);
@@ -730,6 +733,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         si->move = move;
         si->tactical = !isQuiet;
         si->cont_hist = &history.continuation_history[Move::piece(move)][Move::dest(move)];
+        si->cont_corr = &history.continuation_correction_history[Move::piece(move)][Move::dest(move)];
         make_move<C, true>(board, move);
 
         if (isQuiet)
@@ -865,7 +869,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
           && !(bound == BOUND_LOWER && best_score <= si->static_eval)
           && !(bound == BOUND_UPPER && best_score >= si->static_eval))
     {
-        history.update_correction_history(board, depth, best_score, si->static_eval );
+        history.update_correction_history(board, si, depth, best_score, si->static_eval );
     }
 
     if (!is_stopped() && !isExcluded)

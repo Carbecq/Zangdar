@@ -82,9 +82,9 @@ using ContinuationHistoryTable = I16[N_PIECE][N_SQUARES][N_PIECE][N_SQUARES];
 //============================================================================
 static constexpr int CORRHIST_MASK = CORR_HASH_SIZE - 1;    // CORR_HASH_SIZE est une puissance de 2
 
-using PawnCorrectionHistoryTable       = I16[N_COLORS][CORR_HASH_SIZE];
-using NonPawnCorrectionHistoryTable    = I16[N_COLORS][CORR_HASH_SIZE];
-
+using PawnCorrectionHistoryTable         = I16[N_COLORS][CORR_HASH_SIZE];
+using NonPawnCorrectionHistoryTable      = I16[N_COLORS][CORR_HASH_SIZE];
+using ContinuationCorrectionHistoryTable = I16[N_PIECE][N_SQUARES][N_PIECE][N_SQUARES];
 
 class History
 {
@@ -118,6 +118,7 @@ public:
     }
 
     ContinuationHistoryTable continuation_history {{{{0}}}};
+    ContinuationCorrectionHistoryTable continuation_correction_history {{{{0}}}};
 
     //--------------------------------------------
 
@@ -147,10 +148,10 @@ public:
 
     void update_pawn(KEY pawnkey, MOVE move, int bonus);
 
-    void update_correction_history(const Board &board, int depth, int best_score, int static_eval);
+    void update_correction_history(const Board &board, const SearchInfo* info, int depth, int best_score, int static_eval);
     void update_continuation_history(SearchInfo* info, MOVE move, int score, int alpha, int beta, int depth);
 
-    int corrected_eval(const Board& board, int raw_eval);
+    int corrected_eval(const Board& board, const SearchInfo* info, int raw_eval);
 
 
 private:

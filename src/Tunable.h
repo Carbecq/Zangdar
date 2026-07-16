@@ -100,6 +100,8 @@ PARAM(PawnCorrScale,         109,   64,  256);
 PARAM(PawnCorrMax,            63,   32,  128);
 PARAM(NonPawnCorrScale,      126,   64,  256);
 PARAM(NonPawnCorrMax,         76,   32,  128);
+PARAM(ContCorrScale,         130,   64,  256);
+PARAM(ContCorrMax,            64,   32,  128);
 
 //-------------------------------------------- Bonus de l'history
 // History
