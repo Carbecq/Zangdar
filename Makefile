@@ -3,19 +3,32 @@ CXX = clang++
 
 .DEFAULT_GOAL := openbench
 
-ifeq ($(CXX),clang++)
+# Même test que celui qui choisit les CFLAGS plus bas (findstring, pas égalité
+# stricte) : sinon un CXX versionné ou en chemin absolu (clang++-18,
+# /usr/bin/clang++ — ce que passe OpenBench) compile avec les flags clang mais
+# produit un binaire nommé « -g++ ».
+# COMP=mingw reste surchargeable en ligne de commande pour le cross Windows.
+ifeq ($(findstring clang, $(CXX)), clang)
 	COMP := clang
 else
 	COMP := g++
 endif
 
 SRC1 = src
-SRC2 = src/pyrrhic
 
+# Utilisé uniquement par la cible pgo (compilation en un seul appel).
 SRC = src/*.cpp src/pyrrhic/*.cpp
 
-CPP_FILES=$(shell find $(SRC1) -name "*.cpp") $(shell find $(SRC2) -name "*.cpp")
+# find est récursif : src/pyrrhic est déjà inclus. Ne pas l'ajouter une 2e fois,
+# cela mettait tbprobe.o en double dans OBJ (masqué au link parce que $^
+# déduplique, mais visible dans clean et fragile).
+CPP_FILES = $(shell find $(SRC1) -name "*.cpp")
 OBJ = $(patsubst %.cpp, %.o, $(CPP_FILES))
+
+# Fichiers de dépendances générés par -MMD (voir la règle %.o) : ils indiquent à
+# make quels .o recompiler quand un header change. Sans eux, modifier un .h ne
+# déclenchait aucune recompilation => .o périmés, et crashes à l'exécution.
+DEP = $(OBJ:.o=.d)
 
 ### ==========================================================================
 ### Section 1. General Configuration (Stockfish)
@@ -109,7 +122,13 @@ HAS_AVX2   := $(shell grep -qm1 'avx2'    /proc/cpuinfo 2>/dev/null && echo yes)
 HAS_AVX512 := $(shell grep -qm1 'avx512f' /proc/cpuinfo 2>/dev/null && echo yes)
 HAS_BMI2   := $(shell grep -qm1 'bmi2'    /proc/cpuinfo 2>/dev/null && echo yes)
 
-# SIMD activé si au moins SSE2
+# SIMD activé si au moins SSE2.
+# ATTENTION : déduit du CPU HÔTE (/proc/cpuinfo) => ne vaut QUE pour ARCH=native.
+# Les cibles ARCH explicites (sse2/avx2/bmi2/avx512) mettent -DUSE_SIMD en dur :
+# leur jeu d'instructions est connu par définition, et dépendre de l'hôte
+# produisait un binaire -mavx2 SANS kernel SIMD (donc NNUE scalaire, beaucoup
+# plus lent, et sans le moindre avertissement) dès que /proc/cpuinfo est absent
+# ou illisible — conteneur minimal, cross-compilation, hôte non-Linux.
 SIMD =
 ifeq ($(HAS_AVX512), yes)
     SIMD = -DUSE_SIMD
@@ -119,6 +138,15 @@ else ifeq ($(HAS_SSE2), yes)
     SIMD = -DUSE_SIMD
 endif
 
+# /!\ TOUJOURS « make clean » AVANT DE CHANGER D'ARCH /!\
+# Les .o sont tous dans src/ sans marqueur d'architecture, et make ne compare que
+# les dates .cpp/.o : il ne voit pas que les flags ont changé. Sans clean,
+#     make release ARCH=native   puis   make release ARCH=avx2
+# ne recompile RIEN et se contente de relinker les objets natifs sous le nom
+# « avx2 » => binaire contenant des instructions du CPU de compilation (PEXT,
+# AVX-512…), donc SIGILL sur les machines que la cible avx2 est censée servir.
+# Vaut aussi pour tout changement de CXX, de STATIC ou de EXTRA_DEFS.
+#
 # Guide des cibles ARCH publiées (échelle standard, même découpage que Stockfish).
 # Chaque cible correspond à une vraie différence fonctionnelle (kernel NNUE de
 # simd.h et/ou attaques PEXT), pas à de la granularité gratuite :
@@ -136,30 +164,30 @@ endif
 ifeq ($(ARCH), sse2)
     DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
     CFLAGS_ARCH += -msse -msse2 -mpopcnt
-    CFLAGS_ARCH += $(SIMD)
+    CFLAGS_ARCH += -DUSE_SIMD
 
 else ifeq ($(ARCH), avx2)
     DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
     CFLAGS_ARCH += -msse -msse2
     CFLAGS_ARCH += -msse3 -mpopcnt
-    CFLAGS_ARCH += -msse4.1 -msse4.2 -msse4a
+    CFLAGS_ARCH += -msse4.1 -msse4.2
     CFLAGS_ARCH += -mssse3
     CFLAGS_ARCH += -mmmx
     CFLAGS_ARCH += -mavx
     CFLAGS_ARCH += -mavx2 -mfma
-    CFLAGS_ARCH += $(SIMD)
+    CFLAGS_ARCH += -DUSE_SIMD
 
 else ifeq ($(ARCH), bmi2)
     DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
     CFLAGS_ARCH += -msse -msse2
     CFLAGS_ARCH += -msse3 -mpopcnt
-    CFLAGS_ARCH += -msse4.1 -msse4.2 -msse4a
+    CFLAGS_ARCH += -msse4.1 -msse4.2
     CFLAGS_ARCH += -mssse3
     CFLAGS_ARCH += -mmmx
     CFLAGS_ARCH += -mavx
     CFLAGS_ARCH += -mavx2 -mfma
     CFLAGS_ARCH += -mbmi -mbmi2
-    CFLAGS_ARCH += -DUSE_PEXT $(SIMD)
+    CFLAGS_ARCH += -DUSE_PEXT -DUSE_SIMD
 
 else ifeq ($(ARCH), avx512)
     # AVX-512 = surensemble de bmi2 (avx2 + bmi2 + pext) + AVX-512 F/BW/DQ/VL.
@@ -179,14 +207,25 @@ else ifeq ($(ARCH), avx512)
     DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
     CFLAGS_ARCH += -msse -msse2
     CFLAGS_ARCH += -msse3 -mpopcnt
-    CFLAGS_ARCH += -msse4.1 -msse4.2 -msse4a
+    CFLAGS_ARCH += -msse4.1 -msse4.2
     CFLAGS_ARCH += -mssse3
     CFLAGS_ARCH += -mmmx
     CFLAGS_ARCH += -mavx
     CFLAGS_ARCH += -mavx2 -mfma
     CFLAGS_ARCH += -mbmi -mbmi2
     CFLAGS_ARCH += -mavx512f -mavx512bw -mavx512dq -mavx512vl
-    CFLAGS_ARCH += -DUSE_PEXT $(SIMD)
+    CFLAGS_ARCH += -DUSE_PEXT -DUSE_SIMD
+
+else ifeq ($(ARCH), arm64)
+    # Cross-compilation Linux aarch64 : make ARCH=arm64 CXX=aarch64-linux-gnu-g++ STATIC=yes
+    # (paquet crossbuild-essential-arm64 pour aarch64-linux-gnu-g++ + libs statiques)
+    # USE_SIMD => kernel NEON de simd.h (Advanced SIMD, présent sur tout CPU armv8-a,
+    #             pas de détection runtime nécessaire). 128 bits = équivalent SSE2.
+    # Pas de PEXT (x86 only) => magic bitboards (Attacks.h) utilisés à la place.
+    # HAS_SSE2/AVX2/AVX512/BMI2/CPU_MODEL viennent de /proc/cpuinfo de la machine hôte
+    # (x86, celle qui compile) : sans objet pour la cible arm64, donc ignorés.
+    DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(ARCH)
+    CFLAGS_ARCH += -march=armv8-a -DUSE_SIMD
 
 else ifeq ($(ARCH), native)
     DEFAULT_EXE = $(ZANGDAR)-$(VERSION)-$(CPU_MODEL)
@@ -211,13 +250,15 @@ $(info Version   = $(VERSION))
 $(info CXX       = $(CXX))
 $(info ARCH      = $(ARCH))
 $(info CPU       = $(CPU_MODEL))
-$(info SSE2      = $(if $(HAS_SSE2),yes,no))
-$(info POPCNT    = $(if $(HAS_POPCNT),yes,no))
-$(info AVX2      = $(if $(HAS_AVX2),yes,no))
-$(info AVX512    = $(if $(HAS_AVX512),yes,no))
-$(info BMI2      = $(if $(HAS_BMI2),yes,no))
-$(info SIMD      = $(if $(SIMD),yes,no))
-$(info PEXT      = $(if $(HAS_BMI2),yes,no))
+# Capacités du CPU HÔTE (informatif ; ne décrit la cible que si ARCH=native)
+$(info SSE2      = $(if $(HAS_SSE2),yes,no)   (hôte))
+$(info POPCNT    = $(if $(HAS_POPCNT),yes,no)   (hôte))
+$(info AVX2      = $(if $(HAS_AVX2),yes,no)   (hôte))
+$(info AVX512    = $(if $(HAS_AVX512),yes,no)   (hôte))
+$(info BMI2      = $(if $(HAS_BMI2),yes,no)   (hôte))
+# Ce qui est RÉELLEMENT compilé : lu dans CFLAGS_ARCH, pas déduit de l'hôte.
+$(info SIMD      = $(if $(findstring USE_SIMD,$(CFLAGS_ARCH)),yes,no))
+$(info PEXT      = $(if $(findstring USE_PEXT,$(CFLAGS_ARCH)),yes,no))
 $(info OS        = $(OS))
 $(info Evalfile  = $(NET_NAME))
 $(info Tuning    = $(if $(findstring USE_TUNING,$(DEFS)),yes,no))
@@ -253,12 +294,9 @@ CFLAGS_WARN5 = -Wsign-promo -Wstrict-overflow=5 -Wno-unused
 CFLAGS_WARN6 = -Wattributes -Waddress -Wfloat-equal -Wmissing-prototypes -Wconditional-uninitialized
 # CFLAGS_WARN7 = -Wsign-conversion
 
-ifeq ($(target_windows),yes)
-    LDFLAGS_STA = -Wl,--stack,16777216	# 16*1014*1024 = 16 Mo
-else
+# -fwhole-program-vtables : clang uniquement, et pas sous Windows.
+ifneq ($(target_windows),yes)
     CFLAGS_REL1 += -fwhole-program-vtables
-#	LDFLAGS_STA = -Wl,-z,stack-size=16777216
-#pour Linux : utiliser : ulimit -s <size> ; ou ulimit -s unlimited
 endif
 
 PGO_GEN   = -fprofile-instr-generate
@@ -281,6 +319,21 @@ CFLAGS_WARN6 = -Wattributes -Waddress -Wfloat-equal -Wbidi-chars -Warray-compare
 PGO_GEN   = -fprofile-generate
 PGO_USE   = -fprofile-use
 
+endif
+
+#---------------------------------------------------------------------
+#   Taille de pile (indépendant du compilateur : clang comme g++/mingw)
+#---------------------------------------------------------------------
+# Windows : la pile est fixée dans l'exécutable au link, il FAUT ce flag.
+#           16 Mo (16*1024*1024). Syntaxe passthrough vers ld, valable
+#           pour clang-cl comme pour mingw g++.
+# Linux   : la pile du thread principal est fixée par le shell, pas par le
+#           binaire => rien à mettre ici, utiliser « ulimit -s <taille> »
+#           ou « ulimit -s unlimited » avant de lancer.
+#           (-Wl,-z,stack-size ne concerne que les threads, pas le main.)
+LDFLAGS_STACK =
+ifeq ($(target_windows),yes)
+    LDFLAGS_STACK = -Wl,--stack,16777216
 endif
 
 # https://stackoverflow.com/questions/5088460/flags-to-enable-thorough-and-verbose-g-warnings
@@ -335,49 +388,72 @@ PGO_FLAGS = -fno-asynchronous-unwind-tables
 #   Targets
 #---------------------------------------------------------------------
 
-### Executable statique avec Windows
+### Executable statique.
+### - Windows : toujours (pas de DLL runtime à trimballer).
+### - Linux (natif ou cross) : à la demande, make STATIC=yes ...
+###   Utile pour distribuer un binaire qui tourne sur n'importe quelle distro
+###   (pas de dépendance à la glibc/libstdc++ de la machine de compilation),
+###   typiquement pour OpenBench ou une release GitHub.
+###   Le binaire prend le suffixe -static pour ne pas écraser la version dynamique.
+### NB : incompatible avec les cibles sanitize/sanitize-thread (ASan/TSan exigent
+###      un link dynamique), qui n'utilisent donc pas LDFLAGS_STATIC.
+LDFLAGS_STATIC =
+STATIC_SUF     =
+
 ifeq ($(target_windows),yes)
-    LDFLAGS_WIN = -static
+    LDFLAGS_STATIC += -static
+else ifeq ($(STATIC),yes)
+    LDFLAGS_STATIC += -static
+    STATIC_SUF     := -static
 endif
 
-EXE  = $(DEFAULT_EXE)-$(COMP)
+# ASan/TSan exigent un link dynamique : un STATIC=yes passé en ligne de commande
+# est ignoré ici (sinon le binaire porterait un suffixe -static mensonger).
+ifneq ($(filter sanitize sanitize-thread,$(MAKECMDGOALS)),)
+    LDFLAGS_STATIC =
+    STATIC_SUF     =
+endif
+
+$(info Static    = $(if $(LDFLAGS_STATIC),yes,no))
+
+EXE  = $(DEFAULT_EXE)-$(COMP)$(STATIC_SUF)
 
 openbench: EXEC    = $(EXE)$(SUF)
 openbench: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL)
-openbench: LDFLAGS = $(LDFLAGS_REL) $(LDFLAGS_WIN) $(LDFLAGS_STA)
+openbench: LDFLAGS = $(LDFLAGS_REL) $(LDFLAGS_STATIC) $(LDFLAGS_STACK)
 
 release: EXEC    = $(EXE)-rel$(SUF)
 release: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL)
-release: LDFLAGS = $(LDFLAGS_REL) $(LDFLAGS_WIN) $(LDFLAGS_STA)
+release: LDFLAGS = $(LDFLAGS_REL) $(LDFLAGS_STATIC) $(LDFLAGS_STACK)
 
 debug: EXEC    = $(EXE)-dbg$(SUF)
 debug: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_WARN) $(CFLAGS_DBG)
-debug: LDFLAGS = $(LDFLAGS_DBG) $(LDFLAGS_WIN) $(LDFLAGS_STA)
+debug: LDFLAGS = $(LDFLAGS_DBG) $(LDFLAGS_STATIC) $(LDFLAGS_STACK)
 
-# Pas de LDFLAGS_STA : -static est incompatible avec ASan.
+# Pas de LDFLAGS_STATIC : -static est incompatible avec ASan.
 sanitize: EXEC    = $(EXE)-san$(SUF)
 sanitize: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_SAN)
-sanitize: LDFLAGS = $(LDFLAGS_SAN) $(LDFLAGS_WIN)
+sanitize: LDFLAGS = $(LDFLAGS_SAN)
 
 sanitize-thread: EXEC    = $(EXE)-tsan$(SUF)
 sanitize-thread: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_TSAN)
-sanitize-thread: LDFLAGS = -fsanitize=thread -lm $(LDFLAGS_WIN)
+sanitize-thread: LDFLAGS = -fsanitize=thread -lm
 
 # Release sans LTO ni whole-program — pour test déterminisme bench
 release-nolto: EXEC    = $(EXE)-rel-nolto$(SUF)
 release-nolto: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL_NOLTO)
-release-nolto: LDFLAGS = $(LDFLAGS_REL_NOLTO) $(LDFLAGS_WIN) $(LDFLAGS_STA)
+release-nolto: LDFLAGS = $(LDFLAGS_REL_NOLTO) $(LDFLAGS_STATIC) $(LDFLAGS_STACK)
 
 # Release-nolto avec auto-init des stack vars à zéro
 release-autoinit: EXEC    = $(EXE)-rel-autoinit$(SUF)
 release-autoinit: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL_AUTOINIT)
-release-autoinit: LDFLAGS = $(LDFLAGS_REL_NOLTO) $(LDFLAGS_WIN) $(LDFLAGS_STA)
+release-autoinit: LDFLAGS = $(LDFLAGS_REL_NOLTO) $(LDFLAGS_STATIC) $(LDFLAGS_STACK)
 
 # Release-nolto + -g, SANS auto-init et SANS strip : pour valgrind memcheck
 # (auto-init masquerait les lectures non-init ; -g pour les stack traces).
 release-valgrind: EXEC    = $(EXE)-rel-vg$(SUF)
 release-valgrind: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL_NOLTO) -g
-release-valgrind: LDFLAGS = -lm $(LDFLAGS_WIN) $(LDFLAGS_STA)
+release-valgrind: LDFLAGS = -lm $(LDFLAGS_STATIC) $(LDFLAGS_STACK)
 
 # Release-nolto + UBSan bounds/object-size + FORTIFY=3 : détecte à l'exécution
 # les indices hors bornes Y COMPRIS intra-structure (invisibles pour ASan et
@@ -386,27 +462,37 @@ release-valgrind: LDFLAGS = -lm $(LDFLAGS_WIN) $(LDFLAGS_STA)
 # à la 1ère violation.
 release-bounds: EXEC    = $(EXE)-rel-bounds$(SUF)
 release-bounds: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL_NOLTO) -g -fsanitize=bounds,object-size -fno-sanitize-recover=all -D_FORTIFY_SOURCE=3
-release-bounds: LDFLAGS = -lm $(LDFLAGS_WIN) $(LDFLAGS_STA) -fsanitize=bounds,object-size
+release-bounds: LDFLAGS = -lm $(LDFLAGS_STATIC) $(LDFLAGS_STACK) -fsanitize=bounds,object-size
 
 perf: EXEC    = $(EXE)-perf$(SUF)
 perf: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_PERF)
-perf: LDFLAGS = $(LDFLAGS_PERF) $(LDFLAGS_WIN) $(LDFLAGS_STA)
+perf: LDFLAGS = $(LDFLAGS_PERF) $(LDFLAGS_STATIC) $(LDFLAGS_STACK)
 
 pgo: EXEC    = $(EXE)-pgo$(SUF)
 pgo: CFLAGS  = $(CFLAGS_COM) $(CFLAGS_ARCH) $(CFLAGS_REL)
-pgo: LDFLAGS = $(LDFLAGS_REL) $(LDFLAGS_WIN) $(LDFLAGS_STA)
+pgo: LDFLAGS = $(LDFLAGS_REL) $(LDFLAGS_STATIC) $(LDFLAGS_STACK)
 
-ifeq ($(target_windows),yes)
-    PGO_BENCH = ./$(EXE) bench 20 > nul 2>&1
-    PGO_CLEAN = rmdir /s /q $(PGO_DIR)
-else
-    PGO_BENCH = ./$(EXE) bench 20 > /dev/null 2>&1
-    PGO_CLEAN = $(RM) -rf $(PGO_DIR)
-endif
+# Bench d'entraînement : exécuté entre la passe -generate et la passe -use.
+# (PGO_CLEAN/PGO_DIR, hérités d'Ethereal, ont été supprimés : PGO_DIR n'était
+#  défini nulle part et PGO_CLEAN n'était appelé par aucune recette. Le ménage
+#  est fait en dur dans la cible pgo, et il suffit : gcc comme clang déposent
+#  leurs fichiers de profil dans le répertoire courant, jamais dans src/.)
+# /dev/null y compris sous Windows : les recettes sont exécutées par $(SHELL)
+# (bash sous MSYS2), pas par cmd.exe — « > nul » y créerait un fichier nommé
+# « nul ». De toute façon ce Makefile exige un shell Unix : ses recettes
+# utilisent rm, mv, cp, mkdir, find, test et curl.
+PGO_BENCH = ./$(EXE) bench 20 > /dev/null 2>&1
 
 #---------------------------------------------------------------------
 #	Dépendances
 #---------------------------------------------------------------------
+
+# Ces cibles ne produisent pas de fichier portant leur nom : sans .PHONY, un
+# fichier homonyme dans le répertoire les rendrait inopérantes (« clean est à
+# jour »). Cela force aussi make à toujours exécuter leur recette.
+.PHONY: openbench release debug sanitize sanitize-thread \
+        release-nolto release-autoinit release-valgrind release-bounds \
+        perf pgo download-net clean mrproper
 
 # Target pour OpenBench : compile directement vers $(EXE) sans renommage
 # OpenBench appelle : make -j EXE=<chemin> [EVALFILE=<réseau>] [CXX=<compilateur>]
@@ -478,8 +564,18 @@ $(EXE): $(OBJ)
 
 src/NNUE.o: $(EVALFILE)
 
+# -MMD : génère, à côté de chaque .o, un .d listant les headers dont il dépend.
+#        (MMD et non MD : on ignore les headers système, qui ne bougent pas.)
+# -MP  : ajoute une cible bidon pour chaque header. Indispensable ici : sans lui,
+#        supprimer ou renommer un header (typiquement en changeant de branche)
+#        casse le build avec « No rule to make target 'src/xxx.h' » au lieu de
+#        simplement recompiler.
 %.o: %.cpp
-	@$(CXX) -o $@ -c $< $(CFLAGS)
+	@$(CXX) -o $@ -c $< $(CFLAGS) -MMD -MP
+
+# Prise en compte des dépendances calculées au build précédent.
+# Le « - » les rend optionnelles (premier build : aucun .d n'existe encore).
+-include $(DEP)
 
 .DELETE_ON_ERROR:
 
@@ -492,8 +588,13 @@ download-net: $(NETS_FILE)
 
 #---------------------------------------------------------------------
 
+# Nettoie TOUTES les architectures, pas seulement l'ARCH courant : $(EXE) dépend
+# de ARCH, donc « make clean » seul ne voyait que les binaires natifs et laissait
+# traîner les Zangdar-<version>-avx2/bmi2/sse2-*. Le glob Zangdar-* les couvre
+# tous (il n'attrape ni Zangdar.pro ni Zangdar_dev, traités à part).
 clean:
-	@rm -f $(OBJ) $(EXE)* $(ZANGDAR_DEV)
+	@rm -f $(OBJ) $(DEP) $(ZANGDAR_DEV)
+	@rm -f $(ZANGDAR)-*
 	@rm -f *.gcda *.profdata *.profraw
 
 mrproper: clean
