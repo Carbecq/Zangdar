@@ -274,7 +274,7 @@ I32 NNUE::activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
     I32 eval = 0;
     const int adresse = bucket * N_COLORS * HIDDEN_LAYER_SIZE;
 
-    for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
+    for (size_t i = 0; i < HIDDEN_LAYER_SIZE; ++i)
     {
         eval += screlu(us[i])   * weights[adresse + i];
         eval += screlu(them[i]) * weights[adresse + HIDDEN_LAYER_SIZE + i];
@@ -542,12 +542,12 @@ void NNUE::add(Accumulator& accu, Piece piece, SQUARE from, SQUARE king)
 
     if constexpr (side == WHITE)
     {
-        for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
+        for (size_t i = 0; i < HIDDEN_LAYER_SIZE; ++i)
             accu.white[i] += network->feature_weights[idx * HIDDEN_LAYER_SIZE + i];
     }
     else
     {
-        for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
+        for (size_t i = 0; i < HIDDEN_LAYER_SIZE; ++i)
             accu.black[i] += network->feature_weights[idx * HIDDEN_LAYER_SIZE + i];
     }
 #endif
@@ -582,12 +582,12 @@ void NNUE::sub(Accumulator& accu, Piece piece, SQUARE from, SQUARE king)
 #else
     if constexpr (side == WHITE)
     {
-        for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
+        for (size_t i = 0; i < HIDDEN_LAYER_SIZE; ++i)
             accu.white[i] -= network->feature_weights[idx * HIDDEN_LAYER_SIZE + i];
     }
     else
     {
-        for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
+        for (size_t i = 0; i < HIDDEN_LAYER_SIZE; ++i)
             accu.black[i] -= network->feature_weights[idx * HIDDEN_LAYER_SIZE + i];
     }
 #endif
@@ -639,7 +639,7 @@ void NNUE::sub_add(const Accumulator& src, Accumulator& dst,
 #else
     if constexpr (side == WHITE)
     {
-        for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
+        for (size_t i = 0; i < HIDDEN_LAYER_SIZE; ++i)
         {
             dst.white[i] = src.white[i]
                     + network->feature_weights[add_idx * HIDDEN_LAYER_SIZE + i]
@@ -648,7 +648,7 @@ void NNUE::sub_add(const Accumulator& src, Accumulator& dst,
     }
     else
     {
-        for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
+        for (size_t i = 0; i < HIDDEN_LAYER_SIZE; ++i)
         {
             dst.black[i] = src.black[i]
                     + network->feature_weights[add_idx * HIDDEN_LAYER_SIZE + i]
@@ -713,7 +713,7 @@ void NNUE::sub_sub_add(const Accumulator& src, Accumulator& dst,
 #else
     if constexpr (side == WHITE)
     {
-        for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
+        for (size_t i = 0; i < HIDDEN_LAYER_SIZE; ++i)
         {
             dst.white[i] = src.white[i]
                     + network->feature_weights[add1_idx * HIDDEN_LAYER_SIZE + i]
@@ -723,7 +723,7 @@ void NNUE::sub_sub_add(const Accumulator& src, Accumulator& dst,
     }
     else
     {
-        for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
+        for (size_t i = 0; i < HIDDEN_LAYER_SIZE; ++i)
         {
             dst.black[i] = src.black[i]
                     + network->feature_weights[add1_idx * HIDDEN_LAYER_SIZE + i]
@@ -792,7 +792,7 @@ void NNUE::sub_sub_add_add(const Accumulator& src, Accumulator& dst,
 #else
     if constexpr (side == WHITE)
     {
-        for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
+        for (size_t i = 0; i < HIDDEN_LAYER_SIZE; ++i)
         {
             dst.white[i] = src.white[i]
                     + network->feature_weights[add1_idx * HIDDEN_LAYER_SIZE + i]
@@ -803,7 +803,7 @@ void NNUE::sub_sub_add_add(const Accumulator& src, Accumulator& dst,
     }
     else
     {
-        for (Usize i = 0; i < HIDDEN_LAYER_SIZE; ++i)
+        for (size_t i = 0; i < HIDDEN_LAYER_SIZE; ++i)
         {
             dst.black[i] = src.black[i]
                     + network->feature_weights[add1_idx * HIDDEN_LAYER_SIZE + i]
