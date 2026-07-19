@@ -17,7 +17,8 @@ Timer::Timer(bool infinite,
              int movestogo,
              int depth,
              U64 nodes,
-             int movetime)
+             int movetime,
+             int moveOverhead)
 {
     limits.infinite    = infinite;
     limits.time[WHITE] = wtime;
@@ -30,7 +31,7 @@ Timer::Timer(bool infinite,
     limits.movetime    = movetime;
 
     mode               = TimerMode::TIME;
-    MoveOverhead       = MOVE_OVERHEAD;
+    this->moveOverhead = moveOverhead;
     timeForThisDepth   = 0;
     timeForThisMove    = 0;
     searchDepth        = 0;
@@ -99,7 +100,7 @@ void Timer::setup(Color color)
     }
     else if (limits.movetime != 0) // temps de recherche imposé = move_time
     {
-        // Dans ce cas, on n'utilise pas MoveOverhead
+        // Dans ce cas, on n'utilise pas moveOverhead
         timeForThisMove     = limits.movetime;
         timeForThisDepth    = limits.movetime;
     }
@@ -139,7 +140,7 @@ void Timer::setup(Color color)
         int mtg       = limits.movestogo;
 
         // Attention, on peut avoir time<0 (low time / lag)
-        I64 time_remaining = std::max(static_cast<I64>(1), time - MoveOverhead);
+        I64 time_remaining = std::max(static_cast<I64>(1), time - moveOverhead);
 
         double tr  = static_cast<double>(time_remaining);
         double inc = static_cast<double>(increment);
@@ -300,7 +301,7 @@ void Timer::debug(Color color) const
               << " timeForThisDepth  : " << timeForThisDepth << std::endl
               << " timeForThisMove   : " << timeForThisMove << std::endl
               << " searchDepth       : " << searchDepth << std::endl
-              << " moveOverhead      : " << MoveOverhead << std::endl
+              << " moveOverhead      : " << moveOverhead << std::endl
               << " nodesForThisDepth : " << nodesForThisDepth << std::endl
               << " nodesForThisMove  : " << nodesForThisMove << std::endl
               << std::endl;

@@ -18,7 +18,6 @@
 #include "Tunable.h"
 
 Board   uci_board;
-Timer   uci_timer;
 
 //======================================
 //! \brief  Boucle principale UCI
@@ -486,7 +485,7 @@ void Uci::parse_go(std::istringstream& iss)
     }
 
     // Initialise le gestionnaire de temps
-    uci_timer = Timer(infinite, wtime, btime, winc, binc, movestogo, depth, nodes, movetime);
+    Timer uci_timer(infinite, wtime, btime, winc, binc, movestogo, depth, nodes, movetime, moveOverhead);
     uci_timer.start();
     uci_timer.setup(uci_board.side_to_move);
 
@@ -632,11 +631,11 @@ setoption name <id> [value <x>]
 
         else if (option_name == "MoveOverhead")
         {
-            int MoveOverhead;       // marge de sécurité sur le temps alloué, pour éviter de perdre au temps
-
+            int overhead;
             iss >> value;      // "value"
-            iss >> MoveOverhead;
-            uci_timer.setMoveOverhead(MoveOverhead);
+            // en cas d'échec de lecture, iss met overhead à 0 : on garde la valeur courante
+            if (iss >> overhead)
+                moveOverhead = std::clamp(overhead, 0, 10000);
         }
 
         //------------------------------------------------------------
@@ -1058,7 +1057,7 @@ void Uci::bench(int argCount, char* argValue[])
         // Initialise une recherche "go depth <x>"
         Uci::stop();
 
-        uci_timer = Timer(false, 0, 0, 0, 0, 0, depth, 0, 0);
+        Timer uci_timer(false, 0, 0, 0, 0, 0, depth, 0, 0, moveOverhead);
         uci_timer.start();
         uci_timer.setup(uci_board.side_to_move);
 

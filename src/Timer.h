@@ -36,7 +36,8 @@ public:
           int movestogo,
           int depth,
           U64 nodes,
-          int movetime);
+          int movetime,
+          int moveOverhead = MOVE_OVERHEAD);
 
     //===========================================================
     //! \brief  Constructeur par défaut
@@ -65,15 +66,6 @@ public:
     //-----------------------------------------------------------
     int  getSearchDepth() const { return(searchDepth); }
     I64  elapsedTime() const;
-    //===========================================================
-    //! \brief  Fixe le "move overhead" (temps de réserve pour l'interface)
-    //! \param[in]  n   nouvelle valeur du move overhead, en millisecondes
-    //-----------------------------------------------------------
-    void setMoveOverhead(I64 n) { MoveOverhead = n;     }
-    //===========================================================
-    //! \brief  Retourne le "move overhead" (temps de réserve pour l'interface)
-    //-----------------------------------------------------------
-    I64  getMoveOverhead() const { return MoveOverhead; }
 
     void updateMoveNodes(MOVE move, U64 nodes);
     void update(int depth, MOVE last_move, MOVE this_move);
@@ -88,7 +80,7 @@ private:
     TimePoint::time_point startTime;
 
     int  mode;
-    I64  MoveOverhead;           // temps de réserve pour l'interface
+    int  moveOverhead;           // temps de réserve pour l'interface (option UCI MoveOverhead)
     I64  timeForThisDepth;       // temps pour "iterative deepening"
     I64  timeForThisMove;        // temps pour une recherche "alpha-beta" ou "quiescence"
     int  searchDepth;
