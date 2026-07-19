@@ -130,6 +130,9 @@ PARAM(DeltaPruningBias,    300, 100, 400);
 
 //  SINGULAR EXTENSION
 PARAM(SEDepth, 8, 5, 10);
+PARAM(SEBetaMargin,  32,  8,  64);   // marge de sing_beta par unité de depth, en 1/16e (32 = 2.0)
+PARAM(SEDoubleMargin, 50, 20, 100);  // écart sous sing_beta déclenchant la double extension
+PARAM(SEDoubleMax,    20,  5,  40);  // nombre max de double extensions par ligne
 
 //  HINDSIGHT EXTENSION / REDUCTION
 PARAM(HindsightExtMinDepth,      1,   0,   6);

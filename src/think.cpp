@@ -701,7 +701,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                && abs(tt_score) < TBWIN_IN_X)
         {
             // Recherche à profondeur réduite avec une zero window un peu sous ttScore
-            int sing_beta  = tt_score - depth*2;
+            int sing_beta  = tt_score - depth * Tunable::SEBetaMargin / 16;
             int sing_depth = (depth-1)/2;
 
             si->excluded = move;
@@ -711,8 +711,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             if (SE_score < sing_beta)
             {
                 if (   !isPV
-                       && SE_score < sing_beta - 50
-                       && si->doubleExtensions <= 20)  // évite une explosion de la recherche en limitant le nombre de double extensions
+                       && SE_score < sing_beta - Tunable::SEDoubleMargin
+                       && si->doubleExtensions <= Tunable::SEDoubleMax)  // évite une explosion de la recherche en limitant le nombre de double extensions
                 {
                     extension = 2;
                     si->doubleExtensions++;
