@@ -552,10 +552,10 @@ void DataGen::data_search(Board& board, Timer& timer, Search& search,
         I64 elapsed = timer.elapsedTime();
 
         std::cout << "time " << elapsed
-                  << "  depth " << search.td_depth
-                  << "  nodes " << search.td_nodes
-                  << "  score " << search.td_score
-                  << "  move " << Move::name(search.td_best_move)
+                  << "  depth " << search.iter_depth
+                  << "  nodes " << search.nodes
+                  << "  score " << iter_score
+                  << "  move " << Move::name(si->pv.line[0])
                   << std::endl;
 #else
         I64 elapsed = 0;

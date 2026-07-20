@@ -217,7 +217,9 @@ bool Timer::check_limits(const int depth, const int index, const U64 total_nodes
             // ce mode est utilisé :
             //  > pour datagen,
             //  > pour des tests perso (run ...)
-            return (total_nodes > nodesForThisDepth);
+            // Limite dure : nodesForThisMove ; la limite douce (nodesForThisDepth)
+            // est testée entre deux itérations par finishOnThisDepth
+            return (total_nodes > nodesForThisMove);
         }
         else if (mode == TimerMode::DEPTH)
         {
