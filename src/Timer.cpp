@@ -196,6 +196,10 @@ void Timer::setup(U64 soft_limit, U64 hard_limit)
 //!
 //! De façon à éviter un nombre important de mesure de temps , on ne fera
 //! ce calcul que tous les MAX_COUNTER .
+//!
+//! On ne coupe jamais la toute première itération (depth == 1), pour
+//! garantir qu'un coup soit toujours enregistré avant un abandon.
+
 //---------------------------------------------------------
 bool Timer::check_limits(const int depth, const int index, const U64 total_nodes)
 {
@@ -217,9 +221,7 @@ bool Timer::check_limits(const int depth, const int index, const U64 total_nodes
             // ce mode est utilisé :
             //  > pour datagen,
             //  > pour des tests perso (run ...)
-            // Limite dure : nodesForThisMove ; la limite douce (nodesForThisDepth)
-            // est testée entre deux itérations par finishOnThisDepth
-            return (total_nodes > nodesForThisMove);
+            return (depth > 1 && total_nodes > nodesForThisMove);
         }
         else if (mode == TimerMode::DEPTH)
         {

@@ -76,20 +76,7 @@ void Search::think(Board board, Timer timer, size_t m_index)
             if (bt != 0 && bts.last_pv.length > 0)
                 bts.show_uci_result(timer.elapsedTime(), bts.last_pv);
 
-            MOVE best = bts.pv_moves[bts.best_depth];
-
-            // Filet de sécurité : si la recherche a été arrêtée avant la fin
-            // de la profondeur 1 (petite limite en nœuds), aucun coup n'a été
-            // enregistré ; on joue un coup légal plutôt que "bestmove 0000"
-            if (best == Move::MOVE_NONE)
-            {
-                MoveList ml;
-                board.legal_moves<C, MoveGenType::ALL>(ml);
-                if (ml.count > 0)
-                    best = ml.mlmoves[0].move;
-            }
-
-            show_uci_best(best);
+            show_uci_best(bts.pv_moves[bts.best_depth]);
         }
 
         table->update_age();
