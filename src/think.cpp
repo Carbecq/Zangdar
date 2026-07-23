@@ -556,6 +556,11 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
                 undo_move<C, true>(board);
 
+                // Sur time-out, les recherches retournent 0 : si betaCut <= 0
+                // on stockerait un faux BOUND_LOWER en TT, persistant après l'arrêt
+                if (is_stopped())
+                    return 0;
+
                 // Coupure si cette dernière recherche bat betaCut
                 if (pbScore >= betaCut)
                 {
