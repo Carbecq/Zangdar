@@ -537,11 +537,19 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                && depth >= Tunable::ProbCutDepth
                && !(tt_hit && tt_depth >= depth - 3 && tt_score < betaCut))
         {
-            MovePicker movePicker(board, history, si, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, 0);
+            // Seuil SEE : la capture doit pouvoir combler l'écart entre l'éval
+            // statique et betaCut (idée Ethereal / Berserk)
+            MovePicker movePicker(board, history, si, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE,
+                                  std::max(1, betaCut - static_eval));
             MOVE pbMove;
 
             while ( (pbMove = movePicker.next_move(true).move ) != Move::MOVE_NONE )
             {
+                // Les captures sous le seuil SEE ne peuvent pas atteindre betaCut :
+                // on ne descend pas dans les mauvaises captures (stage BAD_NOISY)
+                if (movePicker.get_stage() > STAGE_GOOD_NOISY)
+                    break;
+
                 make_move<C, true>(board, pbMove);
                 si->move = pbMove;
                 si->tactical = true;        // ProbCut ne joue que des coups tactiques
