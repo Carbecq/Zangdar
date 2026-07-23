@@ -179,7 +179,11 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
                     // QS History : bonus au meilleur coup, malus aux autres
                     if (Move::is_capturing(best_move))
                     {
-                        int qs_depth = std::max(1, seldepth - si->ply);
+                        // Profondeur figée à 1 (façon Berserk) au lieu de
+                        // seldepth - si->ply : évite de mélanger, dans la même
+                        // table capture_history, l'échelle de la QS avec celle
+                        // de la recherche principale.
+                        int qs_depth = 1;
                         history.update_capture_history(si, best_move, qs_depth, capture_count, tried_captures);
                     }
                     break;
