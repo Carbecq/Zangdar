@@ -13,7 +13,7 @@
 
 
 
-constexpr int STACK_OFFSET = 4;
+constexpr int STACK_OFFSET = 8;   // >= 6 : nécessaire pour la continuation history 6-ply (regard arrière (info-6))
 constexpr int STACK_SIZE   = MAX_PLY + 2*STACK_OFFSET;  // taille un peu trop grande, mais multiple de 8
 
 

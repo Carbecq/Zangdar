@@ -57,8 +57,9 @@ using CounterMoveTable = MOVE[N_PIECE][N_SQUARES];
  * n plies plus tôt et le coup courant.
  * Les continuation histories à 1 et 2 plies sont les plus utilisées et correspondent
  * respectivement à Counter Moves History et Follow Up History.
- * Zangdar cumule aussi la profondeur 4 plies (voir les 3 lignes ci-dessous) : elle capture
- * le motif « ce coup répond bien au coup joué par le même camp il y a deux coups complets ».
+ * Zangdar cumule aussi les profondeurs 4 et 6 plies (voir les lignes ci-dessous) : elles
+ * capturent le motif « ce coup répond bien au coup joué par le même camp il y a 2 (resp. 3) coups complets ».
+ * Empilement 1+2+4+6 plies, comme Berserk-14.
  */
 //============================================================================
 using ContinuationHistoryTable = I16[N_PIECE][N_SQUARES][N_PIECE][N_SQUARES];

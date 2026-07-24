@@ -82,6 +82,9 @@ int History::get_quiet_history(Color color, const SearchInfo* info, const MOVE m
     if (Move::is_ok((info-4)->move))
         score += (*(info - 4)->cont_hist)[piece][dest];
 
+    if (Move::is_ok((info-6)->move))
+        score += (*(info - 6)->cont_hist)[piece][dest];
+
     return score;
 }
 
@@ -167,7 +170,7 @@ void History::update_pawn(KEY pawnkey, MOVE move, int bonus)
 }
 
 //==================================================================
-//! \brief  Met à jour la continuation history (1-ply, 2-ply, 4-ply)
+//! \brief  Met à jour la continuation history (1-ply, 2-ply, 4-ply, 6-ply)
 //! \param[in]  info    recherche actuelle
 //! \param[in]  move    coup quiet concerné
 //! \param[in]  bonus   bonus (positif) ou malus (négatif)
@@ -180,6 +183,8 @@ void History::update_continuation(SearchInfo* info, MOVE move, int bonus)
         gravity( (*(info - 2)->cont_hist)[Move::piece(move)][Move::dest(move)], bonus);
     if (Move::is_ok((info - 4)->move))
         gravity( (*(info - 4)->cont_hist)[Move::piece(move)][Move::dest(move)], bonus);
+    if (Move::is_ok((info - 6)->move))
+        gravity( (*(info - 6)->cont_hist)[Move::piece(move)][Move::dest(move)], bonus);
 }
 
 //==================================================================
