@@ -1,4 +1,5 @@
 #include <cstring>
+#include <cstdlib>
 #include <string>
 #include "Uci.h"
 #include "TranspositionTable.h"
@@ -43,7 +44,14 @@ int main(int argCount, char* argValue[])
     //  appel : Zangdar datagen <nbr_threads> <max_fens_millions> <output_dir>
     else if (argCount > 1 && strcmp(argValue[1], "datagen") == 0)
     {
-        DataGen(std::stoi(std::string{argValue[2]}), std::stoi(std::string{argValue[3]}), std::string{argValue[4]});
+        // Les 3 arguments sont obligatoires
+        if (argCount < 5)
+        {
+            std::cout << "usage : Zangdar datagen <nbr_threads> <max_fens_millions> <output_dir>" << std::endl;
+            return 1;
+        }
+
+        DataGen(atoi(argValue[2]), atoi(argValue[3]), std::string{argValue[4]});
         std::cout << "fin datagen" << std::endl;
     }
 
