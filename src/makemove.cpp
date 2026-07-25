@@ -63,8 +63,12 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
         dp.add_1 = {dest, piece};
     }
 
-    const Status& previousStatus = statusHistory.back(); // précédent status (sous forme de référence)
-    statusHistory.emplace_back(previousStatus);     // ajoute 1 élément à la fin
+    // Les champs du status précédent dont on a besoin APRÈS l'ajout sont copiés
+    // maintenant : emplace_back peut réallouer le vecteur.
+    const SQUARE prev_ep_square = statusHistory.back().ep_square;
+    const U32    prev_castling  = statusHistory.back().castling;
+
+    statusHistory.emplace_back(statusHistory.back());   // duplique le status courant
     Status& newStatus = statusHistory.back();
 
     newStatus.key ^= side_key;
@@ -77,18 +81,18 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
 
     // La prise en passant n'est valable que tout de suite
     // Il faut donc la supprimer
-    if (previousStatus.ep_square != SQUARE_NONE)
-        newStatus.key ^= ep_key[previousStatus.ep_square];
+    if (prev_ep_square != SQUARE_NONE)
+        newStatus.key ^= ep_key[prev_ep_square];
 
      // Déplacement du roi
     if (Move::type(piece) == PieceType::KING)
         king_square[US] = dest;
 
     // Droit au roque, retire l'ancienne valeur
-    newStatus.key ^= castle_key[previousStatus.castling];
+    newStatus.key ^= castle_key[prev_castling];
 
     // Droits de roque
-    newStatus.castling = previousStatus.castling & castle_mask[from] & castle_mask[dest];
+    newStatus.castling = prev_castling & castle_mask[from] & castle_mask[dest];
 
     // Droit au roque; ajoute la nouvelle valeur
     newStatus.key ^= castle_key[newStatus.castling];
@@ -469,8 +473,10 @@ template <Color Us> void Board::make_nullmove() noexcept
 {
     constexpr Color Them     = ~Us;
 
-    const Status& previousStatus = statusHistory.back();
-    statusHistory.emplace_back(previousStatus);
+    // Copié avant le emplace_back, qui peut réallouer (cf. Board::make_move)
+    const SQUARE prev_ep_square = statusHistory.back().ep_square;
+
+    statusHistory.emplace_back(statusHistory.back());   // duplique le status courant
     Status& newStatus = statusHistory.back();
 
     newStatus.key ^= side_key;
@@ -484,8 +490,8 @@ template <Color Us> void Board::make_nullmove() noexcept
 
     // La prise en passant n'est valable que tout de suite
     // Il faut donc la supprimer
-    if (previousStatus.ep_square != SQUARE_NONE)
-        newStatus.key ^= ep_key[previousStatus.ep_square];
+    if (prev_ep_square != SQUARE_NONE)
+        newStatus.key ^= ep_key[prev_ep_square];
 
     // Swap sides
     side_to_move = ~side_to_move;

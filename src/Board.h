@@ -839,9 +839,12 @@ public:
     //! \brief  Retourne le bitboard des pièces amies clouées
     [[nodiscard]] inline Bitboard get_pinned()        const noexcept { return get_status().pinned;            }
 
-    //! \brief  Réserve la capacité de l'historique des positions
-    //! (la capacité ne passe pas avec la copie de l'objet Board)
-    inline void reserve_capacity() {    // la capacité ne passe pas avec la copie
+    //! \brief  Réserve la capacité de l'historique des positions.
+    //! La copie d'un vector ne reporte que la taille, et Search::think reçoit
+    //! son Board par valeur : sans ce reserve, chaque thread réallouerait.
+    //! OPTIMISATION et non obligation : depuis le correctif de make_move, plus
+    //! aucune référence ne survit à une réallocation.
+    inline void reserve_capacity() {
         statusHistory.reserve(MAX_HISTO);
     }
 

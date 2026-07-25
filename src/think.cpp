@@ -747,12 +747,12 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
         if (isQuiet)
         {
-            assert(quiet_count+1 < quiet_moves.size());
+            assert(quiet_count + 1 < std::ssize(quiet_moves));
             quiet_moves[quiet_count++] = move;
         }
         else
         {
-            assert(capture_count+1 < capture_moves.size());
+            assert(capture_count + 1 < std::ssize(capture_moves));
             capture_moves[capture_count++] = move;
         }
 

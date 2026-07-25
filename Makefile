@@ -348,7 +348,8 @@ endif
 CFLAGS_COM  = -pipe -std=c++23 -DVERSION=\"$(VERSION)\" $(DEFS) $(CFLAGS_NNUE)
 CFLAGS_REL  = $(CFLAGS_REL1) $(CFLAGS_WARN1) -DNDEBUG -fomit-frame-pointer
 CFLAGS_DBG  = -g -O2
-CFLAGS_WARN = $(CFLAGS_WARN1) $(CFLAGS_WARN2) $(CFLAGS_WARN3) $(CFLAGS_WARN4) $(CFLAGS_WARN5) $(CFLAGS_WARN6)
+# -Wall -Wextra en tête : le -Wno-unused de CFLAGS_WARN5 doit rester le dernier mot
+CFLAGS_WARN = -Wall -Wextra $(CFLAGS_WARN1) $(CFLAGS_WARN2) $(CFLAGS_WARN3) $(CFLAGS_WARN4) $(CFLAGS_WARN5) $(CFLAGS_WARN6)
 CFLAGS_PERF = $(CFLAGS_REL1) $(CFLAGS_WARN1)  -DNDEBUG -g -fno-omit-frame-pointer -DUSE_PROFILING
 
 # Sanitizer build : ASan + UBSan combinés (compatibles entre eux)
