@@ -1082,8 +1082,10 @@ void Uci::bench(int argCount, char* argValue[])
 
     for (int i=0; i<total; i++)
     {
-        printf("position %2d : best_move %5s score %5d nodes %9ld nps %6d \n",
-               i+1, Move::name(moves[i]).c_str(), scores[i], nodes[i], static_cast<int>(1000.0*nodes[i]/(times[i]+1.0)) );
+        printf("position %2d : best_move %5s score %5d nodes %9llu nps %6d \n",
+               i+1, Move::name(moves[i]).c_str(), scores[i],
+               static_cast<unsigned long long>(nodes[i]),
+               static_cast<int>(1000.0*nodes[i]/(times[i]+1.0)) );
 
         total_nodes  += nodes[i];
         total_time   += times[i];

@@ -661,11 +661,11 @@ void test_see()
 
     file.close();
 
-    printf("# Passed B     %10u\n",     passed_tests_b);
-    printf("# Passed S     %10u\n",     passed_tests_s);
-    printf("# Failed B     %10u\n",     failed_tests_b);
-    printf("# Failed S     %10u\n",     failed_tests_s);
-    printf("# Total        %10u\n",     total_tests);
+    printf("# Passed B     %10d\n",     passed_tests_b);
+    printf("# Passed S     %10d\n",     passed_tests_s);
+    printf("# Failed B     %10d\n",     failed_tests_b);
+    printf("# Failed S     %10d\n",     failed_tests_s);
+    printf("# Total        %10d\n",     total_tests);
 
     std::cout << "********************" << std::endl;
 
