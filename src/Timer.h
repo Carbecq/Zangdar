@@ -87,8 +87,8 @@ private:
     U64  nodesForThisDepth;       // noeuds pour "iterative deepening"
     U64  nodesForThisMove;        // noeuds pour une recherche "alpha-beta" ou "quiescence"
 
-    std::array<U64, 4096>   MoveNodeCounts;
-    U32                     pv_stability;
+    std::array<U64, 4096>   MoveNodeCounts{};
+    U32                     pv_stability = 0;
 
 };
 

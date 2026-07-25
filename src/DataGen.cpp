@@ -563,7 +563,7 @@ void DataGen::data_search(Board& board, Timer& timer, Search& search,
         // Timer::update n'est pas utilisé car on est soit "par node", soit "par depth".
 
         // Si une itération se termine après le temps optimal, on arrête la recherche
-        if (timer.finishOnThisDepth(elapsed, search.iter_depth, search.nodes, nullptr, nullptr))
+        if (timer.finishOnThisDepth(elapsed, search.iter_depth, search.nodes, search.pv_scores, search.pv_moves))
             break;
 
         search.seldepth = 0;
