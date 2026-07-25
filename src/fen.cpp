@@ -735,25 +735,40 @@ void Board::apply_token(const std::string& token)
     int nbr = 0;
 #endif
 
-    for (const auto &mlmove : ml.mlmoves)
+    MOVE found = Move::MOVE_NONE;
+
+    for (size_t index = 0; index < ml.count; index++)
     {
-        if (Move::name(mlmove.move) == token)
+        const MOVE move = ml.mlmoves[index].move;
+
+        if (Move::name(move) == token)
         {
+            // Le coup joué est toujours le PREMIER trouvé, en debug comme en
+            // release : les deux versions doivent jouer exactement le même coup.
+            if (found == Move::MOVE_NONE)
+                found = move;
+
 #ifndef NDEBUG
+            // En debug on poursuit le parcours : le contrôle ci-dessous doit
+            // pouvoir constater qu'aucun AUTRE coup légal ne porte ce nom.
             nbr++;
-#endif
-            make_move<C, false>(accum, mlmove.move);
+#else
+            // En release, le premier trouvé suffit.
             break;
+#endif
         }
     }
 
+    if (found != Move::MOVE_NONE)
+        make_move<C, false>(accum, found);
+
 #ifndef NDEBUG
     if (nbr == 0)
-        printlog("---------------------------nbr 0\n");
+        printlog("--------------------------- coup introuvable : " + token);
     else if (nbr == 1)
         printlog("ok \n") ;
     else
-        printlog("---------------------------nbr > 1 \n");
+        printlog("--------------------------- coup ambigu (" + std::to_string(nbr) + ") : " + token);
 #endif
 
 }
