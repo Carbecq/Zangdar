@@ -848,7 +848,11 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 // Si le score dépasse beta, on a une coupure
                 if (score >= beta)
                 {
-                    history.update_quiet_history(C, si, best_move, board.get_pawn_key(), depth, quiet_count, quiet_moves);
+                    // bonus et malus quiets seulement si le coup gagnant est tranquille ;
+                    // le malus aux captures essayées s'applique dans tous les cas
+                    if (!Move::is_tactical(best_move))
+                        history.update_quiet_history(C, si, best_move, board.get_pawn_key(), depth, quiet_count, quiet_moves);
+
                     history.update_capture_history(si, best_move, depth, capture_count, capture_moves);
 
                     // non, ce coup est trop bon pour l'adversaire

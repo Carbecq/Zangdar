@@ -216,8 +216,9 @@ void History::update_capture_history(const SearchInfo *info, MOVE best_move, I16
     int bonus = stat_bonus(depth);
     int malus = stat_malus(depth);
 
-    // Bonus pour le coup ayant provoqué un cutoff (fail-high)
-    update_capture(info, best_move, bonus);
+    // Bonus seulement si le coup gagnant est bien une capture ou une promotion
+    if (Move::is_tactical(best_move))
+        update_capture(info, best_move, bonus);
 
     // Malus pour les autres coups
     for (size_t i = 0; i < capture_count; i++)
