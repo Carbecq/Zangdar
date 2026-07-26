@@ -50,7 +50,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
         return isInCheck ? VALUE_DRAW : evaluate(board);
 
     // Threats : utilisés pour indexer la capture history
-    si->threats = board.squares_attacked<~C>();
+    si->threats = board.threats_from<~C>();
 
     // Prefetch La table de transposition aussitôt que possible
     table->prefetch(board.get_key());

@@ -281,7 +281,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     //  Caractéristiques de la position
     const bool isInCheck  = board.is_in_check();
     const bool isExcluded = si->excluded != Move::MOVE_NONE;
-    si->threats           = board.squares_attacked<THEM>();
+    si->threats           = board.threats_from<THEM>();
 
     // Pour la PVS, le nœud est un PV node si beta - alpha != 1 (full-window = pas une null window)
     // On ne veut pas appliquer la plupart des techniques de pruning sur les PV nodes

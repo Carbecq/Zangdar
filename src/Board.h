@@ -26,6 +26,7 @@ struct Status
     int      fullmove_counter   = 1;                        // le nombre de coups complets. Il commence à 1 et est incrémenté de 1 après le coup des noirs.
     Bitboard checkers           = 0ULL;                     // bitboard des pièces ennemies me donnant échec
     Bitboard pinned             = 0ULL;                     // bitboard des pièces amies clouées
+    mutable Bitboard threats    = 0ULL;                     // cases attaquées par l'adversaire ; 0 = pas encore calculé
 };
 
 /*
@@ -231,6 +232,16 @@ public:
     template<Color C> [[nodiscard]] Bitboard squares_attacked() const noexcept;
     //! \brief Retourne le bitboard des cases attaquées avec une occupancy explicite
     template<Color C> [[nodiscard]] Bitboard squares_attacked(Bitboard occ) const noexcept;
+
+    //! \brief  Initialise le bitboard des cases attaquées par l'adversaire, mémorisé dans le Status
+    template<Color C> [[nodiscard]] Bitboard threats_from() const noexcept
+    {
+        assert(C == ~turn());
+        const Status& st = get_status();
+        if (st.threats == 0ULL)
+            st.threats = squares_attacked<C>();      // jamais nul : contient king_moves
+        return st.threats;
+    }
 
     //! \brief  Détermine si la case sq est attaquée par le camp C
     //! \param[in]  sq  case à examiner
@@ -615,7 +626,7 @@ public:
     {
         if (   can_castle<C, side>()
                && BB::empty(get_rook_path<C, side>() & occupancy_all())
-               && BB::empty(squares_attacked<~C>() & get_king_path<C, side>()) )
+               && BB::empty(threats_from<~C>() & get_king_path<C, side>()) )
         {
             add_quiet_move(ml, get_king_from<C>(), get_king_dest<C, side>(), Move::make_piece(C, PieceType::KING), Move::FLAG_CASTLE_MASK);
         }

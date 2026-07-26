@@ -32,7 +32,8 @@ void Board::calculate_checkers_pinned() noexcept
     Bitboard candidates = (Attacks::rook_moves(K, enemyBB)   & their_orth_sliders) |
             (Attacks::bishop_moves(K, enemyBB) & their_diag_sliders);
 
-    get_status().pinned = 0ULL;
+    get_status().pinned  = 0ULL;
+    get_status().threats = 0ULL;        // invalide le cache : la position a changé
     while (candidates)
     {
         s  = BB::pop_lsb(candidates);

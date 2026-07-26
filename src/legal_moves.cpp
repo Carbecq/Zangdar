@@ -309,7 +309,11 @@ void Board::legal_moves(MoveList& ml) const
      *     la case (2) ne sera pas attaquée par la tour NOIRE.
      *   Il faut donc calculer les attaques de NOIR sans le roi bLANC.
      */
-    attackBB = squares_attacked<THEM>(occupiedBB ^ SQ::square_BB(K));  // attaques ennemies SANS le roi ami
+    // retirer le roi ne change que les glisseurs qui atteignent sa case, donc ceux qui font échec
+    const Bitboard sliders = typePiecesBB[PieceType::BISHOP] | typePiecesBB[PieceType::ROOK] | typePiecesBB[PieceType::QUEEN];
+    attackBB = (checkersBB & sliders)
+             ? squares_attacked<THEM>(occupiedBB ^ SQ::square_BB(K))
+             : threats_from<THEM>();
 
     if constexpr (GenNoisy)
     {
