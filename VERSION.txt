@@ -1,3 +1,3 @@
-VERSION  = 7.10
+VERSION  = 7.11
 NET_NAME = net_20a_1000.bin
 

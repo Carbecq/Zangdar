@@ -165,13 +165,6 @@ template <Color C>
 //  Initialisations utilisant constexpr et lambda; nécessite C++17
 //================================================================================
 
-// ATTENTION : std::abs n'est PAS constexpr (jusquà C++23 ??)
-//! \brief  Valeur absolue utilisable en contexte constexpr
-template<typename T>
-constexpr T myabs(T t) {
-    return ( (t) < T(0) ? -(t) : (t));
-}
-
 // une façon de faire
 constexpr std::array<Bitboard, N_SQUARES> RankMask64 = []() -> std::array<Bitboard, N_SQUARES> {
     std::array<Bitboard, N_SQUARES> b{};
@@ -205,6 +198,7 @@ constexpr std::array<Bitboard, N_SQUARES> AntiDiagonalMask64 = [] {
     }
     return b;
 }();
+
 
 
 
@@ -250,56 +244,6 @@ constexpr std::array<std::array<Bitboard, N_SQUARES>, N_SQUARES> SQUARES_BETWEEN
     return b;
 }();
 
-//------------------------------------------------------------------
-//  table utilisée pour les générateur de coups
-
-struct Mask
-{
-    int direction[N_SQUARES];
-};
-
-
-//! \brief  Calcule l'index de case à partir du fichier et de la rangée, ou SQUARE_NONE si hors échiquier
-[[nodiscard]] constexpr int square_safe(const int f, const int r) {
-    if (0 <= f && f < 8 && 0 <= r && r < 8)
-        return SQ::square(f, r);
-    else
-        return SQUARE_NONE;
-}
-
-constexpr std::array<Mask, N_SQUARES> DirectionMask = [] {
-    auto b = decltype(DirectionMask){};
-    int d[N_SQUARES][N_SQUARES];
-    constexpr int king_dir[8][2] = {{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}};
-
-    for (SQUARE sq = A1; sq < N_SQUARES; ++sq)
-    {
-        auto f = SQ::file(sq);
-        auto r = SQ::rank(sq);
-
-        for (size_t y = A1; y < N_SQUARES; ++y)
-            d[sq][y] = 0;
-
-        // directions & between
-        for (int i = 0; i < 8; ++i)
-        {
-            for (int j = 1; j < 8; ++j)
-            {
-                int y = square_safe(f + king_dir[i][0] * j, r + king_dir[i][1] * j);
-                if (y != SQUARE_NONE)
-                {
-                    d[sq][y] = king_dir[i][0] + 8 * king_dir[i][1];
-                    b[sq].direction[y] = myabs(d[sq][y]);
-                }
-            }
-        }
-
-    }
-
-    return b;
-}();
-
-
 //------------------------------------------------------------------------
 //  Fonctions
 //------------------------------------------------------------------------
@@ -307,6 +251,19 @@ constexpr std::array<Mask, N_SQUARES> DirectionMask = [] {
 //! \brief  Retourne le bitboard des cases situées entre sq1 et sq2 (alignées en ligne, colonne ou diagonale), bornes exclues
 [[nodiscard]] constexpr Bitboard squares_between(size_t sq1, size_t sq2) {
     return SQUARES_BETWEEN_MASK[sq1][sq2];
+}
+
+//! \brief  Retourne la ligne complète (rangée, colonne ou diagonale) portant le clouage
+//!         d'une pièce en "from" par rapport au roi en "K", bornes incluses.
+//!         La pièce DOIT être clouée, donc alignée avec le roi.
+[[nodiscard]] constexpr Bitboard pin_line(size_t K, size_t from) {
+    const Bitboard kingBB = 1ULL << K;
+
+    if (RankMask64[from]     & kingBB) return RankMask64[from];
+    if (FileMask64[from]     & kingBB) return FileMask64[from];
+    if (DiagonalMask64[from] & kingBB) return DiagonalMask64[from];
+    assert(AntiDiagonalMask64[from] & kingBB);      // sinon la pièce n'était pas clouée
+    return AntiDiagonalMask64[from];
 }
 
 

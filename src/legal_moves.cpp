@@ -43,16 +43,9 @@ void Board::legal_moves(MoveList& ml) const
     constexpr int pawn_right = PUSH[US] + 1;
     constexpr int pawn_push  = PUSH[US];
 
-    const int abs_pawn_left  = abs(PUSH[US] - 1);
-    const int abs_pawn_right = abs(PUSH[US] + 1);
-    const int abs_pawn_push  = abs(PUSH[US]);
-
-    const int *dir = DirectionMask[K].direction;
-
     Bitboard pieceBB;
     Bitboard attackBB;
     U32 from, to;
-    int d;
     U32 ep;
     U32 x_checker = Square::SQUARE_NONE;
 
@@ -85,34 +78,29 @@ void Board::legal_moves(MoveList& ml) const
             gen_castle<US, CastleSide::QUEEN_SIDE>(ml);
         }
 
-        // pawn (pinned)
+        // pawn (pinned) : un pion cloué ne peut se déplacer que sur la ligne du clouage
         pieceBB = typePiecesBB[PieceType::PAWN] & pinnedBB;
 
         while (pieceBB) {
             from = BB::pop_lsb(pieceBB);
-            d = dir[from];
-            
+            const Bitboard lineBB = pin_line(K, from);
+
             if constexpr (GenNoisy)
             {
-                if (d == abs_pawn_left && (SQ::square_BB(to = from + pawn_left) & Attacks::pawn_attacks<US>(from) & enemyBB ))
+                Bitboard capturesBB = Attacks::pawn_attacks<US>(from) & enemyBB & lineBB;
+                while (capturesBB)
                 {
-                    if (SQ::is_on_seventh_rank<US>(from))
-                        push_capture_promotion(ml, from, to, US);
-                    else
-                        add_capture_move(ml, from, to, Move::make_piece(US, PieceType::PAWN), piece_square[to], Move::FLAG_NONE);
-                }
-                else if (d == abs_pawn_right && (SQ::square_BB(to = from + pawn_right) & Attacks::pawn_attacks<US>(from) & enemyBB))
-                {
+                    to = BB::pop_lsb(capturesBB);
                     if (SQ::is_on_seventh_rank<US>(from))
                         push_capture_promotion(ml, from, to, US);
                     else
                         add_capture_move(ml, from, to, Move::make_piece(US, PieceType::PAWN), piece_square[to], Move::FLAG_NONE);
                 }
             }
-            
+
             if constexpr (GenQuiet)
             {
-                if (d == abs_pawn_push && (SQ::square_BB(to = from + pawn_push) & emptyBB))
+                if (SQ::square_BB(to = from + pawn_push) & emptyBB & lineBB)
                 {
                     add_quiet_move(ml, from, to, Move::make_piece(US, PieceType::PAWN), Move::FLAG_NONE);
                     if (SQ::is_on_second_rank<US>(from) && (SQ::square_BB(to += pawn_push) & emptyBB))
@@ -126,22 +114,11 @@ void Board::legal_moves(MoveList& ml) const
 
         while (pieceBB)
         {
-            from = BB::pop_lsb(pieceBB);
-            d = dir[from];
-            attackBB = Attacks::bishop_moves(from, occupiedBB);
-            Bitboard diagBB  = attackBB & DiagonalMask64[from];
-            Bitboard adiagBB = attackBB & AntiDiagonalMask64[from];
+            from     = BB::pop_lsb(pieceBB);
+            attackBB = Attacks::bishop_moves(from, occupiedBB) & pin_line(K, from);
 
-            if (d == 9)
-            {
-                if constexpr (GenNoisy) push_capture_moves(ml, diagBB & enemyBB, from);
-                if constexpr (GenQuiet) push_quiet_moves(ml,   diagBB & emptyBB, from);
-            }
-            else if (d == 7)
-            {
-                if constexpr (GenNoisy) push_capture_moves(ml, adiagBB & enemyBB, from);
-                if constexpr (GenQuiet) push_quiet_moves(ml,   adiagBB & emptyBB, from);
-            }
+            if constexpr (GenNoisy) push_capture_moves(ml, attackBB & enemyBB, from);
+            if constexpr (GenQuiet) push_quiet_moves(ml,   attackBB & emptyBB, from);
         }
 
         // tour ou dame (clouée)
@@ -149,22 +126,11 @@ void Board::legal_moves(MoveList& ml) const
 
         while (pieceBB)
         {
-            from = BB::pop_lsb(pieceBB);
-            d = dir[from];
-            attackBB = Attacks::rook_moves(from, occupiedBB);
-            Bitboard diagBB  = attackBB & RankMask64[from];
-            Bitboard adiagBB = attackBB & FileMask64[from];
+            from     = BB::pop_lsb(pieceBB);
+            attackBB = Attacks::rook_moves(from, occupiedBB) & pin_line(K, from);
 
-            if (d == 1)
-            {
-                if constexpr (GenNoisy) push_capture_moves(ml, diagBB & enemyBB, from);
-                if constexpr (GenQuiet) push_quiet_moves(ml,   diagBB & emptyBB, from);
-            }
-            else if (d == 8)
-            {
-                if constexpr (GenNoisy) push_capture_moves(ml, adiagBB & enemyBB, from);
-                if constexpr (GenQuiet) push_quiet_moves(ml,   adiagBB & emptyBB, from);
-            }
+            if constexpr (GenNoisy) push_capture_moves(ml, attackBB & enemyBB, from);
+            if constexpr (GenQuiet) push_quiet_moves(ml,   attackBB & emptyBB, from);
         }
     }
 
