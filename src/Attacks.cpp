@@ -3,8 +3,9 @@
 
 namespace Attacks {
 
-Bitboard ROOK_ATTACKS  [N_SQUARES][4096]{};
-Bitboard BISHOP_ATTACKS[N_SQUARES][ 512]{};
+alignas(64) Bitboard ROOK_ATTACKS  [ROOK_ATTACKS_SIZE]{};
+alignas(64) Bitboard BISHOP_ATTACKS[BISHOP_ATTACKS_SIZE]{};
+
 
 
 //======================================================
@@ -85,16 +86,17 @@ void init_bishop_attacks()
         Bitboard mask = bishop_masks[sq];
         int bits      = bishop_relevant_bits[sq];
         int indicies  = (1 << bits);
+        U32 base      = bishop_offsets[sq];     // début du bloc de cette case
 
         for (int index = 0; index < indicies; index++)
         {
             Bitboard occupancy = set_occupancy(index, bits, mask);
 
 #ifndef USE_PEXT
-            int idx                 = (occupancy * bishop_magics[sq]) >> (64 - bits);
-            BISHOP_ATTACKS[sq][idx] = bishop_attacks_on_the_fly(sq, occupancy);
+            int idx                    = (occupancy * bishop_magics[sq]) >> (64 - bishop_used_bits[sq]);
+            BISHOP_ATTACKS[base + idx] = bishop_attacks_on_the_fly(sq, occupancy);
 #else
-            BISHOP_ATTACKS[sq][_pext_u64(occupancy, mask)] = bishop_attacks_on_the_fly(sq, occupancy);
+            BISHOP_ATTACKS[base + _pext_u64(occupancy, mask)] = bishop_attacks_on_the_fly(sq, occupancy);
 #endif
         }
     }
@@ -153,16 +155,17 @@ void init_rook_attacks()
         Bitboard mask = rook_masks[sq];
         int bits      = rook_relevant_bits[sq];
         int indicies  = (1 << bits);
+        U32 base      = rook_offsets[sq];       // début du bloc de cette case
 
         for (int index = 0; index < indicies; index++)
         {
             Bitboard occupancy = set_occupancy(index, bits, mask);
 
 #ifndef USE_PEXT
-            int idx               = (occupancy * rook_magics[sq]) >> (64 - bits);
-            ROOK_ATTACKS[sq][idx] = rook_attacks_on_the_fly(sq, occupancy);
+            int idx                  = (occupancy * rook_magics[sq]) >> (64 - rook_used_bits[sq]);
+            ROOK_ATTACKS[base + idx] = rook_attacks_on_the_fly(sq, occupancy);
 #else
-            ROOK_ATTACKS[sq][_pext_u64(occupancy, mask)]   = rook_attacks_on_the_fly(sq, occupancy);
+            ROOK_ATTACKS[base + _pext_u64(occupancy, mask)] = rook_attacks_on_the_fly(sq, occupancy);
 #endif
         }
     }

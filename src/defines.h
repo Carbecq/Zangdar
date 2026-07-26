@@ -29,18 +29,12 @@ using MOVE      = U32;
 using SQUARE    = U32;  // pour la clarté du code
 using KEY       = U64;
 
-// steady_clock et NON high_resolution_clock : cette horloge ne sert qu'à mesurer
-// des intervalles (Timer::elapsedTime pilote l'arrêt de la recherche). La norme
-// n'exige pas que high_resolution_clock soit monotone, et libstdc++ en fait un
-// alias de system_clock (is_steady = 0) : un saut de l'heure système pendant une
-// recherche fausserait le temps écoulé, donc le time management.
-using TimePoint = std::chrono::steady_clock;
+using TimePoint = std::chrono::steady_clock;    // steady_clock et NON high_resolution_clock : cette horloge ne sert qu'à mesurer des intervalles
 
 template <class T, std::size_t x, std::size_t y>
 using Array2D = std::array<std::array<T, y>, x>;
 
 //-----------------------------------------------------------------------------
-// 33.554.432
 
 static constexpr int MAX_PLY    =  128;     // profondeur max de recherche (en demi-coups)
 static constexpr int MAX_HISTO  = 1024;     // longueur max de l'historique (partie + recherche) (en demi-coups)

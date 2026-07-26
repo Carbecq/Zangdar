@@ -2,6 +2,8 @@
 #define ATTACKS_H
 
 #include "bitmask.h"
+#include <array>
+#include <bit>
 #include <cassert>
 #if defined USE_PEXT
 #include "immintrin.h"
@@ -114,6 +116,29 @@ constexpr int rook_relevant_bits[64] = {
     12, 11, 11, 11, 11, 11, 11, 12
 };
 
+// bits REELLEMENT utilises par le jeu de magics ci-dessous ("Best Magics so far")
+constexpr int bishop_used_bits[64] = {
+     5,  4,  5,  5,  5,  5,  4,  5,
+     4,  4,  5,  5,  5,  5,  4,  4,
+     4,  4,  7,  7,  7,  7,  4,  4,
+     5,  5,  7,  9,  9,  7,  5,  5,
+     5,  5,  7,  9,  9,  7,  5,  5,
+     4,  4,  7,  7,  7,  7,  4,  4,
+     4,  4,  5,  5,  5,  5,  4,  4,
+     5,  4,  5,  5,  5,  5,  4,  5,
+};
+
+constexpr int rook_used_bits[64] = {
+    12, 11, 11, 11, 11, 11, 11, 12,
+    11, 10, 10, 10, 10, 10, 10, 11,
+    11, 10, 10, 10, 10, 10, 10, 11,
+    11, 10, 10, 10, 10, 10, 10, 11,
+    11, 10, 10, 10, 10, 10, 10, 11,
+    11, 10, 10, 10, 10, 10, 10, 11,
+    10,  9,  9,  9,  9,  9,  9, 10,
+    11, 10, 10, 10, 10, 11, 10, 11,
+};
+
 // bishop_mask , table précalculée avec le programme Magic
 constexpr Bitboard bishop_masks[64] {
     0x0040201008040200ULL, 0x0000402010080400ULL, 0x0000004020100a00ULL, 0x0000000040221400ULL,
@@ -154,78 +179,183 @@ constexpr Bitboard rook_masks[64] {
     0x6e10101010101000ULL, 0x5e20202020202000ULL, 0x3e40404040404000ULL, 0x7e80808080808000ULL,
 };
 
-// nombre de bits pertinents de l'occupancy du fou, pour chaque case de l'échiquier
-//  on utilise en fait le shift = 64 - relevant_bit
-constexpr int bishop_shifts[64] {
-    58, 59, 59, 59, 59, 59, 59, 58,
-    59, 59, 59, 59, 59, 59, 59, 59,
-    59, 59, 57, 57, 57, 57, 59, 59,
-    59, 59, 57, 55, 55, 57, 59, 59,
-    59, 59, 57, 55, 55, 57, 59, 59,
-    59, 59, 57, 57, 57, 57, 59, 59,
-    59, 59, 59, 59, 59, 59, 59, 59,
-    58, 59, 59, 59, 59, 59, 59, 58,
-};
-
-// nombre de bits pertinents de l'occupancy de la tour, pour chaque case de l'échiquier
-//  on utilise en fait le shift = 64 - relevant_bit
-constexpr int rook_shifts[64] {
-    52, 53, 53, 53, 53, 53, 53, 52,
-    53, 54, 54, 54, 54, 54, 54, 53,
-    53, 54, 54, 54, 54, 54, 54, 53,
-    53, 54, 54, 54, 54, 54, 54, 53,
-    53, 54, 54, 54, 54, 54, 54, 53,
-    53, 54, 54, 54, 54, 54, 54, 53,
-    53, 54, 54, 54, 54, 54, 54, 53,
-    52, 53, 53, 53, 53, 53, 53, 52,
-};
-
 // nombres magiques du fou
 constexpr U64 bishop_magics[64] {
-    0x40106000a1160020ULL, 0x0020010250810120ULL, 0x2010010220280081ULL, 0x002806004050c040ULL,
-    0x0002021018000000ULL, 0x2001112010000400ULL, 0x0881010120218080ULL, 0x1030820110010500ULL,
-    0x0210401044110050ULL, 0x0020080101140100ULL, 0x0c00501100610400ULL, 0x05c051104a000d80ULL,
-    0x8602020210008000ULL, 0x02882a0886180000ULL, 0x8000204124104001ULL, 0x0080012608025800ULL,
-    0x0010006020322084ULL, 0x000285202a060210ULL, 0x0008003000204114ULL, 0x4000800802004000ULL,
-    0x8002100401200040ULL, 0x8006010c11008802ULL, 0x030e200401010840ULL, 0x000080010b829021ULL,
-    0x4205040860200461ULL, 0x4004840020015400ULL, 0x01880c0002040491ULL, 0x0002008020080880ULL,
-    0x0008840002020204ULL, 0x0008020200405200ULL, 0x040a821904210400ULL, 0x000285202a060210ULL,
-    0x4104100440400501ULL, 0x6000841084045004ULL, 0x0016004040040308ULL, 0x0800020080080081ULL,
-    0x8804080200002008ULL, 0x00108804800b1000ULL, 0x040404040400b088ULL, 0x080413003142440aULL,
-    0x1112080340040900ULL, 0x04028404a0000282ULL, 0x4402020602040100ULL, 0x4000012018001100ULL,
-    0x0010080104044040ULL, 0x2040010400200100ULL, 0x0204280084118104ULL, 0x2010010220280081ULL,
-    0x0881010120218080ULL, 0x02002c0c02080820ULL, 0x48820aa108280002ULL, 0x4080400042020020ULL,
-    0x50600011120a1000ULL, 0x0000602002822400ULL, 0x0020080101140100ULL, 0x0020010250810120ULL,
-    0x1030820110010500ULL, 0x0080012608025800ULL, 0x0002810084008800ULL, 0x800080000c208800ULL,
-    0xa408002140028204ULL, 0x0010006020322084ULL, 0x0210401044110050ULL, 0x40106000a1160020ULL,
+    0xFFEDF9FD7CFCFFFFULL, 0xFC0962854A77F576ULL, 0x5822022042000000ULL, 0x2CA804A100200020ULL,
+    0x0204042200000900ULL, 0x2002121024000002ULL, 0xFC0A66C64A7EF576ULL, 0x7FFDFDFCBD79FFFFULL,
+    0xFC0846A64A34FFF6ULL, 0xFC087A874A3CF7F6ULL, 0x1001080204002100ULL, 0x1810080489021800ULL,
+    0x0062040420010A00ULL, 0x5028043004300020ULL, 0xFC0864AE59B4FF76ULL, 0x3C0860AF4B35FF76ULL,
+    0x73C01AF56CF4CFFBULL, 0x41A01CFAD64AAFFCULL, 0x040C0422080A0598ULL, 0x4228020082004050ULL,
+    0x0200800400E00100ULL, 0x020B001230021040ULL, 0x7C0C028F5B34FF76ULL, 0xFC0A028E5AB4DF76ULL,
+    0x0020208050A42180ULL, 0x001004804B280200ULL, 0x2048020024040010ULL, 0x0102C04004010200ULL,
+    0x020408204C002010ULL, 0x02411100020080C1ULL, 0x102A008084042100ULL, 0x0941030000A09846ULL,
+    0x0244100800400200ULL, 0x4000901010080696ULL, 0x0000280404180020ULL, 0x0800042008240100ULL,
+    0x0220008400088020ULL, 0x04020182000904C9ULL, 0x0023010400020600ULL, 0x0041040020110302ULL,
+    0xDCEFD9B54BFCC09FULL, 0xF95FFA765AFD602BULL, 0x1401210240484800ULL, 0x0022244208010080ULL,
+    0x1105040104000210ULL, 0x2040088800C40081ULL, 0x43FF9A5CF4CA0C01ULL, 0x4BFFCD8E7C587601ULL,
+    0xFC0FF2865334F576ULL, 0xFC0BF6CE5924F576ULL, 0x80000B0401040402ULL, 0x0020004821880A00ULL,
+    0x8200002022440100ULL, 0x0009431801010068ULL, 0xC3FFB7DC36CA8C89ULL, 0xC3FF8A54F4CA2C89ULL,
+    0xFFFFFCFCFD79EDFFULL, 0xFC0863FCCB147576ULL, 0x040C000022013020ULL, 0x2000104000420600ULL,
+    0x0400000260142410ULL, 0x0800633408100500ULL, 0xFC087E8E4BB2F736ULL, 0x43FF9E4EF4CA2C89ULL,
 };
 
 // nombres magiques de la tour
 constexpr U64 rook_magics[64] {
-    0x0a80004000801220ULL, 0x8040004010002008ULL, 0x2080200010008008ULL, 0x1100100008210004ULL,
-    0xc200209084020008ULL, 0x2100010004000208ULL, 0x0400081000822421ULL, 0x0200010422048844ULL,
-    0x0202800084204008ULL, 0x0801004001002080ULL, 0x2241002000150442ULL, 0x2509002100089004ULL,
-    0x1421000500080011ULL, 0x1241000900820400ULL, 0x6031000200040100ULL, 0x0a0500008100084aULL,
-    0x0000888004400020ULL, 0x00088e8020004000ULL, 0x000a020010248040ULL, 0x2210010009001020ULL,
-    0x0800808004000800ULL, 0x2000808004000200ULL, 0x00200400891a0850ULL, 0x0002220000408124ULL,
-    0x1240400280208000ULL, 0x8000400100208100ULL, 0x0000100080802000ULL, 0x0800100100082101ULL,
-    0x1421000500080011ULL, 0x0402040080800200ULL, 0x2122000200810804ULL, 0x40a1010200007084ULL,
-    0x29404000a1800180ULL, 0x0801004001002080ULL, 0x0000100080802000ULL, 0x2000102042000a00ULL,
-    0x0000800800800400ULL, 0x0402040080800200ULL, 0x0000020104000810ULL, 0x2900040062000081ULL,
-    0x3780002000444000ULL, 0x0000500020004000ULL, 0x2010004020010100ULL, 0x880200200c420010ULL,
-    0x0010040008008080ULL, 0x0006000804010100ULL, 0x00601021060c0098ULL, 0x0001003088410002ULL,
-    0x29404000a1800180ULL, 0x8400824000200180ULL, 0x3000801000200080ULL, 0x0200080081500180ULL,
-    0x0010040008008080ULL, 0x1001000208040100ULL, 0x0006000401080200ULL, 0x0200800100106080ULL,
-    0x00008002204a1101ULL, 0x1040090010224081ULL, 0x4300c0200011000dULL, 0x8002041001002009ULL,
-    0x2005000800020411ULL, 0x110a008408100102ULL, 0x0006000108008402ULL, 0x0200002900884402ULL,
+    0xA180022080400230ULL, 0x0040100040022000ULL, 0x0080088020001002ULL, 0x0080080280841000ULL,
+    0x4200042010460008ULL, 0x04800A0003040080ULL, 0x0400110082041008ULL, 0x008000A041000880ULL,
+    0x10138001A080C010ULL, 0x0000804008200480ULL, 0x00010011012000C0ULL, 0x0022004128102200ULL,
+    0x000200081201200CULL, 0x202A001048460004ULL, 0x0081000100420004ULL, 0x4000800380004500ULL,
+    0x0000208002904001ULL, 0x0090004040026008ULL, 0x0208808010002001ULL, 0x2002020020704940ULL,
+    0x8048010008110005ULL, 0x6820808004002200ULL, 0x0A80040008023011ULL, 0x00B1460000811044ULL,
+    0x4204400080008EA0ULL, 0xB002400180200184ULL, 0x2020200080100380ULL, 0x0010080080100080ULL,
+    0x2204080080800400ULL, 0x0000A40080360080ULL, 0x02040604002810B1ULL, 0x008C218600004104ULL,
+    0x8180004000402000ULL, 0x488C402000401001ULL, 0x4018A00080801004ULL, 0x1230002105001008ULL,
+    0x8904800800800400ULL, 0x0042000C42003810ULL, 0x008408110400B012ULL, 0x0018086182000401ULL,
+    0x2240088020C28000ULL, 0x001001201040C004ULL, 0x0A02008010420020ULL, 0x0010003009010060ULL,
+    0x0004008008008014ULL, 0x0080020004008080ULL, 0x0282020001008080ULL, 0x50000181204A0004ULL,
+    0x48FFFE99FECFAA00ULL, 0x48FFFE99FECFAA00ULL, 0x497FFFADFF9C2E00ULL, 0x613FFFDDFFCE9200ULL,
+    0xFFFFFFE9FFE7CE00ULL, 0xFFFFFFF5FFF3E600ULL, 0x0003FF95E5E6A4C0ULL, 0x510FFFF5F63C96A0ULL,
+    0xEBFFFFB9FF9FC526ULL, 0x61FFFEDDFEEDAEAEULL, 0x53BFFFEDFFDEB1A2ULL, 0x127FFFB9FFDFB5F6ULL,
+    0x411FFFDDFFDBF4D6ULL, 0x0801000804000603ULL, 0x0003FFEF27EEBE74ULL, 0x7645FFFECBFEA79EULL,
 };
 
 
-// table d'attaques du fou [case][occupancies]
-extern Bitboard BISHOP_ATTACKS[64][512];
+//======================================================
+//  Tables d'attaques compactes ("fancy magic")
+//
+//  Un seul tableau 1D par pièce, et un offset par case donnant le
+//  début de son bloc.
+//
+//  https://www.chessprogramming.org/Magic_Bitboards
+//  https://www.chessprogramming.org/Best_Magics_so_far
+//
+//======================================================
 
-// table d'attaques de la tour [case][occupancies]
-extern Bitboard ROOK_ATTACKS[64][4096];
+//=========================================================
+//! \brief  offsets de début de bloc ; l'élément 64 vaut la taille de la table
+//---------------------------------------------------------
+constexpr std::array<U32, N_SQUARES + 1> make_attack_offsets(const int (&bits)[N_SQUARES])
+{
+    std::array<U32, N_SQUARES + 1> offsets{};
+    for (SQUARE sq = 0; sq < N_SQUARES; ++sq)
+        offsets[sq + 1] = offsets[sq] + (1u << bits[sq]);
+    return offsets;
+}
+
+#if defined USE_PEXT
+constexpr auto bishop_offsets = make_attack_offsets(bishop_relevant_bits);
+constexpr auto rook_offsets   = make_attack_offsets(rook_relevant_bits);
+#else
+constexpr auto bishop_offsets = make_attack_offsets(bishop_used_bits);
+constexpr auto rook_offsets   = make_attack_offsets(rook_used_bits);
+#endif
+
+constexpr size_t BISHOP_ATTACKS_SIZE = bishop_offsets[N_SQUARES];   // magic  4 800 / PEXT   5 248
+constexpr size_t ROOK_ATTACKS_SIZE   = rook_offsets[N_SQUARES];     // magic 88 064 / PEXT 102 400
+
+// table d'attaques du fou, bloc de la case sq en [bishop_offsets[sq], bishop_offsets[sq+1])
+alignas(64) extern Bitboard BISHOP_ATTACKS[BISHOP_ATTACKS_SIZE];
+
+// table d'attaques de la tour : idem avec rook_offsets
+alignas(64) extern Bitboard ROOK_ATTACKS[ROOK_ATTACKS_SIZE];
+
+
+//======================================================
+//  Métadonnées magic regroupées par case
+//======================================================
+
+#if defined USE_PEXT
+
+//! \brief  Données propre à une case, suffisant pour obtenir les attaques d'un fou ou d'une tour depuis cette case.
+struct alignas(16) Magic
+{
+    Bitboard           mask;      // cases pertinentes (hors bords)
+    const Bitboard*    attacks;   // début du bloc de la case dans la table
+
+    [[nodiscard]] inline Bitboard attacks_of(const Bitboard occupied) const noexcept
+    {
+        return attacks[_pext_u64(occupied, mask)];
+    }
+};
+
+static_assert(sizeof(Magic) == 16, "Magic doit tenir en un quart de ligne de cache");
+
+//! \brief  Construit les Magic des 64 cases d'un type de glisseur
+constexpr std::array<Magic, N_SQUARES> make_magics(const Bitboard (&masks)[N_SQUARES],
+                                                   const U64      (&)[N_SQUARES],
+                                                   const int      (&)[N_SQUARES],
+                                                   const std::array<U32, N_SQUARES + 1>& offsets,
+                                                   const Bitboard* table)
+{
+    std::array<Magic, N_SQUARES> res{};
+    for (SQUARE sq = 0; sq < N_SQUARES; ++sq)
+        res[sq] = Magic{masks[sq], table + offsets[sq]};
+    return res;
+}
+
+#else
+
+//! \brief  Données propre à une case, suffisant pour obtenir les attaques d'un fou ou d'une tour depuis cette case.
+struct alignas(32) Magic
+{
+    Bitboard           mask;      // cases pertinentes (hors bords)
+    U64                magic;     // nombre magique
+    const Bitboard*    attacks;   // début du bloc de la case dans la table
+    U64                shift;     // 64 - used_bits (U64 : complète à 32 octets)
+
+    [[nodiscard]] inline Bitboard attacks_of(const Bitboard occupied) const noexcept
+    {
+        return attacks[((occupied & mask) * magic) >> shift];
+    }
+};
+
+static_assert(sizeof(Magic) == 32, "Magic doit tenir en une demi-ligne de cache");
+
+//! \brief  Construit les Magic des 64 cases d'un type de glisseur
+constexpr std::array<Magic, N_SQUARES> make_magics(const Bitboard (&masks)[N_SQUARES],
+                                                   const U64      (&magics)[N_SQUARES],
+                                                   const int      (&used_bits)[N_SQUARES],
+                                                   const std::array<U32, N_SQUARES + 1>& offsets,
+                                                   const Bitboard* table)
+{
+    std::array<Magic, N_SQUARES> res{};
+    for (SQUARE sq = 0; sq < N_SQUARES; ++sq)
+        res[sq] = Magic{masks[sq], magics[sq], table + offsets[sq],
+                        static_cast<U64>(64 - used_bits[sq])};
+    return res;
+}
+
+#endif
+
+alignas(64) inline constexpr auto BISHOP_MAGIC = make_magics(bishop_masks, bishop_magics, bishop_used_bits,
+                                                             bishop_offsets, BISHOP_ATTACKS);
+alignas(64) inline constexpr auto ROOK_MAGIC   = make_magics(rook_masks,   rook_magics,   rook_used_bits,
+                                                             rook_offsets,   ROOK_ATTACKS);
+
+//! \brief  l'indice PEXT a popcount(mask) bits : il doit tenir dans le bloc
+constexpr bool check_masks(const std::array<Magic, N_SQUARES>& magic,
+                           const int (&bits)[N_SQUARES])
+{
+    for (SQUARE sq = 0; sq < N_SQUARES; ++sq)
+        if (std::popcount(magic[sq].mask) != bits[sq])
+            return false;
+    return true;
+}
+
+//! \brief  un bloc réduit ne peut pas dépasser le bloc plein
+constexpr bool check_used_bits(const int (&used)[N_SQUARES],
+                               const int (&bits)[N_SQUARES])
+{
+    for (SQUARE sq = 0; sq < N_SQUARES; ++sq)
+        if (used[sq] > bits[sq])
+            return false;
+    return true;
+}
+
+static_assert(check_masks(BISHOP_MAGIC, bishop_relevant_bits));
+static_assert(check_masks(ROOK_MAGIC,   rook_relevant_bits));
+static_assert(check_used_bits(bishop_used_bits, bishop_relevant_bits));
+static_assert(check_used_bits(rook_used_bits,   rook_relevant_bits));
 
 //======================================================
 //! \brief  Donne l'attaque du pion (pas le déplacement) pour la couleur C
@@ -290,12 +420,7 @@ template <Color C>
 //------------------------------------------------------
 [[nodiscard]] inline U64 bishop_moves(const SQUARE sq, const U64 occupied) noexcept {
     assert(SQ::is_ok(sq));
-#if defined USE_PEXT
-    return BISHOP_ATTACKS[sq][static_cast<int>(_pext_u64(occupied, bishop_masks[sq]))];
-#else
-    return BISHOP_ATTACKS[sq][static_cast<int>((occupied & bishop_masks[sq]) * bishop_magics[sq]
-                                               >> (bishop_shifts[sq]))];
-#endif
+    return BISHOP_MAGIC[sq].attacks_of(occupied);
 }
 
 //======================================================
@@ -309,12 +434,7 @@ template <Color C>
 //------------------------------------------------------
 [[nodiscard]] inline U64 rook_moves(const SQUARE sq, const U64 occupied) noexcept {
     assert(SQ::is_ok(sq));
-#if defined USE_PEXT
-    return ROOK_ATTACKS[sq][static_cast<int>(_pext_u64(occupied, rook_masks[sq]))];
-#else
-    return ROOK_ATTACKS[sq][static_cast<int>((occupied & rook_masks[sq]) * rook_magics[sq]
-                                             >> (rook_shifts[sq]))];
-#endif
+    return ROOK_MAGIC[sq].attacks_of(occupied);
 }
 
 
