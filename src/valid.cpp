@@ -5,13 +5,29 @@
 
 //==================================================================
 //! \brief  Vérifie la cohérence interne de la position
-//! Utilisé en mode debug (assertions)
+//! Utilisé par les assertions en mode debug, et par set_fen pour refuser
+//! une position invalide venant d'une GUI ou d'un fichier de test.
 //!
 //! \return true si la position est valide, false sinon (avec message d'erreur affiché)
 //------------------------------------------------------------------
 bool Board::valid() const noexcept
 {
-//    std::cout << "valid debut" << std::endl;
+    // Un roi par camp d'abord
+    if (BB::empty(occupancy_all()))
+    {
+        std::cout << "echiquier vide" << std::endl;
+        return false;
+    }
+    if (BB::count_bit(occupancy_cp<WHITE, PieceType::KING>()) != 1)
+    {
+        std::cout << "le nombre de roi blanc est incorrect" << std::endl;
+        return false;
+    }
+    if (BB::count_bit(occupancy_cp<BLACK, PieceType::KING>()) != 1)
+    {
+        std::cout << "le nombre de roi noir est incorrect" << std::endl;
+        return false;
+    }
 
     U64 hash_1, hash_2, hash_3[2];
     calculate_hash(hash_1, hash_2, hash_3);
@@ -60,19 +76,22 @@ bool Board::valid() const noexcept
     }
     
      if (colorPiecesBB[0] & colorPiecesBB[1]) {
+#ifndef NDEBUG
         BB::PrintBB(colorPiecesBB[0], "erreur 5");
         BB::PrintBB(colorPiecesBB[1], "erreur 5");
+#endif
         std::cout << "erreur 5" << std::endl;
         return false;
     }
 
     // pas de pion sur les rangées 1 et 8
     if (occupancy_p<PieceType::PAWN>() & (RANK_1_BB | RANK_8_BB)) {
+#ifndef NDEBUG
         printf("%s \n", display().c_str());
         BB::PrintBB(occupancy_p<PieceType::PAWN>(), "erreur 6");
         BB::PrintBB(RANK_1_BB, "erreur 6");
         BB::PrintBB(RANK_8_BB, "erreur 6");
-
+#endif
         std::cout << "erreur 6" << std::endl;
         return false;
     }
@@ -148,18 +167,6 @@ bool Board::valid() const noexcept
     if (BB::count_bit(colorPiecesBB[BLACK]) > 16)
     {
         std::cout << "erreur trop de pieces noires" << std::endl;
-        return false;
-    }
-
-    // Un seul roi
-    if (BB::count_bit(occupancy_cp<WHITE, PieceType::KING>()) != 1)
-    {
-        std::cout << "le nombre de roi blanc est incorrect" << std::endl;
-        return false;
-    }
-    if (BB::count_bit(occupancy_cp<BLACK, PieceType::KING>()) != 1)
-    {
-        std::cout << "le nombre de roi noir est incorrect" << std::endl;
         return false;
     }
 

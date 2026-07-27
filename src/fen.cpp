@@ -197,11 +197,9 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
 
     std::string ep;
     ss >> ep;
-    if (ep != "-")
+    if (ep.size() >= 2 && ep[0] >= 'a' && ep[0] <= 'h' && ep[1] >= '1' && ep[1] <= '8')
     {
-        char file = ep.at(0);
-        char rank = ep.at(1);
-        SQUARE s = ((rank - '1') * 8 + file - 'a');
+        SQUARE s = ((ep[1] - '1') * 8 + ep[0] - 'a');
         assert(s>=A1 && s<=H8);
         get_status().ep_square = (s);
     }
@@ -314,6 +312,18 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
 
     //-----------------------------------------
 
+#if !defined NDEBUG && !defined USE_PROFILING
+    // Il faut un roi par camp (et un seul) :
+    if (   BB::count_bit(occupancy_cp<WHITE, PieceType::KING>()) != 1
+        || BB::count_bit(occupancy_cp<BLACK, PieceType::KING>()) != 1)
+    {
+        std::cout << "FEN refusée (roi manquant), retour à la position initiale" << std::endl;
+        initialisation();
+        set_fen(START_FEN, logTactics);
+        return;
+    }
+#endif
+
     // pièces attaquant le roi
     (side_to_move == WHITE) ? calculate_checkers_pinned<WHITE>() : calculate_checkers_pinned<BLACK>();
 
@@ -326,6 +336,17 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
     get_status().pawn_key = pawn_key;
     get_status().non_pawn_key[WHITE] = non_pawn_key[WHITE];
     get_status().non_pawn_key[BLACK] = non_pawn_key[BLACK];
+
+#if !defined NDEBUG && !defined USE_PROFILING
+    // on ne passe ici qu'en debug, et sans vouloir le profiling
+    if (valid() == false)
+    {
+        std::cout << "FEN refusée, retour à la position initiale" << std::endl;
+        initialisation();
+        set_fen(START_FEN, logTactics);
+        return;
+    }
+#endif
 
     //   std::cout << display() << std::endl;
 }
@@ -486,11 +507,9 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     // prise en passant
     std::string ep;
     ss >> ep;
-    if (ep != "-")
+    if (ep.size() >= 2 && ep[0] >= 'a' && ep[0] <= 'h' && ep[1] >= '1' && ep[1] <= '8')
     {
-        char file = ep.at(0);
-        char rank = ep.at(1);
-        SQUARE s = ((rank - '1') * 8 + file - 'a');
+        SQUARE s = ((ep[1] - '1') * 8 + ep[0] - 'a');
         assert(s>=A1 && s<=H8);
         get_status().ep_square = SQ::mirrorVertically(s);
     }

@@ -137,7 +137,7 @@ void Board::undo_move() noexcept
     statusHistory.pop_back();
 
 #if !defined NDEBUG && !defined USE_PROFILING
-    // on ne passe ici qu'en debug, et sans voulir le profiling
+    // on ne passe ici qu'en debug, et sans vouloir le profiling
     assert(valid());
 #endif
 }

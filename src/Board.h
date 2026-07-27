@@ -284,6 +284,7 @@ public:
     //-----------------------------------------------------------------
     inline void add_quiet_move(MoveList& ml, const SQUARE from, const SQUARE dest, Piece piece, U32 flags)  const noexcept
     {
+        assert(ml.count < MAX_MOVES);
         ml.mlmoves[ml.count++].move = Move::CODE(from, dest, piece, Piece::PIECE_NONE, Piece::PIECE_NONE, flags);
     }
 
@@ -299,6 +300,7 @@ public:
     //-----------------------------------------------------------------
     inline void add_capture_move(MoveList& ml, const SQUARE from, const SQUARE dest, Piece piece, Piece captured, U32 flags) const noexcept
     {
+        assert(ml.count < MAX_MOVES);
         ml.mlmoves[ml.count++].move  = Move::CODE(from, dest, piece, captured, Piece::PIECE_NONE, flags);
     }
 
@@ -313,6 +315,7 @@ public:
     //-----------------------------------------------------------------
     inline void add_quiet_promotion(MoveList& ml, const SQUARE from, const SQUARE dest, Color color, Piece promoted) const noexcept
     {
+        assert(ml.count < MAX_MOVES);
         ml.mlmoves[ml.count++].move = Move::CODE(from, dest,
                                                  Move::make_piece(color, PieceType::PAWN),
                                                  Piece::PIECE_NONE,
@@ -332,6 +335,7 @@ public:
     //-----------------------------------------------------------------
     inline void add_capture_promotion(MoveList& ml, const SQUARE from, const SQUARE dest, Color color, Piece captured, Piece promoted) const noexcept
     {
+        assert(ml.count < MAX_MOVES);
         ml.mlmoves[ml.count++].move  = Move::CODE(from, dest,
                                                   Move::make_piece(color, PieceType::PAWN),
                                                   captured,
