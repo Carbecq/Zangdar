@@ -3,6 +3,7 @@
 #include "types.h"
 #include "Move.h"
 
+
 //=====================================================
 //! \brief  Constructeur
 //-----------------------------------------------------
@@ -12,113 +13,14 @@ MovePicker::MovePicker(Board& _board, const History& _history, const SearchInfo 
     history(_history),
     info(_info),
     stage(STAGE_TABLE),
+    gen_noisy(false),
     gen_quiet(false),
-    gen_legal(false),
     threshold(_threshold),
     tt_move(_ttMove),
     killer1(_killer1),
     killer2(_killer2),
     counter(_counter)
 {
-#if 0
-    int nbr_noisy = 0;
-    int nbr_quiet = 0;
-    int nbr_capt = 0;
-    int nbr_promo = 0;
-    int nbr_capt_promo = 0;
-    int nbr_pep = 0;
-    int nbr_cas = 0;
-
-    if (board.turn() == WHITE)
-    {
-        board.legal_moves<WHITE, MoveGenType::ALL>(mll);
-        board.legal_noisy<WHITE>(mln);
-        board.legal_quiet<WHITE>(mlq);
-    }
-    else
-    {
-        board.legal_moves<BLACK, MoveGenType::ALL>(mll);
-        board.legal_noisy<BLACK>(mln);
-        board.legal_quiet<BLACK>(mlq);
-    }
-
-    for (int i=0; i<mll.count; i++)
-    {
-        if (Move::is_capturing(mll.mlmoves[i].move))
-        {
-            if (Move::is_promoting(mll.mlmoves[i].move))
-            {
-                nbr_capt_promo++;
-                // mln.mlmoves[mln.count++].move = mll.mlmoves[i].move;
-                nbr_noisy++;
-            }
-            else if (!Move::is_promoting(mll.mlmoves[i].move))
-            {
-                nbr_capt++;
-                // mln.mlmoves[mln.count++].move = mll.mlmoves[i].move;
-                nbr_noisy++;
-            }
-        }
-        else if (Move::is_promoting(mll.mlmoves[i].move))
-        {
-            nbr_promo++;
-            // mln.mlmoves[mln.count++].move = mll.mlmoves[i].move;
-            nbr_noisy++;
-        }
-        else if(Move::is_enpassant(mll.mlmoves[i].move))
-        {
-            nbr_pep++;
-            // mln.mlmoves[mln.count++].move = mll.mlmoves[i].move;
-            nbr_noisy++;
-        }
-        else if(Move::is_castling(mll.mlmoves[i].move))
-        {
-            nbr_cas++;
-            // mln.mlmoves[mln.count++].move = mll.mlmoves[i].move;
-        }
-
-        else
-        {
-            // mlq.mlmoves[mlq.count++].move = mll.mlmoves[i].move;
-            nbr_quiet++;
-        }
-    }
-    nbr_noisy = mln.size();
-    nbr_quiet = mlq.size();
-
-    if (mll.count != (nbr_noisy + nbr_quiet))
-    {
-        std::cout << ">>>>>>>>>>> erreur 1 " << std::endl;
-        std::cout << "nbr_noisy =  " << nbr_noisy << std::endl;
-        std::cout << "nbr_capt =  " << nbr_capt << std::endl;
-        std::cout << "nbr_promo =  " << nbr_promo << std::endl;
-        std::cout << "nbr_pep =  " << nbr_pep << std::endl;
-        std::cout << "nbr_noisy =  " << mln.count << std::endl;
-    }
-
-    if (nbr_noisy != (nbr_capt + nbr_capt_promo + nbr_promo + nbr_pep))
-    {
-        std::cout << ">>>>>>>>>>> erreur 2 " << std::endl;
-        std::cout << "nbr_noisy =  " << nbr_noisy << std::endl;
-        std::cout << "nbr_capt =  " << nbr_capt << std::endl;
-        std::cout << "nbr_capt_promo =  " << nbr_capt_promo << std::endl;
-        std::cout << "nbr_promo =  " << nbr_promo << std::endl;
-        std::cout << "nbr_pep =  " << nbr_pep << std::endl;
-        std::cout << "nbr_castling =  " << nbr_cas << std::endl;
-        std::cout << "nbr_noisy =  " << mln.count << std::endl;
-    }
-
-
-    if (nbr_noisy != mln.count)
-        std::cout << ">>>>>>>>>>> erreur 3 " << std::endl;
-
-    if (nbr_quiet != mlq.count)
-        std::cout << ">>>>>>>>>>> erreur 4 " << std::endl;
-
-    // std::cout << "vérification terminée" << std::endl;
-    // score_noisy(board);
-    // score_quiet(board);
-#endif
 }
 
 
@@ -147,14 +49,11 @@ MLMove MovePicker::next_move(bool skipQuiets)
 
     case STAGE_GENERATE_NOISY:
 
-        // Génère tous les coups noisy et les évalue. Met en place
-        // la séparation dans le tableau pour stocker coups quiets et noisy.
+        // Génère les coups tactiques et les évalue. Si le test du coup de la
+        // table les a déjà produits, generate_noisy ne fait rien.
         // Cette étape n'est qu'un helper : on passe directement à la suivante.
 
-        if (board.turn() == WHITE)
-            board.legal_moves<WHITE, MoveGenType::NOISY>(mln);
-        else
-            board.legal_moves<BLACK, MoveGenType::NOISY>(mln);
+        generate_noisy();
         score_noisy();
         stage = STAGE_GOOD_NOISY ;
 
@@ -202,7 +101,7 @@ MLMove MovePicker::next_move(bool skipQuiets)
         if (   !skipQuiets
                && killer1 != tt_move)
         {
-            if (is_legal(killer1))
+            if (is_legal_quiet(killer1))
                 return MLMove{killer1, 0};
         }
 
@@ -217,7 +116,7 @@ MLMove MovePicker::next_move(bool skipQuiets)
         if (   !skipQuiets
                && killer2 != tt_move)
         {
-            if (is_legal(killer2))
+            if (is_legal_quiet(killer2))
                 return MLMove{killer2, 0};
         }
 
@@ -234,7 +133,7 @@ MLMove MovePicker::next_move(bool skipQuiets)
                && counter != killer1
                && counter != killer2)
         {
-            if (is_legal(counter))
+            if (is_legal_quiet(counter))
                 return MLMove{counter, 0};
         }
 
@@ -242,19 +141,13 @@ MLMove MovePicker::next_move(bool skipQuiets)
 
     case STAGE_GENERATE_QUIET:
 
-        // Génère tous les coups quiets et les évalue,
-        // puis passe à la dernière étape utile
+        // Génère les coups tranquilles et les évalue. Le test de légalité des
+        // killers ou du coup de la table peut les avoir déjà produits ; le
+        // scoring, lui, n'a lieu qu'ici, et cette étape ne s'exécute qu'une fois.
         if (!skipQuiets)
         {
-            if (gen_quiet == false)
-            {
-                if (board.turn() == WHITE)
-                    board.legal_moves<WHITE, MoveGenType::QUIET>(mlq);
-                else
-                    board.legal_moves<BLACK, MoveGenType::QUIET>(mlq);
-                gen_quiet = true;
-                score_quiet();
-            }
+            generate_quiet();
+            score_quiet();
         }
         stage = STAGE_QUIET;
 
@@ -456,7 +349,73 @@ void MovePicker::shift_bad(size_t idx)
 
 
 //==================================================================
-//! \brief  Vérification de la légalité d'un coup
+//! \brief  Génère les coups tactiques, si ce n'est pas déjà fait
+//------------------------------------------------------------------
+void MovePicker::generate_noisy()
+{
+    if (gen_noisy)
+        return;
+
+    if (board.turn() == WHITE)
+        board.legal_moves<WHITE, MoveGenType::NOISY>(mln);
+    else
+        board.legal_moves<BLACK, MoveGenType::NOISY>(mln);
+    gen_noisy = true;
+}
+
+//==================================================================
+//! \brief  Génère les coups tranquilles, si ce n'est pas déjà fait
+//------------------------------------------------------------------
+void MovePicker::generate_quiet()
+{
+    if (gen_quiet)
+        return;
+
+    if (board.turn() == WHITE)
+        board.legal_moves<WHITE, MoveGenType::QUIET>(mlq);
+    else
+        board.legal_moves<BLACK, MoveGenType::QUIET>(mlq);
+    gen_quiet = true;
+}
+
+//==================================================================
+//! \brief  Génère les deux listes d'un coup, par une seule passe ALL
+//!
+//! On est sur que legal_moves<ALL> = legal_moves<QUIET> + legal_moves<NOISY>
+//! On peut tout faire en une seule passe.
+//------------------------------------------------------------------
+void MovePicker::generate_all()
+{
+    if (gen_noisy && gen_quiet)
+        return;
+    assert(!gen_noisy && !gen_quiet);   // appelé seulement avant toute génération
+
+    if (board.turn() == WHITE)
+        board.legal_moves<WHITE, MoveGenType::ALL>(mln);
+    else
+        board.legal_moves<BLACK, MoveGenType::ALL>(mln);
+
+    // partition stable : l'indice d'écriture ne dépasse jamais celui de lecture
+    mlq.clear();
+    size_t w = 0;
+    for (size_t i = 0; i < mln.count; i++)
+    {
+        if (Move::is_tactical(mln.mlmoves[i].move))
+            mln.mlmoves[w++] = mln.mlmoves[i];
+        else
+            mlq.mlmoves[mlq.count++] = mln.mlmoves[i];
+    }
+    mln.count = w;
+
+    gen_noisy = gen_quiet = true;
+}
+
+//==================================================================
+//! \brief  Vérification de la légalité du coup de la table
+//!
+//! Le coup vient de la table de transposition : il peut être tactique ou
+//! tranquille, et il peut être corrompu.
+//! Il faut donc le confronter à la liste légale complète.
 //!
 //! \param[in]  move  coup à vérifier
 //!
@@ -468,39 +427,68 @@ bool MovePicker::is_legal(MOVE move)
 
     // coup non initialisé
     if (move == Move::MOVE_NONE)
-    {
-        // std::cout << "---- 0000" << std::endl;
         return false;
-    }
 
     // pièce non initialisée
     SQUARE from = Move::from(move);
     if (board.piece_at(from) == Piece::PIECE_NONE)
-    {
-        // std::cout << "--------11111 "  << std::endl;
         return false;
-    }
 
     // la couleur de la pièce est fausse
     if (Move::color(board.piece_at(from)) != board.turn())
-    {
-        // std::cout << "------------2222 "  << std::endl;
         return false;
-    }
 
-    // on essaye de minimiser les appels à legal_moves
-    if (gen_legal == false)
-    {
-        if (board.turn() == WHITE)
-            board.legal_moves<WHITE, MoveGenType::ALL>(mll);
-        else
-            board.legal_moves<BLACK, MoveGenType::ALL>(mll);
-        gen_legal = true;
-    }
+    generate_all();
 
-    // en dernier ressort, on teste
-    for (size_t n=0; n<mll.count; n++)
-        if (mll.mlmoves[n].move == move)
+    // coup tranquille ?
+    for (size_t n=0; n<mln.count; n++)
+        if (mln.mlmoves[n].move == move)
+            return true;
+
+    // coup tactique ?
+    for (size_t n=0; n<mlq.count; n++)
+        if (mlq.mlmoves[n].move == move)
+            return true;
+
+    // pas trouvé
+    return false;
+}
+
+//==================================================================
+//! \brief  Vérification de la légalité d'un killer ou du counter move
+//!
+//! On est sur que c'est un coup tranquille.
+//!
+//! \param[in]  move  coup à vérifier
+//!
+//! \return true si le coup est légal dans la position courante
+//------------------------------------------------------------------
+bool MovePicker::is_legal_quiet(MOVE move)
+{
+    assert(move != Move::MOVE_NULL);
+
+    // coup non initialisé
+    if (move == Move::MOVE_NONE)
+        return false;
+
+    // garde-fou : un coup tactique aurait déjà été proposé au stage GOOD_NOISY
+    assert(!Move::is_tactical(move));
+    if (Move::is_tactical(move))
+        return false;
+
+    // pièce non initialisée
+    SQUARE from = Move::from(move);
+    if (board.piece_at(from) == Piece::PIECE_NONE)
+        return false;
+
+    // la couleur de la pièce est fausse
+    if (Move::color(board.piece_at(from)) != board.turn())
+        return false;
+
+    generate_quiet();
+
+    for (size_t n=0; n<mlq.count; n++)
+        if (mlq.mlmoves[n].move == move)
             return true;
 
     return false;

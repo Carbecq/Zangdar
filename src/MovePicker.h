@@ -44,6 +44,7 @@ public:
     void   score_noisy();
     void   score_quiet();
     bool   is_legal(MOVE move);
+    bool   is_legal_quiet(MOVE move);
     void   verify_MvvLva();
 
     MLMove pop_move(MoveList &ml, size_t idx);
@@ -63,9 +64,13 @@ private:
     const History&  history;  // pour les différents history
     const SearchInfo* info;
 
+    void    generate_noisy();
+    void    generate_quiet();
+    void    generate_all();
+
     int     stage;         // étape courante du sélecteur
+    bool    gen_noisy;     // a-t-on déjà généré les coups tactiques ?
     bool    gen_quiet;     // a-t-on déjà généré les coups tranquilles ?
-    bool    gen_legal;
     int     threshold;
 
     MOVE tt_move = Move::MOVE_NONE;
@@ -76,7 +81,6 @@ private:
     MoveList mlq;
     MoveList mln;
     MoveList mlb;
-    MoveList mll;   // MoveList de tous les coups légaux pour déterminer si un coup est légal
 
 };
 
