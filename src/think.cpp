@@ -704,9 +704,10 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             int sing_beta  = tt_score - depth * Tunable::SEBetaMargin / 16;
             int sing_depth = (depth-1)/2;
 
-            si->excluded = move;
-            int SE_score = alpha_beta<C>(board, timer, sing_beta-1, sing_beta, sing_depth, cut_node, si);
-            si->excluded = Move::MOVE_NONE;
+            si->excluded  = move;
+            int SE_score  = alpha_beta<C>(board, timer, sing_beta-1, sing_beta, sing_depth, cut_node, si);
+            si->excluded  = Move::MOVE_NONE;
+            si->pv.length = 0;  // la SE a écrasé la PV du nœud
 
             if (SE_score < sing_beta)
             {
