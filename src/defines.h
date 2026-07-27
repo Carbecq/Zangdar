@@ -43,7 +43,7 @@ static constexpr int MAX_TIME   = 60*60*1000;   // 1 heure en ms
 
 static constexpr int HASH_SIZE      = 128;      // en Mo
 static constexpr int MIN_HASH_SIZE  = 1;
-static constexpr int MAX_HASH_SIZE  = 1024;
+static constexpr int MAX_HASH_SIZE  = 16384;    // 16 Go
 
 static constexpr int PAWN_HASH_SIZE = 16384;
 static constexpr int CORR_HASH_SIZE = 16384;        // puissance de 2 : accès par masque

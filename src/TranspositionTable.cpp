@@ -53,7 +53,9 @@ void TranspositionTable::init_size(int mbsize)
     printlog(message);
 #endif
 
-    size_t size  = (mbsize * 1024 * 1024) / sizeof(HashCluster);
+    // Le cast est indispensable : en int, 2048 Mo déborde et donne un nombre de
+    // clusters absurde, 4096 Mo en donne zéro (table vide, index hors bornes).
+    size_t size  = (static_cast<size_t>(mbsize) * 1024 * 1024) / sizeof(HashCluster);
 
     // L'index est calculé par : key & tt_mask
     // if faut que le nombre de clusters soit un multiple de 2

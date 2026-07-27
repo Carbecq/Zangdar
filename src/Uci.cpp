@@ -1034,6 +1034,7 @@ void Uci::bench(int argCount, char* argValue[])
     depth           = std::min(depth, MAX_PLY-1);
     int nbr_threads = argCount > 3 ? atoi(argValue[3]) : 1;
     int hash_size   = argCount > 4 ? atoi(argValue[4]) : HASH_SIZE;
+    hash_size       = std::clamp(hash_size, MIN_HASH_SIZE, MAX_HASH_SIZE);
 
     if (nbr_threads > 1)
         threadPool.set_threads(nbr_threads);
