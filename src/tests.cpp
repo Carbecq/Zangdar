@@ -31,8 +31,7 @@ void test_suite(const std::string& abc, int dmax)
     //  perftsuite_ref  : petite suite permettant de voir s'il y a eu perte de perfo
     //  perftsuite_big  : énorme suite pour contrôler le générateur de coups
 
-    std::string     str_file(MAISON);
-    str_file += "tests/perftsuite_" + abc + ".epd";
+    std::string     str_file = "tests/perftsuite_" + abc + ".epd";
 
     std::ifstream file(str_file);
     if (!file.is_open())
@@ -403,9 +402,8 @@ void test_syzygy(const std::string& fen)
 //----------------------------------------------------
 void test_mirror(void)
 {
-    std::string     str_file(MAISON);
-    // str_file += "tests/mirror.epd";
-    str_file += "tests/1000.epd";
+    // std::string     str_file = "tests/mirror.epd";
+    std::string     str_file = "tests/1000.epd";
 
     std::cout << "[test_mirror]  " << str_file << std::endl;
 
@@ -500,8 +498,7 @@ bool test_mirror(Board& board, const std::string& line)
 //--------------------------------------------------------
 void test_see()
 {
-    std::string   str_file(MAISON);
-    str_file += "tests/see.epd";
+    std::string   str_file = "tests/see.epd";
 
     std::ifstream file(str_file);
     if (!file.is_open())
@@ -520,10 +517,16 @@ void test_see()
 
     std::string     aux;
     int             total_tests    = 0;
-    int             passed_tests_b   = 0;
-    int             failed_tests_b   = 0;
-    int             passed_tests_s   = 0;
-    int             failed_tests_s   = 0;
+
+    // Test du signe : fast_see(move, 0) doit avoir le même signe que "score"
+    int             passed_tests_sign = 0;
+    int             failed_tests_sign = 0;
+
+    // Test de la valeur exacte : fast_see(move, score) doit passer,
+    // fast_see(move, score+1) doit échouer
+    int             passed_tests_exact = 0;
+    int             failed_tests_exact = 0;
+
     int             numero         = 0;
     std::vector<std::string>  poslist;                // liste des positions
     std::string     aa;
@@ -577,9 +580,9 @@ void test_see()
         board.set_fen(fen, false);
 
         if (board.turn() == WHITE)
-            board.legal_moves<WHITE, MoveGenType::QUIET>(ml);
+            board.legal_moves<WHITE, MoveGenType::ALL>(ml);
         else
-            board.legal_moves<BLACK, MoveGenType::QUIET>(ml);
+            board.legal_moves<BLACK, MoveGenType::ALL>(ml);
 
         move = 0;
 
@@ -590,10 +593,9 @@ void test_see()
             std::string str1 = Move::show(m, 1);
             std::string str2 = Move::show(m, 2);
             std::string str3 = Move::show(m, 3);
+            std::string str4 = Move::show(m, 4);
 
-            //       printf("(%s) : (%s) (%s) (%s) \n", strm.c_str(), str1.c_str(), str2.c_str(), str3.c_str());
-
-            if (strm==str1 || strm==str2 || strm==str3)
+            if (strm==str1 || strm==str2 || strm==str3 || strm==str4)
             {
                 move = m;
                 break;
@@ -620,24 +622,30 @@ void test_see()
             if ((v==true && score>=0) || (v==false && score<0))
             {
                 printf(" : OK ");
-                passed_tests_b++;
+                passed_tests_sign++;
             }
             else
             {
                 printf(" : %s : (%s) seeB=%d score=%d ", fen.c_str(), strm.c_str(), v, score);
-                failed_tests_b++;
+                failed_tests_sign++;
             }
 
-            //            if ((s>=0 && score>=0) || (s<0 && score<0))
-            //            {
-            //                printf(" : OK \n");
-            //                passed_tests_s++;
-            //            }
-            //            else
-            //            {
-            //                printf(" : %s : (%s) seeS=%d score=%d \n", fen.c_str(), strm.c_str(), s, score);
-            //                failed_tests_s++;
-            //            }
+            // Test de la valeur exacte : le seuil "score" doit passer, "score+1" échouer.
+            // Le test de signe ci-dessus n'appelle fast_see qu'avec un seuil nul,
+            // ce qui laisse promotion et prise en passant hors d'atteinte.
+            bool ok_inf = board.fast_see(move, score);
+            bool ok_sup = board.fast_see(move, score+1);
+
+            if (ok_inf == true && ok_sup == false)
+            {
+                printf(" : OK ");
+                passed_tests_exact++;
+            }
+            else
+            {
+                printf(" : EXACT : (%s) see>=%d:%d see>=%d:%d ", strm.c_str(), score, ok_inf, score+1, ok_sup);
+                failed_tests_exact++;
+            }
             printf("\n");
 
             total_tests++;
@@ -661,10 +669,10 @@ void test_see()
 
     file.close();
 
-    printf("# Passed B     %10d\n",     passed_tests_b);
-    printf("# Passed S     %10d\n",     passed_tests_s);
-    printf("# Failed B     %10d\n",     failed_tests_b);
-    printf("# Failed S     %10d\n",     failed_tests_s);
+    printf("# Passed sign  %10d\n",     passed_tests_sign);
+    printf("# Passed exact %10d\n",     passed_tests_exact);
+    printf("# Failed sign  %10d\n",     failed_tests_sign);
+    printf("# Failed exact %10d\n",     failed_tests_exact);
     printf("# Total        %10d\n",     total_tests);
 
     std::cout << "********************" << std::endl;

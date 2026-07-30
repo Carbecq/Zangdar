@@ -25,7 +25,6 @@ gmon.out
 /*.txt
 !/VERSION.txt
 /bullet_examples/
-/tests
 
 # Réseaux NNUE : fetchés via Makefile (NETS_REPO → Carbecq/Zangdar-Networks)
 networks/*.bin

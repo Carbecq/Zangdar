@@ -17,32 +17,29 @@ constexpr int SEE_VALUE[N_PIECE_TYPE] = {0, 100, 300, 300, 500, 900, 9999};
 //---------------------------------------------------------------------------
 bool Board::fast_see(const MOVE move, const int threshold) const
 {
-    // Code provenant de Berserk
+    // Squelette repris de Berserk
+
+    // Un roque ne prend rien et ne peut rien perdre : sa valeur SEE est nulle.
+    if (Move::is_castling(move))
+        return threshold <= 0;
 
     const SQUARE from = Move::from(move);
     const SQUARE dest = Move::dest(move);
 
-    // si la valeur de la pièce prise est inférieure au threshold,
-    // ce n'est pas la peine de continuer
+    // Gain du coup, ramené au threshold
     int v = SEE_VALUE[Move::captured_type(move)] - threshold;
+
+    // Meilleur cas : on prend et on ne perd rien. Insuffisant => échec.
     if (v < 0)
         return false;
 
     // Le pire cas est celui où on perd la pièce prenante.
-    // SAUF si la pièce qui va reprendre est un pion qui va être promu !!
     v -= SEE_VALUE[Move::piece_type(move)];
 
-    // Si la valeur est positive même après avoir perdu la pièce se déplaçant,
-    // alors l'échange est garanti de battre le threshold.
+    // Si la valeur reste positive même après cette perte, l'échange est garanti
+    // de battre le threshold.
     if (v >= 0)
         return true;
-
-    /* X Y  X&Y  X|Y  X^Y
-     * 0 0  0    0    0
-     * 0 1  0    1    1
-     * 1 0  0    1    1
-     * 1 1  1    1    0
-     */
 
     // Bitboard de toutes les cases occupées, en enlevant la pièce de départ
     // et en ajoutant la case d'arrivée
@@ -51,7 +48,7 @@ bool Board::fast_see(const MOVE move, const int threshold) const
     // Bitboard de toutes les attaques (Blanches et Noires) de la case d'arrivée
     Bitboard all_attackersBB = all_attackers(dest, occupiedBB);
 
-    // Bitboards des sliders
+    // Bitboards des glisseurs
     const Bitboard bqBB = typePiecesBB[PieceType::BISHOP] | typePiecesBB[PieceType::QUEEN];
     const Bitboard rqBB = typePiecesBB[PieceType::ROOK]   | typePiecesBB[PieceType::QUEEN];
 
@@ -60,8 +57,7 @@ bool Board::fast_see(const MOVE move, const int threshold) const
 
     while (true)
     {
-        // On enlève des attaquants les occupants
-        // S'assure qu'on n'a pas ajouté d'attaques déjà utilisées
+        // On ne garde que les attaquants encore présents sur l'échiquier
         all_attackersBB &= occupiedBB;
 
         // Bitboard de mes attaquants
@@ -84,25 +80,27 @@ bool Board::fast_see(const MOVE move, const int threshold) const
         // Change de camp
         color = ~color;
 
-        // Negamax du solde avec alpha = balance, beta = balance+1, et
-        // on ajoute la valeur de la prochaine victime.
+        // Seul le roi peut reprendre : si l'adversaire a encore un attaquant,
+        // la reprise est illégale et le camp du roi perd l'échange.
+        if (piece == PieceType::KING)
+        {
+            if (all_attackersBB & colorPiecesBB[color])
+                color = ~color;
+            break;
+        }
+
+        // Negamax du solde avec alpha = balance, beta = balance+1 :
         //
         //      (balance, balance+1) -> (-balance-1, -balance)
         //
+        // et on retranche la pièce qui vient d'être posée sur la case d'arrivée,
+        // c'est la prochaine victime.
         v = -v - 1 - SEE_VALUE[piece];
 
-        // Si la valeur est positive après avoir donné notre pièce
-        // alors on a gagné
+        // Si le solde reste positif pour le camp qui vient de reprendre, même
+        // en perdant la pièce qu'il vient de poser, il gagne l'échange
         if (v >= 0)
-        {
-            // Raccourci pour la vérification de légalité : si notre dernière pièce
-            // attaquante est un roi et que l'adversaire a encore des attaquants,
-            // alors on a perdu, car le coup suivi serait illégal
-            if (piece == PieceType::KING && (all_attackersBB & colorPiecesBB[color]))
-                color = ~color;
-
             break;
-        }
 
         // Supprime l'attaquant "piece" des occupants
         occupiedBB ^= SQ::square_BB(BB::get_lsb(my_attackers & typePiecesBB[piece]));
@@ -121,4 +119,3 @@ bool Board::fast_see(const MOVE move, const int threshold) const
     // Le camp au trait après la boucle perd
     return (color != turn());
 }
-

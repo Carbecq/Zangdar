@@ -1,0 +1,215 @@
+# https://www.chessprogramming.org/Test-Positions
+#
+# Tests depuis le site Arasan (dernière mise à jour : 31 Mai 2021)
+# https://github.com/jdart1/arasan-chess/tree/master/tests
+#
+#						Time Limit 			Arasan 23.4 results
+#   -------------------------------------------------------------------------
+#	Win At Chess (new) 	10 sec. 	297/300
+#	arasan21 			60 sec. 	165/200
+#	ecmgcp 				10 sec. 	164
+#	iq4 				10 sec. 	163
+#	Pet 				60 sec. 	43/48
+#	EET 				60 sec. 	94/100
+#	BT2630 				900 sec. 	30/30	(rating: 2630)
+#	Lapuce II 			600 sec. 	32/35	(rating: 2860)
+
+
+#bench.epd
+#bt2630.epd
+#ecmgcp.epd
+#eet.epd
+#iq4.epd
+#pet.epd
+silver.epd
+#wacnew.epd
+#WACSilver200.epd
+
+
+#wacnew.epd
+# Contains the 300 problems from Reinfeld's "Win At Chess" book. 
+# These are mostly easy tactical problems (a few are hard). 
+# It is a revised version with a number of corrections and additions to Reinfeld's original solutions.
+
+#arasan21.epd
+# is a set of test positions from Arasan games, plus some from other sources. 
+# They range in difficulty, but most are non-trivial and some are quite hard. 
+# This is the latest version of the test suite. Some positions in this file are "avoid move" 
+# positions where there is a bad but superficially tempting move.
+
+#ecmgcp.epd
+# contains a subset of test positions from the Encyclopedia of Chess Middlegames, 
+# selected and corrected by Gian-Carlo Pascutto.
+# https://www.stmintz.com/ccc/index.php?id=189308
+
+#iq4.epd
+# is a set of positions from the book "Test Your Chess IQ". 
+# Jim Monaghan selected and corrected some tests from this book. 
+# I have made some further modifications to the test and this version, which I use, 
+# is in the file "iq4.epd". These tests are run at 10 seconds per position.
+# https://github.com/madnight/gnuchess/blob/master/test/iq6.epd
+
+#pet.epd
+# is a set of endgame tests from Peter MacKenzie, the author of the freeware chess program "Lampchop". 
+# I have applied a few corrections to Peter's original test suite.
+
+#eet.epd
+# is a set of endgame tests from Walter Eigenmann. 
+# See http://www.beepworld.de/members38/eigenmann/e_e_t.htm.
+
+#bt2630.epd
+# is a set of 30 chess problems, with a range of difficulty. 
+# This is used to determine an approximate rating for the program. 
+# Standard procedure is to allow 15 minutes for each problem. 
+# Add the time needed to find the correct answer (900 for problems that are not solved), 
+# divide by 30, and subtract from 2630. 
+# Note: some corrections from Dann Corbit have been applied to this file.
+
+#lapuce2.epd
+# is a set of 35 tests from the French chess magazine La Puce Echiquenne. 
+# This is another test that purports to estimate a program's rating. 
+# Standard procedure is to allow 10 minutes for each problem. 
+# See lapuce2.doc for the scoring procedure.
+# note : la >>combinaison<< 6 donne le roque noir coté dame possible
+#        c'est le coté roi qu'il faut mettre
+# images : https://www.blitzchess.fr/fr/tests/lct-ii/
+
+#==================================================================================
+
+#WACSilver200.epd
+#	Tiré du livre Win At Chess, de Fred Reinfeld
+# WAC cleaned and revised (200 positions)
+# https://www.talkchess.com/forum3/viewtopic.php?f=2&t=67469
+
+#==================================================================================
+#==================================================================================
+#==================================================================================
+
+#Bratko-Kopec.epd
+# The Bratko-Kopec Test (BK-Test) was designed by Ivan Bratko and Danny Kopec in 1982 at the University of Edinburgh
+# Title: Advances in Computer Chess 3 (The Bratko-Kopec Experiment)
+# Author: I. Bratko and Danny Kopec
+# solution incorrecte (comb 3)
+# https://www.chessprogramming.org/Bratko-Kopec_Test
+# https://talkchess.com/forum3/viewtopic.php?f=6&t=57166
+
+
+#BWTC.epd
+# 1001 Brilliant Ways to Checknate
+# Author: Fred Reinfeld
+
+
+#CCC-I.epd
+#CCC-II.epd
+# Author: Ed Schröder
+# 1.. Program should find the complete solution within 5 minutes.
+# 2.. "am" means avoid move (move to avoid)
+# 3.. "bm" means best move (move to find)
+# 4.. "M15 or M18" means a mate in xx should be found.
+#    Especially "am Qxh6??" is a killer.
+
+
+#ECE3.epd
+# Title: Encyclopedia of Chess Endgames (vol. 3) (extract)
+# Author: A. Adorjan, et al.
+
+
+#ECM.epd
+# Title: Encyclopedia of Chess Middlegames (extract)
+# Author: N. Krogius, A. Livsic, B. Parma, M. Taimanov
+
+
+#ECM_corrected.epd
+# corrected ECM testsuite (15 wrong positions removed): 216 positions
+# https://www.stmintz.com/ccc/index.php?id=29329
+
+
+#GMG1.epd
+#GMG2.epd
+#GMG3.epd
+# Title: Bent Larsen's Good Move Guide (ch. 1/2/4 extract)
+# Author: Bent Larsen
+
+#IMCP.epd
+# Title: Ideal Mate Chess Problems (extract)
+# Author: E. Albert
+
+#IQ.epd
+# Livshits' book "Test Your Chess IQ"
+
+
+#larsen.epd
+
+#mate_puzzles.epd
+
+#MES.epd
+# Title: 1234 Modern Endgame Studies
+# Author: M. A. Sutherland and H. M. Lommer
+
+#mirror.epd
+#	sert au test "mirror"
+
+#Nolot.epd
+# A test-suite created by Pierre Nolot, in 1994 introduced by Marc-François Baudot
+# https://www.chessprogramming.org/The_Nolot_Suite
+
+#OKelly.epd
+# Provient d'un ancien livre (1976) de O'Kelly  "Assess Your Chess Fast : From Expert to Master"
+# Il y a 176 positions divisées à peu près également entre des combinaisons de milieu de parties
+# et des finales.
+
+
+#silver.epd
+# NEW Silver Openings Suite
+# The suite cover most all of the major openings and systems, as well as types of positions. 
+# The openings also appear according to their frequency in actual play, therefore the number 
+# of Sicilians, for example, is actually proportionate to the frequency they are played compared 
+# to other openings, etc. This was done via database statistics in Mega Database 2010 with 4.5 million games.
+#
+# Beyond the actual openings, I have also strived to include all the major types of formations, 
+# such as a stonewall, a hedgehog, an isolani, a KIA, etc. 
+# http://www.talkchess.com/forum3/viewtopic.php?t=32532
+
+#STS1.epd
+#STS2.epd
+#STS3.epd
+#STS4.epd
+#STS5.epd
+#STS6.epd
+#STS7.epd
+#STS8.epd
+#STS9.epd
+#STS10.epd
+#STS11.epd
+#STS12.epd
+#STS13.epd
+#STS14.epd
+#STS15.epd
+# Title  : Strategic Test Suite
+# Author : Dann Corbit and Swaminathan Natarajan
+# Web    : https://www.chessprogramming.org/Strategic_Test_Suite
+# Suite de 15 fichiers
+
+#TWGCG.epd
+# Title: The World's Greatest Chess Games
+# Author: Reuben Fine
+
+#TYPP.epd
+# Title: Test Your Positional Play
+# Author: Robert Bellin and Pietro Ponzetto
+
+#WCSAC.epd
+# Title: 1001 Winning Chess Sacrifices and Combinations
+# Author: Fred Reinfeld
+# erreurs dans les solutions ?
+# WCSAC, at least as initially published, is full of errors (bad solutions, and positions with multiple solutions).
+
+#1000.epd
+#	positions tirées du code Master
+#   ce test ne sert que pour mesurer la vitesse du code
+
+
+
+
+
+

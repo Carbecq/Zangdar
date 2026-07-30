@@ -16,10 +16,10 @@
 //      4) 0       demi-coups pour la règle des 50 coups   : halfmove_counter
 //      5) 1       nombre de coups de la partie            : fullmove_counter
 
-// Le halfmove clock indique un nombre décimal de demi-coups vis-à-vis de la règle des 50 coups.
+// Halfmove clock : indique un nombre décimal de demi-coups vis-à-vis de la règle des 50 coups.
 // Il est remis à zéro après une capture ou un coup de pion, et incrémenté sinon.
 
-// Le nombre de coups complets de la partie.
+// Fullmove clock : Le nombre de coups complets de la partie.
 // Il commence à 1, et est incrémenté après chaque coup des Noirs
 
 // EPD notation : extension de FEN
@@ -30,7 +30,7 @@
 //      1) w       trait aux Blancs
 //      2) KQkq    roques possibles, ou '-'
 //      3) -       case en passant
-//      4) ...     opération, par exemple : bm Re6; id WAC10";
+//      4) ...     opération, par exemple : bm Nc3; id "WAC.016";
 
 //-----------------------------------------------------
 //! \brief Initialisation depuis une position FEN
@@ -86,7 +86,14 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
 
     ss >> word;
     U32 sq = A8;
+    bool board_ok = true;
     for (const auto &c : word) {
+        if (sq > N_SQUARES || (sq == N_SQUARES && c != '/'))
+        {
+            board_ok = false;
+            break;
+        }
+
         switch (c) {
         case 'P':
             add_piece(sq, Color::WHITE, Piece::WHITE_PAWN);
@@ -156,6 +163,14 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
         }
     }
 
+    if (board_ok == false)
+    {
+        std::cout << "FEN refusée, retour à la position initiale" << std::endl;
+        initialisation();
+        set_fen(START_FEN, logTactics);
+        return;
+    }
+
     //----------------------------------------------------------
     // Trait
     ss >> word;
@@ -213,19 +228,23 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
         //       am Rd6; bm Rb6 Rg5+; id "WAC.274";
         //       bm Bg4 Re2; c0 "Bg4 wins, but Re2 is far better."; id "WAC.252";
 
-        // meilleur coup
         std::string op, auxi;
         size_t p;
 
+        // Un champ non terminé par ';' épuise le flux : toutes les boucles ci-dessous
+        // testent donc l'extraction, sinon "auxi" reste inchangé et on tourne sans fin.
+
         for (int n=0; n<count; n++)
         {
-            ss >> op;
+            if (!(ss >> op))
+                break;
 
             if (op == "bm") // best move
             {
                 while(true)
                 {
-                    ss >> auxi;
+                    if (!(ss >> auxi))
+                        break;
                     p = auxi.find(';');             // indique la fin du champ "bm"
                     if (p == std::string::npos)     // pas trouvé
                     {
@@ -243,7 +262,8 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
             {
                 while(true)
                 {
-                    ss >> auxi;
+                    if (!(ss >> auxi))
+                        break;
                     p = auxi.find(';');             // indique la fin du champ "am"
                     if (p == std::string::npos)     // pas trouvé
                     {
@@ -262,8 +282,9 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
                 std::string total;
                 while(true)
                 {
-                    ss >> auxi;
-                    p = auxi.find(';');             // indique la fin du champ "am"
+                    if (!(ss >> auxi))
+                        break;
+                    p = auxi.find(';');             // indique la fin du champ "id"
                     if (p == std::string::npos)     // pas trouvé
                     {
                         total += auxi;
@@ -271,8 +292,8 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
                     }
                     else
                     {
-                        total += auxi.substr(0, p);;
-                        std::string ident = total; //.substr(0, p);
+                        total += auxi.substr(0, p);
+                        std::string ident = total;
                         if (logTactics)
                             std::cout << std::setw(30) << ident << " : ";
                         break;
@@ -283,15 +304,24 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
             {
                 while(true)
                 {
-                    ss >> auxi;
-                    p = auxi.find(';');             // indique la fin du champ "am"
-                    if (p == std::string::npos)     // pas trouvé
-                    {
-                    }
-                    else
-                    {
+                    if (!(ss >> auxi))
                         break;
-                    }
+                    p = auxi.find(';');             // indique la fin du champ "c0"
+                    if (p != std::string::npos)     // trouvé
+                        break;
+                }
+            }
+            else    // opcode EPD non géré (sm, ce, dm, pv, acn, acs, ...)
+            {
+                // On consomme quand même tout le champ jusqu'au ';', sinon les
+                // champs suivants (dont "id") se décalent et sont perdus.
+                while(true)
+                {
+                    if (!(ss >> auxi))
+                        break;
+                    p = auxi.find(';');
+                    if (p != std::string::npos)
+                        break;
                 }
             }
         }
@@ -299,15 +329,12 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
     else
     {
         // Halfmove clock
-        // Indique un nombre décimal de demi-coups vis-à-vis de la règle des 50 coups.
-        // Remis à zéro après une capture ou un coup de pion, incrémenté sinon.
         ss >> get_status().fiftymove_counter;
 
         // Fullmove clock
-        // Nombre de coups complets de la partie. Commence à 1, incrémenté après chaque coup des Noirs.
         ss >> get_status().fullmove_counter;
 
-        // Nombre de coups : ignoré, on utilise zéro car on compte depuis la racine
+        // Nombre de coups de la partie (gamemove_counter) : ignoré, on compte depuis la racine
     }
 
     //-----------------------------------------
@@ -532,7 +559,8 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
             best_moves.clear();
             while(true)
             {
-                ss >> auxi;
+                if (!(ss >> auxi))
+                    break;
                 p = auxi.find(';');     // indique la fin du champ "bm"
                 if (p == std::string::npos)  // pas trouvé
                 {
@@ -551,7 +579,8 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
             avoid_moves.clear();
             while(true)
             {
-                ss >> auxi;
+                if (!(ss >> auxi))
+                    break;
                 p = auxi.find(';');     // indique la fin du champ "am"
                 if (p == std::string::npos)  // pas trouvé
                 {
@@ -581,16 +610,12 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     else
     {
         // Halfmove clock
-        // Indique un nombre décimal de demi-coups vis-à-vis de la règle des 50 coups.
-        // Remis à zéro après une capture ou un coup de pion, incrémenté sinon.
         ss >> get_status().fiftymove_counter;
 
         // Fullmove clock
-        // Nombre de coups complets de la partie. Commence à 1, incrémenté après chaque coup des Noirs.
         ss >> get_status().fullmove_counter;
 
-        // Nombre de coups : ignoré, on utilise zéro car on compte depuis la racine
-        // get_status().gamemove_counter = 0;
+        // Nombre de coups de la partie (gamemove_counter) : ignoré, on compte depuis la racine
     }
 
     //-----------------------------------------

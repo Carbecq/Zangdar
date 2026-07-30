@@ -262,11 +262,11 @@ constexpr U32 MOVE_NONE           = 0;
 //! \brief  Affichage d'un coup
 //! \param[in]  mode    détermine la manière d'écrire le coup
 //!
-//! mode = 0 : Ff1-c4
-//!        1 : Fc4      : résultat Win At Chess
-//!        2 : Nbd7     : résultat Win At Chess
-//!        3 : R1a7     : résultat Win At Chess
-//!        4 : f1c3     : communication UCI
+//! mode = 0 : Bf1-c4
+//!        1 : Bc4    e3     cxd5   : résultat Win At Chess
+//!        2 : Nbd7                 : résultat Win At Chess (désambiguïsation par colonne, non utilisé pour un pion)
+//!        3 : R1a7                 : résultat Win At Chess (désambiguïsation par rangée, non utilisé pour un pion)
+//!        4 : f1c3   e2e3   c4d5   : communication UCI
 //!
 //----------------------------------------
 [[nodiscard]] inline std::string show(MOVE move, int mode) noexcept
@@ -274,14 +274,15 @@ constexpr U32 MOVE_NONE           = 0;
     std::stringstream ss;
     std::string s;
 
-    // ZZ   if ((CASTLE_WK(move) || CASTLE_BK(move) || CASTLE_WQ(move) || CASTLE_BQ(move) ) && (mode != 4))
-    //    {
-    //            if (CASTLE_WK(move) || CASTLE_BK(move))
-    //                ss << "0-0";
-    //            else if (CASTLE_WQ(move) || CASTLE_BQ(move))
-    //                ss << "0-0-0";
-    //    }
-    //    else
+    // Le roque n'a pas de notation UCI dédiée (mode 4) : "e1g1" est déjà correct.
+    // Pour les autres modes, la notation SAN standard "O-O"/"O-O-O" remplace tout
+    // le reste, sinon show() produit un coup de roi ordinaire ("Kg1") qui ne
+    // correspondra jamais à un "bm"/"am" écrit en O-O dans un fichier EPD.
+    if (Move::is_castling(move) && mode != 4)
+    {
+        ss << (SQ::file(Move::dest(move)) == 6 ? "O-O" : "O-O-O");
+    }
+    else
     {
         U32 file_from = SQ::file(Move::from(move));
         U32 file_to   = SQ::file(Move::dest(move));
@@ -297,7 +298,7 @@ constexpr U32 MOVE_NONE           = 0;
 
         PieceType ptype = Move::piece_type(move);
 
-        if (mode != 4)
+        if (mode != 4 && ptype != PieceType::PAWN)
         {
             ss << pieceTypeToCharMax(ptype);
         }

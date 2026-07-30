@@ -246,6 +246,8 @@ void Uci::run()
 
         else if (token == "test")
         {
+            iss >> dmax;        // depth
+            iss >> tmax;        // time
             go_test(dmax, tmax);
         }
 
@@ -757,8 +759,7 @@ void Uci::go_test(int dmax, int tmax)
     // les noms non commentés seront utilisés.
 
     std::string     str_0000("0000.txt");
-    std::string     str_path(MAISON);
-    str_path += "tests/" + str_0000;
+    std::string     str_path = "tests/" + str_0000;
 
     std::string     line;
     std::string     aux;
@@ -787,6 +788,8 @@ void Uci::go_test(int dmax, int tmax)
     while (std::getline(f, str_line))
     {
         // ATTENTION : fin de ligne différentre entre Unix (LF) et Windows (CRLF) !!
+        if (!str_line.empty() && str_line.back() == '\r')
+            str_line.pop_back();
 
         // ligne vide
         if (str_line.size() < 3)
@@ -799,8 +802,7 @@ void Uci::go_test(int dmax, int tmax)
 
         std::cout << "test du fichier : [" << str_line << "]" << std::endl;
 
-        str_file = MAISON;
-        str_file += "tests/" + str_line;
+        str_file = "tests/" + str_line;
 
         ifs.open(str_file, std::ifstream::in);
         if (!ifs.is_open())
@@ -821,6 +823,9 @@ void Uci::go_test(int dmax, int tmax)
         // Boucle sur l'ensemble des positions de test
         while (std::getline(ifs, line))
         {
+            if (!line.empty() && line.back() == '\r')
+                line.pop_back();
+
             // ligne vide
             if (line.size() < 3)
                 continue;
@@ -859,8 +864,12 @@ void Uci::go_test(int dmax, int tmax)
         std::cout << "total ko    = " << total_ko << std::endl;
         std::cout << "total nodes = " << total_nodes << std::endl;
         std::cout << "time        = " << std::fixed << std::setprecision(3) << static_cast<double>(total_time)/1000.0 << " s" << std::endl;
-        std::cout << "nps         = " << std::fixed << std::setprecision(3) << static_cast<double>(total_nodes)/1000.0/static_cast<double>(total_time) << " Mnode/s" << std::endl;
-        std::cout << "depth moy   = " << std::fixed << std::setprecision(3) << static_cast<double>(total_depths)/static_cast<double>(total_bm+total_am+total_ko) << std::endl;
+        // +1 pour éviter une division par zéro
+        std::cout << "nps         = " << std::fixed << std::setprecision(3) << static_cast<double>(total_nodes)/1000.0/static_cast<double>(total_time + 1) << " Mnode/s" << std::endl;
+        const int total_played = total_bm + total_am + total_ko;
+        std::cout << "depth moy   = " << std::fixed << std::setprecision(3)
+                   << (total_played ? static_cast<double>(total_depths)/static_cast<double>(total_played) : 0.0)
+                   << std::endl;
         std::cout << "nbr threads = " << threadPool.get_nbrThreads() << std::endl;
         if (dmax !=0)
             std::cout << "depth max   = " << dmax << std::endl;
@@ -940,68 +949,91 @@ void Uci::go_tactics(const std::string& line, int dmax, int tmax, U64& total_nod
     // NOTE : il est possible que dans certains cas, il faille donner
     // à la fois la case de départ et celle d'arrivée pour déterminer
     // réellement le coup.
-    bool found_bm = false;
-    bool first = true;
-    for (auto & e : uci_board.best_moves)
-    {
-        // On vire tous les caractères inutiles à la comparaison
-        for (char c : std::string("+#!?"))
-        {
-            e.erase(std::remove(e.begin(), e.end(), c), e.end());
-        }
+    std::string e;
 
-        if(str1==e || str2 == e || str3 == e) // attention au format de sortie de Move::show()
-        {
-            ss << "coup trouvé : " << e;
-            found_bm = true;
-            break;
-        }
-        else
-        {
-            if (first == false)
-                ss << " ; ";
-            ss << "coup à trouver : " << e;
-            ss << ", coup trouvé = " << str1;
-        }
-        first = false;
-    }
+    ss << Move::show(best, 0) << " : " ;
+
+    bool found_bm = false;                          // est-ce qu'on a trouvé le bon coup ?
     if (!uci_board.best_moves.empty())
-        std::cout << found[found_bm] << ss.str() << std::endl;
-
-
-    bool avoid_am = true;
-    first = true;
-    for (auto & e : uci_board.avoid_moves)
     {
-        // On vire tous les caractères inutiles à la comparaison
-        for (char c : std::string("+#!?"))
+        ss << "coup à trouver : ";
+        for (size_t n=0; n<uci_board.best_moves.size(); n++)
         {
-            e.erase(std::remove(e.begin(), e.end(), c), e.end());
+            e = uci_board.best_moves[n];
+
+            if (n > 0)
+                ss << " , ";
+            ss << e;
         }
 
-        if(str1 == e || str2 == e || str3 == e) // attention au format de sortie de Move::show()
+        for (size_t n=0; n<uci_board.best_moves.size(); n++)
         {
-            avoid_am = false;
-            ss << "coup non évité : " << e ;
-            break;
+            e = uci_board.best_moves[n];
+
+            // On vire tous les caractères inutiles à la comparaison
+            for (char c : std::string("+#!?"))
+            {
+                e.erase(std::remove(e.begin(), e.end(), c), e.end());
+            }
+
+            if(str1 == e || str2 == e || str3 == e) // attention au format de sortie de Move::show()
+            {
+                found_bm = true;
+                break;
+            }
         }
-        else
-        {
-            if (first == false)
-                ss << " ; ";
-            ss << "coup à éviter : " << e;
-            ss << ", coup trouvé = " << str1;
-        }
-        first = false;
     }
-    if (!uci_board.avoid_moves.empty())
-        std::cout << found[avoid_am] << ss.str() << std::endl;
 
-    if (found_bm)
+    bool avoid_am = true;                       // est-ce qu'on a évité le piège ?
+    if (!uci_board.avoid_moves.empty())
+    {
+         ss << " // coup à éviter : ";
+
+        for (size_t n=0; n<uci_board.avoid_moves.size(); n++)
+        {
+            e = uci_board.avoid_moves[n];
+            if (n > 0)
+                ss << " , ";
+            ss << e;
+        }
+
+        for (size_t n=0; n<uci_board.avoid_moves.size(); n++)
+        {
+            e = uci_board.avoid_moves[n];
+
+            // On vire tous les caractères inutiles à la comparaison
+            for (char c : std::string("+#!?"))
+            {
+                e.erase(std::remove(e.begin(), e.end(), c), e.end());
+            }
+
+            if(str1 == e || str2 == e || str3 == e) // attention au format de sortie de Move::show()
+            {
+                avoid_am = false;
+                break;
+            }
+        }
+    }
+
+    // Succès "bm" : on a trouvé le bon coup
+    // Succès "am" : aucun "bm" n'était attendu, et on évité le piège
+    bool success_bm = found_bm && avoid_am;
+    bool success_am = uci_board.best_moves.empty() && avoid_am && !uci_board.avoid_moves.empty();
+
+    if (success_bm || success_am)
+        std::cout << found[true];
+    else
+        std::cout << found[false] << ss.str();
+
+
+    std::cout << std::endl;
+
+
+    if (success_bm)
     {
         total_bm++;
     }
-    else if (avoid_am && !uci_board.avoid_moves.empty())
+    else if (success_am)
     {
         total_am++;
     }
