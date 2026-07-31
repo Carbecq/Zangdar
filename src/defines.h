@@ -105,6 +105,7 @@ const std::string BUG_2          = "8/1R6/1p1K1kp1/p6p/P1p2P1P/6P1/1Pn5/8 w - - 
 
 extern void printlog(const std::string& message);
 extern std::vector<std::string> split(const std::string& s, char delimiter);
+extern std::string position_key(const std::string& epd_line);
 
 //======================================
 //! \brief Ecriture en binaire

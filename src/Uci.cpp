@@ -722,25 +722,6 @@ void Uci::go_run(const std::string& abc, const std::string& fen, int dmax, int t
 }
 
 //=================================================================
-//! \brief  Clé de position d'une ligne EPD/FEN : les 4 premiers champs
-//!         (placement, trait, roque, e.p.), sans les annotations (bm/am/id...)
-//!         ni les éventuels compteurs demi-coups/coups. Sert à détecter les
-//!         positions en double dans une suite de tests.
-//!
-//! \param[in]  epd_line  ligne EPD/FEN à analyser
-//!
-//! \return Clé (4 premiers champs concaténés) identifiant la position
-//-----------------------------------------------------------------
-static std::string position_key(const std::string& epd_line)
-{
-    std::istringstream iss(epd_line);
-    std::string tok, key;
-    for (int i = 0; i < 4 && (iss >> tok); ++i)
-        key += (i ? " " : "") + tok;
-    return key;
-}
-
-//=================================================================
 //! \brief  Lancement d'une recherche sur un ensemble de positions
 //!
 //! \param[in]  dmax  profondeur max de recherche

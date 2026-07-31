@@ -86,13 +86,10 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
 
     ss >> word;
     U32 sq = A8;
-    bool board_ok = true;
-    for (const auto &c : word) {
-        if (sq > N_SQUARES || (sq == N_SQUARES && c != '/'))
-        {
-            board_ok = false;
-            break;
-        }
+    for (const auto &c : word)
+    {
+        // sq vaut légitimement N_SQUARES en fin de rangée : seul un '/' peut en sortir
+        assert(sq < N_SQUARES || c == '/');
 
         switch (c) {
         case 'P':
@@ -161,14 +158,6 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
         default:
             break;
         }
-    }
-
-    if (board_ok == false)
-    {
-        std::cout << "FEN refusée, retour à la position initiale" << std::endl;
-        initialisation();
-        set_fen(START_FEN, logTactics);
-        return;
     }
 
     //----------------------------------------------------------
@@ -339,17 +328,9 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
 
     //-----------------------------------------
 
-#if !defined NDEBUG && !defined USE_PROFILING
     // Il faut un roi par camp (et un seul) :
-    if (   BB::count_bit(occupancy_cp<WHITE, PieceType::KING>()) != 1
-        || BB::count_bit(occupancy_cp<BLACK, PieceType::KING>()) != 1)
-    {
-        std::cout << "FEN refusée (roi manquant), retour à la position initiale" << std::endl;
-        initialisation();
-        set_fen(START_FEN, logTactics);
-        return;
-    }
-#endif
+    assert(    BB::count_bit(occupancy_cp<WHITE, PieceType::KING>()) == 1
+            && BB::count_bit(occupancy_cp<BLACK, PieceType::KING>()) == 1);
 
     // pièces attaquant le roi
     (side_to_move == WHITE) ? calculate_checkers_pinned<WHITE>() : calculate_checkers_pinned<BLACK>();
@@ -421,58 +402,62 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     // On inverse les couleurs : P (blanc) -> pion noir, p (noir) -> pion blanc
     // et on inverse verticalement les cases
     ss >> word;
-    SQUARE i = A8; // 56;
-    for (const auto &c : word) {
+    SQUARE sq = A8; // 56;
+    for (const auto &c : word)
+    {
+        // sq vaut légitimement N_SQUARES en fin de rangée : seul un '/' peut en sortir
+        assert(sq < N_SQUARES || c == '/');
+
         switch (c) {
         case 'P':
-            add_piece(SQ::mirrorVertically(i), Color::BLACK, Piece::BLACK_PAWN);
-            i++;
+            add_piece(SQ::mirrorVertically(sq), Color::BLACK, Piece::BLACK_PAWN);
+            sq++;
             break;
         case 'p':
-            add_piece(SQ::mirrorVertically(i), Color::WHITE, Piece::WHITE_PAWN);
-            i++;
+            add_piece(SQ::mirrorVertically(sq), Color::WHITE, Piece::WHITE_PAWN);
+            sq++;
             break;
         case 'N':
-            add_piece(SQ::mirrorVertically(i), Color::BLACK, Piece::BLACK_KNIGHT);
-            i++;
+            add_piece(SQ::mirrorVertically(sq), Color::BLACK, Piece::BLACK_KNIGHT);
+            sq++;
             break;
         case 'n':
-            add_piece(SQ::mirrorVertically(i), Color::WHITE, Piece::WHITE_KNIGHT);
-            i++;
+            add_piece(SQ::mirrorVertically(sq), Color::WHITE, Piece::WHITE_KNIGHT);
+            sq++;
             break;
         case 'B':
-            add_piece(SQ::mirrorVertically(i), Color::BLACK, Piece::BLACK_BISHOP);
-            i++;
+            add_piece(SQ::mirrorVertically(sq), Color::BLACK, Piece::BLACK_BISHOP);
+            sq++;
             break;
         case 'b':
-            add_piece(SQ::mirrorVertically(i), Color::WHITE, Piece::WHITE_BISHOP);
-            i++;
+            add_piece(SQ::mirrorVertically(sq), Color::WHITE, Piece::WHITE_BISHOP);
+            sq++;
             break;
         case 'R':
-            add_piece(SQ::mirrorVertically(i), Color::BLACK, Piece::BLACK_ROOK);
-            i++;
+            add_piece(SQ::mirrorVertically(sq), Color::BLACK, Piece::BLACK_ROOK);
+            sq++;
             break;
         case 'r':
-            add_piece(SQ::mirrorVertically(i), Color::WHITE, Piece::WHITE_ROOK);
-            i++;
+            add_piece(SQ::mirrorVertically(sq), Color::WHITE, Piece::WHITE_ROOK);
+            sq++;
             break;
         case 'Q':
-            add_piece(SQ::mirrorVertically(i), Color::BLACK, Piece::BLACK_QUEEN);
-            i++;
+            add_piece(SQ::mirrorVertically(sq), Color::BLACK, Piece::BLACK_QUEEN);
+            sq++;
             break;
         case 'q':
-            add_piece(SQ::mirrorVertically(i), Color::WHITE, Piece::WHITE_QUEEN);
-            i++;
+            add_piece(SQ::mirrorVertically(sq), Color::WHITE, Piece::WHITE_QUEEN);
+            sq++;
             break;
         case 'K':
-            add_piece(SQ::mirrorVertically(i), Color::BLACK, Piece::BLACK_KING);
-            king_square[Color::BLACK] = SQ::mirrorVertically(i);
-            i++;
+            add_piece(SQ::mirrorVertically(sq), Color::BLACK, Piece::BLACK_KING);
+            king_square[Color::BLACK] = SQ::mirrorVertically(sq);
+            sq++;
             break;
         case 'k':
-            add_piece(SQ::mirrorVertically(i), Color::WHITE, Piece::WHITE_KING);
-            king_square[Color::WHITE] = SQ::mirrorVertically(i);
-            i++;
+            add_piece(SQ::mirrorVertically(sq), Color::WHITE, Piece::WHITE_KING);
+            king_square[Color::WHITE] = SQ::mirrorVertically(sq);
+            sq++;
             break;
         case '1':
         case '2':
@@ -482,10 +467,10 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
         case '6':
         case '7':
         case '8':
-            i += c - '1' + 1;
+            sq += c - '1' + 1;
             break;
         case '/':
-            i -= 16;
+            sq -= 16;
             break;
         default:
             break;

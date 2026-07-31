@@ -866,6 +866,11 @@ public:
 };  // class Board
 
 
+//! \brief  Valeur SEE d'un type de pièce.
+//! Le barème lui-même reste privé à see.cpp ; cet accesseur permet aux attentes
+//! de tests/see.epd d'être écrites symboliquement plutôt qu'en dur.
+[[nodiscard]] int see_value(PieceType pt) noexcept;
+
 
 
 

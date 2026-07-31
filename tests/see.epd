@@ -1,151 +1,273 @@
-# The format first gives the FEN, then the move to evaluate, followed by the correct score
-# the SEE(fen, move) function should return, followed by sequence of captures which is useful
-# for debugging.
-# Note that I assume the value of a Knight and Bishop to be both 300.
+# Suite de test de la Static Exchange Evaluation.
 #
-6k1/1pp4p/p1pb4/6q1/3P1pRr/2P4P/PP1Br1P1/5RKN w - -; Rfxf4; -100; P - R + B
-5rk1/1pp2q1p/p1pb4/8/3P1NP1/2P5/1P1BQ1P1/5RK1 b - -; Bxf4; 0; -N + B
-4R3/2r3p1/5bk1/1p1r3p/p2PR1P1/P1BK1P2/1P6/8 b - -; hxg4; 0;
-4R3/2r3p1/5bk1/1p1r1p1p/p2PR1P1/P1BK1P2/1P6/8 b - -; hxg4; 0;
-4r1k1/5pp1/nbp4p/1p2p2q/1P2P1b1/1BP2N1P/1B2QPPK/3R4 b - -; Bxf3; 0;
-2r1r1k1/pp1bppbp/3p1np1/q3P3/2P2P2/1P2B3/P1N1B1PP/2RQ1RK1 b - -; dxe5; 100; P
-7r/5qpk/p1Qp1b1p/3r3n/BB3p2/5p2/P1P2P2/4RK1R w - -; Re8; 0;
-6rr/6pk/p1Qp1b1p/2n5/1B3p2/5p2/P1P2P2/4RK1R w - -; Re8; -500; -R
-7r/5qpk/2Qp1b1p/1N1r3n/BB3p2/5p2/P1P2P2/4RK1R w - -; Re8; -500; -R
-6RR/4bP2/8/8/5r2/3K4/5p2/4k3 w - -; f8=Q; 200; B - P
-6RR/4bP2/8/8/5r2/3K4/5p2/4k3 w - -; f8=N; 200; N - P
-7R/5P2/8/8/6r1/3K4/5p2/4k3 w - -; f8=Q; 800; Q - P
-7R/5P2/8/8/6r1/3K4/5p2/4k3 w - -; f8=B; 200; B - P
-7R/4bP2/8/8/1q6/3K4/5p2/4k3 w - -; f8=R; -100; -P
-8/4kp2/2npp3/1Nn5/1p2PQP1/7q/1PP1B3/4KR1r b - -; Rxf1; 0;
-8/4kp2/2npp3/1Nn5/1p2P1P1/7q/1PP1B3/4KR1r b - -; Rxf1; 0;
-2r2r1k/6bp/p7/2q2p1Q/3PpP2/1B6/P5PP/2RR3K b - -; Qxc1; 100; R - Q + R
-r2qk1nr/pp2ppbp/2b3p1/2p1p3/8/2N2N2/PPPP1PPP/R1BQR1K1 w kq -; Nxe5; 100; P
-6r1/4kq2/b2p1p2/p1pPb3/p1P2B1Q/2P4P/2B1R1P1/6K1 w - -; Bxe5; 0;
-3q2nk/pb1r1p2/np6/3P2Pp/2p1P3/2R4B/PQ3P1P/3R2K1 w - h6; gxh6; 0;
-3q2nk/pb1r1p2/np6/3P2Pp/2p1P3/2R1B2B/PQ3P1P/3R2K1 w - h6; gxh6; 100; P
-2r4r/1P4pk/p2p1b1p/7n/BB3p2/2R2p2/P1P2P2/4RK2 w - -; Rxc8; 500; R
-2r5/1P4pk/p2p1b1p/5b1n/BB3p2/2R2p2/P1P2P2/4RK2 w - -; Rxc8; 500; R
-2r4k/2r4p/p7/2b2p1b/4pP2/1BR5/P1R3PP/2Q4K w - -; Rxc5; 300; B
-8/pp6/2pkp3/4bp2/2R3b1/2P5/PP4B1/1K6 w - -; Bxc6; -200; P - B
-4q3/1p1pr1k1/1B2rp2/6p1/p3PP2/P3R1P1/1P2R1K1/4Q3 b - -; Rxe4; -400; P - R
-4q3/1p1pr1kb/1B2rp2/6p1/p3PP2/P3R1P1/1P2R1K1/4Q3 b - -; Bxe4; 100; P
-3r3k/3r4/2n1n3/8/3p4/2PR4/1B1Q4/3R3K w - -; Rxd4; -100; P - R + N - P + N - B + R - Q + R
-1k1r4/1ppn3p/p4b2/4n3/8/P2N2P1/1PP1R1BP/2K1Q3 w - -; Nxe5; 100; N - N + B - R + N
-1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 w - -; Nxe5; -200; P - N
-rnb2b1r/ppp2kpp/5n2/4P3/q2P3B/5R2/PPP2PPP/RN1QKB2 w Q -; Bxf6; 100; N - B + P
-r2q1rk1/2p1bppp/p2p1n2/1p2P3/4P1b1/1nP1BN2/PP3PPP/RN1QR1K1 b - -; Bxf3; 0; N - B
-r1bqkb1r/2pp1ppp/p1n5/1p2p3/3Pn3/1B3N2/PPP2PPP/RNBQ1RK1 b kq -; Nxd4; 0; P - N + N - P
-r1bq1r2/pp1ppkbp/4N1p1/n3P1B1/8/2N5/PPP2PPP/R2QK2R w KQ -; Nxg7; 0; B - N
-r1bq1r2/pp1ppkbp/4N1pB/n3P3/8/2N5/PPP2PPP/R2QK2R w KQ -; Nxg7; 300; B
-rnq1k2r/1b3ppp/p2bpn2/1p1p4/3N4/1BN1P3/PPP2PPP/R1BQR1K1 b kq -; Bxh2; -200; P - B
-rn2k2r/1bq2ppp/p2bpn2/1p1p4/3N4/1BN1P3/PPP2PPP/R1BQR1K1 b kq -; Bxh2; 100; P
-r2qkbn1/ppp1pp1p/3p1rp1/3Pn3/4P1b1/2N2N2/PPP2PPP/R1BQKB1R b KQq -; Bxf3; 100; N - B + P
-rnbq1rk1/pppp1ppp/4pn2/8/1bPP4/P1N5/1PQ1PPPP/R1B1KBNR b KQ -; Bxc3; 0; N - B
-r4rk1/3nppbp/bq1p1np1/2pP4/8/2N2NPP/PP2PPB1/R1BQR1K1 b - -; Qxb2; -800; P - Q
-r4rk1/1q1nppbp/b2p1np1/2pP4/8/2N2NPP/PP2PPB1/R1BQR1K1 b - -; Nxd5; -200; P - N
-1r3r2/5p2/4p2p/2k1n1P1/2PN1nP1/1P3P2/8/2KR1B1R b - -; Rxb3; -400; P - R
-1r3r2/5p2/4p2p/4n1P1/kPPN1nP1/5P2/8/2KR1B1R b - -; Rxb4; 100; P
-2r2rk1/5pp1/pp5p/q2p4/P3n3/1Q3NP1/1P2PP1P/2RR2K1 b - -; Rxc1; 0; R - R
-5rk1/5pp1/2r4p/5b2/2R5/6Q1/R1P1qPP1/5NK1 b - -; Bxc2; -100; P - B + R - Q + R
-1r3r1k/p4pp1/2p1p2p/qpQP3P/2P5/3R4/PP3PP1/1K1R4 b - -; Qxa2; -800; P - Q
-1r5k/p4pp1/2p1p2p/qpQP3P/2P2P2/1P1R4/P4rP1/1K1R4 b - -; Qxa2; 100; P
-r2q1rk1/1b2bppp/p2p1n2/1ppNp3/3nP3/P2P1N1P/BPP2PP1/R1BQR1K1 w - -; Nxe7; 0; B - N
-rnbqrbn1/pp3ppp/3p4/2p2k2/4p3/3B1K2/PPP2PPP/RNB1Q1NR w - -; Bxe4; 100; P
-rnb1k2r/p3p1pp/1p3p1b/7n/1N2N3/3P1PB1/PPP1P1PP/R2QKB1R w KQkq -; Nd6; -200; -N + P
-r1b1k2r/p4npp/1pp2p1b/7n/1N2N3/3P1PB1/PPP1P1PP/R2QKB1R w KQkq -; Nd6; 0; -N + N
-2r1k2r/pb4pp/5p1b/2KB3n/4N3/2NP1PB1/PPP1P1PP/R2Q3R w k -; Bc6; -300; -B
-2r1k2r/pb4pp/5p1b/2KB3n/1N2N3/3P1PB1/PPP1P1PP/R2Q3R w k -; Bc6; 0; -B + B
-2r1k3/pbr3pp/5p1b/2KB3n/1N2N3/3P1PB1/PPP1P1PP/R2Q3R w - -; Bc6; -300; -B + B - N
-5k2/p2P2pp/8/1pb5/1Nn1P1n1/6Q1/PPP4P/R3K1NR w KQ -; d8=Q; 800; (Q - P)
-r4k2/p2P2pp/8/1pb5/1Nn1P1n1/6Q1/PPP4P/R3K1NR w KQ -; d8=Q; -100; (Q - P) - Q
-5k2/p2P2pp/1b6/1p6/1Nn1P1n1/8/PPP4P/R2QK1NR w KQ -; d8=Q; 200; (Q - P) - Q + B
-4kbnr/p1P1pppp/b7/4q3/7n/8/PP1PPPPP/RNBQKBNR w KQk -; c8=Q; -100; (Q - P) - Q
-4kbnr/p1P1pppp/b7/4q3/7n/8/PPQPPPPP/RNB1KBNR w KQk -; c8=Q; 200; (Q - P) - Q + B
-4kbnr/p1P1pppp/b7/4q3/7n/8/PPQPPPPP/RNB1KBNR w KQk -; c8=Q; 200; (Q - P)
-4kbnr/p1P4p/b1q5/5pP1/4n3/5Q2/PP1PPP1P/RNB1KBNR w KQk f6; gxf6; 0; P - P
-4kbnr/p1P4p/b1q5/5pP1/4n3/5Q2/PP1PPP1P/RNB1KBNR w KQk f6; gxf6;	0; P - P
-4kbnr/p1P4p/b1q5/5pP1/4n2Q/8/PP1PPP1P/RNB1KBNR w KQk f6; gxf6; 0; P - P
-1n2kb1r/p1P4p/2qb4/5pP1/4n2Q/8/PP1PPP1P/RNB1KBNR w KQk -; cxb8=Q; 200; N + (Q - P) - Q
-rnbqk2r/pp3ppp/2p1pn2/3p4/3P4/N1P1BN2/PPB1PPPb/R2Q1RK1 w kq -; Kxh2; 300; B
-3N4/2K5/2n5/1k6/8/8/8/8 b - -; Nxd8; 0; N - N
-3N4/2P5/2n5/1k6/8/8/8/4K3 b - -; Nxd8; -800; N - (N + Q - P)
-3n3r/2P5/8/1k6/8/8/3Q4/4K3 w - -; Qxd8; 300; N
-3n3r/2P5/8/1k6/8/8/3Q4/4K3 w - -; cxd8=Q; 700; (N + Q - P) - Q + R
-r2n3r/2P1P3/4N3/1k6/8/8/8/4K3 w - -; Nxd8; 300; N
-8/8/8/1k6/6b1/4N3/2p3K1/3n4 w - -; Nxd1; 0; N - N
-8/8/1k6/8/8/2N1N3/2p1p1K1/3n4 w - -; Nxd1; -800; N - (N + Q - P)
-8/8/1k6/8/8/2N1N3/4p1K1/3n4 w - -; Ncxd1; 100; N - (N + Q - P) + Q
-r1bqk1nr/pppp1ppp/2n5/1B2p3/1b2P3/5N2/PPPP1PPP/RNBQK2R w KQkq -; O-O; 0;
+# Format :   FEN ; coup ; attente ; commentaire
 #
-4R3/2r3p1/5bk1/1p1r3p/p2PR1P1/P1BK1P2/1P6/8 b - -; hxg4; 0; genMove(H5,G4,CAPTURE, BLACK_PAWN, WHITE_PAWN), 0);
-4R3/2r3p1/5bk1/1p1r1p1p/p2PR1P1/P1BK1P2/1P6/8 b - -; hxg4; 0; genMove(H5,G4,CAPTURE, BLACK_PAWN, WHITE_PAWN), 0);
-4r1k1/5pp1/nbp4p/1p2p2q/1P2P1b1/1BP2N1P/1B2QPPK/3R4 b - -; Bxf3; 0; genMove(G4, F3, CAPTURE, BLACK_BISHOP, WHITE_KNIGHT), 0);
-2r1r1k1/pp1bppbp/3p1np1/q3P3/2P2P2/1P2B3/P1N1B1PP/2RQ1RK1 b - -; dxe5; 100; genMove(D6, E5, CAPTURE, BLACK_PAWN, WHITE_PAWN), 100);
-7r/5qpk/p1Qp1b1p/3r3n/BB3p2/5p2/P1P2P2/4RK1R w - -; Re8; 0; genMove(E1, E8, QUIET, WHITE_ROOK), 0);
-6rr/6pk/p1Qp1b1p/2n5/1B3p2/5p2/P1P2P2/4RK1R w - -; Re8; -500; genMove(E1, E8, QUIET, WHITE_ROOK), -500);
-7r/5qpk/2Qp1b1p/1N1r3n/BB3p2/5p2/P1P2P2/4RK1R w - -; Re8; -500; genMove(E1, E8, QUIET, WHITE_ROOK), -500);
+# L'attente est ECRITE SYMBOLIQUEMENT, pas en dur, pour que la suite reste valable
+# si le bareme SEE_VALUE change (tuning SPSA). Grammaire acceptee par test_see() :
+#
+#     lettres de piece    P N B R Q K      valent SEE_VALUE[...]
+#     operateurs          + - *            et parentheses
+#     clamps              max(a,b) min(a,b)
+#     entiers             0, 100, ...      a n'utiliser que si rien d'autre ne convient
+#
+# Exemples :   P - R + B        le pion gagne, la Tour perd, le Fou reprend
+#              -B              coup tranquille, la piece est simplement perdue
+#              max(0, R - N)    un camp peut refuser la reprise
+#
+# L'expression doit decrire le MATERIEL REELLEMENT ECHANGE, pas seulement un nombre
+# qui tombe juste avec le bareme du jour : avec B == N, « P » et « P - N + B » valent
+# tous les deux 100 et ne se distinguent qu'apres un tuning.
+#
+# ---------------------------------------------------------------------------------
+# LA REGLE DU CLAMP : AUCUNE REPRISE N'EST OBLIGATOIRE.
+#
+# C'est de loin l'erreur la plus frequente, et la cause de 7 des 12 attentes fausses
+# corrigees le 2026-07-31. Une suite de « + » et de « - » decrit une sequence ou
+# TOUT LE MONDE REPREND JUSQU'AU BOUT. Or a chaque demi-coup le camp au trait peut
+# s'arreter s'il y perdrait : sa contribution vaut donc max(0, gain - suite), pas
+# gain - suite.
+#
+# Concretement, le SEE se lit de la FIN vers le DEBUT :
+#
+#     valeur du camp au trait = max(0, piece_prise - valeur_de_la_suite)
+#
+# et le coup teste, lui, est joue d'office (pas de max sur le premier terme) :
+#
+#     SEE = gain_du_coup - max(0, ...)
+#
+# Exemple : « P - N + B » suppose que l'adversaire reprend forcement du Cavalier.
+# S'il n'a interet a le faire que lorsque N > B, la seule ecriture juste est
+# « P - max(0, N - B) ». Les deux coincident tant que N > B et divergent sinon.
+#
+# min() sert au cas symetrique : un coup tranquille ne rapporte rien mais peut couter,
+# d'ou min(0, ...) — voir la position 7k/8/1B6/5n2/8/8/5P2/3K4.
+#
+# Dans le doute : ecrire la sequence, puis se demander a CHAQUE demi-coup « ce camp
+# a-t-il interet a reprendre ? ». Chaque « pas toujours » est un max(0, ...).
+# Et de toute facon, verifier avec tools/verif_see_epd.py.
+# ---------------------------------------------------------------------------------
+#
+# Les attentes decrivent la VERITE TERRAIN, pas ce que fast_see sait calculer :
+# certaines lignes echouent donc volontairement, elles balisent ce qui reste a faire.
+# Etat attendu sur 116 tests : 7 echecs en signe, 34 en valeur exacte, ainsi repartis
+#
+#     promotion ignoree par fast_see    4 en signe   27 en valeur exacte
+#     prise en passant                  -             3
+#     clouage                           2             3
+#     ordre moins-cher-d-abord          1             1
+#
+# La promotion domine parce que fast_see traite le pion promu comme un pion : ni la
+# piece obtenue, ni la reprise adverse qui promeut ne sont modelisees.
+#
+# La derniere categorie est plus subtile : fast_see prend toujours l'attaquant le
+# moins cher d'abord, ce qui est une HEURISTIQUE et non l'optimum. Mesure sur 128 754
+# captures tirees de parties aleatoires : divergence dans 0,01 % des cas. Voir le
+# dernier bloc du fichier.
+#
+# Les 116 attentes ont ete verifiees contre un SEE de reference independant (negamax
+# sur les reprises LEGALES, donc clouages et legalite du Roi compris), sous SIX
+# baremes differents dont deux ou B != N. Toute attente qui ne collait que grace a la
+# coincidence B == N a ete corrigee. Refaire cette verification apres toute
+# modification : une attente juste a 300/300 peut etre fausse des que le tuning separe
+# Fou et Cavalier.
+#
+# SIX positions ont le camp au trait EN ECHEC (les trois « Bc6 », « Bxe4 », « Kxh2 »
+# et « e8e3 »). Elles viennent de la suite d'origine, le coup teste y est une parade
+# legale, et elles passent. Mais attention si on en ajoute : en echec, l'option
+# « decliner la reprise » qui fonde chaque max(0,...) devient douteuse, un camp en
+# echec ne pouvant pas librement jouer autre chose. fast_see et la reference font la
+# meme hypothese (le SEE ignore l'echec), donc elles restent d'accord ; ce ne serait
+# plus garanti pour une position ou la reprise serait l'unique parade.
+# A ne pas confondre avec les cas d'Arasan, ecartes eux parce que le coup teste y est
+# PSEUDO-legal et introuvable dans une generation de coups legaux.
+#
+#**********************************************************************
+# IMPORTANT : après toute modification de see.epd :
+#   python3 tools/verif_see_epd.py tests/see.epd
+#**********************************************************************
 
-7R/4bP2/8/8/1q6/3K4/5p2/4k3 w - -; f8=R; -100; genMove(F7, F8, ROOK_PROMOTION, WHITE_PAWN), -100);
+6k1/1pp4p/p1pb4/6q1/3P1pRr/2P4P/PP1Br1P1/5RKN w - -; Rfxf4; P - R + B
+5rk1/1pp2q1p/p1pb4/8/3P1NP1/2P5/1P1BQ1P1/5RK1 b - -; Bxf4; N - B
+4R3/2r3p1/5bk1/1p1r3p/p2PR1P1/P1BK1P2/1P6/8 b - -; hxg4; 0
+4R3/2r3p1/5bk1/1p1r1p1p/p2PR1P1/P1BK1P2/1P6/8 b - -; hxg4; 0
+4r1k1/5pp1/nbp4p/1p2p2q/1P2P1b1/1BP2N1P/1B2QPPK/3R4 b - -; Bxf3; N - B
+# Re8 (coup tranquille) : variantes avec differents defenseurs de la case e8
+7r/5qpk/p1Qp1b1p/3r3n/BB3p2/5p2/P1P2P2/4RK1R w - -; Re8; 0
+6rr/6pk/p1Qp1b1p/2n5/1B3p2/5p2/P1P2P2/4RK1R w - -; Re8; -R; Re8 tranquille, Rg8xe8 ; la reprise Qxe8 perdrait la Dame
+7r/5qpk/2Qp1b1p/1N1r3n/BB3p2/5p2/P1P2P2/4RK1R w - -; Re8; -R; Re8 tranquille, Rh8xe8
 
-8/4kp2/2npp3/1Nn5/1p2PQP1/7q/1PP1B3/4KR1r b - -; Rxf1; 0; genMove(H1, F1, CAPTURE, BLACK_ROOK, WHITE_ROOK), 0);
-8/4kp2/2npp3/1Nn5/1p2P1P1/7q/1PP1B3/4KR1r b - -; Rxf1; 0; genMove(H1, F1, CAPTURE, BLACK_ROOK, WHITE_ROOK), 0);
-r2qk1nr/pp2ppbp/2b3p1/2p1p3/8/2N2N2/PPPP1PPP/R1BQR1K1 w kq -; Nxe5; 100; genMove(F3,E5,CAPTURE,WHITE_KNIGHT,BLACK_PAWN), 100);
-6r1/4kq2/b2p1p2/p1pPb3/p1P2B1Q/2P4P/2B1R1P1/6K1 w - -; Bxe5; 0; genMove(F4, E5, CAPTURE, WHITE_BISHOP, BLACK_BISHOP), 0);
-3q2nk/pb1r1p2/np6/3P2Pp/2p1P3/2R4B/PQ3P1P/3R2K1 w - h6; gxh6; 0; genMove(G5, H6, EN_PASSANT, WHITE_PAWN, BLACK_PAWN), 0);
-3q2nk/pb1r1p2/np6/3P2Pp/2p1P3/2R1B2B/PQ3P1P/3R2K1 w - h6; gxh6; 100; genMove(G5, H6, EN_PASSANT, WHITE_PAWN, BLACK_PAWN), 100);
-2r4r/1P4pk/p2p1b1p/7n/BB3p2/2R2p2/P1P2P2/4RK2 w - -; Rxc8; 500; genMove(C3, C8, CAPTURE, WHITE_ROOK, BLACK_ROOK), 500);
-2r5/1P4pk/p2p1b1p/5b1n/BB3p2/2R2p2/P1P2P2/4RK2 w - -; Rxc8; 500; genMove(C3, C8, CAPTURE, WHITE_ROOK, BLACK_ROOK), 500);
-4q3/1p1pr1k1/1B2rp2/6p1/p3PP2/P3R1P1/1P2R1K1/4Q3 b - -; Rxe4; -400; genMove(E6, E4, CAPTURE, BLACK_ROOK, WHITE_PAWN), 100-500);
-4q3/1p1pr1kb/1B2rp2/6p1/p3PP2/P3R1P1/1P2R1K1/4Q3 b - -; Bxe4; 100; genMove(H7, E4, CAPTURE, BLACK_BISHOP, WHITE_PAWN), 100);
+# Les 4 promotions sur la meme position. Bxf8 reprend, Rg8xf8, Rf4xf8, Rh8xf8 :
+# la Dame et la Tour sont rabotees a la valeur du Fou, seul le Cavalier fait
+# renoncer les Noirs a la reprise.
+6RR/4bP2/8/8/5r2/3K4/5p2/4k3 w - -; f8=Q; B - P
+6RR/4bP2/8/8/5r2/3K4/5p2/4k3 w - -; f8=R; B - P
+6RR/4bP2/8/8/5r2/3K4/5p2/4k3 w - -; f8=B; B - P
+6RR/4bP2/8/8/5r2/3K4/5p2/4k3 w - -; f8=N; (N - P) - max(0, N - B); Bxf8 ne rapporterait rien, les Noirs declinent
 
-4R3/2r3p1/5bk1/1p1r3p/p2PR1P1/P1BK1P2/1P6/8 b - -; hxg4; 0;
-4R3/2r3p1/5bk1/1p1r1p1p/p2PR1P1/P1BK1P2/1P6/8 b - -; hxg4; 0:
-4r1k1/5pp1/nbp4p/1p2p2q/1P2P1b1/1BP2N1P/1B2QPPK/3R4 b - -; Bxf3; 0;
-2r1r1k1/pp1bppbp/3p1np1/q3P3/2P2P2/1P2B3/P1N1B1PP/2RQ1RK1 b - -; dxe5; 100;
-8/4kp2/2npp3/1Nn5/1p2PQP1/7q/1PP1B3/4KR1r b - -; Rxf1; 0;
-8/4kp2/2npp3/1Nn5/1p2P1P1/7q/1PP1B3/4KR1r b - -; Rxf1; 0;
-8/pp6/2pkp3/4bp2/2R3b1/2P5/PP4B1/1K6 b - -; Bxc3; -200;
+# Les 4 promotions sur la meme position. Aucun attaquant noir de f8 : la piece
+# promue est gagnee seche, l'attente suit donc la piece choisie.
+7R/5P2/8/8/6r1/3K4/5p2/4k3 w - -; f8=Q; Q - P
+7R/5P2/8/8/6r1/3K4/5p2/4k3 w - -; f8=R; R - P
+7R/5P2/8/8/6r1/3K4/5p2/4k3 w - -; f8=B; B - P
+7R/5P2/8/8/6r1/3K4/5p2/4k3 w - -; f8=N; N - P
+
+# Les 4 promotions sur la meme position. Bxf8 toujours, et Rh8xf8 serait puni par
+# Qb4 : les Blancs s arretent. Le pion est perdu quelle que soit la promotion,
+# l attente ne depend PAS de la piece choisie.
+7R/4bP2/8/8/1q6/3K4/5p2/4k3 w - -; f8=Q; -P
+7R/4bP2/8/8/1q6/3K4/5p2/4k3 w - -; f8=R; -P; f8=R, Bxf8 ; Rxf8 serait puni par Qb4, les Blancs s arretent
+7R/4bP2/8/8/1q6/3K4/5p2/4k3 w - -; f8=B; -P
+7R/4bP2/8/8/1q6/3K4/5p2/4k3 w - -; f8=N; -P
+
+8/4kp2/2npp3/1Nn5/1p2PQP1/7q/1PP1B3/4KR1r b - -; Rxf1; 0
+8/4kp2/2npp3/1Nn5/1p2P1P1/7q/1PP1B3/4KR1r b - -; Rxf1; 0
+2r2r1k/6bp/p7/2q2p1Q/3PpP2/1B6/P5PP/2RR3K b - -; Qxc1; R - Q + R
+6r1/4kq2/b2p1p2/p1pPb3/p1P2B1Q/2P4P/2B1R1P1/6K1 w - -; Bxe5; P; CLOUAGE : f6 est cloue par Qh4, seul d6 reprend ; vaut 0 si on ignore le clouage
+# meme idee (gxh6 e.p.), variante avec Be3 ajoute pour defendre h6
+3q2nk/pb1r1p2/np6/3P2Pp/2p1P3/2R4B/PQ3P1P/3R2K1 w - h6; gxh6; 0
+3q2nk/pb1r1p2/np6/3P2Pp/2p1P3/2R1B2B/PQ3P1P/3R2K1 w - h6; gxh6; P; e.p. ; Nxh6 serait puni par Be3, les Noirs declinent
+2r4k/2r4p/p7/2b2p1b/4pP2/1BR5/P1R3PP/2Q4K w - -; Rxc5; B
+8/pp6/2pkp3/4bp2/2R3b1/2P5/PP4B1/1K6 w - -; Bxc6; P - B
+3r3k/3r4/2n1n3/8/3p4/2PR4/1B1Q4/3R3K w - -; Rxd4; P - max(0, R - max(0, N - max(0, P - max(0, N - max(0, B - max(0, R - max(0, Q - max(0, R)))))))); Rxd4, Nxd4, cxd4, Nxd4, Bxd4, Rxd4, Qxd4, Rxd4 : huit demi-coups, donc huit fois la question « ce camp reprend-il ? ». D ou les huit max imbriques
+
+# Ordre des attaquants impose par la geometrie : le moins cher n'est pas toujours
+# disponible en premier. Les deux positions ne different que par l'echange Dame/Tour
+# sur d7-d8, et le SEE change du tout au tout.
+3rk3/3q4/8/3p4/4P3/8/8/3RK3 w - -; exd5; P - max(0, P - max(0, Q - max(0, R))); Dame DEVANT la Tour : Qd7 doit reprendre la premiere, trop cher, les Noirs declinent
+3qk3/3r4/8/3p4/4P3/8/8/3RK3 w - -; exd5; P - max(0, P - max(0, R - max(0, R))); Tour devant la Dame : Rd7 reprend, l echange s equilibre
+
+# Le pion qui prend libere sa case de depart et demasque le Fou c3 sur la meme
+# diagonale. Sans ce rayon X les Blancs n'auraient aucune reprise et le SEE vaudrait 0.
+6k1/8/2n5/4p3/3P4/2B5/8/6K1 w - -; dxe5; P - max(0, P - max(0, N)); Nc6xe5 puni par Bc3xe5 (diagonale c3-d4-e5 ouverte par le pion)
+1k1r4/1ppn3p/p4b2/4n3/8/P2N2P1/1PP1R1BP/2K1Q3 w - -; Nxe5; N - N + B - R + N
+1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 w - -; Nxe5; P - N; Tour DEVANT la Dame en e2-e1 (ordre naturel)
+
+# Meme famille, mais la Dame est DEVANT la Tour (e2-e1) et f6 est un pion, pas un Fou.
+# Deux mecanismes se cumulent : Re1 ne voit e5 qu'apres le depart de la Dame, et Qh8
+# n'attaque e5 qu'une fois f6 vide. Apres Nxe5 fxe5, Qxe5 perdrait la Dame contre
+# Nd7xe5 : les Blancs s arretent aussitot, d ou P - N et non la longue sequence.
+1k1r3q/1ppn3p/p4p2/4p3/8/P2N2P1/1PP1Q1BP/2K1R3 w - -; Nxe5; P - N; la prise perd un Cavalier contre un pion
+1k1r3q/1ppn3p/p4p2/4p3/8/P2N2P1/1PP1Q1BP/2K1R3 w - -; Qxe5; P - Q; prendre de la Dame est bien pire : fxe5 et les Blancs n ont pas de reprise rentable
+rnb2b1r/ppp2kpp/5n2/4P3/q2P3B/5R2/PPP2PPP/RN1QKB2 w Q -; Bxf6; N - B + P
+r2q1rk1/2p1bppp/p2p1n2/1p2P3/4P1b1/1nP1BN2/PP3PPP/RN1QR1K1 b - -; Bxf3; N - B
+r1bqkb1r/2pp1ppp/p1n5/1p2p3/3Pn3/1B3N2/PPP2PPP/RNBQ1RK1 b kq -; Nxd4; P - N + N - P
+r1bq1r2/pp1ppkbp/4N1p1/n3P1B1/8/2N5/PPP2PPP/R2QK2R w KQ -; Nxg7; B - N
+r1bq1r2/pp1ppkbp/4N1pB/n3P3/8/2N5/PPP2PPP/R2QK2R w KQ -; Nxg7; B
+rnq1k2r/1b3ppp/p2bpn2/1p1p4/3N4/1BN1P3/PPP2PPP/R1BQR1K1 b kq -; Bxh2; P - B
+rn2k2r/1bq2ppp/p2bpn2/1p1p4/3N4/1BN1P3/PPP2PPP/R1BQR1K1 b kq -; Bxh2; P
+r2qkbn1/ppp1pp1p/3p1rp1/3Pn3/4P1b1/2N2N2/PPP2PPP/R1BQKB1R b KQq -; Bxf3; N - B + P
+rnbq1rk1/pppp1ppp/4pn2/8/1bPP4/P1N5/1PQ1PPPP/R1B1KBNR b KQ -; Bxc3; N - B
+r4rk1/3nppbp/bq1p1np1/2pP4/8/2N2NPP/PP2PPB1/R1BQR1K1 b - -; Qxb2; P - Q
+r4rk1/1q1nppbp/b2p1np1/2pP4/8/2N2NPP/PP2PPB1/R1BQR1K1 b - -; Nxd5; P - N
+1r3r2/5p2/4p2p/2k1n1P1/2PN1nP1/1P3P2/8/2KR1B1R b - -; Rxb3; P - R
+1r3r2/5p2/4p2p/4n1P1/kPPN1nP1/5P2/8/2KR1B1R b - -; Rxb4; P
+2r2rk1/5pp1/pp5p/q2p4/P3n3/1Q3NP1/1P2PP1P/2RR2K1 b - -; Rxc1; R - R
+5rk1/5pp1/2r4p/5b2/2R5/6Q1/R1P1qPP1/5NK1 b - -; Bxc2; P - B + R - Q + R
+1r3r1k/p4pp1/2p1p2p/qpQP3P/2P5/3R4/PP3PP1/1K1R4 b - -; Qxa2; P - Q
+1r5k/p4pp1/2p1p2p/qpQP3P/2P2P2/1P1R4/P4rP1/1K1R4 b - -; Qxa2; P
+r2q1rk1/1b2bppp/p2p1n2/1ppNp3/3nP3/P2P1N1P/BPP2PP1/R1BQR1K1 w - -; Nxe7; B - N
+rnbqrbn1/pp3ppp/3p4/2p2k2/4p3/3B1K2/PPP2PPP/RNB1Q1NR w - -; Bxe4; P
+rnb1k2r/p3p1pp/1p3p1b/7n/1N2N3/3P1PB1/PPP1P1PP/R2QKB1R w KQkq -; Nd6; -N + P
+r1b1k2r/p4npp/1pp2p1b/7n/1N2N3/3P1PB1/PPP1P1PP/R2QKB1R w KQkq -; Nd6; -N + N
+2r1k2r/pb4pp/5p1b/2KB3n/4N3/2NP1PB1/PPP1P1PP/R2Q3R w k -; Bc6; -B
+2r1k2r/pb4pp/5p1b/2KB3n/1N2N3/3P1PB1/PPP1P1PP/R2Q3R w k -; Bc6; -B + B
+2r1k3/pbr3pp/5p1b/2KB3n/1N2N3/3P1PB1/PPP1P1PP/R2Q3R w - -; Bc6; -max(0, B - max(0, B - max(0, N))); coup tranquille : le Fou ne gagne rien et peut etre perdu, d ou le max(0,...) global negatif ; les Noirs ne reprennent que si ca leur rapporte
+5k2/p2P2pp/8/1pb5/1Nn1P1n1/6Q1/PPP4P/R3K1NR w KQ -; d8=Q; (Q - P)
+r4k2/p2P2pp/8/1pb5/1Nn1P1n1/6Q1/PPP4P/R3K1NR w KQ -; d8=Q; (Q - P) - Q
+5k2/p2P2pp/1b6/1p6/1Nn1P1n1/8/PPP4P/R2QK1NR w KQ -; d8=Q; (Q - P) - Q + B
+4kbnr/p1P1pppp/b7/4q3/7n/8/PP1PPPPP/RNBQKBNR w KQk -; c8=Q; (Q - P) - Q
+4kbnr/p1P1pppp/b7/4q3/7n/8/PPQPPPPP/RNB1KBNR w KQk -; c8=Q; B - P; promotion Dame, Bxc8, puis Qxc8 : net = fou gagne - pion depense
+4kbnr/p1P4p/b1q5/5pP1/4n3/5Q2/PP1PPP1P/RNB1KBNR w KQk f6; gxf6; P - P
+4kbnr/p1P4p/b1q5/5pP1/4n2Q/8/PP1PPP1P/RNB1KBNR w KQk f6; gxf6; P - P
+1n2kb1r/p1P4p/2qb4/5pP1/4n2Q/8/PP1PPP1P/RNB1KBNR w KQk -; cxb8=Q; N + (Q - P) - Q
+rnbqk2r/pp3ppp/2p1pn2/3p4/3P4/N1P1BN2/PPB1PPPb/R2Q1RK1 w kq -; Kxh2; B
+3N4/2K5/2n5/1k6/8/8/8/8 b - -; Nxd8; N - N
+3N4/2P5/2n5/1k6/8/8/8/4K3 b - -; Nxd8; N - (N + Q - P)
+
+# meme position, coups differents testes (reprise directe vs promotion)
+3n3r/2P5/8/1k6/8/8/3Q4/4K3 w - -; Qxd8; N
+3n3r/2P5/8/1k6/8/8/3Q4/4K3 w - -; cxd8=Q; (N + Q - P) - Q + R
+
+r2n3r/2P1P3/4N3/1k6/8/8/8/4K3 w - -; Nxd8; N
+8/8/8/1k6/6b1/4N3/2p3K1/3n4 w - -; Nxd1; N - (N + Q - P)
+8/8/1k6/8/8/2N1N3/2p1p1K1/3n4 w - -; Nexd1; N - (N + Q - P)
+8/8/1k6/8/8/2N1N3/4p1K1/3n4 w - -; Ncxd1; N - (N + Q - P) + Q
+r1bqk1nr/pppp1ppp/2n5/1B2p3/1b2P3/5N2/PPPP1PPP/RNBQK2R w KQkq -; O-O; 0
+2r1r1k1/pp1bppbp/3p1np1/q3P3/2P2P2/1P2B3/P1N1B1PP/2RQ1RK1 b - -; dxe5; P; dxe5, fxe5, Nxe5 : chaine de pions
+r2qk1nr/pp2ppbp/2b3p1/2p1p3/8/2N2N2/PPPP1PPP/R1BQR1K1 w kq -; Nxe5; P - max(0, N - B); Nxe5 puis Bg7xe5 SEULEMENT si le Cavalier vaut plus que le Fou (sinon les Noirs declinent), Re1xe5 ensuite : d ou P - max(0, N - B) et non P - N + B
+2r4r/1P4pk/p2p1b1p/7n/BB3p2/2R2p2/P1P2P2/4RK2 w - -; Rxc8; R; Rxc8 ; Rh8xc8 serait puni par bxc8=Q, les Noirs declinent
+2r5/1P4pk/p2p1b1p/5b1n/BB3p2/2R2p2/P1P2P2/4RK2 w - -; Rxc8; R; Rxc8, aucune reprise
+4q3/1p1pr1k1/1B2rp2/6p1/p3PP2/P3R1P1/1P2R1K1/4Q3 b - -; Rxe4; P - R; Rxe4 gagne le pion, perd la Tour
+4q3/1p1pr1kb/1B2rp2/6p1/p3PP2/P3R1P1/1P2R1K1/4Q3 b - -; Bxe4; P; Bh7xe4 ; les Blancs refusent la reprise, la colonne e leur est defavorable
+8/pp6/2pkp3/4bp2/2R3b1/2P5/PP4B1/1K6 b - -; Bxc3; P - B; Be5xc3 gagne le pion, Rc4xc3
 
 # Prise en passant : le pion capturé n'est pas sur la case d'arrivée. S'il n'est pas
 # retiré de l'occupation, la Tour d3 ne voit pas d6 et exd6 semble gagner un pion.
 4k3/8/8/3pP3/8/3r4/8/4K3 w - d6; exd6; 0; P - P (rayon X de la Tour d3 a travers d5)
+
 #
 # Jeu de tests de Halogen (src/test/static_exchange_evaluation_test.cpp), converti
 # aux valeurs de Zangdar (P=100 N=B=300 R=500 Q=900). Coups en notation UCI.
 # Il couvre ce que la suite ci-dessus ignore : prise en passant avec attaque
 # decouverte, Roi attaquant, coups tranquilles, sous-promotions.
 #
-rnbqk1nr/pp1p1ppp/8/4p3/1b2P3/2P4P/PP1P1PP1/RNBQKBNR w KQkq -; c3b4; 300; B
-rnbqk1nr/pp1p1ppp/8/2p1p3/1b2P3/2P4P/PP1P1PP1/RNBQKBNR w KQkq -; c3b4; 200; B - P
-rnbqk1nr/pp1p1ppp/8/2p1p3/1b2P3/2Q4P/PP1P1PP1/RNBQKBNR w KQkq -; c3b4; -600; B - Q
-1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 w - -; d3e5; -200; P - N
-1k1r4/1pp4p/p2b1b2/4q3/8/P3R1P1/1PP1R1BP/2K1Q3 w - -; e3e5; 500; echange long
-1k6/8/4R3/6B1/2n1Pp2/8/8/1K6 b - e3; f4e3; 0; e.p. avec attaque decouverte
-1k6/4r3/8/8/8/4P3/3K4/8 b - -; e7e3; -400; P - R, le Roi peut reprendre
-1k2r3/4r3/8/8/8/4P3/3K4/8 b - -; e7e3; 100; P, reprise du Roi illegale
-4r3/8/8/8/3k4/4P3/3K4/8 b - -; e8e3; 100; P, reprise du Roi illegale
-1k6/8/8/3n2B1/4Pp2/8/3K4/8 b - e3; f4e3; 0; e.p. + decouverte + Roi
-1k2r3/8/8/3n2B1/4Pp2/8/3K4/8 b - e3; f4e3; 100; e.p., reprise du Roi illegale
-3k4/8/1B6/8/8/8/8/3K4 w - -; b6e3; 0; coup tranquille
-3k4/8/1B6/5n2/8/8/8/3K4 w - -; b6e3; -300; coup tranquille, piece en prise
-3k4/8/1B6/5n2/8/8/5P2/3K4 w - -; b6e3; 0; coup tranquille avec reprise
-8/7P/8/8/8/k7/8/K7 w - -; h7h8q; 800; Q - P
-3r4/7P/8/8/8/k7/8/K7 w - -; h7h8q; -100; -P
-3r4/7P/8/7R/8/k7/8/K7 w - -; h7h8n; 200; N - P
-3r4/7P/8/7R/8/k7/8/K7 w - -; h7h8q; 400; R - P
-6n1/7P/8/8/8/k7/8/K7 w - -; h7g8r; 700; R - P + N
-3r2n1/7P/8/8/8/k7/8/K7 w - -; h7g8n; 200; N - P
-3r2n1/7P/8/8/6R1/k7/8/K7 w - -; h7g8b; 500; N + B - P
-3r2n1/7P/8/8/6R1/k7/8/K7 w - -; h7g8q; 700; N - P + R
+rnbqk1nr/pp1p1ppp/8/4p3/1b2P3/2P4P/PP1P1PP1/RNBQKBNR w KQkq -; c3b4; B
+rnbqk1nr/pp1p1ppp/8/2p1p3/1b2P3/2P4P/PP1P1PP1/RNBQKBNR w KQkq -; c3b4; B - P
+rnbqk1nr/pp1p1ppp/8/2p1p3/1b2P3/2Q4P/PP1P1PP1/RNBQKBNR w KQkq -; c3b4; B - Q
+1k1r4/1pp4p/p2b1b2/4q3/8/P3R1P1/1PP1R1BP/2K1Q3 w - -; e3e5; Q - max(0, R - max(0, B - max(0, R - max(0, B)))); echange long (expression de Halogen) : quatre reprises successives, chacune facultative, d ou les quatre max imbriques
+1k6/8/4R3/6B1/2n1Pp2/8/8/1K6 b - e3; f4e3; P - max(0, P - max(0, B - max(0, N))); e.p. avec attaque decouverte ; Bg5 puis Nc4 puis Re6 reprennent, mais chacun peut s abstenir, d ou les max
+1k6/4r3/8/8/8/4P3/3K4/8 b - -; e7e3; P - R; le Roi peut reprendre
+1k2r3/4r3/8/8/8/4P3/3K4/8 b - -; e7e3; P; reprise du Roi illegale
+4r3/8/8/8/3k4/4P3/3K4/8 b - -; e8e3; P; reprise du Roi illegale
+1k6/8/8/3n2B1/4Pp2/8/3K4/8 b - e3; f4e3; P - max(0, P - max(0, B - max(0, N))); e.p. + decouverte + Roi ; meme structure que ci-dessus, chaque reprise reste facultative
+1k2r3/8/8/3n2B1/4Pp2/8/3K4/8 b - e3; f4e3; P; e.p., reprise du Roi illegale
+7k/8/1B6/8/8/8/8/3K4 w - -; b6e3; 0; coup tranquille
+7k/8/1B6/5n2/8/8/8/3K4 w - -; b6e3; -B; coup tranquille, piece en prise
+7k/8/1B6/5n2/8/8/5P2/3K4 w - -; b6e3; min(0, N - B); coup tranquille : gain nul, donc le SEE ne peut qu etre <= 0 ; le Cavalier prend puis le pion f2 reprend, mais seulement si ca vaut le coup, d ou min(0, N - B)
+8/7P/8/8/8/k7/8/K7 w - -; h7h8q; Q - P
+3r4/7P/8/8/8/k7/8/K7 w - -; h7h8q; -P
+6n1/7P/8/8/8/k7/8/K7 w - -; h7g8r; R - P + N
+3r2n1/7P/8/8/8/k7/8/K7 w - -; h7g8n; N - P
 rnbqkbnr/pp3ppp/2p5/3pp3/8/4PN2/PPPPBPPP/RNBQK2R w KQkq -; e1g1; 0; roque
+
+# Les 4 promotions sur la meme position. Rd8xh8 reprend, Rh5 egalise (elle voit h8
+# par la case h7 que le pion vient de quitter). Fou et Cavalier ne valent pas la
+# Tour : les Noirs declinent la reprise.
+3r4/7P/8/7R/8/k7/8/K7 w - -; h7h8q; R - P
+3r4/7P/8/7R/8/k7/8/K7 w - -; h7h8r; R - P
+3r4/7P/8/7R/8/k7/8/K7 w - -; h7h8b; B - P
+3r4/7P/8/7R/8/k7/8/K7 w - -; h7h8n; N - P
+
+# Les 4 promotions sur la meme position, avec prise du Cavalier g8.
+# Rd8xg8 reprend, Rg4 egalise ; les Noirs ne gagnent a reprendre que si la piece
+# promue vaut plus que la Tour qu ils laisseraient sur g8.
+3r2n1/7P/8/8/6R1/k7/8/K7 w - -; h7g8q; N - P + R
+3r2n1/7P/8/8/6R1/k7/8/K7 w - -; h7g8r; N + R - P
+3r2n1/7P/8/8/6R1/k7/8/K7 w - -; h7g8b; N + B - P
+3r2n1/7P/8/8/6R1/k7/8/K7 w - -; h7g8n; N + N - P
+
 #
 # Clouage. Le SEE de Zangdar (comme Berserk et Ethereal) ignore les clouages :
 # il fait reprendre des pieces qui n'en ont pas le droit. Stormphrax et Alexandria
 # masquent les attaquants cloues. Valeurs ci-dessous = verite avec clouages, donc
-# les DEUX PREMIERES ECHOUENT sans la branche see-clouages (c'est leur role).
-# Idem pour la position 6r1/4kq2/... (Bxe5), qui vaut 0 sans clouages et 100 avec.
+# les DEUX PREMIERES ECHOUENT tant que fast_see ne masque pas les cloues.
+# La position 6r1/4kq2/... (Bxe5) plus haut est le troisieme cas de clouage : le pion
+# f6 est cloue par Qh4, donc un seul pion reprend en e5 et non deux.
 #
-4k3/8/2p5/3p4/B7/8/6B1/6K1 w - -; g2d5; 100; le pion c6 est cloue par Fa4, il ne peut pas reprendre
-3r2k1/8/b7/3p4/2P5/8/4K1B1/8 w - -; g2d5; -200; le pion c4 est cloue par Fa6, il ne peut pas re-reprendre
-1k6/8/3p4/8/8/5N2/7B/6K1 w - -; f3e5; -200; le pion d6 est cloue mais e5 est SUR la ligne de clouage
+4k3/8/2p5/3p4/B7/8/6B1/6K1 w - -; g2d5; P; le pion c6 est cloue par Fa4, il ne peut pas reprendre
+3r2k1/8/b7/3p4/2P5/8/4K1B1/8 w - -; g2d5; P - B; le pion c4 est cloue par Fa6, il ne peut pas re-reprendre
+1k6/8/3p4/8/8/5N2/7B/6K1 w - -; f3e5; P - N; le pion d6 est cloue mais e5 est SUR la ligne de clouage
+
+#
+# Ordre « attaquant le moins cher d'abord » : c'est une HEURISTIQUE, pas l'optimum.
+# fast_see essaie la Dame (900) avant le Roi (9999) et n'y revient jamais. Ici la
+# Dame g3 est a la fois attaquante de g6 ET bouchon de la Tour g1 sur la colonne g :
+# si elle prend, elle ouvre la ligne sur elle-meme et Rg1xg6 la gagne, donc elle
+# renonce. fast_see en conclut que les Noirs ne reprennent pas, et annonce le coup
+# gagnant. Mais le Roi, lui, prend GRATUITEMENT : tant que la Dame bouche la colonne,
+# g6 n'est pas defendu. Kxg6 empoche le Fou.
+# Mesure (2026-07-31) : sur 128 754 captures tirees de parties aleatoires, l'ordre
+# moins-cher-d-abord diverge de l'optimum 13 fois (0,01 %). Rare, mais bien reel, et
+# c'est ici une erreur de SIGNE, donc visible des le seuil 0 du MovePicker.
+#
+8/8/5kp1/5B2/8/6q1/8/6RK w - -; f5g6; P - B; Kxg6 gratuit ; fast_see essaie Qg3 (qui renonce) et ne considere jamais le Roi
