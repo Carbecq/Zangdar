@@ -18,8 +18,8 @@
  *      Utilisé dans activation() : madd(product, clipped) = clipped² × weight → I32
  *      → évite l'overflow I16 et accumule directement en I32
  *
- *  load aligné (_mm512/256/_load_si*) : mémoire alignée sur ALIGN octets,
- *      ALIGN = 64 (AVX-512) / 32 (AVX2) / 16 (SSE2) — défini dans NNUE.h
+ *  load aligné (_mm512/256/_load_si*) : l'ISA exige 64 (AVX-512) / 32 (AVX2) /
+ *      16 (SSE2) octets. ALIGN vaut 64 partout (NNUE.h), ce qui les satisfait tous.
  *  _mm256_loadu_si256 : chargement depuis mémoire non alignée (plus lent)
  */
 
@@ -58,7 +58,7 @@ inline Vepi32 ZeroEpi32() {
 }
 
 //=======================================================
-//! \brief  Charge 32 I16 depuis une adresse alignée sur ALIGN (64) octets
+//! \brief  Charge 32 I16 depuis une adresse alignée sur ALIGN octets
 //! \param[in] memory_address   adresse mémoire alignée
 //! \return Vecteur I16 chargé
 //-------------------------------------------------------
@@ -67,7 +67,7 @@ inline Vepi16 LoadEpi16(const int16_t* memory_address) {
 }
 
 //=======================================================
-//! \brief  Charge 16 I32 depuis une adresse alignée sur ALIGN (64) octets
+//! \brief  Charge 16 I32 depuis une adresse alignée sur ALIGN octets
 //! \param[in] memory_address   adresse mémoire alignée
 //! \return Vecteur I32 chargé
 //-------------------------------------------------------
@@ -76,7 +76,7 @@ inline Vepi32 LoadEpi32(const int32_t* memory_address) {
 }
 
 //=======================================================
-//! \brief  Stocke un vecteur I16 à une adresse alignée sur ALIGN (64) octets
+//! \brief  Stocke un vecteur I16 à une adresse alignée sur ALIGN octets
 //! \param[out] memory_address  adresse mémoire alignée de destination
 //! \param[in]  vector          vecteur I16 à stocker
 //-------------------------------------------------------
@@ -192,7 +192,7 @@ inline Vepi32 ZeroEpi32() {
 }
 
 //=======================================================
-//! \brief  Charge 16 I16 depuis une adresse alignée sur ALIGN (32) octets
+//! \brief  Charge 16 I16 depuis une adresse alignée sur ALIGN octets
 //! \param[in] memory_address   adresse mémoire alignée
 //! \return Vecteur I16 chargé
 //-------------------------------------------------------
@@ -201,7 +201,7 @@ inline Vepi16 LoadEpi16(const int16_t* memory_address) {
 }
 
 //=======================================================
-//! \brief  Charge 8 I32 depuis une adresse alignée sur ALIGN (32) octets
+//! \brief  Charge 8 I32 depuis une adresse alignée sur ALIGN octets
 //! \param[in] memory_address   adresse mémoire alignée
 //! \return Vecteur I32 chargé
 //-------------------------------------------------------
@@ -210,7 +210,7 @@ inline Vepi32 LoadEpi32(const int32_t* memory_address) {
 }
 
 //=======================================================
-//! \brief  Stocke un vecteur I16 à une adresse alignée sur ALIGN (32) octets
+//! \brief  Stocke un vecteur I16 à une adresse alignée sur ALIGN octets
 //! \param[out] memory_address  adresse mémoire alignée de destination
 //! \param[in]  vector          vecteur I16 à stocker
 //-------------------------------------------------------
@@ -348,7 +348,7 @@ inline Vepi32 ZeroEpi32() {
 }
 
 //=======================================================
-//! \brief  Charge 8 I16 depuis une adresse alignée sur ALIGN (16) octets
+//! \brief  Charge 8 I16 depuis une adresse alignée sur ALIGN octets
 //! \param[in] memory_address   adresse mémoire alignée
 //! \return Vecteur I16 chargé
 //-------------------------------------------------------
@@ -357,7 +357,7 @@ inline Vepi16 LoadEpi16(const int16_t* memory_address) {
 }
 
 //=======================================================
-//! \brief  Charge 4 I32 depuis une adresse alignée sur ALIGN (16) octets
+//! \brief  Charge 4 I32 depuis une adresse alignée sur ALIGN octets
 //! \param[in] memory_address   adresse mémoire alignée
 //! \return Vecteur I32 chargé
 //-------------------------------------------------------
@@ -366,7 +366,7 @@ inline Vepi32 LoadEpi32(const int32_t* memory_address) {
 }
 
 //=======================================================
-//! \brief  Stocke un vecteur I16 à une adresse alignée sur ALIGN (16) octets
+//! \brief  Stocke un vecteur I16 à une adresse alignée sur ALIGN octets
 //! \param[out] memory_address  adresse mémoire alignée de destination
 //! \param[in]  vector          vecteur I16 à stocker
 //-------------------------------------------------------

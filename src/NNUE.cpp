@@ -1,5 +1,7 @@
 #include "NNUE.h"
 #include <cassert>
+#include <cstdlib>
+#include <iostream>
 #include "types.h"
 #include "bitmask.h"
 #include "simd.h"
@@ -24,11 +26,42 @@
 namespace {
 
 #include "incbin/incbin.h"
+
+//  incbin aligne les octets embarqués sur l'ISA détectée (16 en SSE2, 32 en AVX2),
+//  alors que Network est alignas(64) : sans cela le reinterpret_cast ci-dessous
+//  porterait sur une adresse sous-alignée. L'index 6 vaut 64 octets et corrige à la
+//  fois l'attribut C et la directive assembleur. Halogen procède de même.
+#undef  INCBIN_ALIGNMENT_INDEX
+#define INCBIN_ALIGNMENT_INDEX 6
+
 INCBIN(network, EVALFILE);
+static_assert(INCBIN_ALIGNMENT >= alignof(Network),
+              "octets embarqués moins alignés que Network : le cast serait invalide");
 const Network *network = reinterpret_cast<const Network *>(gnetworkData);
 
 }
 
+
+//======================================================
+//! \brief  Vérifie la taille du réseau embarqué (cf. NNUE.h)
+//!
+//! On compare à NETWORK_DATA_SIZE et non à sizeof(Network) : l'alignas ajoute un
+//! bourrage de queue que le fichier n'a pas. Seul un bourrage de QUEUE est toléré,
+//! celui que l'export a pu ajouter ; tout écart plus grand signale une autre
+//! architecture.
+//------------------------------------------------------
+void verify_network()
+{
+    if (gnetworkSize < NETWORK_DATA_SIZE || gnetworkSize - NETWORK_DATA_SIZE >= ALIGN_MAX)
+    {
+        std::cerr << "Erreur : le réseau embarqué (" << EVALFILE << ") ne correspond pas à "
+                     "l'architecture compilée." << std::endl;
+        std::cerr << "  attendu : " << NETWORK_DATA_SIZE << " octets de données"
+                     " (plus un bourrage de queue < " << ALIGN_MAX << ")" << std::endl;
+        std::cerr << "  trouvé  : " << gnetworkSize << " octets" << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+}
 
 //======================================================
 //! \brief  Retourne l'évaluation du réseau

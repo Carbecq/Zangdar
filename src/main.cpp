@@ -7,6 +7,7 @@
 #include "Attacks.h"
 #include "DataGen.h"
 #include "Cuckoo.h"
+#include "NNUE.h"
 
 // Globals
 TranspositionTable  transpositionTable(HASH_SIZE);
@@ -28,6 +29,7 @@ extern void init_bitmasks();
 //-------------------------------------------------------
 int main(int argCount, char* argValue[])
 {
+    verify_network();
     Attacks::init_masks();
     Cuckoo::init();
 
@@ -36,8 +38,8 @@ int main(int argCount, char* argValue[])
     //          les arguments sont optionnels
     if (argCount > 1 && strcmp(argValue[1], "bench") == 0)
     {
-        Uci* uci = new Uci();
-        uci->bench(argCount, argValue);
+        Uci uci;
+        uci.bench(argCount, argValue);
     }
 
     //  DataGen

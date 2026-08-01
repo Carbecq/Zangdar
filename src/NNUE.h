@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <span>
 #include "types.h"
 #include "bitmask.h"
@@ -11,17 +12,15 @@
 #include <immintrin.h>
 #endif
 
-#if defined(__AVX512F__) && defined(__AVX512BW__)
-  #define ALIGN   64
-#elif defined(__AVX2__)
-  #define ALIGN   32
-#elif defined(__SSE2__) || defined(__AVX__)
-  #define ALIGN   16
-#elif defined(__ARM_NEON)
-  #define ALIGN   16
-#else
-  #define ALIGN 16
-#endif
+//  Alignement des poids et des accumulateurs : une ligne de cache, sur toutes les
+//  cibles. 64 satisfait les load alignés de toutes les ISA (64 ⊃ 32 ⊃ 16), garantit
+//  que chaque accumulateur de la pile démarre sur une frontière de ligne de cache,
+//  et rend sizeof(Network) identique quelle que soit la compilation.
+#define ALIGN 64
+
+//  Bourrage de queue maximal toléré dans le FICHIER réseau lors de la vérification :
+//  l'export du trainer peut en ajouter, indépendamment de ALIGN.
+constexpr size_t ALIGN_MAX = 64;
 
 
 //------------------------------------------------------------------------------
@@ -76,6 +75,37 @@ struct Network {
     alignas(ALIGN) std::array<I16, N_COLORS * HIDDEN_LAYER_SIZE * OUTPUT_BUCKETS> output_weights;
     alignas(ALIGN) std::array<I16, OUTPUT_BUCKETS>                                output_bias;
 };
+
+//! \brief  Taille des DONNÉES du réseau, hors bourrage.
+//!
+//! Ne pas utiliser sizeof(Network) pour valider le fichier embarqué : l'alignas
+//! sur output_bias ajoute 48 octets de bourrage de queue que le fichier n'a pas
+//! (25 200 704 contre 25 200 656). Un contrôle d'égalité sur sizeof échouerait.
+constexpr size_t NETWORK_DATA_SIZE = sizeof(Network::feature_weights)
+                                   + sizeof(Network::feature_biases)
+                                   + sizeof(Network::output_weights)
+                                   + sizeof(Network::output_bias);
+
+//  Le réseau est lu par reinterpret_cast sur les octets embarqués : cela n'est
+//  valide que si la struct ne contient AUCUN bourrage INTÉRIEUR, le fichier n'en
+//  ayant pas. C'est vrai tant que la taille de chaque membre est un multiple de
+//  ALIGN ; ces assertions le vérifient à la compilation, de sorte qu'un futur
+//  changement d'architecture (HIDDEN_LAYER_SIZE non multiple de 32, par exemple)
+//  casse le build au lieu de fausser silencieusement l'évaluation.
+static_assert(offsetof(Network, feature_biases) == sizeof(Network::feature_weights),
+              "bourrage entre feature_weights et feature_biases : le cast du fichier serait faux");
+static_assert(offsetof(Network, output_weights) == offsetof(Network, feature_biases)
+                                                 + sizeof(Network::feature_biases),
+              "bourrage entre feature_biases et output_weights : le cast du fichier serait faux");
+static_assert(offsetof(Network, output_bias)    == offsetof(Network, output_weights)
+                                                 + sizeof(Network::output_weights),
+              "bourrage entre output_weights et output_bias : le cast du fichier serait faux");
+
+//! \brief  Vérifie que le réseau embarqué a bien la taille attendue.
+//! À appeler au démarrage. Termine le programme si le réseau ne correspond pas :
+//! sans ce contrôle, un fichier d'une autre architecture est lu comme des octets
+//! quelconques et le moteur joue avec une évaluation absurde, sans le moindre message.
+void verify_network();
 
 //------------------------------------------------------------------------------
 // Lazy Updates
