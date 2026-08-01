@@ -99,19 +99,18 @@ void History::update_quiet_history(Color color, SearchInfo* info, MOVE best_move
                                    size_t quiet_count, std::array<MOVE, MAX_MOVES>& quiet_moves)
 {
     // Counter Move
-    if (Move::piece_type(best_move) != PieceType::QUEEN)
+    // L'appelant a déjà écarté les coups tactiques (think.cpp, !is_tactical) : best_move
+    // est forcément tranquille, donc ni capture ni promotion. Aucune garde de plus ici.
+    MOVE previous_move = (info-1)->move;
+
+    if (Move::is_ok(previous_move))
+        counter_move[Move::piece(previous_move)][Move::dest(previous_move)] = best_move;
+
+    // Killer Moves
+    if (info->killer1 != best_move)
     {
-        MOVE previous_move = (info-1)->move;
-
-        if (Move::is_ok(previous_move))
-            counter_move[Move::piece(previous_move)][Move::dest(previous_move)] = best_move;
-
-        // Killer Moves
-        if (info->killer1 != best_move)
-        {
-            info->killer2 = info->killer1;
-            info->killer1 = best_move;
-        }
+        info->killer2 = info->killer1;
+        info->killer1 = best_move;
     }
 
     // ne met à jour le quiet history que si le meilleur coup était significatif
