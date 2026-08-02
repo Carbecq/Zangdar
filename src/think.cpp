@@ -879,6 +879,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     best_score = std::min(best_score, max_score);
 
     if(   !isInCheck
+          && !isExcluded
           && (best_move == Move::MOVE_NONE || !Move::is_capturing(best_move))
           && !(bound == BOUND_LOWER && best_score <= si->static_eval)
           && !(bound == BOUND_UPPER && best_score >= si->static_eval))
