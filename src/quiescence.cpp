@@ -121,6 +121,8 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
     std::array<MOVE, MAX_MOVES> tried_captures;
     size_t capture_count = 0;
 
+    const int futility = static_eval + Tunable::DeltaPruningBias;
+
     // Boucle sur tous les coups
     // Si on est en échec, on génère aussi les coups "quiet"
     while ((move = movePicker.next_move(!isInCheck).move ) != Move::MOVE_NONE)
@@ -132,21 +134,18 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
 
         /* Delta Pruning, une technique conceptuellement proche du futility pruning,
             utilisée uniquement en quiescence search.
-            Principe : avant de jouer une capture, on teste si la valeur de la pièce
-            capturée plus une marge de sécurité (typiquement environ 200 centipions)
-            suffit à faire dépasser alpha pour le nœud courant.
+            Principe : si l'évaluation est trop loin sous alpha, même avec une marge de
+            sécurité, une capture qui ne gagne rien ne renversera pas la position.
+            Inutile de l'explorer.
         */
 
-        if (!isInCheck && Move::is_capturing(move))
+        if (!isInCheck && Move::is_capturing(move) && futility <= alpha
+            && !board.fast_see(move, 1))
         {
-            int futility = static_eval + Tunable::DeltaPruningBias + EGPieceValue[Move::captured_type(move)];
-            if (futility <= alpha)
-            {
-                // Safety : remonter best_score au niveau futility pour donner au parent
-                // une borne supérieure plus précise
-                best_score = std::max(best_score, futility);
-                continue;
-            }
+            // Safety : remonter best_score au niveau futility pour donner au parent
+            // une borne supérieure plus précise
+            best_score = std::max(best_score, futility);
+            continue;
         }
 
         if (Move::is_capturing(move))
