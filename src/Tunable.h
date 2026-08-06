@@ -86,6 +86,11 @@ PARAM(ProbCutDepth,     5, 1, 8);
 PARAM(ProbCutMargin,  100, 50, 200);
 PARAM(ProbcutReduction, 4, 2, 7);
 
+// Conversion unités d'éval -> unités SEE pour le seuil de ProbCut, en centièmes.
+// Un pion vaut ~303 unités d'éval contre 100 unités SEE. La valeur 100 redonne
+// le comportement antérieur, où les deux unités étaient confondues.
+PARAM(ProbCutSeeScale, 300, 100, 400);
+
 //  RAZORING
 PARAM(RazoringDepth,    3, 1, 6);
 PARAM(RazoringMargin, 200, 100, 300);
