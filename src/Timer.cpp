@@ -9,29 +9,29 @@
 //! \brief  Constructeur
 //! Initialise les limites de temps fournies par le protocole UCI
 //-----------------------------------------------------------
-Timer::Timer(bool infinite,
-             int wtime,
-             int btime,
-             int winc,
-             int binc,
-             int movestogo,
-             int depth,
-             U64 nodes,
-             int movetime,
-             int moveOverhead)
+Timer::Timer(bool _infinite,
+             int _wtime,
+             int _btime,
+             int _winc,
+             int _binc,
+             int _movestogo,
+             int _depth,
+             U64 _nodes,
+             int _movetime,
+             int _moveOverhead)
 {
-    limits.infinite    = infinite;
-    limits.time[WHITE] = wtime;
-    limits.time[BLACK] = btime;
-    limits.incr[WHITE] = winc;
-    limits.incr[BLACK] = binc;
-    limits.movestogo   = movestogo;
-    limits.depth       = depth;
-    limits.nodes       = nodes;
-    limits.movetime    = movetime;
+    limits.infinite    = _infinite;
+    limits.time[WHITE] = _wtime;
+    limits.time[BLACK] = _btime;
+    limits.incr[WHITE] = _winc;
+    limits.incr[BLACK] = _binc;
+    limits.movestogo   = _movestogo;
+    limits.depth       = _depth;
+    limits.nodes       = _nodes;
+    limits.movetime    = _movetime;
 
     mode               = TimerMode::TIME;
-    this->moveOverhead = moveOverhead;
+    moveOverhead       = _moveOverhead;
     timeForThisDepth   = 0;
     timeForThisMove    = 0;
     searchDepth        = 0;

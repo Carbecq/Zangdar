@@ -560,6 +560,9 @@ $(EXE): $(OBJ)
 
 src/NNUE.o: $(EVALFILE)
 
+# pyrrhic (Fathom) est du code TIERS, one ne le modifie pas. 
+src/pyrrhic/tbprobe.o: CFLAGS += -Wno-cast-align -Wno-strict-overflow
+
 %.o: %.cpp
 	@$(CXX) -o $@ -c $< $(CFLAGS)
 
