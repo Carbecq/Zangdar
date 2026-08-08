@@ -1,7 +1,9 @@
 #include <cstring>
 #include <cstdlib>
 #include <algorithm>
+#include <iostream>
 #include <map>
+#include "HugePages.h"
 #include "ThreadPool.h"
 #include "Board.h"
 #include "Search.h"
@@ -60,8 +62,27 @@ void ThreadPool::set_threads(U32 nbr)
         if (search)
             stop();
 
+        // On alloue AVANT de libérer : si le système refuse, le pool en place
+        // reste utilisable. Un Search pèse ~35 Mo (History 34,3 + NNUE 0,6),
+        // donc la demande atteint vite plusieurs centaines de Mo.
+        HugeArray<Search> fresh = make_huge_array<Search>(newNbr);
+
+        if (!fresh)
+        {
+            std::cout << "info string " << newNbr
+                      << " threads refuses par le systeme, nombre inchange" << std::endl;
+
+            if (!search)
+            {
+                std::cout << "info string pas de thread de recherche, arret" << std::endl;
+                std::abort();
+            }
+            return;
+        }
+
+        search     = std::move(fresh);      // libère l'ancien pool au passage
         nbrThreads = newNbr;
-        search = std::make_unique<Search[]>(nbrThreads);
+
         for (size_t i = 0; i < nbrThreads; i++)
         {
             search[i].table = nullptr;

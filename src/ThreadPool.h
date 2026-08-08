@@ -4,6 +4,7 @@
 class ThreadPool;
 
 #include <memory>
+#include "HugePages.h"
 #include "defines.h"
 #include "Board.h"
 #include "Timer.h"
@@ -13,6 +14,12 @@ class ThreadPool
 {
 public:
     explicit ThreadPool(U32 _nbr, bool _tb, bool _log);
+
+    // Le pool possède sa mémoire (voir search ci-dessous) : une copie ferait une
+    // double libération. HugeArray l'interdit déjà, on le dit explicitement.
+    ThreadPool(const ThreadPool&)            = delete;
+    ThreadPool& operator=(const ThreadPool&) = delete;
+
     void set_threads(U32 nbr);
     void reset();
     void reinit_reductions();
@@ -49,7 +56,10 @@ public:
     //! \brief  Retourne le nombre maximum de pièces pour le probe Syzygy WDL/DTZ
     int  get_syzygyProbeLimit() const { return syzygyProbeLimit; }
 
-    std::unique_ptr<Search[]> search;
+    // HugeArray (et non un make_unique<Search[]>) pour obtenir des pages de
+    // 2 Mo : chaque Search porte son History, soit ~34 Mo, et l'historique est
+    // lu et écrit à chaque nœud en accès dispersé. Voir HugePages.h.
+    HugeArray<Search> search;
     std::atomic<bool> searchStopped{false};
 
 private:
