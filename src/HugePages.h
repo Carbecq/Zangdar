@@ -2,15 +2,7 @@
 #define HUGEPAGES_H
 
 //  Allocation d'un gros bloc aligné, sur des pages de 2 Mo quand le système
-//  les accorde. Utilisé par la table de transposition.
-//
-//  Pourquoi : au-delà de ~8 Mo, chaque sonde de TT manque le TLB (2048 entrées
-//  de 4 Ko sur Zen 3, soit 8 Mo de couverture). Les pages de 2 Mo divisent par
-//  512 l'empreinte des tables de pages et portent cette couverture à 4 Go.
-//  Mesures et corpus dans References/CHANGELOG.md.
-//
-//  Le repli est SILENCIEUX et toujours fonctionnel : sans privilège (Windows)
-//  ou sans support noyau, on obtient de la mémoire ordinaire, jamais un échec.
+//  les accorde. Repli silencieux sinon. Mesures et corpus : CHANGELOG 7.24.
 
 #include <cstddef>
 #include <cstdlib>
@@ -36,12 +28,8 @@ inline size_t round_up(size_t size, size_t grain) noexcept
 
 #if defined(_WIN32)
 //==================================================
-//! \brief  Tente d'obtenir SeLockMemoryPrivilege, indispensable à MEM_LARGE_PAGES
-//! \return "true" si le privilège est acquis
-//!
-//! Ce privilège n'est PAS accordé par défaut ; il se donne dans la stratégie de
-//! sécurité locale ("Verrouiller les pages en mémoire"). L'échec est le cas
-//! courant, et il est normal : l'appelant se rabat sur une allocation ordinaire.
+//! \brief  Tente d'obtenir SeLockMemoryPrivilege, exigé par MEM_LARGE_PAGES
+//! \return "true" si le privilège est acquis. L'échec est le cas courant.
 //--------------------------------------------------
 inline bool enable_lock_memory_privilege() noexcept
 {
@@ -75,12 +63,10 @@ inline bool enable_lock_memory_privilege() noexcept
 //==================================================
 //! \brief  Alloue "size" octets, sur des pages de 2 Mo si possible
 //! \param[in]  size  taille demandée, en octets
-//! \return Adresse alignée sur 2 Mo (ou sur 64 octets pour les petits blocs),
-//!         ou nullptr si l'allocation échoue.
+//! \return Adresse alignée sur 2 Mo (64 octets pour les petits blocs), ou nullptr
 //!
-//! La mémoire rendue n'est PAS initialisée : l'appelant doit l'écrire avant de
-//! la lire. C'est aussi ce premier parcours (first touch) qui matérialise les
-//! huge pages sous THP=madvise — sans lui les pages restent en 4 Ko.
+//! Mémoire NON initialisée : l'appelant doit l'écrire avant de la lire. Ce premier
+//! parcours est aussi ce qui matérialise les huge pages, ne pas l'omettre.
 //--------------------------------------------------
 inline void* alloc_huge_pages(size_t size) noexcept
 {
@@ -88,7 +74,6 @@ inline void* alloc_huge_pages(size_t size) noexcept
         return nullptr;
 
     // Sous 2 Mo une huge page ne tient pas : alignement ordinaire, pas de madvise.
-    // Sur-aligner un petit bloc ne servirait qu'à gaspiller (cf. Stormphrax).
     const bool   big       = size >= HUGE_PAGE_SIZE;
     const size_t alignment = big ? HUGE_PAGE_SIZE : 64;
 
@@ -135,9 +120,7 @@ inline void free_huge_pages(void* memory) noexcept
 
 //==================================================
 //! \brief  Deleter d'un tableau alloué par make_huge_array()
-//!
-//! Il transporte le nombre d'éléments : sans lui, impossible d'appeler les
-//! destructeurs, unique_ptr ne connaissant pas la taille d'un tableau.
+//! Transporte le nombre d'éléments : unique_ptr ne connaît pas la taille d'un tableau.
 //--------------------------------------------------
 template <typename T>
 struct HugePageArrayDeleter
@@ -159,15 +142,9 @@ using HugeArray = std::unique_ptr<T[], HugePageArrayDeleter<T>>;
 //! \brief  Alloue et construit un tableau de "n" objets sur des pages de 2 Mo
 //! \return Tableau possédé, vide (testable par if) si l'allocation échoue
 //!
-//! Les objets sont value-initialisés, comme le fait std::make_unique<T[]>(n) :
-//! le remplacer par cette fonction ne change donc pas leur état de départ. Ce
-//! que make_unique ne sait pas faire, c'est passer par un allocateur à nous —
-//! d'où cette fonction, et non un simple deleter.
-//!
-//! L'ordre compte : le madvise est posé par alloc_huge_pages() AVANT la
-//! construction, et c'est la construction qui touche la mémoire en premier.
-//! Un madvise posé après coup n'aurait plus aucun effet — les pages seraient
-//! déjà montées en 4 Ko.
+//! Objets value-initialisés, comme std::make_unique<T[]>(n).
+//! ORDRE IMPÉRATIF : le madvise d'alloc_huge_pages() doit précéder la
+//! construction, qui est le premier accès à la mémoire.
 //--------------------------------------------------
 template <typename T>
 inline HugeArray<T> make_huge_array(size_t n)
@@ -176,8 +153,7 @@ inline HugeArray<T> make_huge_array(size_t n)
     if (data == nullptr)
         return HugeArray<T>(nullptr, HugePageArrayDeleter<T>{0});
 
-    // Pas de try/catch pour libérer le bloc si un constructeur lance : la cible
-    // release compile en -fno-exceptions, un lancer y termine le programme.
+    // Pas de try/catch : la cible release compile en -fno-exceptions.
     std::uninitialized_value_construct_n(data, n);
 
     return HugeArray<T>(data, HugePageArrayDeleter<T>{n});

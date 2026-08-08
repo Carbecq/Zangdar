@@ -127,9 +127,8 @@ private:
     size_t                      nbr_cluster{};
     U32                         tt_age{};
 
-    // HugeArray (et non un std::vector) pour pouvoir demander des pages de 2 Mo :
-    // un vector passe par l'allocateur ordinaire, que THP=madvise n'exauce
-    // jamais. Voir HugePages.h. La libération reste automatique.
+    // HugeArray et non std::vector : un vector passe par l'allocateur ordinaire,
+    // qui n'obtient jamais de huge pages. Voir HugePages.h.
     HugeArray<HashCluster>      tt_entries;
 
     //==================================================
@@ -151,8 +150,7 @@ public:
     TranspositionTable(int MB);
     ~TranspositionTable() = default;     // tt_entries se libère seule
 
-    // La table possède sa mémoire : une copie ferait une double libération.
-    // HugeArray l'interdit déjà, on le dit explicitement.
+    // La table possède sa mémoire : pas de copie.
     TranspositionTable(const TranspositionTable&)            = delete;
     TranspositionTable& operator=(const TranspositionTable&) = delete;
 

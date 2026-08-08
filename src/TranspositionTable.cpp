@@ -59,13 +59,11 @@ void TranspositionTable::init_size(int mbsize)
     if (size != nbr_cluster)
     {
         // On alloue AVANT de libérer : si le système refuse, la table en place
-        // reste utilisable. Un std::vector ne laissait pas ce choix.
+        // reste utilisable.
         HugeArray<HashCluster> fresh = make_huge_array<HashCluster>(size);
 
         if (!fresh)
         {
-            // Atteignable depuis l'UCI : MAX_HASH_SIZE vaut 16 Go, bien au-delà
-            // de la RAM de la plupart des machines.
             std::cout << "info string hash " << mbsize
                       << " Mo refuse par le systeme, taille inchangee" << std::endl;
 
@@ -103,12 +101,12 @@ void TranspositionTable::clear(void)
 
     tt_age = 0;
 
-    // réinitialise chaque HashCluster à sa valeur par défaut.
-    // C'est aussi ce premier parcours qui matérialise les huge pages : sous
-    // THP=madvise, madvise() ne fait que marquer la zone, la promotion n'a lieu
-    // qu'au premier accès (même raison que le tt_clear() d'Ethereal après son madvise).
+    // Remet chaque HashCluster à zéro. C'est aussi ce premier parcours qui
+    // matérialise les huge pages : sous THP=madvise, madvise() ne fait que marquer
+    // la zone, la promotion n'a lieu qu'au premier accès (même raison que le
+    // tt_clear() d'Ethereal juste après son madvise).
     if (tt_entries)
-        std::fill_n(tt_entries.get(), nbr_cluster, HashCluster{});
+        std::memset(tt_entries.get(), 0, nbr_cluster * sizeof(HashCluster));
 }
 
 //========================================================

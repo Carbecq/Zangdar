@@ -15,8 +15,7 @@ class ThreadPool
 public:
     explicit ThreadPool(U32 _nbr, bool _tb, bool _log);
 
-    // Le pool possède sa mémoire (voir search ci-dessous) : une copie ferait une
-    // double libération. HugeArray l'interdit déjà, on le dit explicitement.
+    // Le pool possède sa mémoire (voir search ci-dessous) : pas de copie.
     ThreadPool(const ThreadPool&)            = delete;
     ThreadPool& operator=(const ThreadPool&) = delete;
 
@@ -56,9 +55,8 @@ public:
     //! \brief  Retourne le nombre maximum de pièces pour le probe Syzygy WDL/DTZ
     int  get_syzygyProbeLimit() const { return syzygyProbeLimit; }
 
-    // HugeArray (et non un make_unique<Search[]>) pour obtenir des pages de
-    // 2 Mo : chaque Search porte son History, soit ~34 Mo, et l'historique est
-    // lu et écrit à chaque nœud en accès dispersé. Voir HugePages.h.
+    // HugeArray et non make_unique<Search[]> : chaque Search porte son History,
+    // soit ~34 Mo en accès dispersé. Voir HugePages.h.
     HugeArray<Search> search;
     std::atomic<bool> searchStopped{false};
 

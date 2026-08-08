@@ -63,8 +63,7 @@ void ThreadPool::set_threads(U32 nbr)
             stop();
 
         // On alloue AVANT de libérer : si le système refuse, le pool en place
-        // reste utilisable. Un Search pèse ~35 Mo (History 34,3 + NNUE 0,6),
-        // donc la demande atteint vite plusieurs centaines de Mo.
+        // reste utilisable.
         HugeArray<Search> fresh = make_huge_array<Search>(newNbr);
 
         if (!fresh)
