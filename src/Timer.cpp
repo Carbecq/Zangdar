@@ -31,6 +31,7 @@ Timer::Timer(bool _infinite,
     limits.movetime    = _movetime;
 
     mode               = TimerMode::TIME;
+    timeBased          = true;
     moveOverhead       = _moveOverhead;
     timeForThisDepth   = 0;
     timeForThisMove    = 0;
@@ -101,6 +102,7 @@ void Timer::setup(Color color)
     else if (limits.movetime != 0) // temps de recherche imposé = move_time
     {
         // Dans ce cas, on n'utilise pas moveOverhead
+        mode                = TimerMode::MOVETIME;
         timeForThisMove     = limits.movetime;
         timeForThisDepth    = limits.movetime;
     }
@@ -168,6 +170,8 @@ void Timer::setup(Color color)
         timeForThisMove  = std::min(timeForThisMove,  time_remaining);
     }
 
+    timeBased = (mode == TimerMode::TIME || mode == TimerMode::MOVETIME);
+
 #if defined DEBUG_TIME
     debug(color);
 #endif
@@ -182,6 +186,7 @@ void Timer::setup(Color color)
 void Timer::setup(U64 soft_limit, U64 hard_limit)
 {
     mode              = TimerMode::NODE;
+    timeBased         = false;
     searchDepth       = MAX_PLY;
     nodesForThisDepth = soft_limit;
     nodesForThisMove  = hard_limit;
@@ -205,10 +210,11 @@ bool Timer::check_limits(const int depth, const int index, const U64 total_nodes
 {
     if (index == 0)
     {
-        if (mode == TimerMode::TIME && depth >= 4)
+        if (timeBased && depth >= 4)
         {
             // ce mode est utilisé :
             //  > pour le jeu normal
+            //  > pour les tests tactiques (go movetime)
             // Toutes les MAX_COUNTER itérations, on vérifie si le temps est écoulé.
             if (--counter > 0)
                 return false;
@@ -280,6 +286,11 @@ bool Timer::finishOnThisDepth(int elapsed, int depth, U64 total_nodes, const int
     else if (mode == TimerMode::NODE)
     {
         return (total_nodes > nodesForThisDepth);
+    }
+    else if (mode == TimerMode::MOVETIME)
+    {
+        // Temps imposé : le temps non dépensé est perdu, pas de mise à l'échelle.
+        return (elapsed > timeForThisDepth);
     }
     else
     {

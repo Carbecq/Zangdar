@@ -9,6 +9,7 @@ class Timer;
 
 enum TimerMode {
     TIME,
+    MOVETIME,
     DEPTH,
     NODE
 };
@@ -80,6 +81,7 @@ private:
     TimePoint::time_point startTime;
 
     int  mode;
+    bool timeBased;              // mode TIME ou MOVETIME : évite deux comparaisons par noeud
     int  moveOverhead;           // temps de réserve pour l'interface (option UCI MoveOverhead)
     I64  timeForThisDepth;       // temps pour "iterative deepening"
     I64  timeForThisMove;        // temps pour une recherche "alpha-beta" ou "quiescence"
