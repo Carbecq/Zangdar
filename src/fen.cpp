@@ -747,6 +747,29 @@ void Board::parse_position(std::istringstream &is)
     }
 }
 
+//==========================================================================
+//! \brief  recherche si le coup "token" est un coup légal de la position,
+//!         sans le jouer
+//!
+//! \param[in]  token  coup au format texte (notation UCI)
+//!
+//! \return Le coup trouvé, ou MOVE_NONE si aucun coup légal ne porte ce nom
+//--------------------------------------------------------------------------
+MOVE Board::find_move(const std::string& token) const
+{
+    MoveList ml;
+    legal_moves<MoveGenType::ALL>(ml);
+
+    for (size_t index = 0; index < ml.count; index++)
+    {
+        const MOVE move = ml.mlmoves[index].move;
+        if (Move::name(move) == token)
+            return move;
+    }
+
+    return Move::MOVE_NONE;
+}
+
 
 //==========================================================================
 //! \brief  recherche si le coup "token" est un coup légal,

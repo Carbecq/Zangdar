@@ -408,6 +408,23 @@ void Uci::quit()
 }
 
 //==============================================================
+//! \brief Indique si le jeton est un mot-clé de la commande "go"
+//!
+//! Sert à délimiter la liste de "searchmoves". La liste comprend les
+//! mots-clés non gérés par Zangdar (ponder, mate) : ils doivent quand même
+//! arrêter la liste, sinon ils seraient pris pour des coups.
+//--------------------------------------------------------------
+static bool is_go_keyword(const std::string& token)
+{
+    return    token == "searchmoves" || token == "ponder"
+           || token == "wtime"       || token == "btime"
+           || token == "winc"        || token == "binc"
+           || token == "movestogo"   || token == "depth"
+           || token == "nodes"       || token == "mate"
+           || token == "movetime"    || token == "infinite";
+}
+
+//==============================================================
 //! \brief commande uci : go
 //! Lance la recherche
 //!
@@ -428,6 +445,9 @@ void Uci::parse_go(std::istringstream& iss)
     // Arrête toute recherche en cours
     Uci::stop();
 
+    // La restriction éventuelle du "go" précédent ne doit pas survivre
+    threadPool.clear_searchMoves();
+
     std::string token;
     token.clear();
 
@@ -436,7 +456,30 @@ void Uci::parse_go(std::istringstream& iss)
 
     while (iss >> token)
     {
-        if (token == "infinite")
+        if (token == "searchmoves")
+        {
+            // Restreint la recherche aux coups listés. La liste court jusqu'au
+            // prochain mot-clé de la commande "go", qu'il faut alors remettre
+            // dans le flux pour que la boucle le traite normalement.
+            std::streampos previous = iss.tellg();
+
+            while (iss >> token)
+            {
+                if (is_go_keyword(token))
+                {
+                    iss.clear();
+                    iss.seekg(previous);
+                    break;
+                }
+
+                const MOVE move = uci_board.find_move(token);
+                if (move != Move::MOVE_NONE)
+                    threadPool.add_searchMove(move);
+
+                previous = iss.tellg();
+            }
+        }
+        else if (token == "infinite")
         {
             // recherche jusqu'à la commande "stop". Ne pas sortir de la recherche sans y être invité dans ce mode !
             infinite = true;

@@ -622,6 +622,11 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         if (move == si->excluded)
             continue;
 
+        // "go searchmoves" : coup écarté avant tout comptage, il ne doit peser
+        // ni sur move_count (LMP, LMR) ni sur les historiques
+        if (isRoot && !threadPool.is_searchMove(move))
+            continue;
+
         const U64  starting_nodes = nodes;
         const bool isQuiet   = !Move::is_tactical(move);    // capture, promotion (avec capture ou non), prise en-passant
 

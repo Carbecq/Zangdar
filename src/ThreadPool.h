@@ -4,6 +4,7 @@
 class ThreadPool;
 
 #include <memory>
+#include <vector>
 #include "HugePages.h"
 #include "defines.h"
 #include "Board.h"
@@ -46,6 +47,25 @@ public:
     //! \brief  Fixe le nombre maximum de pièces pour le probe Syzygy WDL/DTZ
     void set_syzygyProbeLimit(int n) { syzygyProbeLimit = n; }
 
+    //! \brief  Vide la restriction "searchmoves" (à faire à chaque "go")
+    void clear_searchMoves()         { searchMoves.clear(); }
+    //! \brief  Ajoute un coup à la restriction "searchmoves"
+    void add_searchMove(MOVE move)   { searchMoves.push_back(move); }
+    //! \brief  Indique si une restriction "searchmoves" est active
+    bool has_searchMoves()     const { return !searchMoves.empty(); }
+
+    //! \brief  Indique si le coup peut être recherché à la racine.
+    //!         Sans restriction active, tous les coups sont autorisés.
+    bool is_searchMove(MOVE move) const
+    {
+        if (searchMoves.empty())
+            return true;
+        for (const MOVE m : searchMoves)
+            if (m == move)
+                return true;
+        return false;
+    }
+
     //! \brief  Indique si l'affichage des informations UCI est actif
     bool get_logUci()           const { return logUci; }
     //! \brief  Retourne le nombre de threads de recherche
@@ -65,6 +85,7 @@ private:
     bool    useSyzygy;
     int     syzygyProbeLimit;  // max pieces for WDL/DTZ probing (0 = no limit)
     bool    logUci;
+    std::vector<MOVE> searchMoves;  // restriction "go searchmoves" (vide = aucune)
 
 };
 

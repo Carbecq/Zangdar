@@ -139,7 +139,8 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
     //  c'est ainsi que fonctionnent les tests de moteurs, ou les tournois
 
     // Probe Syzygy TableBases : joue directement le coup DTZ-optimal si la position est dans les TB.
-    if (useSyzygy && board.probe_root(best) == true)
+    // Court-circuité par "go searchmoves" : le coup DTZ n'est pas forcément dans la liste demandée.
+    if (useSyzygy && !has_searchMoves() && board.probe_root(best) == true)
     {
         transpositionTable.update_age();
         std::cout << "bestmove " << Move::name(best) << std::endl;

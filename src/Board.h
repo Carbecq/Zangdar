@@ -48,6 +48,7 @@ public:
 
     void initialisation() noexcept;
     void parse_position(std::istringstream &is);
+    [[nodiscard]] MOVE find_move(const std::string& token) const;
 
     //! \brief  Retourne le camp à jouer
     [[nodiscard]] constexpr Color turn() const noexcept { return side_to_move; }
