@@ -22,6 +22,7 @@ struct Status
     MOVE move                   = Move::MOVE_NONE;
     SQUARE   ep_square          = Square::SQUARE_NONE;      // case en-passant : si les blancs jouent e2-e4, la case est e3
     U32      castling           = CASTLE_NONE;              // droit au roque
+    int      plies_from_null    = 0;                        // demi-coups depuis le dernier null move
     int      fiftymove_counter  = 0;                        // nombre de demi-coups depuis la dernière capture ou le dernier mouvement de pion.
     int      fullmove_counter   = 1;                        // le nombre de coups complets. Il commence à 1 et est incrémenté de 1 après le coup des noirs.
     Bitboard checkers           = 0ULL;                     // bitboard des pièces ennemies me donnant échec
@@ -748,7 +749,10 @@ public:
         int reps             = 0;
         U64 current_key      = get_status().key;
         int gamemove_counter = statusHistory.size() - 1;
-        int halfmove_counter = get_status().fiftymove_counter;
+        // Meme barriere que dans upcoming_repetition : on ne remonte pas
+        // au-dela du dernier null move.
+        int halfmove_counter = std::min(get_status().fiftymove_counter,
+                                        get_status().plies_from_null);
 
         // Parcourt l'historique des hash à la recherche de nos coups
         for (int i = gamemove_counter - 2; i >= 0; i -= 2)

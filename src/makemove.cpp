@@ -75,6 +75,7 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
     newStatus.move = move;
     newStatus.ep_square = SQUARE_NONE;
     newStatus.fiftymove_counter++;
+    newStatus.plies_from_null++;
     newStatus.fullmove_counter += (US == Color::BLACK);
     newStatus.checkers = 0ULL;
     newStatus.pinned   = 0ULL;
@@ -483,6 +484,7 @@ template <Color Us> void Board::make_nullmove() noexcept
     newStatus.move = Move::MOVE_NULL;
     newStatus.ep_square = SQUARE_NONE;
     newStatus.fiftymove_counter++;
+    newStatus.plies_from_null = 0;
     newStatus.fullmove_counter += (Us == Color::BLACK);
     newStatus.checkers = 0ULL;
     newStatus.pinned   = 0ULL;

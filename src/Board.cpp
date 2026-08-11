@@ -249,7 +249,11 @@ bool Board::upcoming_repetition(int ply) const
 {
     // Adapté d'Obsidian
 
-    const auto distance = std::min(get_fiftymove_counter(), static_cast<I32>(statusHistory.size()-1));
+    // La fenetre ne doit pas enjamber un null move : un cycle dont le chemin
+    // passe par un coup illegal n'est pas une repetition. Idee de Stockfish.
+    const auto distance = std::min({get_fiftymove_counter(),
+                                    static_cast<int>(statusHistory.size()-1),
+                                    get_status().plies_from_null});
 
     // Assez de coups réversibles joués
     if (distance < 3)
