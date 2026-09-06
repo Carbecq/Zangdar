@@ -691,9 +691,14 @@ setoption name <id> [value <x>]
         {
             int param;
             iss >> value;      // "value"
-            iss >> param;
-            Tunable::setParam(option_name, param);
-            threadPool.reinit_reductions();
+            // en cas d'échec de lecture, iss met param à 0 : on garde la valeur courante
+            if (iss >> param)
+            {
+                Tunable::setParam(option_name, param);
+                threadPool.reinit_reductions();
+            }
+            else
+                std::cerr << "info string Invalid value for parameter " << option_name << std::endl;
         }
 #endif
 

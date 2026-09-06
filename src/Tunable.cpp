@@ -106,6 +106,9 @@ void setParam(const std::string &name, int value)
             return;
         }
     }
+
+    // Nom inconnu : sans ce message, un A/B tournerait avec deux camps identiques
+    std::cerr << "info string Unknown tunable parameter " << name << std::endl;
 }
 
 //==================================================
