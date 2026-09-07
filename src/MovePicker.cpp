@@ -440,12 +440,12 @@ bool MovePicker::is_legal(MOVE move)
 
     generate_all();
 
-    // coup tranquille ?
+    // coup tactique ?
     for (size_t n=0; n<mln.count; n++)
         if (mln.mlmoves[n].move == move)
             return true;
 
-    // coup tactique ?
+    // coup tranquille ?
     for (size_t n=0; n<mlq.count; n++)
         if (mlq.mlmoves[n].move == move)
             return true;
