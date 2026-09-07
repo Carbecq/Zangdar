@@ -10,15 +10,16 @@
 //! Initialise les limites de temps fournies par le protocole UCI
 //-----------------------------------------------------------
 Timer::Timer(bool _infinite,
-             int _wtime,
-             int _btime,
-             int _winc,
-             int _binc,
-             int _movestogo,
-             int _depth,
-             U64 _nodes,
-             int _movetime,
-             int _moveOverhead)
+             int  _wtime,
+             int  _btime,
+             int  _winc,
+             int  _binc,
+             int  _movestogo,
+             int  _depth,
+             U64  _nodes,
+             int  _movetime,
+             int  _moveOverhead,
+             bool _is_set)
 {
     limits.infinite    = _infinite;
     limits.time[WHITE] = _wtime;
@@ -29,6 +30,7 @@ Timer::Timer(bool _infinite,
     limits.depth       = _depth;
     limits.nodes       = _nodes;
     limits.movetime    = _movetime;
+    limits.is_set      = _is_set;
 
     mode               = TimerMode::TIME;
     timeBased          = true;
@@ -106,8 +108,12 @@ void Timer::setup(Color color)
         timeForThisMove     = limits.movetime;
         timeForThisDepth    = limits.movetime;
     }
-    else if (limits.time[color] != 0)
+    else if (limits.is_set)
     {
+        // On teste la PRESENCE de la pendule, pas sa valeur : "go wtime 0 btime 0"
+        // est une pendule au drapeau, il faut jouer tout de suite, pas chercher
+        // indéfiniment.
+
         // CCRL blitz : partie en 2 minutes avec 1 seconde d'incrément
         // CCRL 40/15 : 40 coups en 15 minutes
         // Amateur    : 12 minutes avec 8 secondes d'incrément.

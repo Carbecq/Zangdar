@@ -441,6 +441,7 @@ void Uci::parse_go(std::istringstream& iss)
     int depth       = 0;
     U64 nodes       = 0;
     int movetime    = 0;
+    bool is_set = false;   // une pendule a été fournie, même à zéro
 
     // Arrête toute recherche en cours
     Uci::stop();
@@ -488,11 +489,13 @@ void Uci::parse_go(std::istringstream& iss)
         {
             // il reste x msec sur la pendule des Blancs
             iss >> wtime;
+            is_set = true;
         }
         else if (token == "btime")
         {
             // il reste x msec sur la pendule des Noirs
             iss >> btime;
+            is_set = true;
         }
         else if (token == "winc")
         {
@@ -530,7 +533,9 @@ void Uci::parse_go(std::istringstream& iss)
     }
 
     // Initialise le gestionnaire de temps
-    Timer uci_timer(infinite, wtime, btime, winc, binc, movestogo, depth, nodes, movetime, moveOverhead);
+    // Sans pendule ni profondeur ni nodes ni movetime, "go" équivaut à "go infinite" :
+    // on cherche jusqu'à "stop".
+    Timer uci_timer(infinite, wtime, btime, winc, binc, movestogo, depth, nodes, movetime, moveOverhead, is_set);
     uci_timer.start();
     uci_timer.setup(uci_board.side_to_move);
 
