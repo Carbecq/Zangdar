@@ -93,7 +93,7 @@ PARAM(RazoringMargin, 200, 100, 300);
 //  STATIC NULL MOVE PRUNING ou aussi REVERSE FUTILITY PRUNING
 PARAM(SNMPDepth,                6,   2,  10);
 PARAM(SNMPMargin,              70,  50, 100);
-PARAM(SNMPCorrplexityScale,    60,   0, 128);
+PARAM(SNMPCorrplexityScale,    30,   0, 128);
 
 // Correction History (constantes de Halogen)
 PARAM(PawnCorrScale,         109,   64,  256);
