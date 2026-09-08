@@ -406,6 +406,10 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         raw_eval = static_eval = si->static_eval;
     }
 
+    // corrplexity : écart entre l'éval brute et l'éval corrigée par la correction
+    // history. Nulle en échec, où raw_eval n'est pas une évaluation.
+    const int corrplexity = isInCheck ? 0 : raw_eval - si->static_eval;
+
 
     // Re-initialise les killer des enfants
     (si+1)->killer1 = Move::MOVE_NONE;
@@ -476,10 +480,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
                 && abs(beta) < MATE_IN_X
                 && board.getNonPawnMaterial<C>())
         {
-            // corrplexity : différence entre eval brute et eval corrigée par correction history.
-            // Positif → on surestimait → marge plus grande (pruning moins agressif).
-            // Négatif → on sous-estimait → marge plus petite (pruning plus agressif).
-            int corrplexity = raw_eval - si->static_eval;
+            // corrplexity positive → on surestimait → marge plus grande (pruning moins agressif).
+            // corrplexity négative → on sous-estimait → marge plus petite (pruning plus agressif).
             int eval_margin = Tunable::SNMPMargin * (depth - improving)
                             + corrplexity * Tunable::SNMPCorrplexityScale / 128;
 
