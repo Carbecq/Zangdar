@@ -776,9 +776,10 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             // Réduit moins dans les PV nodes
             R -= ttPV + isPV;
 
-            // Réduit moins quand on improving
+            // Réduit plus quand on n'est pas improving
             R += !improving;
 
+            // Réduit plus dans les cut nodes, moins si ttPV
             if (cut_node)
                 R += 2 - ttPV;
 
@@ -791,8 +792,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             // Ajuste en fonction de l'history
             R -= std::max(-2, std::min(2, hist / Tunable::LMR_HistReductionDivisor));
 
-            // Profondeur après réductions, en évitant de tomber directement en quiescence
-            // TODO vérifier ce newDepth+1
+            // Profondeur après réductions, en évitant de tomber directement en quiescence.
+            // La borne haute laisse une réduction négative étendre d'un ply, pas plus (idiome SF)
             int lmrDepth = std::clamp(newDepth - R, 1, newDepth + 1);
 
             // Recherche ce coup à profondeur réduite :
