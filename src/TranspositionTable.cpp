@@ -254,6 +254,50 @@ int TranspositionTable::hash_full() const
 
     return used/CLUSTER_SIZE;
 }
+//=================================================================
+//! \brief  Occupation réelle de la table, sur les 1000 premiers clusters.
+//!
+//! Complète hash_full(), qui ne compte que l'âge courant et ignore les entrées
+//! sans coup : celui-ci mesure le remplissage réel, pas l'empreinte de la
+//! recherche en cours.
+//!
+//! \param[out] physique       toute case écrite ; une case vierge est à zéro
+//!                            après le memset de clear(), d'où le test sur key32
+//! \param[out] age_courant    entrées de la recherche en cours
+//! \param[out] age_precedent  entrées de la recherche qui vient de s'achever.
+//!                            think.cpp:82 incrémente tt_age juste après le
+//!                            bestmove, donc une interrogation post-recherche
+//!                            voit age_courant à zéro : c'est celui-ci qu'il
+//!                            faut lire.
+//! \param[out] eval_seule     entrées de cache d'éval, sans résultat de recherche
+//-----------------------------------------------------------------------
+void TranspositionTable::occupancy(int& physique, int& age_courant,
+                                  int& age_precedent, int& eval_seule) const
+{
+    const U32 age_prec = (tt_age - 1) & HashEntry::AgeMask;
+
+    physique = age_courant = age_precedent = eval_seule = 0;
+
+    for (int i = 0; i < 1000; i++)
+    {
+        for (size_t j = 0; j < CLUSTER_SIZE; j++)
+        {
+            const HashEntry& e = tt_entries[i].entries[j];
+            if (e.key32 == 0)
+                continue;
+
+            physique++;
+            if (e.age()   == tt_age)     age_courant++;
+            if (e.age()   == age_prec)   age_precedent++;
+            if (e.bound() == BOUND_NONE) eval_seule++;
+        }
+    }
+
+    physique      /= CLUSTER_SIZE;
+    age_courant   /= CLUSTER_SIZE;
+    age_precedent /= CLUSTER_SIZE;
+    eval_seule    /= CLUSTER_SIZE;
+}
 
 
 //=======================================================================

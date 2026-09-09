@@ -207,6 +207,17 @@ void Uci::run()
             test_mirror();
         }
 
+        else if (token == "ttinfo")
+        {
+            int phys = 0, cur = 0, prec = 0, ev = 0;
+            transpositionTable.occupancy(phys, cur, prec, ev);
+            std::cout << "ttinfo physique " << phys
+                      << " recherche "      << prec
+                      << " agecourant "     << cur
+                      << " evalseule "      << ev
+                      << " hashfull "       << transpositionTable.hash_full()
+                      << std::endl;
+        }
         else if(token == "eval")
         {
             std::string rest;
