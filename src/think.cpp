@@ -386,6 +386,9 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             else
             {
                 raw_eval = evaluate(board);
+                if (!tt_hit)
+                    table->store(board.get_key(), Move::MOVE_NONE, VALUE_NONE, raw_eval,
+                                 BOUND_NONE, 0, si->ply, false, true);
             }
 
             static_eval = si->static_eval = history.corrected_eval(board, raw_eval);
