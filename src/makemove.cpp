@@ -78,7 +78,8 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
     newStatus.plies_from_null++;
     newStatus.fullmove_counter += (US == Color::BLACK);
     newStatus.checkers = 0ULL;
-    newStatus.pinned   = 0ULL;
+    newStatus.pinned[WHITE] = 0ULL;
+    newStatus.pinned[BLACK] = 0ULL;
 
     // La prise en passant n'est valable que tout de suite
     // Il faut donc la supprimer
@@ -487,7 +488,8 @@ template <Color Us> void Board::make_nullmove() noexcept
     newStatus.plies_from_null = 0;
     newStatus.fullmove_counter += (Us == Color::BLACK);
     newStatus.checkers = 0ULL;
-    newStatus.pinned   = 0ULL;
+    newStatus.pinned[WHITE] = 0ULL;
+    newStatus.pinned[BLACK] = 0ULL;
 
 
     // La prise en passant n'est valable que tout de suite

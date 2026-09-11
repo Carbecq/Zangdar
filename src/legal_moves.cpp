@@ -34,7 +34,7 @@ void Board::legal_moves(MoveList& ml) const
     //-----------------------------------------------------------------------------------------
 
     const Bitboard checkersBB = get_status().checkers;
-    const Bitboard pinnedBB   = get_status().pinned;
+    const Bitboard pinnedBB   = get_status().pinned[US];
     const Bitboard unpinnedBB = colorPiecesBB[US] & ~pinnedBB;
 
     //-----------------------------------------------------------------------------------------
@@ -83,7 +83,7 @@ void Board::legal_moves(MoveList& ml) const
 
         while (pieceBB) {
             from = BB::pop_lsb(pieceBB);
-            const Bitboard lineBB = pin_line(K, from);
+            const Bitboard lineBB = line_through(from, K);
 
             if constexpr (GenNoisy)
             {
@@ -115,7 +115,7 @@ void Board::legal_moves(MoveList& ml) const
         while (pieceBB)
         {
             from     = BB::pop_lsb(pieceBB);
-            attackBB = Attacks::bishop_moves(from, occupiedBB) & pin_line(K, from);
+            attackBB = Attacks::bishop_moves(from, occupiedBB) & line_through(from, K);
 
             if constexpr (GenNoisy) push_capture_moves(ml, attackBB & enemyBB, from);
             if constexpr (GenQuiet) push_quiet_moves(ml,   attackBB & emptyBB, from);
@@ -127,7 +127,7 @@ void Board::legal_moves(MoveList& ml) const
         while (pieceBB)
         {
             from     = BB::pop_lsb(pieceBB);
-            attackBB = Attacks::rook_moves(from, occupiedBB) & pin_line(K, from);
+            attackBB = Attacks::rook_moves(from, occupiedBB) & line_through(from, K);
 
             if constexpr (GenNoisy) push_capture_moves(ml, attackBB & enemyBB, from);
             if constexpr (GenQuiet) push_quiet_moves(ml,   attackBB & emptyBB, from);

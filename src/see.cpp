@@ -57,6 +57,19 @@ bool Board::fast_see(const MOVE move, const int threshold) const
     // Bitboard de toutes les attaques (Blanches et Noires) de la case d'arrivée
     Bitboard all_attackersBB = all_attackers(dest, occupiedBB);
 
+    // Une pièce clouée ne peut reprendre que si la case d'arrivée est sur la ligne
+    // de son clouage, sinon elle exposerait son Roi. Dans 80 % des appels aucun camp
+    // n'a de pièce clouée : le masque vaut ~0 et le calculer ne sert à rien.
+    const Bitboard pinned_us   = get_pinned();
+    const Bitboard pinned_them = get_pinned(~turn());
+
+    Bitboard allowedBB = ~0ULL;
+
+    if (pinned_us | pinned_them)
+        allowedBB = ~(pinned_us | pinned_them)
+                  | (pinned_us   & line_through(king_square[turn()],  dest))
+                  | (pinned_them & line_through(king_square[~turn()], dest));
+
     // Bitboards des glisseurs
     const Bitboard bqBB = typePiecesBB[PieceType::BISHOP] | typePiecesBB[PieceType::QUEEN];
     const Bitboard rqBB = typePiecesBB[PieceType::ROOK]   | typePiecesBB[PieceType::QUEEN];
@@ -66,8 +79,8 @@ bool Board::fast_see(const MOVE move, const int threshold) const
 
     while (true)
     {
-        // On ne garde que les attaquants encore présents sur l'échiquier
-        all_attackersBB &= occupiedBB;
+        // On ne garde que les attaquants encore présents sur l'échiquier, non cloués
+        all_attackersBB &= occupiedBB & allowedBB;
 
         // Bitboard de mes attaquants
         Bitboard my_attackers = all_attackersBB & colorPiecesBB[color];

@@ -26,7 +26,7 @@ struct Status
     int      fiftymove_counter  = 0;                        // nombre de demi-coups depuis la dernière capture ou le dernier mouvement de pion.
     int      fullmove_counter   = 1;                        // le nombre de coups complets. Il commence à 1 et est incrémenté de 1 après le coup des noirs.
     Bitboard checkers           = 0ULL;                     // bitboard des pièces ennemies me donnant échec
-    Bitboard pinned             = 0ULL;                     // bitboard des pièces amies clouées
+    Bitboard pinned[N_COLORS]   = {0ULL, 0ULL};             // bitboard des pièces clouées, pour chaque camp
     mutable Bitboard threats    = 0ULL;                     // cases attaquées par l'adversaire ; 0 = pas encore calculé
 };
 
@@ -174,6 +174,7 @@ public:
     }
 
     template <Color C> void calculate_checkers_pinned() noexcept;
+    template <Color C> [[nodiscard]] Bitboard compute_pinned() const noexcept;
     void calculate_hash(U64& key, U64& pawn_key, U64 non_pawn_key[2]) const;
 
     //! \brief  Retourne le Bitboard de TOUS les attaquants (Blancs et Noirs) de la case "sq"
@@ -856,8 +857,11 @@ public:
     [[nodiscard]] inline KEY get_non_pawn_key(Color color)  const noexcept { return get_status().non_pawn_key[color];   }
     //! \brief  Retourne le bitboard des pièces ennemies donnant échec
     [[nodiscard]] inline Bitboard get_checkers()      const noexcept { return get_status().checkers;          }
-    //! \brief  Retourne le bitboard des pièces amies clouées
-    [[nodiscard]] inline Bitboard get_pinned()        const noexcept { return get_status().pinned;            }
+    //! \brief  Retourne le bitboard des pièces clouées du camp au trait
+    [[nodiscard]] inline Bitboard get_pinned()        const noexcept { return get_status().pinned[turn()];    }
+
+    //! \brief  Retourne le bitboard des pièces clouées du camp c
+    [[nodiscard]] inline Bitboard get_pinned(Color c) const noexcept { return get_status().pinned[c];         }
 
     //! \brief  Réserve la capacité de l'historique des positions.
     //! La copie d'un vector ne reporte que la taille, et Search::think reçoit

@@ -32,7 +32,7 @@ void Board::calculate_checkers_pinned() noexcept
     Bitboard candidates = (Attacks::rook_moves(K, enemyBB)   & their_orth_sliders) |
             (Attacks::bishop_moves(K, enemyBB) & their_diag_sliders);
 
-    get_status().pinned  = 0ULL;
+    get_status().pinned[US]   = 0ULL;
     get_status().threats = 0ULL;        // invalide le cache : la position a changé
     while (candidates)
     {
@@ -46,8 +46,43 @@ void Board::calculate_checkers_pinned() noexcept
 
         //S'il n'y a qu'une seule de nos pièces entre les deux, on l'ajoute au bitboard des pièces clouées
         else if ((b1 & (b1 - 1)) == 0)
-            get_status().pinned |= b1;
+            get_status().pinned[US] |= b1;
     }
+
+    //  Les clouages de l'adversaire, dont le SEE a besoin pour savoir quelles
+    //  pièces peuvent réellement reprendre.
+    get_status().pinned[THEM] = compute_pinned<THEM>();
+}
+
+//===========================================================================
+//! \brief  Calcule les pièces clouées de la couleur C.
+//! Contrairement à calculate_checkers_pinned, on ne cherche pas les échecs :
+//! c'est la version qu'utilise le SEE pour le camp qui n'est pas au trait.
+//---------------------------------------------------------------------------
+template <Color C>
+Bitboard Board::compute_pinned() const noexcept
+{
+    constexpr Color THEM  = ~C;
+    const U32      K      = get_king_square<C>();
+    const Bitboard usBB   = colorPiecesBB[C];
+    const Bitboard themBB = colorPiecesBB[THEM];
+
+    const Bitboard their_diag_sliders = diagonal_sliders<THEM>();
+    const Bitboard their_orth_sliders = orthogonal_sliders<THEM>();
+
+    Bitboard pinnedBB   = 0ULL;
+    Bitboard candidates = (Attacks::rook_moves(K, themBB)   & their_orth_sliders) |
+            (Attacks::bishop_moves(K, themBB) & their_diag_sliders);
+
+    while (candidates)
+    {
+        const Bitboard b1 = squares_between(K, BB::pop_lsb(candidates)) & usBB;
+
+        if (b1 && (b1 & (b1 - 1)) == 0)
+            pinnedBB |= b1;
+    }
+
+    return pinnedBB;
 }
 
 //===========================================================================

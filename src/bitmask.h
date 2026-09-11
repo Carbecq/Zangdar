@@ -253,17 +253,16 @@ constexpr std::array<std::array<Bitboard, N_SQUARES>, N_SQUARES> SQUARES_BETWEEN
     return SQUARES_BETWEEN_MASK[sq1][sq2];
 }
 
-//! \brief  Retourne la ligne complète (rangée, colonne ou diagonale) portant le clouage
-//!         d'une pièce en "from" par rapport au roi en "K", bornes incluses.
-//!         La pièce DOIT être clouée, donc alignée avec le roi.
-[[nodiscard]] constexpr Bitboard pin_line(size_t K, size_t from) {
-    const Bitboard kingBB = 1ULL << K;
+//! \brief  Retourne la ligne complète (rangée, colonne ou diagonale) passant par sq1
+//!         et sq2, bornes incluses, ou 0 si les deux cases ne sont pas alignées.
+[[nodiscard]] constexpr Bitboard line_through(size_t sq1, size_t sq2) {
+    const Bitboard bb2 = 1ULL << sq2;
 
-    if (RankMask64[from]     & kingBB) return RankMask64[from];
-    if (FileMask64[from]     & kingBB) return FileMask64[from];
-    if (DiagonalMask64[from] & kingBB) return DiagonalMask64[from];
-    assert(AntiDiagonalMask64[from] & kingBB);      // sinon la pièce n'était pas clouée
-    return AntiDiagonalMask64[from];
+    if (RankMask64[sq1]         & bb2) return RankMask64[sq1];
+    if (FileMask64[sq1]         & bb2) return FileMask64[sq1];
+    if (DiagonalMask64[sq1]     & bb2) return DiagonalMask64[sq1];
+    if (AntiDiagonalMask64[sq1] & bb2) return AntiDiagonalMask64[sq1];
+    return 0ULL;
 }
 
 
