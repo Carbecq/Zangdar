@@ -74,8 +74,7 @@ inline void* alloc_huge_pages(size_t size) noexcept
         return nullptr;
 
     // Sous 2 Mo une huge page ne tient pas : alignement ordinaire, pas de madvise.
-    const bool   big       = size >= HUGE_PAGE_SIZE;
-    const size_t alignment = big ? HUGE_PAGE_SIZE : 64;
+    const bool big = size >= HUGE_PAGE_SIZE;
 
 #if defined(_WIN32)
     if (big && enable_lock_memory_privilege())
@@ -92,6 +91,7 @@ inline void* alloc_huge_pages(size_t size) noexcept
     return VirtualAlloc(nullptr, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 #else
     // aligned_alloc exige une taille multiple de l'alignement.
+    const size_t alignment = big ? HUGE_PAGE_SIZE : 64;
     void* memory = std::aligned_alloc(alignment, round_up(size, alignment));
 
     #if defined(__linux__) && defined(MADV_HUGEPAGE)

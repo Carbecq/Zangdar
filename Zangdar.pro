@@ -221,6 +221,7 @@ HEADERS += \
     src/Cuckoo.h \
     src/DataGen.h \
     src/History.h \
+    src/HugePages.h \
     src/Move.h \
     src/MoveList.h \
     src/MovePicker.h \

@@ -508,7 +508,7 @@ std::pair<size_t, size_t> NNUE::get_indices(Piece piece, SQUARE square, SQUARE w
 //========================================================================
 //! \brief  Calcule l'indice du triplet (couleur, piece, case)
 //!         pour une perspective
-//! \param[in] side     perspective (template)
+//! \tparam     side     perspective
 //! \param[in] piece    pièce concernée
 //! \param[in] square   case de cette pièce
 //! \param[in] king     case du roi de cette perspective

@@ -12,6 +12,31 @@ static constexpr int BOUND_UPPER = 1;   // All-nodes (Knuth's Type 3) : score <=
 static constexpr int BOUND_LOWER = 2;   // Cut-nodes (Knuth's Type 2) : score >= beta         ; appelé aussi FAIL-HIGH
 static constexpr int BOUND_EXACT = 3;   // PV-node   (Knuth's Type 1) : alpha < score < beta  ; la valeur stockée est EXACTE (pas une simple borne)
 
+static constexpr int DEPTH_OFFSET =  8; // décalage entre profondeur réelle et celle stockée dans l'entrée
+static constexpr int DEPTH_EVAL   = -7; // indique que l'entrée est une évaluation statique
+static constexpr int DEPTH_QS     =  0; // profondeur utilisée pour la quiescence
+
+// La profondeur est stockée décalée : depth8 = DEPTH_OFFSET + depth
+// Idée reprise de Stockfish, et autres.
+//
+//   depth8 |  depth  |
+//   -------+---------+------------------------------------------------------
+//      0   |   -8    | entrée vierge ; elle n'a jamais été écrite
+//      1   |   -7    | DEPTH_EVAL : évaluation statique seule ; ni coup, ni score, ni borne (BOUND_NONE)
+//    2..7  | -6..-1  | inutilisées
+//   8..135 |  0..127 | recherche. La quiescence en fait partie : elle stocke DEPTH_QS = 0,
+//          |         | indistinguable d'une recherche de profondeur 0.
+//
+// Le décalage permet de distinguer entrée vierge, entrée d'évaluation statique,
+//   et entrée de recherche.
+//
+// Le décalage vaut 8 et non 1 pour placer DEPTH_EVAL sous tout seuil auquel la
+// recherche compare une profondeur. Le plus bas est celui de ProbCut,
+// "tt_depth >= depth - 3", qui descend à -2 quand ProbCutDepth vaut 1.
+//
+// depth8 =  0 ,  1 , [8 ... 135]
+// depth  = -8 , -7 , [0 ... 127]
+
 class TranspositionTable;
 
 #include <cassert>
@@ -27,8 +52,35 @@ struct HashEntry {
     MOVE  move;         // 32 bits  (seuls 24 bits sont utilisés)
     I16   score;        // 16 bits
     I16   eval;         // 16 bits
-    U08   depth;        //  8 bits
+    U08   depth8;       //  8 bits  voir au-dessus
     U08   agePvBound;   //  8 bits  (5 bits age : 1 bit pv ; 2 bits bound)      : 0-31
+
+    //==================================================
+    //! \brief  Case jamais écrite depuis le dernier clear()
+    //--------------------------------------------------
+    [[nodiscard]] inline bool empty() const
+    {
+        return depth8 == 0;
+    }
+
+    //==================================================
+    //! \brief  Profondeur réelle de l'entrée
+    //--------------------------------------------------
+    [[nodiscard]] inline int depth() const
+    {
+        return static_cast<int>(depth8) - DEPTH_OFFSET;
+    }
+
+    //==================================================
+    //! \brief  Enregistre la profondeur réelle sous forme décalée
+    //! \param[in]  d  profondeur réelle : DEPTH_EVAL, ou DEPTH_QS..MAX_PLY-1.
+    //--------------------------------------------------
+    inline void set_depth(int d)
+    {
+        assert(d > -DEPTH_OFFSET);
+        assert(d < MAX_PLY);
+        depth8 = static_cast<U08>(d + DEPTH_OFFSET);
+    }
 
     //==================================================
     //! \brief  Extrait l'âge stocké dans agePvBound
@@ -155,25 +207,24 @@ public:
     TranspositionTable& operator=(const TranspositionTable&) = delete;
 
     void init_size(int mbsize);
+    std::string info();
+    void clear(void);
+    void store(U64 hash, MOVE move, int score, int eval, int bound, int depth, int ply, bool pv);
+    bool probe(U64 hash, int ply, MOVE &code, int &score, int &eval, int &bound, int &depth, bool &pv);
+    int  hash_full() const;
+    void occupancy(int& physique, int& age_courant, int& age_precedent, int& eval_seule) const;
+
     //==================================================
     //! \brief  Retourne le nombre de clusters de la table
     //--------------------------------------------------
     int  get_hash_size(void) const { return nbr_cluster; }
-    std::string info();
 
-    void clear(void);
     //==================================================
     //! \brief  Incrémente l'âge courant de la table de transposition (nouvelle recherche)
     //--------------------------------------------------
     inline void update_age() noexcept {
         tt_age = (tt_age + 1) & HashEntry::AgeMask;
     }
-
-    void store(U64 hash, MOVE move, int score, int eval, int bound, int depth, int ply, bool pv,
-               bool only_if_free = false);
-    bool probe(U64 hash, int ply, MOVE &code, int &score, int &eval, int &bound, int &depth, bool &pv);
-    int  hash_full() const;
-    void occupancy(int& physique, int& age_courant, int& age_precedent, int& eval_seule) const;
 
     //==================================================
     //! \brief  Stocke les scores terminaux comme une distance depuis la position courante jusqu'au mat/TB

@@ -133,6 +133,9 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
     // Garantit qu'aucune recherche précédente n'est encore active (double "go")
     stop();
 
+    // L'âge avance AVANT la recherche, pas après.
+    transpositionTable.update_age();
+
     MOVE best = Move::MOVE_NONE;
 
     //  une ouverture est choisie par la GUI, depuis le book, et les moteurs jouent à partir de là
@@ -142,7 +145,6 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
     // Court-circuité par "go searchmoves" : le coup DTZ n'est pas forcément dans la liste demandée.
     if (useSyzygy && !has_searchMoves() && board.probe_root(best) == true)
     {
-        transpositionTable.update_age();
         std::cout << "bestmove " << Move::name(best) << std::endl;
     }
 
@@ -167,7 +169,7 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
             // Init de l'historique par profondeur
             for (int d = 0; d <= MAX_PLY; d++)
             {
-                search[i].pv_scores[d] = -INFINITE;
+                search[i].pv_scores[d] = -SCORE_INFINITE;
                 search[i].pv_moves [d] = Move::MOVE_NONE;
             }
 
@@ -252,7 +254,7 @@ int ThreadPool::get_best_thread() const
     auto final_depth = [&](size_t i) { return search[i].best_depth; };
 
     // Score minimal parmi les threads
-    int minScore = INFINITE;
+    int minScore = SCORE_INFINITE;
     for (size_t i = 0; i < nbrThreads; i++)
         minScore = std::min(minScore, final_score(i));
 

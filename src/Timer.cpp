@@ -81,7 +81,7 @@ void Timer::setup(Color color)
     // std::cout << "infinite    " << limits.infinite << std::endl;
 
     mode                = TimerMode::TIME;
-    searchDepth         = MAX_PLY;
+    searchDepth         = MAX_PLY - 1;
     timeForThisMove     = MAX_TIME;
     timeForThisDepth    = MAX_TIME;
     nodesForThisMove    = 0;
@@ -193,7 +193,7 @@ void Timer::setup(U64 soft_limit, U64 hard_limit)
 {
     mode              = TimerMode::NODE;
     timeBased         = false;
-    searchDepth       = MAX_PLY;
+    searchDepth       = MAX_PLY - 1;
     nodesForThisDepth = soft_limit;
     nodesForThisMove  = hard_limit;
 }
@@ -300,7 +300,7 @@ bool Timer::finishOnThisDepth(int elapsed, int depth, U64 total_nodes, const int
     }
     else
     {
-        return (depth > searchDepth);   // on va de 1 à max_depth inclus
+        return (depth > searchDepth);   // on peut aller de 1 à searchDepth inclus; donc au plus MAX_PLY-1
     }
 }
 

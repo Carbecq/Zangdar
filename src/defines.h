@@ -37,9 +37,9 @@ using Array2D = std::array<std::array<T, y>, x>;
 
 //-----------------------------------------------------------------------------
 
-static constexpr int MAX_PLY    =  128;     // profondeur max de recherche (en demi-coups)
-static constexpr int MAX_HISTO  = 1024;     // longueur max de l'historique (partie + recherche) (en demi-coups)
-static constexpr int MAX_MOVES  =  256;     // taille max d'une liste de coups. Le maximum théorique pour une position légale est 218
+static constexpr int MAX_PLY    =  128;         // maximum EXCLUSIF de la profondeur de recherche (en demi-coups); ply et depth vont de 0 à MAX_PLY-1
+static constexpr int MAX_HISTO  = 1024;         // longueur max de l'historique (partie + recherche) (en demi-coups)
+static constexpr int MAX_MOVES  =  256;         // taille max d'une liste de coups. Le maximum théorique pour une position légale est 218
 static constexpr int MAX_TIME   = 60*60*1000;   // 1 heure en ms
 
 static constexpr int HASH_SIZE      = 16;       // en Mo
@@ -57,13 +57,13 @@ static constexpr int MATE_IN_X      = MATE - MAX_PLY;
 static constexpr int TBWIN          = 30000;
 static constexpr int TBWIN_IN_X     = TBWIN - MAX_PLY;
 
-static constexpr int INFINITE       = MATE + 1;
+static constexpr int SCORE_INFINITE = MATE + 1;
 static constexpr int VALUE_NONE     = MATE + 2;     // ne peut jamais être atteint
 
 static constexpr int MOVE_OVERHEAD  = 100;
 
 /*                                           29872          30000     30872         31000    31001  : moi
- *   -INFINITE     -MATE    -MATE_IN_X    |  TBWIN_IN_X.....TBWIN.....MATE_IN_X.....MATE.....INFINITE
+ *   -SCORE_INFINITE     -MATE    -MATE_IN_X    |  TBWIN_IN_X.....TBWIN.....MATE_IN_X.....MATE.....SCORE_INFINITE
  *                 xxxx                                                        xxxxx                      zone de mat
  */
 

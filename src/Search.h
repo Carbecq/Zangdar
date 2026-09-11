@@ -63,7 +63,7 @@ public:
     PVariation  last_pv;
 
     // Point de départ de la recherche
-    template <Color C> void think(Board board, Timer timer, size_t _index);
+    template <Color C> void think(Board board, Timer timer, size_t m_index);
     template <Color C> int  aspiration_window(Board& board, Timer& timer, SearchInfo* si, int prev_score);
 
     //! \brief  Accès en lecture seule à l'accumulateur NNUE courant

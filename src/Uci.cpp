@@ -212,8 +212,8 @@ void Uci::run()
             int phys = 0, cur = 0, prec = 0, ev = 0;
             transpositionTable.occupancy(phys, cur, prec, ev);
             std::cout << "ttinfo physique " << phys
-                      << " recherche "      << prec
-                      << " agecourant "     << cur
+                      << " recherche "      << cur
+                      << " ageprecedent "   << prec
                       << " evalseule "      << ev
                       << " hashfull "       << transpositionTable.hash_full()
                       << std::endl;
@@ -527,7 +527,7 @@ void Uci::parse_go(std::istringstream& iss)
         {
             // recherche x plies seulement.
             iss >> depth;
-            depth = std::min(depth, MAX_PLY);
+            depth = std::min(depth, MAX_PLY - 1);
         }
         else if (token == "nodes")
         {

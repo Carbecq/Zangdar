@@ -1,0 +1,42 @@
+# Doxygen n'est pas utilisé ici pour produire de la documentation, mais pour
+# VÉRIFIER que les blocs //! collent au code : \param absent, \param qui ne
+# correspond à aucun argument, bloc dupliqué.
+#
+#   doxygen            # affiche les incohérences, sortie dans build-doc/
+#
+# ⚠ GENERATE_XML n'est pas décoratif : si tous les GENERATE_* valent NO,
+#   doxygen s'arrête sur « No output formats selected! » AVANT d'analyser quoi
+#   que ce soit et ne signale rien. Un zéro obtenu ainsi ne veut rien dire.
+#
+# Seules les options qui diffèrent du défaut figurent ici ; « doxygen -g » en
+# produit 2700 lignes dont aucune ne nous sert.
+
+PROJECT_NAME         = Zangdar
+INPUT                = src
+RECURSIVE            = YES
+OUTPUT_DIRECTORY     = build-doc
+
+# On ne veut que les avertissements, pas de documentation lisible.
+GENERATE_HTML        = NO
+GENERATE_LATEX       = NO
+GENERATE_XML         = YES
+XML_PROGRAMLISTING   = NO
+
+# NNUE.cpp définit deux fois les mêmes fonctions, SIMD et repli scalaire, de
+# part et d'autre d'un #if defined USE_SIMD. Sans ces deux lignes doxygen lit
+# les deux branches et voit des \param en double.
+ENABLE_PREPROCESSING = YES
+PREDEFINED           = USE_SIMD
+
+QUIET                = YES
+WARN_IF_UNDOCUMENTED = NO
+WARN_IF_DOC_ERROR    = YES
+WARN_NO_PARAMDOC     = YES
+
+# Code de sortie non nul dès le premier avertissement : utilisable tel quel
+# dans un script ou une CI.
+WARN_AS_ERROR        = FAIL_ON_WARNINGS
+
+# NON : avec EXTRACT_ALL, doxygen traite les entités non documentées comme
+# documentées et WARN_NO_PARAMDOC ne signale plus rien.
+EXTRACT_ALL          = NO

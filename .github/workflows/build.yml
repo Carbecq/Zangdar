@@ -1,0 +1,148 @@
+name: build
+
+# Objectif : attraper au plus tôt ce qui ne se voit pas en local — une erreur
+# propre à un compilateur, et surtout une régression de PORTABILITÉ Windows.
+# Le moteur doit tourner sous Windows ; le datagen non.
+
+# Sur TOUTE branche, pas seulement master : le travail se fait sur des branches
+# qui partent au SPRT avant d'être fusionnées. Vérifier après le merge revient
+# à vérifier trop tard.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+
+  linux:
+    name: linux ${{ matrix.cxx }} ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cxx:  [g++, clang++]
+        arch: [avx2, sse2]
+    steps:
+      - uses: actions/checkout@v4
+
+      # Le réseau est une release publique de Carbecq/Zangdar-Networks ; on le
+      # met en cache pour ne pas le retélécharger à chaque exécution.
+      - name: Cache du réseau NNUE
+        uses: actions/cache@v4
+        with:
+          path: networks
+          key: net-${{ hashFiles('VERSION.txt') }}
+
+      - name: Compilation
+        run: make -j$(nproc) CXX=${{ matrix.cxx }} ARCH=${{ matrix.arch }}
+
+      # Le bench SANS argument est celui du contrat OpenBench : depth 20, 1 thread,
+      # 16 Mo. C'est ce nombre que porte le message de commit, et OpenBench refuse
+      # le test s'il ne correspond pas au binaire.
+      - name: Bench, contrat OpenBench
+        run: |
+          out=$(./Zangdar_dev bench)
+          echo "$out" | tail -6
+          nodes=$(echo "$out" | grep 'total nodes' | tr -dc '0-9')
+          # Un bench vide est le symptôme d'une invocation ratée, pas d'un moteur cassé :
+          # 'bench' est un argument de ligne de commande, jamais une commande sur stdin.
+          test -n "$nodes" && test "$nodes" -gt 1000000 \
+            || { echo "::error::bench sans résultat exploitable (nodes='$nodes')"; exit 1; }
+
+          # OpenBench exige aussi la présence de nps dans la sortie.
+          echo "$out" | grep -q 'nps' \
+            || { echo "::error::nps absent de la sortie du bench"; exit 1; }
+
+          attendu=$(git log -1 --format=%B | grep -oP 'total nodes = \K\d+' | head -1)
+          if [ -z "$attendu" ]; then
+            echo "::warning::pas de 'total nodes' dans le message : normal sur un commit de travail, bloquant pour OpenBench"
+          elif [ "$attendu" != "$nodes" ]; then
+            echo "::error::le message annonce $attendu, le binaire rend $nodes"
+            exit 1
+          else
+            echo "total nodes = $nodes, conforme au message de commit"
+          fi
+
+      # Même recherche, table seize fois plus petite : c'est le seul régime où
+      # l'éviction et le vieillissement de la TT sont réellement exercés. 1 s.
+      - name: Bench sous pression de TT
+        run: |
+          out=$(./Zangdar_dev bench 14 1 1)
+          nodes=$(echo "$out" | grep 'total nodes' | tr -dc '0-9')
+          test -n "$nodes" && test "$nodes" -gt 100000 \
+            || { echo "::error::bench 14 1 1 sans résultat (nodes='$nodes')"; exit 1; }
+          echo "total nodes = $nodes"
+
+      # 778 positions, 830 728 920 coups, ~2 s. C'est la vérité terrain du
+      # générateur de coups : une régression y est visible immédiatement.
+      # ATTENTION : 's ref 5' est une commande sur STDIN, pas un argument de
+      # ligne de commande — et il faut le 'quit', sinon le moteur ne rend rien.
+      - name: Perft, suite de référence
+        run: |
+          out=$(printf 's ref 5\nquit\n' | ./Zangdar_dev)
+          echo "$out" | tail -8
+          echo "$out" | grep -qE '# Failed +0' \
+            || { echo "::error::perft en échec"; exit 1; }
+          echo "$out" | grep -qE '# Passed +778' \
+            || { echo "::error::778 positions attendues"; exit 1; }
+
+  windows-cross:
+    name: windows (mingw, compilation seule)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [avx2, sse2]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installation de mingw-w64
+        run: sudo apt-get update && sudo apt-get install -y g++-mingw-w64-x86-64
+
+      - name: Cache du réseau NNUE
+        uses: actions/cache@v4
+        with:
+          path: networks
+          key: net-${{ hashFiles('VERSION.txt') }}
+
+      # On ne peut pas exécuter le binaire ici : cette étape vérifie la
+      # PORTABILITÉ de la compilation, ce que le développement sous Linux ne
+      # montre jamais.
+      - name: Compilation croisée
+        run: |
+          make -j$(nproc) COMP=mingw ARCH=${{ matrix.arch }} \
+               CXX=x86_64-w64-mingw32-g++-posix
+          # La cible openbench renomme en .exe quand target_windows=yes ; le nom
+          # porte la version et l'arch, par ex. Zangdar-7.32-avx2-mingw.exe.
+          ls -la Zangdar*mingw*.exe \
+            || { echo "::error::aucun binaire Windows produit"; ls -la Zangdar*; exit 1; }
+
+  documentation:
+    name: cohérence doc / code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installation de doxygen
+        run: sudo apt-get update && sudo apt-get install -y doxygen
+      # Ne produit pas de documentation : vérifie que les blocs //! collent aux
+      # signatures. WARN_AS_ERROR fait sortir doxygen en code non nul.
+      # Contrôle de morsure fait à la main : un \param retiré, ou posé sur un
+      # argument inexistant, est bien attrapé.
+      - name: doxygen
+        run: doxygen
+
+  avertissements:
+    name: compilation sans avertissement
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache du réseau NNUE
+        uses: actions/cache@v4
+        with:
+          path: networks
+          key: net-${{ hashFiles('VERSION.txt') }}
+      # La cible debug active CFLAGS_WARN. Informatif : n'échoue pas le workflow,
+      # un mur d'avertissements qu'on finit par ignorer ne sert à rien.
+      - name: make debug
+        continue-on-error: true
+        run: make -j$(nproc) debug ARCH=avx2 2>&1 | grep -iE "warning|erreur" | head -40

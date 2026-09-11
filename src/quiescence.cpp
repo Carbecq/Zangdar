@@ -192,7 +192,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
         int bound = best_score >= beta    ? BOUND_LOWER
                                           : best_score > old_alpha ? BOUND_EXACT
                                                                    : BOUND_UPPER;
-        table->store(board.get_key(), best_move, best_score, raw_eval, bound, 0, si->ply, ttPV);
+        table->store(board.get_key(), best_move, best_score, raw_eval, bound, DEPTH_QS, si->ply, ttPV);
     }
 
     return best_score;

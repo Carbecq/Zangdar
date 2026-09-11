@@ -260,6 +260,7 @@ constexpr U32 MOVE_NONE           = 0;
 
 //========================================
 //! \brief  Affichage d'un coup
+//! \param[in]  move    coup à afficher
 //! \param[in]  mode    détermine la manière d'écrire le coup
 //!
 //! mode = 0 : Bf1-c4

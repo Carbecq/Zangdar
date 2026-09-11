@@ -288,7 +288,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
         search->nnue.start_search(board);
 
         move  = Move::MOVE_NONE;
-        score = -INFINITE;
+        score = -SCORE_INFINITE;
         timer.setup(Color::WHITE);
 
         if (board.turn() == WHITE)
@@ -495,7 +495,7 @@ void DataGen::data_search(Board& board, Timer& timer, Search& search,
                           MOVE &move, I32 &score)
 {
     move  = Move::MOVE_NONE;
-    score = -INFINITE;
+    score = -SCORE_INFINITE;
 
     search.stopped    = false;
     search.nodes      = 0;
@@ -503,7 +503,7 @@ void DataGen::data_search(Board& board, Timer& timer, Search& search,
 
     for (int d = 0; d <= MAX_PLY; d++)
     {
-        search.pv_scores[d] = -INFINITE;
+        search.pv_scores[d] = -SCORE_INFINITE;
         search.pv_moves [d] = Move::MOVE_NONE;
     }
 
@@ -528,7 +528,7 @@ void DataGen::data_search(Board& board, Timer& timer, Search& search,
         (si + i)->cont_hist = &search.history.continuation_history[0][0];
     }
 
-    int prev_score = -INFINITE;
+    int prev_score = -SCORE_INFINITE;
 
     for (search.iter_depth = 1; search.iter_depth <= std::max(1, timer.getSearchDepth()); search.iter_depth++)
     {

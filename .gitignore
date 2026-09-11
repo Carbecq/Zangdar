@@ -26,8 +26,15 @@ gmon.out
 !/VERSION.txt
 /bullet_examples/
 
-# Réseaux NNUE : fetchés via Makefile (NETS_REPO → Carbecq/Zangdar-Networks)
-networks/*.bin
+# Réseaux NNUE : fetchés via Makefile (NETS_REPO → Carbecq/Zangdar-Networks),
+# jamais versionnés. La règle $(NETS_FILE) fait le mkdir -p, un clone neuf sans
+# ce répertoire fonctionne. Le motif couvre .bin comme .nnue.
+networks/*
+
+# Parties et configurations de match : matériel de travail, pas du code.
+/*.pgn
+/*.png
+/config.json
 
 # Instructions Claude Code (fichiers locaux, non versionnés)
 CLAUDE.md

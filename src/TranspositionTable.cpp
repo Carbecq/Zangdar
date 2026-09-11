@@ -106,7 +106,10 @@ void TranspositionTable::clear(void)
     // la zone, la promotion n'a lieu qu'au premier accès (même raison que le
     // tt_clear() d'Ethereal juste après son madvise).
     if (tt_entries)
-        std::memset(tt_entries.get(), 0, nbr_cluster * sizeof(HashCluster));
+        // Le cast en void* est volontaire : HashCluster a un initialisateur par
+        // défaut, et on le court-circuite sciemment. Sans lui, -Wclass-memaccess.
+        std::memset(static_cast<void*>(tt_entries.get()), 0,
+                    nbr_cluster * sizeof(HashCluster));
 }
 
 //========================================================
@@ -116,14 +119,17 @@ void TranspositionTable::clear(void)
 //! \param[in]  score  score de la position (converti avant stockage)
 //! \param[in]  eval   évaluation statique de la position
 //! \param[in]  bound  type de borne (BOUND_NONE/UPPER/LOWER/EXACT)
-//! \param[in]  depth  profondeur de recherche atteinte
+//! \param[in]  depth  profondeur de recherche réelle : DEPTH_EVAL, ou DEPTH_QS..MAX_PLY-1
 //! \param[in]  ply    profondeur (distance à la racine) de la position
 //! \param[in]  pv     "true" si le nœud provient d'une ligne principale
 //--------------------------------------------------------
-void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int bound, int depth, int ply, bool pv,
-                               bool only_if_free)
+void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int bound, int depth, int ply, bool pv)
 {
-    assert(0 <= depth && depth <= MAX_PLY);
+    assert(depth == DEPTH_EVAL || (DEPTH_QS <= depth && depth < MAX_PLY));
+
+    // DEPTH_EVAL et BOUND_NONE vont ensemble
+    assert((depth == DEPTH_EVAL) == (bound == BOUND_NONE));
+
     assert(move != Move::MOVE_NULL);
 
     // extrait la clé 32 bits à partir du hash Zobrist 64 bits
@@ -139,28 +145,26 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int boun
     autre   = 88ed2307
     */
 
-    HashCluster& cluster  = tt_entries[index(key)];
-    HashEntry*   replace  = nullptr;
-    bool         libre    = false;
-    auto         minValue = std::numeric_limits<I32>::max();
+    HashCluster& cluster   = tt_entries[index(key)];
+    HashEntry*   replace   = nullptr;
+    bool         gratuit   = false;   // vrai si l'entrée prise ne coûte aucun résultat de recherche
+    auto         minValue  = std::numeric_limits<I32>::max();
 
     for (auto & entry : cluster.entries)
     {
-        // on prend toujours une entrée vide, ou une entrée de la même position
-        // Question : mais il existe des entrées avec TtFlag=None quand seul rawStaticEval est stocké.
-        // >>> "vide" signifie ici simplement qu'il n'y a pas de score de recherche (je pense),
-        //     auquel cas une entrée avec un score de recherche est préférable
-        // >>> autrement dit on met en cache un score d'évaluation statique et non un score de
-        //     recherche, pour éviter d'appeler eval
-        if (entry.key32 == key32 || entry.bound() == BOUND_NONE)
+        //  Si l'entrée contient la même position, ou est vierge, ou contient une évaluation statique :
+        //    on la prend tout de suite.
+        //  Réutiliser cette entrée existante, plutôt que de consommer une entrée vierge du cluster,
+        //    est ce qui empêche la table de se saturer d'entrées sans coup.
+        if (entry.key32 == key32 || entry.empty() || entry.depth() == DEPTH_EVAL)
         {
             replace = &entry;
-            libre   = true;
+            gratuit = true;
             break;
         }
 
-        // sinon, on prend l'entrée de plus faible poids (profondeur et âge)
-        I32 value = entry.depth - 2 * entry.relative_age(tt_age);
+        // sinon, on prend l'entrée de plus faible poids (profondeur et âge).
+        I32 value = entry.depth() - 2 * entry.relative_age(tt_age);
         if (value < minValue)
         {
             replace  = &entry;
@@ -168,12 +172,12 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int boun
         }
     }
 
-    // Cache d'éval : n'a de valeur que s'il ne coûte rien. Si tout le cluster
-    // porte des résultats de recherche, on renonce plutôt que d'en évincer un.
-    if (only_if_free && !libre)
-        return;
-
     assert(replace != nullptr);
+
+    // Une évaluation statique ne vaut pas qu'on évince un résultat de recherche :
+    // Si le cluster ne contient que des résultats de recherche, on renonce.
+    if (depth == DEPTH_EVAL && gratuit == false)
+        return;
 
     // Approximativement le schéma de remplacement de SF
     // On n'écrase pas une entrée de la même position, sauf si on a
@@ -181,7 +185,7 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int boun
     if ((bound == BOUND_EXACT
          || key32 != replace->key32
          || replace->relative_age(tt_age)           // replace->age() != tt_age
-         || depth + 3 + 2*pv > replace->depth))
+         || depth + 3 + 2*pv > replace->depth()))
     {
         // idée de Sirius, Stockfish et Ethereal
         // Préserve le coup existant pour la même position
@@ -192,7 +196,7 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int boun
         replace->key32  = key32;
         replace->score  = static_cast<I16>(ScoreToTT(score, ply));
         replace->eval   = static_cast<I16>(eval);
-        replace->depth  = static_cast<U08>(depth);
+        replace->set_depth(depth);
         replace->setAgePvBound(tt_age, pv, bound);
     }
 }
@@ -205,9 +209,9 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int boun
 //! \param[out] score   score de la position (converti depuis le format TT)
 //! \param[out] eval    évaluation statique stockée
 //! \param[out] bound   type de borne (BOUND_NONE/UPPER/LOWER/EXACT)
-//! \param[out] depth   profondeur de recherche associée à l'entrée
+//! \param[out] depth   profondeur réelle de l'entrée
 //! \param[out] pv      "true" si l'entrée provient d'une ligne principale
-//! \return Retourne "true" si une entrée correspondant à "key" a été trouvée
+//! \return Retourne "true" si une entrée ÉCRITE correspond à "key".
 //--------------------------------------------------------
 bool TranspositionTable::probe(U64 key, int ply, MOVE& move, int &score, int& eval, int &bound, int& depth, bool& pv)
 {
@@ -216,11 +220,15 @@ bool TranspositionTable::probe(U64 key, int ply, MOVE& move, int &score, int& ev
     const HashCluster& cluster = tt_entries[index(key)];
     for (const HashEntry& entry : cluster.entries)
     {
-        if (entry.key32 == key32)
+        // Il faut s'assurer que l'entrée n'est pas vierge.
+        // Sinon une entrée dont les 32 bits bas seraient nuls pourrait être acceptée.
+        // L'ordre compte : empty() en premier coûte une lecture et une branche sur
+        // chaque entrée du cluster, au lieu d'une seule sur correspondance de clé.
+        if (entry.key32 == key32 && entry.empty() == false)
         {
             move  = entry.move;
             bound = entry.bound();
-            depth = entry.depth;
+            depth = entry.depth();
             score = ScoreFromTT(entry.score, ply);
             eval  = entry.eval;
             pv    = entry.pv();
@@ -234,8 +242,10 @@ bool TranspositionTable::probe(U64 key, int ply, MOVE& move, int &score, int& ev
 
 //=======================================================================
 //! \brief Estimation de l'utilisation de la table de transposition
-//! On regarde combien d'entrées contiennent une valeur récente.
-//! La valeur retournée va de 0 à 1000 (1 = 0.1 %)
+//! Compte, sur les 1000 premiers clusters, les entrées écrites ayant l'âge
+//! courant. C'est l'empreinte de la recherche en cours et
+//! non le remplissage de la table : pour celui-ci, voir occupancy().
+//! \return Utilisation en pour mille, de 0 à 1000 (1 = 0,1 %)
 //-----------------------------------------------------------------------
 int TranspositionTable::hash_full() const
 {
@@ -245,7 +255,10 @@ int TranspositionTable::hash_full() const
     {
         for (size_t j=0; j<CLUSTER_SIZE; j++)
         {
-            if (   tt_entries[i].entries[j].move != Move::MOVE_NONE
+            // Toute entrée écrite par la recherche en cours, évaluation statique comprise.
+            // Le test « sans coup » d'avant ratait aussi les fail low stockés
+            // sans meilleur coup. Convention de Stockfish, Obsidian et Ethereal.
+            if (   !tt_entries[i].entries[j].empty()
                    && tt_entries[i].entries[j].age() == tt_age
                    )
                 used++;
@@ -257,19 +270,17 @@ int TranspositionTable::hash_full() const
 //=================================================================
 //! \brief  Occupation réelle de la table, sur les 1000 premiers clusters.
 //!
-//! Complète hash_full(), qui ne compte que l'âge courant et ignore les entrées
-//! sans coup : celui-ci mesure le remplissage réel, pas l'empreinte de la
-//! recherche en cours.
+//! Complète hash_full(), qui ne compte que l'âge courant : celui-ci mesure le
+//! remplissage réel de la table, pas l'empreinte de la recherche en cours.
 //!
-//! \param[out] physique       toute case écrite ; une case vierge est à zéro
-//!                            après le memset de clear(), d'où le test sur key32
-//! \param[out] age_courant    entrées de la recherche en cours
-//! \param[out] age_precedent  entrées de la recherche qui vient de s'achever.
-//!                            think.cpp:82 incrémente tt_age juste après le
-//!                            bestmove, donc une interrogation post-recherche
-//!                            voit age_courant à zéro : c'est celui-ci qu'il
-//!                            faut lire.
-//! \param[out] eval_seule     entrées de cache d'éval, sans résultat de recherche
+//! \param[out] physique       toute case écrite ; une case vierge porte la
+//!                            profondeur réservée 0, d'où le test sur empty()
+//! \param[out] age_courant    entrées de la recherche en cours, ou de celle qui
+//!                            vient de s'achever : ThreadPool::start_thinking
+//!                            avance l'âge AVANT de chercher, donc une
+//!                            interrogation post-recherche lit bien ce champ
+//! \param[out] age_precedent  entrées de la recherche d'avant
+//! \param[out] eval_seule     entrées de l'évaluation statique, sans résultat de recherche
 //-----------------------------------------------------------------------
 void TranspositionTable::occupancy(int& physique, int& age_courant,
                                   int& age_precedent, int& eval_seule) const
@@ -283,13 +294,13 @@ void TranspositionTable::occupancy(int& physique, int& age_courant,
         for (size_t j = 0; j < CLUSTER_SIZE; j++)
         {
             const HashEntry& e = tt_entries[i].entries[j];
-            if (e.key32 == 0)
+            if (e.empty())
                 continue;
 
             physique++;
-            if (e.age()   == tt_age)     age_courant++;
-            if (e.age()   == age_prec)   age_precedent++;
-            if (e.bound() == BOUND_NONE) eval_seule++;
+            if (e.age()   == tt_age)         age_courant++;
+            if (e.age()   == age_prec)       age_precedent++;
+            if (e.depth() == DEPTH_EVAL)     eval_seule++;
         }
     }
 
