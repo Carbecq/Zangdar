@@ -200,6 +200,17 @@ void History::update_continuation_history(SearchInfo* info, MOVE move, int score
     update_continuation(info, move, bonus);
 }
 
+//==================================================================
+//! \brief  Bonus au coup adverse précédent après un fail low
+//! \param[in]  color   camp qui a joué ce coup
+//! \param[in]  info    recherche du coup adverse précédent (si - 1)
+//! \param[in]  depth   profondeur de recherche
+//------------------------------------------------------------------
+void History::update_prior_countermove(Color color, SearchInfo* info, int depth)
+{
+    update_main(color, info, info->move, stat_bonus(depth) * Tunable::FailLowMainHistCoef / 128);
+}
+
 //=================================================================
 //! \brief  Mise à jour de la capture history
 //! Bonus pour le coup ayant provoqué un cutoff, malus pour les autres captures essayées

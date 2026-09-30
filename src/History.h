@@ -149,6 +149,7 @@ public:
 
     void update_correction_history(const Board &board, int depth, int best_score, int static_eval);
     void update_continuation_history(SearchInfo* info, MOVE move, int score, int alpha, int beta, int depth);
+    void update_prior_countermove(Color color, SearchInfo* info, int depth);
 
     int corrected_eval(const Board& board, int raw_eval);
 

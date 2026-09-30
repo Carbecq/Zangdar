@@ -895,6 +895,17 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
     best_score = std::min(best_score, max_score);
 
+    // Fail low : le coup adverse qui a mené ici était bon
+    //            idée de Stormphrax
+    if (   !isRoot
+        && !isExcluded
+        && bound == BOUND_UPPER
+        && !(si-1)->tactical
+        && Move::is_ok((si-1)->move))
+    {
+        history.update_prior_countermove(THEM, si-1, depth);
+    }
+
     if(   !isInCheck
           && !isExcluded
           && (best_move == Move::MOVE_NONE || !Move::is_capturing(best_move))

@@ -111,6 +111,8 @@ PARAM(HistoryMalusScale,    364,  128,  512);
 PARAM(HistoryMalusOffset,   -66, -128,  128);
 PARAM(HistoryMalusMax,     1882, 1024, 4096);
 
+PARAM(FailLowMainHistCoef,   70,    0,  256);   // Bonus au coup adverse précédent sur fail low (constante de Clover, sur 128)
+
 //-------------------------------------------- Timer
 
 //   Peut-on tuner les valeurs du Timer ??
