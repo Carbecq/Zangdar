@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <iostream>
 #include "Timer.h"
 #include "Move.h"
@@ -67,8 +68,9 @@ void Timer::start()
 //===========================================================
 //! \brief Initialisation des limites en temps pour la recherche
 //! \param[in]  color   couleur au trait (pour lire limits.time/incr[color])
+//! \param[in]  fullmove numéro du coup complet de la position
 //-----------------------------------------------------------
-void Timer::setup(Color color)
+void Timer::setup(Color color, int fullmove)
 {
     // std::cout << "------------------------------------------Timer::setup " << std::endl;
 
@@ -167,7 +169,9 @@ void Timer::setup(Color color)
         else
         {
             // Sudden death (X + Y)
-            timeForThisDepth =  2.50 * (tr + 25.0 * inc) / 50.0;
+            // Part de la pendule croissante avec le numéro du coup (forme de Reckless)
+            const double share = 0.024 + 0.042 * (1.0 - std::exp(-0.045 * fullmove));
+            timeForThisDepth = share * tr + 1.25 * inc;
             timeForThisMove  = 10.00 * (tr + 25.0 * inc) / 50.0;
         }
 

@@ -548,7 +548,7 @@ void Uci::parse_go(std::istringstream& iss)
     // on cherche jusqu'à "stop".
     Timer uci_timer(infinite, wtime, btime, winc, binc, movestogo, depth, nodes, movetime, moveOverhead, is_set);
     uci_timer.start();
-    uci_timer.setup(uci_board.side_to_move);
+    uci_timer.setup(uci_board.side_to_move, uci_board.get_fullmove_counter());
 
 
     // La recherche est lancée dans une ou plusieurs threads séparées

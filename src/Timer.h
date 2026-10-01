@@ -59,7 +59,7 @@ public:
     void debug(Color color) const;
 
     void start();
-    void setup(Color color);
+    void setup(Color color, int fullmove = 1);
     void setup(U64 soft_limit, U64 hard_limit);
     bool check_limits(const int depth, const int index, const U64 total_nodes);
     bool finishOnThisDepth(int elapsed, int depth, U64 total_nodes, const int* pv_scores, const MOVE *pv_moves);
