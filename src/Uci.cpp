@@ -1177,6 +1177,6 @@ void Uci::bench(int argCount, char* argValue[])
     std::cout << "nps         = " << static_cast<U64>(1000.0 * total_nodes / (total_time + 1)) << std::endl;
     std::cout << "depth       = " << depth << std::endl;
     std::cout << "nbr threads = " << threadPool.get_nbrThreads() << std::endl;
-    std::cout << "hash size   = " << transpositionTable.get_hash_size() << std::endl;
+    std::cout << "hash size   = " << transpositionTable.get_hash_size() << " Mo" << std::endl;
     std::cout << "===============================================" << std::endl;
 }

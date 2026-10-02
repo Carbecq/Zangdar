@@ -53,7 +53,7 @@ PARAM(LMR_QuietDivisor,   225,  150, 400);
 //  LATE MOVE REDUCTION
 PARAM(LMR_HistReductionDivisor, 5000, 3000, 8000);
 PARAM(LMR_DeeperMargin, 43, 20, 60);
-PARAM(LMR_DeeperScale, 2, 0, 5);
+PARAM(LMR_DeeperScale, 2, -1, 5);
 PARAM(LMR_ShallowerMargin, 11, 0, 20);
 
 //----------------------------------------------------- Pruning
@@ -70,13 +70,13 @@ PARAM(SEENoisyMargin,   -19,  -50,  50);
 PARAM(SEEHistScale,     128,   64, 512);
 
 // History Pruning
-PARAM(HistoryPruningDepth,     3,   1,    6);
+PARAM(HistoryPruningDepth,     3,   0,    6);
 PARAM(HistoryPruningScale,  4500, 2000, 6000);
 
 //------------------------------------------------------ NMP
 //  NULL MOVE PRUNING
-PARAM(NMPDepth,     3, 1, 6);
-PARAM(NMPReduction, 4, 1, 6);
+PARAM(NMPDepth,     3, 0, 6);
+PARAM(NMPReduction, 4, 1, 7);
 PARAM(NMPMargin,   32, 16, 48);
 PARAM(NMPMax,     384, 350, 450);
 PARAM(NMPDivisor, 128, 64, 192);
@@ -84,10 +84,10 @@ PARAM(NMPDivisor, 128, 64, 192);
 //  ProbCut
 PARAM(ProbCutDepth,     5, 1, 8);
 PARAM(ProbCutMargin,  100, 50, 200);
-PARAM(ProbcutReduction, 4, 2, 7);
+PARAM(ProbcutReduction, 4, 1, 7);
 
 //  RAZORING
-PARAM(RazoringDepth,    3, 1, 6);
+PARAM(RazoringDepth,    3, 0, 6);
 PARAM(RazoringMargin, 200, 100, 300);
 
 //  STATIC NULL MOVE PRUNING ou aussi REVERSE FUTILITY PRUNING
@@ -131,17 +131,17 @@ PARAM(AspirationWindowsExpand, 6667, 4000, 9000);
 PARAM(DeltaPruningBias,    300, 100, 400);
 
 //  SINGULAR EXTENSION
-PARAM(SEDepth, 8, 5, 10);
+PARAM(SEDepth, 8, 5, 11);
 PARAM(SEBetaMargin,  32,  8,  64);   // marge de sing_beta par unité de depth, en 1/16e (32 = 2.0)
 PARAM(SEDoubleMargin, 50, 20, 100);  // écart sous sing_beta déclenchant la double extension
 PARAM(SEDoubleMax,    20,  5,  40);  // nombre max de double extensions par ligne
 
 //  HINDSIGHT EXTENSION / REDUCTION
-PARAM(HindsightExtMinDepth,      1,   0,   6);
-PARAM(HindsightExtMinReduction,  3,   1,   6);
+PARAM(HindsightExtMinDepth,      1,  -2,   6);
+PARAM(HindsightExtMinReduction,  3,   0,   6);
 PARAM(HindsightExtEvalDiff,    -16, -50,  50);
-PARAM(HindsightRedMinDepth,      2,   1,   6);
-PARAM(HindsightRedMinReduction,  1,   0,   6);
+PARAM(HindsightRedMinDepth,      2,  -1,   6);
+PARAM(HindsightRedMinReduction,  1,  -2,   6);
 PARAM(HindsightRedEvalDiff,     49,   0, 120);
 
 //  HINDSIGHT NMP

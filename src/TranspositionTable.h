@@ -215,9 +215,9 @@ public:
     void occupancy(int& physique, int& age_courant, int& age_precedent, int& eval_seule) const;
 
     //==================================================
-    //! \brief  Retourne le nombre de clusters de la table
+    //! \brief  Retourne la taille de la table, en Mo
     //--------------------------------------------------
-    int  get_hash_size(void) const { return nbr_cluster; }
+    int  get_hash_size(void) const { return static_cast<int>(nbr_cluster * sizeof(HashCluster) / (1024 * 1024)); }
 
     //==================================================
     //! \brief  Incrémente l'âge courant de la table de transposition (nouvelle recherche)
