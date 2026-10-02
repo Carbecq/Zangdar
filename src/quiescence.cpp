@@ -65,11 +65,11 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
     // Est-ce que la table de transposition est utilisable ?
     int   tt_score = 0;
     int   tt_eval  = VALUE_NONE;
-    MOVE  tt_move  = Move::MOVE_NONE;
+    U16   tt_move16 = 0;      // non utilisé : la quiescence n'essaie pas le coup de la TT
     int   tt_bound = BOUND_NONE;
     int   tt_depth = 0;
     bool  tt_pv    = false;
-    bool  tt_hit   = table->probe(board.get_key(), si->ply, tt_move, tt_score, tt_eval, tt_bound, tt_depth, tt_pv);
+    bool  tt_hit   = table->probe(board.get_key(), si->ply, tt_move16, tt_score, tt_eval, tt_bound, tt_depth, tt_pv);
 
     // note : on ne teste pas la profondeur, car dans la Quiescence, elle est à 0
     //        dans la cas de la Quiescence, on cut tous les coups, y compris la PV ????

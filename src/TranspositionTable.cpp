@@ -7,6 +7,7 @@
 #include <cstring>
 #include "HugePages.h"
 #include "Move.h"
+#include "Board.h"
 #include "TranspositionTable.h"
 
 
@@ -18,6 +19,67 @@
 #include "TranspositionTable.h"
 #include "defines.h"
 
+
+//========================================================
+//  Coup compacté sur 16 bits
+//
+//  bits  0-5  : case de départ
+//  bits  6-11 : case d'arrivée
+//  bits 12-14 : 0 : 000    : normal,
+//               1 : 001    : double poussée
+//               2 : 010    : prise en passant
+//               3 : 011    : roque
+//               4 : 100    : promotion en cavalier
+//               5 : 101    :              fou
+//               6 : 110    :              tour
+//               7 : 111    :              dame
+//
+//  La pièce jouée et la pièce prise se relisent sur l'échiquier.
+//  0 représente MOVE_NONE (a1a1 n'est pas un coup).
+//--------------------------------------------------------
+static U16 move_to_move16(MOVE move)
+{
+    // Une promotion ne porte pas de drapeau, et les drapeaux sont exclusifs :
+    //   promotion (type 2..5) -> 4..7 ; drapeau 1, 2, 4 -> 1, 2, 3 ; MOVE_NONE -> 0
+    const U32 pt   = Move::promoted_type(move);
+    const U32 f    = Move::flags(move) >> Move::SHIFT_FLAGS;
+
+    assert(f == 0 || f == 1 || f == 2 || f == 4);   // un seul drapeau
+    assert(pt == 0 || f == 0);                      // une promotion n'en porte pas
+
+    const U32 code = pt ? pt + 2 : f - (f >> 2);
+
+    return static_cast<U16>((move & Move::MOVE_FROMDEST_MASK) | (code << 12));
+}
+
+//========================================================
+//! \brief  Reconstruit un coup complet à partir de sa forme 16 bits
+//--------------------------------------------------------
+MOVE TranspositionTable::move16_to_move(const Board& board, U16 move16) const
+{
+    static constexpr U32 Flags[8] = { Move::FLAG_NONE, Move::FLAG_DOUBLE_MASK, Move::FLAG_ENPASSANT_MASK,
+                                      Move::FLAG_CASTLE_MASK, 0, 0, 0, 0 };
+    if (move16 == 0)
+        return Move::MOVE_NONE;
+
+    const Color us    = board.turn();
+    const Piece piece = board.piece_at(move16 & 63);
+
+    if (piece == Piece::PIECE_NONE || Move::color(piece) != us)
+        return Move::MOVE_NONE;
+
+    const U32   code     = move16 >> 12;
+    const Piece captured = (code == 2) ? Move::make_piece(~us, PieceType::PAWN)
+                                       : board.piece_at((move16 >> 6) & 63);
+    const Piece promo    = (code >= 4) ? Move::make_piece(us, static_cast<PieceType>(code - 2))
+                                       : Piece::PIECE_NONE;
+
+    return (move16 & Move::MOVE_FROMDEST_MASK)
+         | (static_cast<U32>(piece)    << Move::SHIFT_PIECE)
+         | (static_cast<U32>(captured) << Move::SHIFT_CAPT)
+         | (static_cast<U32>(promo)    << Move::SHIFT_PROMO)
+         | Flags[code];
+}
 
 //========================================================
 //! \brief  Constructeur avec argument
@@ -132,18 +194,8 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int boun
 
     assert(move != Move::MOVE_NULL);
 
-    // extrait la clé 32 bits à partir du hash Zobrist 64 bits
-    // U32 key32 = (key >> 32);
-    const U32 key32 = static_cast<U32>(key);
-    //  static_cast<U16>(key);
-    // key & 0xFFFF;
-
-    /*
-    hash64  = 8020241708cd0710 ;
-    shift32 = 80202417 ;
-    cast32  =          8cd0710 ;
-    autre   = 88ed2307
-    */
+    // bits bas de la clé : l'index du cluster utilise les bits hauts
+    const U16 key16 = static_cast<U16>(key);
 
     HashCluster& cluster   = tt_entries[index(key)];
     HashEntry*   replace   = nullptr;
@@ -156,7 +208,7 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int boun
         //    on la prend tout de suite.
         //  Réutiliser cette entrée existante, plutôt que de consommer une entrée vierge du cluster,
         //    est ce qui empêche la table de se saturer d'entrées sans coup.
-        if (entry.key32 == key32 || entry.empty() || entry.depth() == DEPTH_EVAL)
+        if (entry.key16 == key16 || entry.empty() || entry.depth() == DEPTH_EVAL)
         {
             replace = &entry;
             gratuit = true;
@@ -183,17 +235,17 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int boun
     // On n'écrase pas une entrée de la même position, sauf si on a
     // une borne exacte ou une profondeur presque aussi bonne que l'ancienne
     if ((bound == BOUND_EXACT
-         || key32 != replace->key32
+         || key16 != replace->key16
          || replace->relative_age(tt_age)           // replace->age() != tt_age
          || depth + 3 + 2*pv > replace->depth()))
     {
         // idée de Sirius, Stockfish et Ethereal
         // Préserve le coup existant pour la même position
         // Ne pas écraser le coup s'il n'y a pas de nouveau meilleur coup
-        if (move != Move::MOVE_NONE || replace->key32 != key32)
-            replace->move = move;
+        if (move != Move::MOVE_NONE || replace->key16 != key16)
+            replace->move16 = move_to_move16(move);
 
-        replace->key32  = key32;
+        replace->key16  = key16;
         replace->score  = static_cast<I16>(ScoreToTT(score, ply));
         replace->eval   = static_cast<I16>(eval);
         replace->set_depth(depth);
@@ -205,7 +257,7 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int boun
 //! \brief  Recherche d'une donnée dans la table de transposition
 //! \param[in]  key     code hash (Zobrist) de la position recherchée
 //! \param[in]  ply     profondeur (distance à la racine) de la position
-//! \param[out] move    coup trouvé
+//! \param[out] move16  coup trouvé, compacté : voir move16_to_move()
 //! \param[out] score   score de la position (converti depuis le format TT)
 //! \param[out] eval    évaluation statique stockée
 //! \param[out] bound   type de borne (BOUND_NONE/UPPER/LOWER/EXACT)
@@ -213,20 +265,19 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int boun
 //! \param[out] pv      "true" si l'entrée provient d'une ligne principale
 //! \return Retourne "true" si une entrée ÉCRITE correspond à "key".
 //--------------------------------------------------------
-bool TranspositionTable::probe(U64 key, int ply, MOVE& move, int &score, int& eval, int &bound, int& depth, bool& pv)
+bool TranspositionTable::probe(U64 key, int ply, U16& move16, int &score, int& eval, int &bound, int& depth, bool& pv)
 {
-    // extrait la clé 32 bits à partir du hash Zobrist 64 bits
-    const U32 key32 = static_cast<U32>(key);
+    const U16 key16 = static_cast<U16>(key);
     const HashCluster& cluster = tt_entries[index(key)];
     for (const HashEntry& entry : cluster.entries)
     {
         // Il faut s'assurer que l'entrée n'est pas vierge.
-        // Sinon une entrée dont les 32 bits bas seraient nuls pourrait être acceptée.
+        // Sinon une entrée dont les 16 bits bas seraient nuls pourrait être acceptée.
         // L'ordre compte : empty() en premier coûte une lecture et une branche sur
         // chaque entrée du cluster, au lieu d'une seule sur correspondance de clé.
-        if (entry.key32 == key32 && entry.empty() == false)
+        if (entry.key16 == key16 && entry.empty() == false)
         {
-            move  = entry.move;
+            move16 = entry.move16;
             bound = entry.bound();
             depth = entry.depth();
             score = ScoreFromTT(entry.score, ply);

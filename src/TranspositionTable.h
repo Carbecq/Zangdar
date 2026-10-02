@@ -38,6 +38,7 @@ static constexpr int DEPTH_QS     =  0; // profondeur utilisée pour la quiescen
 // depth  = -8 , -7 , [0 ... 127]
 
 class TranspositionTable;
+class Board;
 
 #include <cassert>
 #include "HugePages.h"
@@ -48,12 +49,14 @@ struct HashEntry {
     static constexpr U32 AgeCycle = 1 << AgeBits;       // 32
     static constexpr U32 AgeMask  = AgeCycle - 1;       // 31
 
-    U32   key32;        // 32 bits
-    MOVE  move;         // 32 bits  (seuls 24 bits sont utilisés)
+    U16   key16;        // 16 bits  bits bas de la clé Zobrist (l'index utilise les bits hauts)
+    U16   move16;       // 16 bits  coup compacté, voir move_to_move16()
     I16   score;        // 16 bits
     I16   eval;         // 16 bits
     U08   depth8;       //  8 bits  voir au-dessus
     U08   agePvBound;   //  8 bits  (5 bits age : 1 bit pv ; 2 bits bound)      : 0-31
+
+    // total = 80 bits = 10 octets, sans bourrage
 
     //==================================================
     //! \brief  Case jamais écrite depuis le dernier clear()
@@ -120,52 +123,27 @@ struct HashEntry {
 
     //==================================================
     //! \brief  Calcule l'âge relatif de l'entrée par rapport à l'âge courant de la table
-    //! \param[in]  tt_age  âge courant de la table de transposition
-    //! \return Âge relatif (plus la valeur est grande, plus l'entrée est ancienne)
+    //! \param[in]  tt_age  age courant de la table de transposition
+    //! \return Age relatif (plus la valeur est grande, plus l'entrée est ancienne)
     //--------------------------------------------------
     [[nodiscard]] inline auto relative_age(U32 tt_age) const
     {
         return (HashEntry::AgeCycle + tt_age - age()) & HashEntry::AgeMask;
     }
 
-    /* hash32 :
-     *
-     * total = 112 bits = 14 octets
-     * le compilateur ajoute un padding de 16 bits pour avoir un alignement mémoire de 32 bits : 128 = 32*4
-     *  donc sizeof(HashEntry) = 16
-     *
-
-Nombre de clusters  : 2097152
-Taille d'un cluster : 64 octets
-Entrées par cluster : 4
-Taille d'une entrée : 16 octets
-Total entrées       : 8388608
-
- */
-
-
-/* key16 :
- *
- * 88 bits = 11 octets --> alignement sur 12 octets (12*8 = 96 = 3*32)
- * le compilateur ajoute 8 octets
- *
-Nombre de clusters  : 2796202
-Taille d'un cluster : 48 octets
-Entrées par cluster : 4
-Taille d'une entrée : 12 octets
-Total entrées       : 11.184.808
-Taille totale       : 134217696  134217696 (128) Mo
- */
-
 };
 
-static constexpr size_t CLUSTER_SIZE = 4;
+static_assert(sizeof(HashEntry) == 10);
 
-struct alignas(64) HashCluster {
+// 3 entrées de 10 octets dans 32 : deux clusters par ligne de cache
+static constexpr size_t CLUSTER_SIZE = 3;
+
+struct alignas(32) HashCluster {
     std::array<HashEntry, CLUSTER_SIZE> entries{};
+    U16 padding{};
 };
 
-static_assert(sizeof(HashCluster) == 64);
+static_assert(sizeof(HashCluster) == 32);
 
 
 //----------------------------------------------------------
@@ -210,7 +188,8 @@ public:
     std::string info();
     void clear(void);
     void store(U64 hash, MOVE move, int score, int eval, int bound, int depth, int ply, bool pv);
-    bool probe(U64 hash, int ply, MOVE &code, int &score, int &eval, int &bound, int &depth, bool &pv);
+    bool probe(U64 key, int ply, U16 &move16, int &score, int &eval, int &bound, int &depth, bool &pv);
+    MOVE move16_to_move(const Board& board, U16 move16) const;
     int  hash_full() const;
     void occupancy(int& physique, int& age_courant, int& age_precedent, int& eval_seule) const;
 
