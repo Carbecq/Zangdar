@@ -85,6 +85,7 @@ PARAM(NMPDivisor, 128, 64, 192);
 PARAM(ProbCutDepth,     5, 1, 8);
 PARAM(ProbCutMargin,  100, 50, 200);
 PARAM(ProbcutReduction, 4, 1, 7);
+PARAM(ProbCutSeeScale, 16, 4, 24);     // seuil SEE = (betaCut - eval) * scale / 16
 
 //  RAZORING
 PARAM(RazoringDepth,    3, 0, 6);

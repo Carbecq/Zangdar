@@ -550,7 +550,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             // Seuil SEE : la capture doit pouvoir combler l'écart entre l'éval
             // statique et betaCut (idée Ethereal / Berserk)
             MovePicker movePicker(board, history, si, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE, Move::MOVE_NONE,
-                                  std::max(1, betaCut - static_eval));
+                                  std::max(1, (betaCut - static_eval) * Tunable::ProbCutSeeScale / 16));
             MOVE pbMove;
 
             while ( (pbMove = movePicker.next_move(true).move ) != Move::MOVE_NONE )
