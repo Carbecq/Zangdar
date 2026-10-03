@@ -1,3 +1,3 @@
-VERSION  = 7.41
-NET_NAME = net_20a_1000.bin
+VERSION  = 7.42
+NET_NAME = net_22c_200q.bin
 

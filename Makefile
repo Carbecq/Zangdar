@@ -108,7 +108,7 @@ SLOW_PEXT  := $(shell grep -qm1 -E 'AuthenticAMD|HygonGenuine' $(CPUINFO) 2>/dev
 #   bmi2   : kernel AVX2 + attaques PEXT. UNIQUEMENT Intel Haswell+ et AMD Zen 3+.
 #            PIÈGE : Zen 1/Zen 2 annoncent BMI2 mais leur pext est microcodé
 #   avx512 : kernel AVX-512 + PEXT. Zen 4/5 ; Intel Skylake-X, Ice/Tiger/Rocket Lake, Xeon (pas Alder Lake+)
-#   vnni512 : inutile en l'état
+#   vnni512 : avx512 + VNNI, L1 int8 en 1 instruction (dpbusd). Seulement sur matériel VNNI (Zen 4/5, Ice Lake-SP+)
 #   native : auto-détection du CPU hôte (pour compiler soi-même).
 
 # options x86 cumulatives ; SSE2 est dans le socle x86-64, -mavx2 implique SSE3 à AVX
@@ -129,6 +129,9 @@ else ifeq ($(ARCH), bmi2)
 
 else ifeq ($(ARCH), avx512)
     CFLAGS_ARCH += $(FLAGS_AVX512) -DUSE_PEXT
+
+else ifeq ($(ARCH), vnni512)
+    CFLAGS_ARCH += $(FLAGS_AVX512) -mavx512vnni -DUSE_PEXT
 
 else ifeq ($(ARCH), arm64)
     # Cross-compilation Linux aarch64 : make ARCH=arm64 CXX=aarch64-linux-gnu-g++ STATIC=yes
@@ -231,7 +234,8 @@ ifeq ($(target_windows),yes)
     LDFLAGS_STACK = -Wl,--stack,16777216
 endif
 
-CFLAGS_COM  = -pipe -std=c++23 -DVERSION=\"$(VERSION)\" $(DEFS) $(CFLAGS_NNUE)
+# -ffp-contract=off : pas de FMA implicite, l'éval flottante est la même sur toutes les cibles
+CFLAGS_COM  = -pipe -std=c++23 -ffp-contract=off -DVERSION=\"$(VERSION)\" $(DEFS) $(CFLAGS_NNUE)
 CFLAGS_REL  = $(CFLAGS_REL1) $(CFLAGS_WARN1) -fomit-frame-pointer
 CFLAGS_DBG  = -g -O2
 # -Wall -Wextra en tête : le -Wno-unused de CFLAGS_WARN5 doit rester le dernier mot

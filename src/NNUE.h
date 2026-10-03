@@ -20,25 +20,75 @@ constexpr size_t ALIGN_MAX = 64;
 
 
 //------------------------------------------------------------------------------
-//  Description du réseau : (768×16kb → 1024)×2 → 1×8ob  SCReLU
+//  Le multi-couches en bref
+//
+//  Mono-couche : l'accumulateur (des centaines de neurones, chacun sensible à un motif)
+//  est lu par une seule somme pondérée, qui donne l'éval. Une somme ne sait qu'additionner :
+//  « roi exposé » −50 et « dame adverse active » −30 donnent −80, jamais −300 ensemble.
+//
+//  Multi-couches : entre l'accumulateur et la sortie, deux petites couches (16 puis 32
+//  neurones) combinent les motifs. Chaque neurone ne garde que le positif, donc ne réagit
+//  que si plusieurs signaux sont présents ensemble. À taille égale, le réseau est plus fin.
+//
+//  Le coût : l'accumulateur se met à jour coup par coup, pas les couches suivantes, qui
+//  relisent tout à chaque évaluation. D'où leur petite taille, et trois astuces :
+//    - produit par paires : neurone i × neurone i + 384, déjà un « et », moitié moins à lire ;
+//    - on saute les zéros : la L1 ne lit que les produits non nuls, par blocs de 4 (find_nnz) ;
+//    - 8 jeux de couches selon le matériel restant (buckets de sortie), un seul calculé.
+//
+//------------------------------------------------------------------------------
+//  Description du réseau MULTI-COUCHES :
+//      (768×16 buckets de roi → 768)×2, produit par paires → L1 16 (double activation → 32) → L2 32 → 1, ×8 buckets de sortie
 //
 //      Entrées              : 768 = 2 couleurs × 6 pièces × 64 cases
-//      Input Buckets        : 16 (king buckets, avec horizontal mirroring)
-//      Accumulateur         : 1024 neurones par perspective (incrémental)
-//      Output Buckets       : 8 (MaterialCount : selon le nb de pièces restantes)
-//      Activation           : SCReLU = clamp(x, 0, QA)² / QA  (Squared Clipped ReLU)
+//      Buckets de roi       : 16, avec symétrie horizontale
+//      Accumulateur (FT)    : 768 neurones par perspective, mis à jour coup par coup
+//                             FT (« feature transformer ») = cette première couche, des pièces vers l'accumulateur
+//      Buckets de sortie    : 8, selon le nombre de pièces restantes
+//      Factoriser           : poids communs à tous les buckets à l'entraînement, ajoutés à chacun à l'export
+//
+//  Calcul de l'évaluation (comme Alexandria 9 / Astra 7) :
+//    1. Accumulateur (I16) : acc[blanc/noir] = biais + Σ poids des pièces présentes
+//    2. Sortie FT, produit par paires : out[i] = (clamp(acc[i], 0, QA) × min(acc[i + 384], QA)) >> FT_SHIFT, négatif → 0
+//       → 384 octets par perspective, camp au trait d'abord = 768 octets
+//    3. L1 (poids int8) : z = Σ out[i] × l1w[i] × L1_MUL + l1b, sur les seules entrées non nulles
+//       Double activation : clamp(z, 0, 1) et min(z², 1) → 32 float
+//    4. L2 (float) : SCReLU(in × l2w + l2b) → 32 float, SCReLU(x) = clamp(x, 0, 1)²
+//    5. L3 (float) : in · l3w + l3b → éval = résultat × SCALE
+//
+//  Quantification : FT ×QA (I16), L1 ×QB (I8, poids bornés à ±1,98 à l'entraînement), L2/L3 en float.
+//  FT_SHIFT = 10 borne les octets à 63, si bien que l'addition de deux paires de produits
+//  dans Dpbusdx2 (maddubs) ne déborde pas d'un I16 : 127 × 63 × 4 = 32004 ≤ 32767.
 
 // https://www.chessprogramming.org/NNUE#Output_Buckets
 
 constexpr size_t INPUT_LAYER_SIZE  = N_COLORS * 6 * N_SQUARES;   // = 768
-constexpr size_t HIDDEN_LAYER_SIZE = 1024;                        // neurones par perspective
+constexpr size_t HIDDEN_LAYER_SIZE = 768;                         // neurones par perspective (FT)
+constexpr size_t FT_OUT_SIZE       = HIDDEN_LAYER_SIZE;           // sortie FT totale : (HL/2 par perspective) × 2
+constexpr size_t L2_SIZE           = 16;                          // largeur physique de L1
+constexpr size_t EFFECTIVE_L2_SIZE = 2 * L2_SIZE;                 // = 32 après dual activation
+constexpr size_t L3_SIZE           = 32;
 constexpr size_t OUTPUT_BUCKETS    = 8;
 constexpr size_t BUCKET_DIVISOR    = (32 + OUTPUT_BUCKETS - 1) / OUTPUT_BUCKETS;   // = 4
 
-constexpr I32 SCALE = 400;
-constexpr I32 QA    = 255;      // facteur de quantification L0 (accumulateur)
-constexpr I32 QB    =  64;      // facteur de quantification output weights
-constexpr I32 QAB   = QA * QB;  // = 16320 : échelle du biais de sortie
+constexpr I32 SCALE    = 400;
+constexpr I32 QA       = 255;   // facteur de quantification FT (accumulateur)
+constexpr I32 QB       =  64;   // facteur de quantification L1 (int8)
+constexpr int FT_SHIFT = 10;    // décalage du produit par paires (résultat ≤ 63)
+
+// Déquantification de la sortie L1 : sum est à l'échelle (QA²>>FT_SHIFT)×QB
+constexpr float L1_MUL = float(1 << FT_SHIFT) / float(QA * QA * QB);
+
+// Pas de débordement dans Dpbusdx2 sans VNNI (cf. Alexandria) ; la borne ±1,98
+// des poids L1 est imposée à l'entraînement (zangdar_pretrain_ml.rs)
+static_assert(127 * ((QA * QA) >> FT_SHIFT) * 4 <= 32767);
+
+// Couches L1 à L3 en SIMD : AVX2 minimum.
+// En SSE2, seul l'accumulateur reste en SIMD ; L1 à L3 passent par la version
+// scalaire (et les poids L1 gardent l'ordre du fichier).
+#if defined(USE_SIMD) && (defined(__AVX2__) || (defined(__AVX512F__) && defined(__AVX512BW__)))
+  #define NNUE_DENSE_SIMD
+#endif
 
 // King buckets : chaque position du roi détermine quel jeu de poids utiliser.
 //                avec symétrie horizontale.
@@ -55,38 +105,43 @@ constexpr std::array<int, N_SQUARES> king_buckets_map = {
 constexpr int KING_BUCKETS_COUNT = *std::ranges::max_element(king_buckets_map) + 1;
 
 //-----------------------------------------------------------------------
-//  Architecture du réseau
+//  Layout du FICHIER réseau (sortie brute du save_format Bullet, via incbin).
+//  Sections dans l'ordre d'écriture du trainer (zangdar_pretrain_ml.rs) :
+//  l0w, l0b (I16 ×QA) ; l1w (I8 ×QB, transposé [bucket][sortie][entrée]) ;
+//  l1b, l2w, l2b, l3w, l3b (float bruts, matrices transposées = row-major [sortie][entrée])
 struct Network {
-    alignas(ALIGN) std::array<I16, KING_BUCKETS_COUNT * INPUT_LAYER_SIZE * HIDDEN_LAYER_SIZE> feature_weights;
-    alignas(ALIGN) std::array<I16, HIDDEN_LAYER_SIZE>                                         feature_biases;
+    // feature_weights[bucket][feature][neurone] — layout Bullet "l0w" (après merge factoriser)
+    std::array<I16, KING_BUCKETS_COUNT * INPUT_LAYER_SIZE * HIDDEN_LAYER_SIZE> feature_weights;
+    std::array<I16, HIDDEN_LAYER_SIZE>                                         feature_biases;
 
-    /* structure provenant de Bullet :
-     * on a 2 possibilités :
-     *      non transposed : output_weights[N_COLORS][HIDDEN_SIZE][OUTPUT_BUCKETS];
-     *      transposed     : output_weights[OUTPUT_BUCKETS][N_COLORS][HIDDEN_SIZE];
-     * Bullet sort maintenant la version "transposed"
-     */
-
-    alignas(ALIGN) std::array<I16, N_COLORS * HIDDEN_LAYER_SIZE * OUTPUT_BUCKETS> output_weights;
-    alignas(ALIGN) std::array<I16, OUTPUT_BUCKETS>                                output_bias;
+    std::array<I08,   OUTPUT_BUCKETS * L2_SIZE * FT_OUT_SIZE>           l1_weights;   // [bucket][sortie 16][entrée FT_OUT]
+    std::array<float, OUTPUT_BUCKETS * L2_SIZE>                         l1_biases;    // [bucket][16]
+    std::array<float, OUTPUT_BUCKETS * L3_SIZE * EFFECTIVE_L2_SIZE>     l2_weights;   // [bucket][sortie 32][entrée 32]
+    std::array<float, OUTPUT_BUCKETS * L3_SIZE>                         l2_biases;    // [bucket][32]
+    std::array<float, OUTPUT_BUCKETS * L3_SIZE>                         l3_weights;   // [bucket][entrée 32]
+    std::array<float, OUTPUT_BUCKETS>                                   l3_biases;    // [bucket]
 };
 
-//! \brief  Taille des DONNÉES du réseau, hors bourrage.
-//!
-//! sizeof(Network) ne marche pas car il compte 48 octets de bourrage de queue que le fichier n'a pas.
-constexpr size_t NETWORK_DATA_SIZE = sizeof(Network::feature_weights)
-                                   + sizeof(Network::feature_biases)
-                                   + sizeof(Network::output_weights)
-                                   + sizeof(Network::output_bias);
+//-----------------------------------------------------------------------
+//  Couches L1 à L3 telles que le calcul les lit, remplies par NNUE::init() :
+//  - le FT n'y est pas : il est lu directement dans le fichier embarqué
+//  - l1_weights réordonnés [bucket][bloc de 4 entrées][sortie][4], entrées dans
+//    l'ordre permuté de la sortie FT (cf. packus_source)
+//  - l2_weights transposés [bucket][entrée][sortie]
+//  (en scalaire — sans NNUE_DENSE_SIMD — l1 garde l'ordre du fichier)
+struct RuntimeNetwork {
+    alignas(ALIGN) std::array<I08,   OUTPUT_BUCKETS * L2_SIZE * FT_OUT_SIZE>       l1_weights;
+    alignas(ALIGN) std::array<float, OUTPUT_BUCKETS * L2_SIZE>                     l1_biases;
+    alignas(ALIGN) std::array<float, OUTPUT_BUCKETS * EFFECTIVE_L2_SIZE * L3_SIZE> l2_weights;
+    alignas(ALIGN) std::array<float, OUTPUT_BUCKETS * L3_SIZE>                     l2_biases;
+    alignas(ALIGN) std::array<float, OUTPUT_BUCKETS * L3_SIZE>                     l3_weights;
+    alignas(ALIGN) std::array<float, OUTPUT_BUCKETS>                               l3_biases;
+};
 
-static_assert(offsetof(Network, feature_biases) == sizeof(Network::feature_weights),
-              "bourrage entre feature_weights et feature_biases : le cast du fichier serait faux");
-static_assert(offsetof(Network, output_weights) == offsetof(Network, feature_biases)
-                                                 + sizeof(Network::feature_biases),
-              "bourrage entre feature_biases et output_weights : le cast du fichier serait faux");
-static_assert(offsetof(Network, output_bias)    == offsetof(Network, output_weights)
-                                                 + sizeof(Network::output_weights),
-              "bourrage entre output_weights et output_bias : le cast du fichier serait faux");
+//! \brief  Taille des DONNÉES du réseau (fichier embarqué).
+//! Network n'a ni alignas ni bourrage intérieur (vérifié par static_assert dans
+//! NNUE.cpp) : sa taille est celle des données du fichier.
+constexpr size_t NETWORK_DATA_SIZE = sizeof(Network);
 
 //! \brief  Vérifie que le réseau embarqué a bien la taille attendue.
 void verify_network();
@@ -165,6 +220,10 @@ public:
     //! \brief  Retourne l'accumulateur courant (sommet du stack), modifiable
     inline Accumulator& get_accumulator()             { return stack[head_idx]; }
 
+    //! \brief  Copie et réordonne les couches L1 à L3 du fichier embarqué.
+    //! À appeler UNE fois au démarrage, avant toute recherche (main).
+    static void init();
+
     void start_search(const Board& board);
     void rebase(const Board& board);
     void push();
@@ -178,12 +237,6 @@ public:
               Piece piece, SQUARE from,
               SQUARE wking, SQUARE bking);
     void lazy_updates(const Board &board, Accumulator &acc);
-
-
-    I32 activation(const std::array<I16, HIDDEN_LAYER_SIZE>& us,
-                   const std::array<I16, HIDDEN_LAYER_SIZE>& them,
-                   const std::array<I16, HIDDEN_LAYER_SIZE * N_COLORS * OUTPUT_BUCKETS>& weights,
-                   const int bucket);
 
     template <Color side> void add(Accumulator& accu, Piece piece, SQUARE from, SQUARE king);
 
@@ -253,15 +306,6 @@ private:
 
     std::pair<size_t, size_t> get_indices(Piece piece, SQUARE square, SQUARE wking, SQUARE bking);
     template <Color side>U32 get_indice(Piece piece, SQUARE square, SQUARE king);
-
-
-    //! \brief  SCReLU scalaire
-    //! \param[in] x    valeur brute de l'accumulateur (I16)
-    //! \return         valeur calculée (I32)
-    inline I32 screlu(I16 x) {
-        auto clamped = std::clamp(static_cast<I32>(x), 0, QA);
-        return clamped * clamped;
-    }
 
 };
 

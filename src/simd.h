@@ -171,6 +171,103 @@ inline int ReduceAddEpi32(Vepi32 v) {
     return _mm512_reduce_add_epi32(v);
 }
 
+//---------------------------------------------------------------------
+//  Pipeline dense multi-couches (FT pairwise → L1 int8 → L2/L3 float)
+//---------------------------------------------------------------------
+
+using Vepi8 = __m512i;
+using Vps   = __m512;
+
+// Nombre de vecteurs float utilisés pour accumuler L3 (façon Alexandria) :
+// (512 bits / 32) / (éléments par vecteur) — permet le même code AVX2/AVX-512
+constexpr int kNumPsSums = 1;
+
+//! \brief  min élément par élément de 2 vecteurs I16 (sans le max(0) de Clip)
+inline Vepi16 MinEpi16(Vepi16 v1, Vepi16 v2) {
+    return _mm512_min_epi16(v1, v2);
+}
+
+//! \brief  Multiplication I16 en gardant les 16 bits HAUTS du produit 32 bits (signée)
+inline Vepi16 MulhiEpi16(Vepi16 v1, Vepi16 v2) {
+    return _mm512_mulhi_epi16(v1, v2);
+}
+
+//! \brief  Décalage logique à gauche de chaque I16
+inline Vepi16 SlliEpi16(Vepi16 v, int shift) {
+    return _mm512_slli_epi16(v, shift);
+}
+
+//! \brief  Pack de 2 vecteurs I16 en un vecteur U8 avec saturation [0, 255].
+//! ATTENTION : opère par tranches de 128 bits → l'ordre des octets est entrelacé,
+//! compensé par la permutation des poids FT au chargement (NNUE::init).
+inline Vepi8 PackusEpi16(Vepi16 v1, Vepi16 v2) {
+    return _mm512_packus_epi16(v1, v2);
+}
+
+//! \brief  Construit un vecteur I32 dont tous les éléments valent num (broadcast 4 octets)
+inline Vepi32 BroadcastEpi32(int32_t num) {
+    return _mm512_set1_epi32(num);
+}
+
+//! \brief  Charge 64 U8 depuis une adresse alignée
+inline Vepi8 LoadEpi8(const void* memory_address) {
+    return _mm512_load_si512(memory_address);
+}
+
+//! \brief  Stocke un vecteur U8 à une adresse alignée
+inline void StoreEpi8(void* memory_address, Vepi8 vector) {
+    _mm512_store_si512(memory_address, vector);
+}
+
+//! \brief  Masque des I32 non nuls (1 bit par I32, 16 bits).
+//! Utilise cmpgt SIGNÉ : valide car les U8 packés sont ≤ 127 (garanti par FT_SHIFT)
+inline uint32_t NnzMask(Vepi8 v) {
+    return _mm512_cmpgt_epi32_mask(v, _mm512_setzero_si512());
+}
+
+//! \brief  sum += dot4(u, w) par lane I32 (u = U8, w = I8).
+//! VNNI : 1 instruction ; sinon fallback maddubs+madd (3 instructions).
+inline Vepi32 DpbusdEpi32(Vepi32 sum, Vepi8 u, Vepi8 w) {
+#if defined(__AVX512VNNI__)
+    return _mm512_dpbusd_epi32(sum, u, w);
+#else
+    const __m512i product16 = _mm512_maddubs_epi16(u, w);
+    return _mm512_add_epi32(sum, _mm512_madd_epi16(product16, _mm512_set1_epi16(1)));
+#endif
+}
+
+//! \brief  Variante ×2 : sum += dot4(u0,w0) + dot4(u1,w1).
+//! Sans VNNI, économise un madd en additionnant les 2 produits en I16 —
+//! sûr uniquement si |produit| ≤ 32767/2 (garanti par FT_SHIFT + clipping poids L1)
+inline Vepi32 Dpbusdx2Epi32(Vepi32 sum, Vepi8 u0, Vepi8 w0, Vepi8 u1, Vepi8 w1) {
+#if defined(__AVX512VNNI__)
+    return _mm512_dpbusd_epi32(_mm512_dpbusd_epi32(sum, u0, w0), u1, w1);
+#else
+    const __m512i product16a = _mm512_maddubs_epi16(u0, w0);
+    const __m512i product16b = _mm512_maddubs_epi16(u1, w1);
+    const __m512i product32  = _mm512_madd_epi16(_mm512_add_epi16(product16a, product16b), _mm512_set1_epi16(1));
+    return _mm512_add_epi32(sum, product32);
+#endif
+}
+
+//--- Vecteurs float (couches L1→L2→L3 en float après déquantification) ---
+
+inline Vps   ZeroPs()                          { return _mm512_setzero_ps(); }
+inline Vps   SetPs(float num)                  { return _mm512_set1_ps(num); }
+inline Vps   LoadPs(const float* mem)          { return _mm512_load_ps(mem); }
+inline void  StorePs(float* mem, Vps v)        { _mm512_store_ps(mem, v); }
+inline Vps   MinPs(Vps v1, Vps v2)             { return _mm512_min_ps(v1, v2); }
+inline Vps   MaxPs(Vps v1, Vps v2)             { return _mm512_max_ps(v1, v2); }
+inline Vps   MulPs(Vps v1, Vps v2)             { return _mm512_mul_ps(v1, v2); }
+inline Vps   AddPs(Vps v1, Vps v2)             { return _mm512_add_ps(v1, v2); }
+inline Vps   FmaddPs(Vps a, Vps b, Vps c)      { return _mm512_fmadd_ps(a, b, c); }
+inline Vps   CvtEpi32Ps(Vepi32 v)              { return _mm512_cvtepi32_ps(v); }
+
+//! \brief  Réduction horizontale des kNumPsSums vecteurs d'accumulation L3
+inline float ReduceAddPs(const Vps* vecs) {
+    return _mm512_reduce_add_ps(vecs[0]);
+}
+
 //--------------------------------------------------------------------------------- AVX2
 #elif defined __AVX2__
 
@@ -325,6 +422,107 @@ inline int ReduceAddEpi32(Vepi32 vector) {
 
     // Retourne les 32 bits bas de sum32
     return _mm_cvtsi128_si32(sum32);
+}
+
+//---------------------------------------------------------------------
+//  Pipeline dense multi-couches (FT pairwise → L1 int8 → L2/L3 float)
+//---------------------------------------------------------------------
+
+using Vepi8 = __m256i;
+using Vps   = __m256;
+
+// Nombre de vecteurs float utilisés pour accumuler L3 (façon Alexandria)
+constexpr int kNumPsSums = 2;
+
+//! \brief  min élément par élément de 2 vecteurs I16 (sans le max(0) de Clip)
+inline Vepi16 MinEpi16(Vepi16 v1, Vepi16 v2) {
+    return _mm256_min_epi16(v1, v2);
+}
+
+//! \brief  Multiplication I16 en gardant les 16 bits HAUTS du produit 32 bits (signée)
+inline Vepi16 MulhiEpi16(Vepi16 v1, Vepi16 v2) {
+    return _mm256_mulhi_epi16(v1, v2);
+}
+
+//! \brief  Décalage logique à gauche de chaque I16
+inline Vepi16 SlliEpi16(Vepi16 v, int shift) {
+    return _mm256_slli_epi16(v, shift);
+}
+
+//! \brief  Pack de 2 vecteurs I16 en un vecteur U8 avec saturation [0, 255].
+//! ATTENTION : opère par tranches de 128 bits → l'ordre des octets est entrelacé,
+//! compensé par la permutation des poids FT au chargement (NNUE::init).
+inline Vepi8 PackusEpi16(Vepi16 v1, Vepi16 v2) {
+    return _mm256_packus_epi16(v1, v2);
+}
+
+//! \brief  Construit un vecteur I32 dont tous les éléments valent num (broadcast 4 octets)
+inline Vepi32 BroadcastEpi32(int32_t num) {
+    return _mm256_set1_epi32(num);
+}
+
+//! \brief  Charge 32 U8 depuis une adresse alignée
+inline Vepi8 LoadEpi8(const void* memory_address) {
+    return _mm256_load_si256(reinterpret_cast<const __m256i*>(memory_address));
+}
+
+//! \brief  Stocke un vecteur U8 à une adresse alignée
+inline void StoreEpi8(void* memory_address, Vepi8 vector) {
+    _mm256_store_si256(reinterpret_cast<__m256i*>(memory_address), vector);
+}
+
+//! \brief  Masque des I32 non nuls (1 bit par I32, 8 bits).
+//! Utilise cmpgt SIGNÉ : valide car les U8 packés sont ≤ 127 (garanti par FT_SHIFT)
+inline uint32_t NnzMask(Vepi8 v) {
+    return _mm256_movemask_ps(_mm256_castsi256_ps(_mm256_cmpgt_epi32(v, _mm256_setzero_si256())));
+}
+
+//! \brief  sum += dot4(u, w) par lane I32 (u = U8, w = I8).
+//! Pas de VNNI en AVX2 → fallback maddubs+madd (3 instructions).
+inline Vepi32 DpbusdEpi32(Vepi32 sum, Vepi8 u, Vepi8 w) {
+    const __m256i product16 = _mm256_maddubs_epi16(u, w);
+    return _mm256_add_epi32(sum, _mm256_madd_epi16(product16, _mm256_set1_epi16(1)));
+}
+
+//! \brief  Variante ×2 : sum += dot4(u0,w0) + dot4(u1,w1).
+//! Économise un madd en additionnant les 2 produits en I16 —
+//! sûr uniquement si |produit| ≤ 32767/2 (garanti par FT_SHIFT + clipping poids L1)
+inline Vepi32 Dpbusdx2Epi32(Vepi32 sum, Vepi8 u0, Vepi8 w0, Vepi8 u1, Vepi8 w1) {
+    const __m256i product16a = _mm256_maddubs_epi16(u0, w0);
+    const __m256i product16b = _mm256_maddubs_epi16(u1, w1);
+    const __m256i product32  = _mm256_madd_epi16(_mm256_add_epi16(product16a, product16b), _mm256_set1_epi16(1));
+    return _mm256_add_epi32(sum, product32);
+}
+
+//--- Vecteurs float (couches L1→L2→L3 en float après déquantification) ---
+
+inline Vps   ZeroPs()                          { return _mm256_setzero_ps(); }
+inline Vps   SetPs(float num)                  { return _mm256_set1_ps(num); }
+inline Vps   LoadPs(const float* mem)          { return _mm256_load_ps(mem); }
+inline void  StorePs(float* mem, Vps v)        { _mm256_store_ps(mem, v); }
+inline Vps   MinPs(Vps v1, Vps v2)             { return _mm256_min_ps(v1, v2); }
+inline Vps   MaxPs(Vps v1, Vps v2)             { return _mm256_max_ps(v1, v2); }
+inline Vps   MulPs(Vps v1, Vps v2)             { return _mm256_mul_ps(v1, v2); }
+inline Vps   AddPs(Vps v1, Vps v2)             { return _mm256_add_ps(v1, v2); }
+inline Vps   FmaddPs(Vps a, Vps b, Vps c)      { return _mm256_fmadd_ps(a, b, c); }
+inline Vps   CvtEpi32Ps(Vepi32 v)              { return _mm256_cvtepi32_ps(v); }
+
+//! \brief  Réduction horizontale des kNumPsSums vecteurs d'accumulation L3
+//! (implémentation Alexandria : addition des 2 vecteurs puis réduction 256→32 bits)
+inline float ReduceAddPs(const Vps* vecs) {
+    const __m256 vec = _mm256_add_ps(vecs[0], vecs[1]);
+
+    const __m128 upper_128 = _mm256_extractf128_ps(vec, 1);
+    const __m128 lower_128 = _mm256_castps256_ps128(vec);
+    const __m128 sum_128   = _mm_add_ps(lower_128, upper_128);
+
+    const __m128 upper_64  = _mm_movehl_ps(sum_128, sum_128);
+    const __m128 sum_64    = _mm_add_ps(sum_128, upper_64);
+
+    const __m128 upper_32  = _mm_shuffle_ps(sum_64, sum_64, 1);
+    const __m128 sum_32    = _mm_add_ss(sum_64, upper_32);
+
+    return _mm_cvtss_f32(sum_32);
 }
 
 //--------------------------------------------------------------------------------- SSE2
