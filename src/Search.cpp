@@ -220,6 +220,9 @@ void Search::make_move(Board& board, const MOVE move) noexcept
     // Update de la position
     board.make_move<US, Update_NNUE>(accum, move);
 
+    // Précharge l'entrée TT
+    table->prefetch(board.get_key());
+
     // Empile le changement d'accumulateur
     accum.updated[WHITE] = false;
     accum.updated[BLACK] = false;

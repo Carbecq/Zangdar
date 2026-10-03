@@ -322,6 +322,7 @@ void test_eval(const std::string& fen)
     std::cout << board.display() << std::endl;
 
     auto search = std::make_unique<Search>();
+    search->table = &transpositionTable;     // make_move précharge la TT
     search->nnue.start_search(board);
 
     int eval = search->evaluate(board);

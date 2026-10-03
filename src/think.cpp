@@ -511,6 +511,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             si->cont_hist = &history.continuation_history[0][0];
 
             board.make_nullmove<C>();
+            table->prefetch(board.get_key());
             int null_score = -alpha_beta<~C>(board, timer, -beta, -beta + 1, depth - R, !cut_node, si+1);
             board.undo_nullmove<C>();
 
