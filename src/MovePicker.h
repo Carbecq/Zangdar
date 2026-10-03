@@ -20,16 +20,6 @@ enum {
     STAGE_DONE
 };
 
-constexpr int MvvLvaScores[N_PIECE_TYPE][N_PIECE_TYPE] = {
-    {0,  0,  0,  0,  0,  0,  0}, // victime Aucune_pièce
-    {0, 16, 15, 14, 13, 12, 11}, // victime Pion
-    {0, 26, 25, 24, 23, 22, 21}, // victime Cavalier
-    {0, 36, 35, 34, 33, 32, 31}, // victime Fou
-    {0, 46, 45, 44, 43, 42, 41}, // victime Tour
-    {0, 56, 55, 54, 53, 52, 51}, // victime Dame
-    {0,  0,  0,  0,  0,  0,  0}  // victime Roi
-};
-
 // https://www.nextptr.com/question/a6212599/passing-cplusplus-arrays-to-function-by-reference
 
 class MovePicker
@@ -45,7 +35,6 @@ public:
     void   score_quiet();
     bool   is_legal(MOVE move);
     bool   is_legal_quiet(MOVE move);
-    void   verify_MvvLva();
 
     MLMove pop_move(MoveList &ml, size_t idx);
     void   shift_move(MoveList& ml, size_t idx);

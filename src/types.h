@@ -84,11 +84,9 @@ constexpr std::initializer_list<PieceType> all_PIECE_TYPE = {
 };
 
 
-//  Valeur des pièces
-
-constexpr int EGPieceValue[N_PIECE_TYPE] = {
-    0, 221, 676, 701, 1192, 2101, 0
-};
+//  Ratios matériels, dans l'UNITÉ INTERNE de fast_see : ils ne sont comparés qu'à
+//  des seuils de la même unité (0, seeMargin). Sert aussi d'échelle au MVV.
+constexpr int SEE_VALUE[N_PIECE_TYPE] = {0, 100, 300, 300, 500, 900, 9999};
 
 
 //=====================================================
