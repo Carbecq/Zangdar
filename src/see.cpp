@@ -3,10 +3,6 @@
 #include "Attacks.h"
 
 
-//  Ratios matériels, dans l'UNITÉ INTERNE de fast_see : ils ne sont comparés qu'à
-//  des seuils de la même unité (0, seeMargin).
-constexpr int SEE_VALUE[N_PIECE_TYPE] = {0, 100, 300, 300, 500, 900, 9999};
-
 //! \brief  Valeur SEE d'un type de pièce (accesseur déclaré dans Board.h)
 int see_value(PieceType pt) noexcept
 {

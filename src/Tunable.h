@@ -130,6 +130,13 @@ PARAM(AspirationWindowsExpand, 6667, 4000, 9000);
 // Quiescence
 PARAM(DeltaPruningBias,    300, 100, 400);
 
+// Ordonnancement : rend SEE_VALUE commensurable à la capture history (±16384)
+PARAM(MvvLvaFactor, 16, 4, 32);
+
+// Bonus de promotion. Volontairement sous l'amplitude réelle de la capture history
+// (~6400), pour que celle-ci puisse encore rétrograder une promotion mal notée.
+PARAM(PromoOrderBonus, 2048, 512, 16384);
+
 //  SINGULAR EXTENSION
 PARAM(SEDepth, 8, 5, 11);
 PARAM(SEBetaMargin,  32,  8,  64);   // marge de sing_beta par unité de depth, en 1/16e (32 = 2.0)

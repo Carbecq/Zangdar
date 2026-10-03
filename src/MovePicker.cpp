@@ -2,6 +2,7 @@
 #include "MovePicker.h"
 #include "types.h"
 #include "Move.h"
+#include "Tunable.h"
 
 
 //=====================================================
@@ -216,28 +217,16 @@ void MovePicker::score_noisy()
     {
         move     = mln.mlmoves[i].move;
 
-        // Utilise le MVV-LVA standard
-        // PieceType dest_type = board.piece_on(Move::dest(move));  // pièce prise ou promotion
+        // MVV (Most Valuable Victim) : valeur de la pièce prise,
+        // multipliée pour peser autant que la capture history.
+        // La prise en passant est traitée comme les autres prises : le coup porte un pion pris.
+        value = SEE_VALUE[Move::captured_type(move)] * Tunable::MvvLvaFactor;
 
-        // std::cout << "i= " << i << "  " << Move::name(move) << std::endl;
-        // std::cout << "captured = " << piece_name[Move::captured(move)] << " value = " << MvvLvaScores[Move::captured(move)][Move::piece(move)] << std::endl;
-        // std::cout << "dest     = " << piece_name[dest_type] << " value = "            << MvvLvaScores[dest_type][Move::piece(move)] << std::endl;
-        // std::cout << "promo    = " << piece_name[Move::promotion(move)] << " value = " << MvvLvaScores[Move::promotion(move)][Move::piece(move)] << std::endl;
+        // Bonus pour la promotion en dame seulement
+        if (Move::is_promoting(move) && Move::promoted_type(move) == PieceType::QUEEN)
+            value += Tunable::PromoOrderBonus;
 
-
-        //    value = mg_value[dest_type] - Move::piece(move);
-        value = MvvLvaScores[Move::captured_type(move)][Move::piece_type(move)];
-
-        // Un bonus est de mise pour les promotions en dame
-        if (Move::is_promoting(move))
-            value += EGPieceValue[Move::promoted_type(move)];
-
-        // La prise en passant est un cas particulier du MVV-LVA
-        else if (Move::is_enpassant(move))
-            value = MvvLvaScores[PieceType::PAWN][PieceType::PAWN];
-        // eg_value[PAWN] -PieceType::PAWN;
-
-        mln.mlmoves[i].value = value + history.get_capture_history(info, move) ; //TODO à modérer ??
+        mln.mlmoves[i].value = value + history.get_capture_history(info, move);
     }
 }
 
@@ -492,21 +481,4 @@ bool MovePicker::is_legal_quiet(MOVE move)
             return true;
 
     return false;
-}
-
-
-//==================================================================
-//! \brief  Affiche la table MVV/LVA pour vérification
-//------------------------------------------------------------------
-std::string pchar[N_PIECE_TYPE] = {"NoPiece", "Pion", "Cavalier", "Fou", "Tour", "Dame", "Roi"};
-void MovePicker::verify_MvvLva()
-{
-    for(size_t Victim = PieceType::PAWN; Victim <= PieceType::KING; ++Victim)
-    {
-        for(size_t Attacker = PieceType::PAWN; Attacker <= PieceType::KING; ++Attacker)
-        {
-            printf("%10s prend %10s = %d\n", pchar[Attacker].c_str(), pchar[Victim].c_str(), MvvLvaScores[Victim][Attacker]);
-        }
-    }
-
 }
