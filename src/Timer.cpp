@@ -169,8 +169,8 @@ void Timer::setup(Color color, int fullmove)
         else
         {
             // Sudden death (X + Y)
-            // Part de la pendule croissante avec le numéro du coup (forme de Reckless)
-            const double share = 0.024 + 0.042 * (1.0 - std::exp(-0.045 * fullmove));
+            // Part de la pendule croissante avec le numéro du coup (formule de Reckless)
+            const double share = 0.0714 - 0.0579 * std::exp(-0.0459 * fullmove);
             timeForThisDepth = share * tr + 1.25 * inc;
             timeForThisMove  = 10.00 * (tr + 25.0 * inc) / 50.0;
         }
