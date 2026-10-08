@@ -47,8 +47,8 @@ const Network *network = reinterpret_cast<const Network *>(gnetworkData);
 //!
 //! On compare à NETWORK_DATA_SIZE et non à sizeof(Network) : l'alignas ajoute un
 //! bourrage de queue que le fichier n'a pas. Seul un bourrage de QUEUE est toléré,
-//! celui que l'export a pu ajouter ; tout écart plus grand signale une autre
-//! architecture.
+//! celui que l'export a pu ajouter.
+//! Tout écart plus grand signale une autre architecture.
 //------------------------------------------------------
 void verify_network()
 {

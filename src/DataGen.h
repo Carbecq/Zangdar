@@ -40,7 +40,7 @@ private:
     constexpr static int MIN_DRAW_COUNT   =   10;   // nombre minimum de positions nulles    pour adjuger la partie comme nulle
 
     // HARD_NODE_LIMIT est juste là pour empécher une explosion de la recherche
-    constexpr static int HARD_NODE_LIMIT  = 5'000'000;
+    constexpr static int HARD_NODE_LIMIT  =   100'000;   // 20 x SOFT_NODE_LIMIT
     constexpr static int SOFT_NODE_LIMIT  =     5'000;
 
     // TT réduite pour datagen : 4 MB suffit pour des recherches de 5000 nodes
