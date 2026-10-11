@@ -238,8 +238,6 @@ public:
               SQUARE wking, SQUARE bking);
     void lazy_updates(const Board &board, Accumulator &acc);
 
-    template <Color side> void add(Accumulator& accu, Piece piece, SQUARE from, SQUARE king);
-
 private:
     std::array<Accumulator, MAX_PLY+1> stack;                       // pile des accumulateurs
 
@@ -249,9 +247,6 @@ private:
     template <Color side> void lazy_update(const Board& board, Accumulator& head);
     template <Color side> void update(const Accumulator &src, Accumulator& dst, SQUARE king);
     template <Color side> bool need_refresh(SQUARE oldKing, SQUARE newKing) ;
-
-    template <Color side>
-    void sub(Accumulator& accu, Piece piece, SQUARE from, SQUARE king);
 
     template <Color side>
     void sub_add(const Accumulator& src, Accumulator& dst,

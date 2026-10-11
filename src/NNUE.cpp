@@ -1,4 +1,5 @@
 #include "NNUE.h"
+#include <bit>
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
@@ -205,18 +206,23 @@ int find_nnz(const U08* in, U16* indices)
     constexpr size_t stride    = sizeof(simd::Vepi8);       // 32 (AVX2) / 64 (AVX-512)
     constexpr int    nb_chunks = int(stride / sizeof(I32)); // 8 / 16
 
-    for (size_t i = 0; i < FT_OUT_SIZE; i += stride)
+    static_assert(FT_OUT_SIZE % (2 * stride) == 0);
+
+    // Deux vecteurs par tour, un seul masque (16 bits AVX2, 32 bits AVX-512)
+    for (size_t i = 0; i < FT_OUT_SIZE; i += 2 * stride)
     {
-        const U32 mask = simd::NnzMask(simd::LoadEpi8(&in[i]));
+        const U32 mask = simd::NnzMask(simd::LoadEpi8(&in[i]))
+                       | simd::NnzMask(simd::LoadEpi8(&in[i + stride])) << nb_chunks;
 
-        for (int j = 0; j < nb_chunks; j += 8)
+        for (int j = 0; j < 2 * nb_chunks; j += 8)
         {
-            const NNZEntry& entry = nnz_table[(mask >> j) & 0xFF];
+            const U32 slice = (mask >> j) & 0xFF;
 
-            const __m128i offsets = _mm_loadu_si128(reinterpret_cast<const __m128i*>(entry.indices));
+            const __m128i offsets = _mm_loadu_si128(reinterpret_cast<const __m128i*>(nnz_table[slice].indices));
             _mm_storeu_si128(reinterpret_cast<__m128i*>(&indices[count]), _mm_add_epi16(base, offsets));
 
-            count += entry.count;
+            // popcount plutôt que le compte de la table : ne dépend que du masque
+            count += std::popcount(slice);
             base = _mm_add_epi16(base, increment);
         }
     }
@@ -247,6 +253,32 @@ void propagate_l1(const U08* in, const U16* nnz, int nnz_count, int bucket, floa
     const I08* weights  = &network->l1_weights[size_t(bucket) * L2_SIZE * FT_OUT_SIZE];
 
     int i = 0;
+
+#if defined(__AVX512VNNI__)
+    // VNNI : dpbusd attend le résultat du précédent (~5 cycles) ; quatre chaînes
+    // indépendantes, additionnées à la fin (cf. Stockfish)
+    constexpr int nb_chains = 4;
+    simd::Vepi32 chains[nb_chains][L2_SIZE / kChunk32];
+    for (auto& chain : chains)
+        for (auto& s : chain)
+            s = simd::ZeroEpi32();
+
+    for (; i + nb_chains - 1 < nnz_count; i += nb_chains)
+    {
+        for (int c = 0; c < nb_chains; ++c)
+        {
+            const auto input = simd::BroadcastEpi32(in32[nnz[i + c]]);
+            const I08* w = &weights[size_t(nnz[i + c]) * 4 * L2_SIZE];
+
+            for (size_t j = 0; j < L2_SIZE / kChunk32; ++j)
+                chains[c][j] = simd::DpbusdEpi32(chains[c][j], input, simd::LoadEpi8(&w[j * sizeof(simd::Vepi8)]));
+        }
+    }
+
+    for (size_t j = 0; j < L2_SIZE / kChunk32; ++j)
+        sums[j] = simd::AddEpi32(simd::AddEpi32(chains[0][j], chains[1][j]),
+                                 simd::AddEpi32(chains[2][j], chains[3][j]));
+#else
     for (; i + 1 < nnz_count; i += 2)
     {
         const auto input_a = simd::BroadcastEpi32(in32[nnz[i]]);
@@ -259,6 +291,7 @@ void propagate_l1(const U08* in, const U16* nnz, int nnz_count, int bucket, floa
                                           input_a, simd::LoadEpi8(&wa[j * sizeof(simd::Vepi8)]),
                                           input_b, simd::LoadEpi8(&wb[j * sizeof(simd::Vepi8)]));
     }
+#endif
 
     for (; i < nnz_count; ++i)
     {
@@ -824,87 +857,6 @@ U32 NNUE::get_indice(Piece piece, SQUARE square, SQUARE king)
     }
 }
 
-//================================================================
-//! \brief  Ajoute une pièce (SIMD, une seule perspective)
-//! \param[in,out] accu     accumulateur de cette perspective à mettre à jour
-//! \param[in]     piece    pièce à ajouter
-//! \param[in]     from     position de cette pièce
-//! \param[in]     king     position du roi de couleur "US"
-//----------------------------------------------------------------
-template <Color side>
-void NNUE::add(Accumulator& accu, Piece piece, SQUARE from, SQUARE king)
-{
-    const auto idx = get_indice<side>(piece, from, king);
-
-#if defined USE_SIMD
-    constexpr int simd_width = sizeof(simd::Vepi16) / sizeof(I16);
-
-    for (size_t i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
-    {
-        if constexpr (side == WHITE)
-        {
-            simd::StoreEpi16(&accu.white[i], simd::AddEpi16(simd::LoadEpi16(&accu.white[i]), simd::LoadEpi16(&file_network->feature_weights[idx * HIDDEN_LAYER_SIZE + i])));
-        }
-        else
-        {
-            simd::StoreEpi16(&accu.black[i], simd::AddEpi16(simd::LoadEpi16(&accu.black[i]), simd::LoadEpi16(&file_network->feature_weights[idx * HIDDEN_LAYER_SIZE + i])));
-        }
-    }
-#else
-
-    if constexpr (side == WHITE)
-    {
-        for (size_t i = 0; i < HIDDEN_LAYER_SIZE; ++i)
-            accu.white[i] += file_network->feature_weights[idx * HIDDEN_LAYER_SIZE + i];
-    }
-    else
-    {
-        for (size_t i = 0; i < HIDDEN_LAYER_SIZE; ++i)
-            accu.black[i] += file_network->feature_weights[idx * HIDDEN_LAYER_SIZE + i];
-    }
-#endif
-}
-
-//================================================================
-//! \brief  Supprime une pièce (SIMD, une seule perspective)
-//! \param[in,out] accu     accumulateur de cette perspective à mettre à jour
-//! \param[in]     piece    pièce à supprimer
-//! \param[in]     from     position de cette pièce
-//! \param[in]     king     position du roi de couleur "US"
-//----------------------------------------------------------------
-template <Color side>
-void NNUE::sub(Accumulator& accu, Piece piece, SQUARE from, SQUARE king)
-{
-    const auto idx = get_indice<side>(piece, from, king);
-
-#if defined USE_SIMD
-    constexpr int simd_width = sizeof(simd::Vepi16) / sizeof(I16);
-
-    for (size_t i = 0; i < HIDDEN_LAYER_SIZE; i += simd_width)
-    {
-        if constexpr (side == WHITE)
-        {
-            simd::StoreEpi16(&accu.white[i], simd::SubEpi16(simd::LoadEpi16(&accu.white[i]), simd::LoadEpi16(&file_network->feature_weights[idx * HIDDEN_LAYER_SIZE + i])));
-        }
-        else
-        {
-            simd::StoreEpi16(&accu.black[i], simd::SubEpi16(simd::LoadEpi16(&accu.black[i]), simd::LoadEpi16(&file_network->feature_weights[idx * HIDDEN_LAYER_SIZE + i])));
-        }
-    }
-#else
-    if constexpr (side == WHITE)
-    {
-        for (size_t i = 0; i < HIDDEN_LAYER_SIZE; ++i)
-            accu.white[i] -= file_network->feature_weights[idx * HIDDEN_LAYER_SIZE + i];
-    }
-    else
-    {
-        for (size_t i = 0; i < HIDDEN_LAYER_SIZE; ++i)
-            accu.black[i] -= file_network->feature_weights[idx * HIDDEN_LAYER_SIZE + i];
-    }
-#endif
-}
-
 //=================================================================================
 //! \brief  Update combiné : Ajout + Suppression
 //! \param[in]  src         accumulateur source (précédent, à jour)
@@ -1130,7 +1082,9 @@ void NNUE::sub_sub_add_add(const Accumulator& src, Accumulator& dst,
 
 //==========================================================================
 //! \brief  Raffaichissement de l'accumulateur
-//! De façon à minimiser le travail, on utilise les finny tables
+//! De façon à minimiser le travail, on utilise les finny tables.
+//! Une seule passe : chaque tranche de l'entrée reste en registres pendant
+//! tous les retraits et ajouts, puis va dans l'entrée et dans l'accumulateur.
 //! \param[in]  board   position courante
 //! \param[out] acc     accumulateur de cette perspective à rafraîchir
 //--------------------------------------------------------------------------
@@ -1143,7 +1097,11 @@ void NNUE::refresh_accumulator(const Board &board, Accumulator& acc)
 
     FinnyEntry& entry = finny[mirrored][king_bucket];
 
-    SQUARE square;
+    // Lignes du FT à retirer de l'entrée et à y ajouter
+    std::array<const I16*, 32> subs;
+    std::array<const I16*, 32> adds;
+    int nb_subs = 0;
+    int nb_adds = 0;
 
     for (Color color : {Color::WHITE, Color::BLACK})
     {
@@ -1153,33 +1111,71 @@ void NNUE::refresh_accumulator(const Board &board, Accumulator& acc)
             const Bitboard old_pieces = entry.colorPiecesBB[side][color] & entry.typePiecesBB[side][piece];
             const Bitboard new_pieces = board.colorPiecesBB[color]       & board.typePiecesBB[piece];
 
-            // recherche des pièces à supprimer
             Bitboard to_remove = ~new_pieces & old_pieces;
             while (to_remove)
             {
-                square = BB::pop_lsb(to_remove);
-                sub<side>(entry.accumulator, Move::make_piece(color, piece), square, king_square);
+                const SQUARE square = BB::pop_lsb(to_remove);
+                subs[nb_subs++] = &file_network->feature_weights[get_indice<side>(Move::make_piece(color, piece), square, king_square) * HIDDEN_LAYER_SIZE];
             }
 
-            // recherche des pièces à ajouter
             Bitboard to_add = new_pieces & ~old_pieces;
             while (to_add)
             {
-                square = BB::pop_lsb(to_add);
-                add<side>(entry.accumulator, Move::make_piece(color, piece), square, king_square);
+                const SQUARE square = BB::pop_lsb(to_add);
+                adds[nb_adds++] = &file_network->feature_weights[get_indice<side>(Move::make_piece(color, piece), square, king_square) * HIDDEN_LAYER_SIZE];
             }
         }
     }
 
-    acc.updated[side] = true;
-
     entry.colorPiecesBB[side] = board.colorPiecesBB;
     entry.typePiecesBB[side]  = board.typePiecesBB;
 
-    if constexpr (side == WHITE)
-        acc.white = entry.accumulator.white;
-    else
-        acc.black = entry.accumulator.black;
+    auto& cached = (side == WHITE) ? entry.accumulator.white : entry.accumulator.black;
+    auto& target = (side == WHITE) ? acc.white : acc.black;
+
+#if defined USE_SIMD
+    constexpr size_t simd_width = sizeof(simd::Vepi16) / sizeof(I16);
+    constexpr size_t nb_regs    = 8;                                    // 4, 8 et 12 : même vitesse
+    constexpr size_t tile       = nb_regs * simd_width;
+    static_assert(HIDDEN_LAYER_SIZE % tile == 0);
+
+    for (size_t i = 0; i < HIDDEN_LAYER_SIZE; i += tile)
+    {
+        simd::Vepi16 regs[nb_regs];
+
+        for (size_t r = 0; r < nb_regs; ++r)
+            regs[r] = simd::LoadEpi16(&cached[i + r * simd_width]);
+
+        for (int k = 0; k < nb_subs; ++k)
+            for (size_t r = 0; r < nb_regs; ++r)
+                regs[r] = simd::SubEpi16(regs[r], simd::LoadEpi16(&subs[k][i + r * simd_width]));
+
+        for (int k = 0; k < nb_adds; ++k)
+            for (size_t r = 0; r < nb_regs; ++r)
+                regs[r] = simd::AddEpi16(regs[r], simd::LoadEpi16(&adds[k][i + r * simd_width]));
+
+        for (size_t r = 0; r < nb_regs; ++r)
+        {
+            simd::StoreEpi16(&cached[i + r * simd_width], regs[r]);
+            simd::StoreEpi16(&target[i + r * simd_width], regs[r]);
+        }
+    }
+#else
+    for (size_t i = 0; i < HIDDEN_LAYER_SIZE; ++i)
+    {
+        I16 value = cached[i];
+
+        for (int k = 0; k < nb_subs; ++k)
+            value = static_cast<I16>(value - subs[k][i]);
+        for (int k = 0; k < nb_adds; ++k)
+            value = static_cast<I16>(value + adds[k][i]);
+
+        cached[i] = value;
+        target[i] = value;
+    }
+#endif
+
+    acc.updated[side] = true;
 }
 
 template int NNUE::evaluate<WHITE>(const Accumulator& current, size_t count);
