@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         cxx:  [g++, clang++]
-        arch: [avx2, sse2]
+        arch: [avx2, sse41, sse2]
     steps:
       - uses: actions/checkout@v4
 
@@ -92,7 +92,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [avx2, sse2]
+        arch: [avx2, sse41, sse2]
     steps:
       - uses: actions/checkout@v4
 
