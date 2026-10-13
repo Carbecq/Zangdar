@@ -82,16 +82,6 @@ constexpr U32 FLAG_CASTLE_MASK    = 0b0100000000000000000000000000;
 //                                  0b0fffPPPPCCCCMMMMDDDDDDFFFFFF
 constexpr U32 MOVE_DEPL_MASK      = 0b0111111111110000000000000000;
 
-// NULL_MOVE
-
-// move  = (b1b1)
-// from  = b1
-// dest  = b1
-// piece = NONE
-// capt  = NONE
-// promo = NONE
-// flags = 0
-
 constexpr U32 MOVE_NULL           = 65; // 1000001
 constexpr U32 MOVE_NONE           = 0;
 

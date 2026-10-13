@@ -17,10 +17,6 @@ Search::Search() : stopFlagPtr(&stopped)
     printlog(message);
 #endif
 
-    // threadPool est une variable globale : ce constructeur tourne AVANT main().
-    // Sans USE_TUNING les Tunable sont des constexpr, donc lisibles ici.
-    // Avec USE_TUNING ce sont des variables inline d'une autre unité, dont
-    // l'initialisation n'est pas ordonnée par rapport à celle-ci.
 #if !defined USE_TUNING
     init_reductions();
 #endif

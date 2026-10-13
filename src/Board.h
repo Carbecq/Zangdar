@@ -864,10 +864,7 @@ public:
     [[nodiscard]] inline Bitboard get_pinned(Color c) const noexcept { return get_status().pinned[c];         }
 
     //! \brief  Réserve la capacité de l'historique des positions.
-    //! La copie d'un vector ne reporte que la taille, et Search::think reçoit
-    //! son Board par valeur : sans ce reserve, chaque thread réallouerait.
-    //! OPTIMISATION et non obligation : depuis le correctif de make_move, plus
-    //! aucune référence ne survit à une réallocation.
+    //! évite une réallocation par thread : Search::think copie le board
     inline void reserve_capacity() {
         statusHistory.reserve(MAX_HISTO);
     }

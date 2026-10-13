@@ -29,7 +29,6 @@ std::vector<std::string> split(const std::string& s, char delimiter)
 //!         ni les éventuels compteurs demi-coups/coups — ces derniers ne
 //!         changent ni les coups légaux ni le perft.
 //!         Sert à détecter les positions en double dans une suite de tests,
-//!         via un hash set : O(1) par position au lieu d'un std::find linéaire.
 //!
 //! \param[in]  epd_line  ligne EPD/FEN à analyser
 //!

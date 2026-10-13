@@ -163,10 +163,7 @@ void TranspositionTable::clear(void)
 
     tt_age = 0;
 
-    // Remet chaque HashCluster à zéro. C'est aussi ce premier parcours qui
-    // matérialise les huge pages : sous THP=madvise, madvise() ne fait que marquer
-    // la zone, la promotion n'a lieu qu'au premier accès (même raison que le
-    // tt_clear() d'Ethereal juste après son madvise).
+    // premier accès : c'est lui qui matérialise les huge pages
     if (tt_entries)
         // Le cast en void* est volontaire : HashCluster a un initialisateur par
         // défaut, et on le court-circuite sciemment. Sans lui, -Wclass-memaccess.
@@ -271,10 +268,7 @@ bool TranspositionTable::probe(U64 key, int ply, U16& move16, int &score, int& e
     const HashCluster& cluster = tt_entries[index(key)];
     for (const HashEntry& entry : cluster.entries)
     {
-        // Il faut s'assurer que l'entrée n'est pas vierge.
-        // Sinon une entrée dont les 16 bits bas seraient nuls pourrait être acceptée.
-        // L'ordre compte : empty() en premier coûte une lecture et une branche sur
-        // chaque entrée du cluster, au lieu d'une seule sur correspondance de clé.
+        // rejeter les entrées vierges (clé 16 bits nulle)
         if (entry.key16 == key16 && entry.empty() == false)
         {
             move16 = entry.move16;

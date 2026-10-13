@@ -62,17 +62,6 @@ int History::get_quiet_history(Color color, const SearchInfo* info, const MOVE m
 
     score += pawn_history[pawnkey & PAWNHIST_MASK][piece][dest];
 
-    /*
-     * Continuation History
-
-        Continuation History is a generalization of Counter Moves History and Follow Up History.
-        An n-ply Continuation History is the history score indexed by the move played
-        n-ply ago and the current move.
-        1-ply and 2-ply continuation histories are most popular and correspond
-        to Counter Moves History and Follow Up History respectively.
-        Many programs, notably Stockfish, also makes use of 3, 4, 5, and 6-ply continuation histories.
-     */
-
     if (Move::is_ok((info-1)->move))
         score += (*(info - 1)->cont_hist)[piece][dest];
 

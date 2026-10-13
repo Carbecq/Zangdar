@@ -180,9 +180,7 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
         // car il faut être sur que la Search soit bien créée
         // board et timer sont passés par valeur.
         //
-        // Ordre décroissant : la thread 0 est lancée EN DERNIER.
-        // Elle appelle wait(1), qui lit les threads 1..n-1 : elles doivent
-        // déjà être affectées quand elle démarre.
+        // thread 0 en dernier : wait(1) lit les threads 1..n-1
         for (size_t i = nbrThreads; i-- > 0; )
         {
             if (board.side_to_move == WHITE)

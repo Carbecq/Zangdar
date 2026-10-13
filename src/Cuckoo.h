@@ -15,7 +15,6 @@
      continuer à chercher même si une répétition est "imminente" :
      une répétition qui n'a pas encore eu lieu ne rend pas la position nulle pour autant.
     La vraie règle des échecs (triple répétition déjà survenue), elle, adjuge réellement la partie.
-    Le gain apporté par les tables cuckoo est de l'ordre de 5-10 Elo dans la plupart des moteurs.
 
 */
 

@@ -29,10 +29,7 @@ namespace {
 
 #include "incbin/incbin.h"
 
-//  incbin aligne les octets embarqués sur l'ISA détectée (16 en SSE2, 32 en AVX2),
-//  alors que Network est alignas(64) : sans cela le reinterpret_cast ci-dessous
-//  porterait sur une adresse sous-alignée. L'index 6 vaut 64 octets et corrige à la
-//  fois l'attribut C et la directive assembleur. Halogen procède de même.
+//  incbin aligne sur l'ISA (16/32) ; Network exige 64
 #undef  INCBIN_ALIGNMENT_INDEX
 #define INCBIN_ALIGNMENT_INDEX 6
 

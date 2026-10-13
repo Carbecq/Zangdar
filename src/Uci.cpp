@@ -589,15 +589,8 @@ setoption name <id> [value <x>]
        "setoption name Style value Risky\n"
        "setoption name Clear Hash\n"
        "setoption name NalimovPath value c:\chess\tb\4;c:\chess\tb\5\n" *
+       "setoption name Hash value 16\n"
      */
-
-    //  "setoption name Hash value 16\n"
-    //  "setoption name Nullmove value true\n"
-    //  "setoption name Selectivity value 3\n"
-    //  "setoption name Style value Risky\n"
-    //  "setoption name Clear Hash\n"
-    //  "setoption name NalimovPath value c:\chess\tb\4;c:\chess\tb\5\n"
-
 
     std::string name;
     std::string value;
