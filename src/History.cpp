@@ -30,7 +30,7 @@ void History::reset()
 //! \brief  Récupère le counter_move
 //! \param[in]  info    recherche actuelle
 //!
-//! \return Coup ayant provoqué un cutoff au coup précédent, MOVE_NONE si aucun
+//! \return Réfutation du coup précédent ([pièce][arrivée]), MOVE_NONE si aucune
 //------------------------------------------------------------------
 MOVE History::get_counter_move(const SearchInfo* info) const
 {
@@ -43,7 +43,8 @@ MOVE History::get_counter_move(const SearchInfo* info) const
 
 //==============================================================
 //! \brief  Retourne la somme de tous les history "quiet"
-//! Utilisé pour la recherche
+//! Utilisé pour la recherche ; poids égaux, alors que le tri (MovePicker::score_quiet)
+//! double la main history et la continuation à 1 ply
 //! \param[in]  color   camp qui joue
 //! \param[in]  info    recherche actuelle
 //! \param[in]  move    coup quiet évalué
@@ -53,11 +54,11 @@ MOVE History::get_counter_move(const SearchInfo* info) const
 //--------------------------------------------------------------
 int History::get_quiet_history(Color color, const SearchInfo* info, const MOVE move, KEY pawnkey) const
 {
-    // Main History
     Piece piece  = Move::piece(move);
     SQUARE from  = Move::from(move);
     SQUARE dest  = Move::dest(move);
 
+    // Main History
     int score = main_history[color][BB::test_bit(info->threats, from)][BB::test_bit(info->threats, dest)][from][dest];
 
     score += pawn_history[pawnkey & PAWNHIST_MASK][piece][dest];
@@ -102,7 +103,8 @@ void History::update_quiet_history(Color color, SearchInfo* info, MOVE best_move
         info->killer1 = best_move;
     }
 
-    // ne met à jour le quiet history que si le meilleur coup était significatif
+    // À profondeur <= 3, rien de plus si le coup qui coupe est le seul tranquille essayé
+    // (killers et counter move sont déjà à jour)
     if (!depth || (depth <= 3 && quiet_count <= 1))
         return;
 
@@ -178,7 +180,7 @@ void History::update_continuation(SearchInfo* info, MOVE move, int bonus)
 //! \param[in]  score   score retourné par la recherche
 //! \param[in]  alpha   borne inférieure de la fenêtre de recherche
 //! \param[in]  beta    borne supérieure de la fenêtre de recherche
-//! \param[in]  depth   profondeur de recherche du nœud
+//! \param[in]  depth   profondeur de la re-recherche (newDepth)
 //------------------------------------------------------------------
 void History::update_continuation_history(SearchInfo* info, MOVE move, int score, int alpha, int beta, int depth)
 {
@@ -204,7 +206,7 @@ void History::update_prior_countermove(Color color, SearchInfo* info, int depth)
 //! \brief  Mise à jour de la capture history
 //! Bonus pour le coup ayant provoqué un cutoff, malus pour les autres captures essayées
 //! \param[in]  info            recherche actuelle
-//! \param[in]  best_move       coup de capture ayant provoqué le cutoff (fail-high)
+//! \param[in]  best_move       coup qui a coupé (bonus seulement s'il est tactique)
 //! \param[in]  depth           profondeur de recherche du nœud
 //! \param[in]  capture_count   nombre de coups de capture essayés à ce nœud
 //! \param[in]  capture_moves   liste des coups de capture essayés à ce nœud
@@ -219,7 +221,7 @@ void History::update_capture_history(const SearchInfo *info, MOVE best_move, I16
     if (Move::is_tactical(best_move))
         update_capture(info, best_move, bonus);
 
-    // Malus pour les autres coups
+    // Malus pour les autres prises essayées
     for (size_t i = 0; i < capture_count; i++)
     {
         MOVE move = capture_moves[i];
@@ -247,11 +249,11 @@ void History::update_capture(const SearchInfo *info, MOVE move, int delta)
 
 //=================================================================
 //! \brief  Mise à jour des tables de correction history (pawn et non-pawn)
-//! en fonction de l'écart entre le score de recherche et l'éval statique
+//! en fonction de l'écart entre le score de recherche et l'éval statique corrigée
 //! \param[in]  board       échiquier courant
 //! \param[in]  depth       profondeur de recherche du nœud
 //! \param[in]  best_score  score retourné par la recherche
-//! \param[in]  static_eval éval statique (NNUE) du nœud
+//! \param[in]  static_eval éval statique corrigée du nœud (si->static_eval)
 //-----------------------------------------------------------------
 void History::update_correction_history(const Board& board, int depth, int best_score, int static_eval)
 {
@@ -269,16 +271,17 @@ void History::update_correction_history(const Board& board, int depth, int best_
 }
 
 //==================================================================
- //! \brief  Met à jour une entrée de correction history (gravity formula).
- //! Le bonus reflète la magnitude de l'écart eval_diff, pondérée par
- //! la profondeur. La gravity (entry * |change| / max_value) sature
- //! naturellement vers ±max_value sans clamp explicite.
- //! \param[in,out] entry           entrée de la table à mettre à jour
- //! \param[in]      eval_diff      écart entre score de recherche et éval statique
- //! \param[in]      depth          profondeur de recherche du nœud
- //! \param[in]      scale          facteur d'échelle du bonus (tunable)
- //! \param[in]      correction_max valeur maximale de correction (tunable)
- //------------------------------------------------------------------
+//! \brief  Met à jour une entrée de correction history (gravity formula).
+//! Le bonus reflète la magnitude de l'écart eval_diff, pondérée par
+//! la profondeur, et borné à ±max_value/4. La gravity (entry * |change| / max_value)
+//! sature l'entrée vers ±max_value sans l'écrêter.
+//! L'entrée est stockée × eval_scale : la correction appliquée reste sous correction_max.
+//! \param[in,out] entry           entrée de la table à mettre à jour
+//! \param[in]      eval_diff      écart entre score de recherche et éval statique corrigée
+//! \param[in]      depth          profondeur de recherche du nœud
+//! \param[in]      scale          facteur d'échelle du bonus (tunable)
+//! \param[in]      correction_max correction maximale, en centipions (tunable)
+//------------------------------------------------------------------
 void History::update_correction(I16& entry, int eval_diff, int depth, int scale, int correction_max)
 {
     const int eval_scale = MAX_HISTORY / correction_max;

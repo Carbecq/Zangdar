@@ -41,16 +41,6 @@ Timer::Timer(bool _infinite,
     searchDepth        = 0;
     nodesForThisMove   = 0;
     nodesForThisDepth  = 0;
-
-    // std::cout << "------------------------------------------Timer::Timer " << std::endl;
-
-    // std::cout << "time_left   " << limits.time[WHITE] << "  " << limits.time[BLACK] << std::endl;
-    // std::cout << "increment   " << limits.incr[WHITE] << "  " << limits.incr[BLACK] << std::endl;
-    // std::cout << "moves_to_go " << limits.movestogo << std::endl;
-    // std::cout << "depth       " << limits.depth << std::endl;
-    // std::cout << "nodes       " << limits.nodes << std::endl;
-    // std::cout << "move_time   " << limits.movetime << std::endl;
-    // std::cout << "infinite    " << limits.infinite << std::endl;
 }
 
 
@@ -72,16 +62,6 @@ void Timer::start()
 //-----------------------------------------------------------
 void Timer::setup(Color color, int fullmove)
 {
-    // std::cout << "------------------------------------------Timer::setup " << std::endl;
-
-    // std::cout << "time_left   " << limits.time[WHITE] << "  " << limits.time[BLACK] << std::endl;
-    // std::cout << "increment   " << limits.incr[WHITE] << "  " << limits.incr[BLACK] << std::endl;
-    // std::cout << "moves_to_go " << limits.movestogo << std::endl;
-    // std::cout << "depth       " << limits.depth << std::endl;
-    // std::cout << "nodes       " << limits.nodes << std::endl;
-    // std::cout << "move_time   " << limits.movetime << std::endl;
-    // std::cout << "infinite    " << limits.infinite << std::endl;
-
     mode                = TimerMode::TIME;
     searchDepth         = MAX_PLY - 1;
     timeForThisMove     = MAX_TIME;
@@ -115,35 +95,6 @@ void Timer::setup(Color color, int fullmove)
         // On teste la PRESENCE de la pendule, pas sa valeur : "go wtime 0 btime 0"
         // est une pendule au drapeau, il faut jouer tout de suite, pas chercher
         // indéfiniment.
-
-        // CCRL blitz : partie en 2 minutes avec 1 seconde d'incrément
-        // CCRL 40/15 : 40 coups en 15 minutes
-        // Amateur    : 12 minutes avec 8 secondes d'incrément.
-
-        //  CCRL 40/15 : 40 coups en 15 minutes, sans incrément
-        //  TC=40/15:00
-        //  go wtime 900000 btime 900000 movestogo 40
-
-        //  CCRL blitz : game in 2 minutes plus 1 second increment
-        //  tc=3:00+1
-        //  go wtime 181000 btime 181000 winc 1000 binc 1000
-
-        //  STC : partie en 10 secondes, incrément de 0.1 secondes
-        //  tc=10+0.1
-        //  go wtime 10100 btime 10100 winc 100 binc 100
-
-        //  LTC : partie en 1 minute, incrément de 0.6 secondes
-        //  tc=60+0.6
-        //  TC=1:00+0.6
-        //  go wtime 60600 btime 60600 winc 600 binc 600
-
-        //  VLTC : partie en 5 minutes, incrément de 3 secondes :
-        //  tc=5:00+3
-        //  go wtime 303000 btime 303000 winc 3000 binc 3000
-
-        // partie en 12 minutes, incrément de 8 secondes :
-        //  tc = 12:00+8
-        //  go wtime 728000 btime 728000 winc 8000 binc 8000
 
         I64 time      = limits.time[color];
         int increment = limits.incr[color];
@@ -212,8 +163,8 @@ void Timer::setup(U64 soft_limit, U64 hard_limit)
 //! De façon à éviter un nombre important de mesure de temps , on ne fera
 //! ce calcul que tous les MAX_COUNTER .
 //!
-//! On ne coupe jamais la toute première itération (depth == 1), pour
-//! garantir qu'un coup soit toujours enregistré avant un abandon.
+//! Pas de coupure avant la profondeur 4 en mode temps, ni avant la 2 en mode
+//! nœuds : un coup est toujours enregistré.
 
 //---------------------------------------------------------
 bool Timer::check_limits(const int depth, const int index, const U64 total_nodes)
@@ -257,15 +208,14 @@ bool Timer::check_limits(const int depth, const int index, const U64 total_nodes
 }
 
 //===========================================================
-//! \brief  Détermine si on a assez de temps pour effectuer
-//!         une nouvelle itération
+//! \brief  Détermine s'il faut arrêter après cette itération
 //! \param[in]  elapsed     temps en millisecondes
-//! \param[in]  depth       profondeur du meilleur coup
-//! \param[in]  total_nodes nombre total de noeuds calculés pour cette profondeur
+//! \param[in]  depth       profondeur de l'itération terminée
+//! \param[in]  total_nodes nœuds de la recherche (thread 0)
 //! \param[in]  pv_scores   historique des meilleurs scores
 //! \param[in]  pv_moves    historique des meilleurs coups
 //!
-//! \return Retourne "true" si on a assez de temps pour une nouvelle itération
+//! \return true s'il faut arrêter
 //-----------------------------------------------------------
 bool Timer::finishOnThisDepth(int elapsed, int depth, U64 total_nodes, const int* pv_scores, const MOVE* pv_moves)
 {

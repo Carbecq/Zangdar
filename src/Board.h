@@ -16,10 +16,10 @@
 // celle-ci sera nécessaire pour effectuer un unmake_move
 struct Status
 {
-    KEY  key                    = 0ULL;                     // nombre unique (?) correspondant à la position
-    KEY  pawn_key               = 0ULL;                     // nombre unique (?) correspondant à la position des pions
-    KEY  non_pawn_key[N_COLORS] = {0ULL, 0ULL};             // nombre unique (?) correspondant à la position des pièces, sauf les pions
-    MOVE move                   = Move::MOVE_NONE;
+    KEY  key                    = 0ULL;                     // clé Zobrist de la position
+    KEY  pawn_key               = 0ULL;                     // clé Zobrist des pions
+    KEY  non_pawn_key[N_COLORS] = {0ULL, 0ULL};             // clé Zobrist des pièces hors pions, par camp
+    MOVE move                   = Move::MOVE_NONE;          // coup qui a mené à cette position
     SQUARE   ep_square          = Square::SQUARE_NONE;      // case en-passant : si les blancs jouent e2-e4, la case est e3
     U32      castling           = CASTLE_NONE;              // droit au roque
     int      plies_from_null    = 0;                        // demi-coups depuis le dernier null move
@@ -29,17 +29,6 @@ struct Status
     Bitboard pinned[N_COLORS]   = {0ULL, 0ULL};             // bitboard des pièces clouées, pour chaque camp
     mutable Bitboard threats    = 0ULL;                     // cases attaquées par l'adversaire ; 0 = pas encore calculé
 };
-
-/*
-     * The Halfmove Clock inside an chess position object takes care of enforcing the fifty-move rule.
-     * This counter is reset after captures or pawn moves, and incremented otherwise.
-     * Also moves which lose the castling rights, that is rook- and king moves from their initial squares,
-     * including castling itself, increment the Halfmove Clock.
-     * However, those moves are irreversible in the sense to reverse the same rights -
-     * since once a castling right is lost, it is lost forever, as considered in detecting repetitions.
-     *
-     */
-
 
 class Board
 {
@@ -87,19 +76,6 @@ public:
         return( (Attacks::pawn_attacks<~C>(sq)         & occupancy_cp<C, PieceType::PAWN>())                                           |
                 (Attacks::knight_moves(sq)             & occupancy_cp<C, PieceType::KNIGHT>())                                         |
                 (Attacks::king_moves(sq)               & occupancy_cp<C, PieceType::KING>())                                           |
-                (Attacks::bishop_moves(sq, occupancy_all()) & (occupancy_cp<C, PieceType::BISHOP>() | occupancy_cp<C, PieceType::QUEEN>())) |
-                (Attacks::rook_moves(sq,   occupancy_all()) & (occupancy_cp<C, PieceType::ROOK>()   | occupancy_cp<C, PieceType::QUEEN>())) );
-    }
-
-    //! \brief Retourne le bitboard de toutes les pièces du camp "C", sauf le roi, attaquant la case "sq"
-    //! \param[in]  sq  case à examiner
-    //! \return bitboard des attaquants (roi exclu)
-    template <Color C> [[nodiscard]] constexpr Bitboard attackersButKing(const SQUARE sq) const noexcept
-    {
-        assert(SQ::is_ok(sq));
-        // il faut regarder les attaques de pions depuis l'autre camp
-        return( (Attacks::pawn_attacks<~C>(sq)         & occupancy_cp<C, PieceType::PAWN>())                                     |
-                (Attacks::knight_moves(sq)             & occupancy_cp<C, PieceType::KNIGHT>())                                   |
                 (Attacks::bishop_moves(sq, occupancy_all()) & (occupancy_cp<C, PieceType::BISHOP>() | occupancy_cp<C, PieceType::QUEEN>())) |
                 (Attacks::rook_moves(sq,   occupancy_all()) & (occupancy_cp<C, PieceType::ROOK>()   | occupancy_cp<C, PieceType::QUEEN>())) );
     }
@@ -192,38 +168,6 @@ public:
                 (Attacks::rook_moves(sq,   occ)   & (typePiecesBB[PieceType::ROOK]   | typePiecesBB[PieceType::QUEEN])) );
     }
 
-    //! \brief  Retourne un bitboard d'attaque où les sliders peuvent voir
-    //! « à travers » d'autres sliders se déplaçant dans les mêmes directions
-    //  code venant de Weiss
-    //! \param[in]  sq  case à examiner
-    //! \return bitboard d'attaque du Fou, avec xray sur les Fous/Dames amis
-    template<Color C> [[nodiscard]] Bitboard XRayBishopAttack(const SQUARE sq) const noexcept
-    {
-        assert(SQ::is_ok(sq));
-        Bitboard occ = occupancy_all() ^ occupancy_p<PieceType::QUEEN>() ^ occupancy_cp<C, PieceType::BISHOP>();
-        return(Attacks::bishop_moves(sq, occ));
-    }
-    //! \brief  Retourne un bitboard d'attaque où les sliders peuvent voir
-    //! « à travers » d'autres sliders se déplaçant dans les mêmes directions
-    //! \param[in]  sq  case à examiner
-    //! \return bitboard d'attaque de la Tour, avec xray sur les Tours/Dames amies
-    template<Color C> [[nodiscard]] Bitboard XRayRookAttack(const SQUARE sq) const noexcept
-    {
-        assert(SQ::is_ok(sq));
-        Bitboard occ = occupancy_all() ^ occupancy_p<PieceType::QUEEN>() ^ occupancy_cp<C, PieceType::ROOK>();
-        return(Attacks::rook_moves(sq, occ));
-    }
-    //! \brief  Retourne un bitboard d'attaque où les sliders peuvent voir
-    //! « à travers » d'autres sliders se déplaçant dans les mêmes directions
-    //! \param[in]  sq  case à examiner
-    //! \return bitboard d'attaque de la Dame, avec xray sur les Tours/Fous/Dames amis
-    template<Color C> [[nodiscard]] Bitboard XRayQueenAttack(const SQUARE sq) const noexcept
-    {
-        assert(SQ::is_ok(sq));
-        Bitboard occ = occupancy_all() ^ occupancy_p<PieceType::QUEEN>() ^ occupancy_cp<C, PieceType::ROOK>() ^ occupancy_cp<C, PieceType::BISHOP>();
-        return(Attacks::queen_moves(sq, occ));
-    }
-
     void set_fen(const std::string &fen, bool logTactics) noexcept;
     [[nodiscard]] std::string get_fen() const noexcept;
     void mirror_fen(const std::string &fen, bool logTactics);
@@ -236,7 +180,7 @@ public:
     //! \brief Retourne le bitboard des cases attaquées avec une occupancy explicite
     template<Color C> [[nodiscard]] Bitboard squares_attacked(Bitboard occ) const noexcept;
 
-    //! \brief  Initialise le bitboard des cases attaquées par l'adversaire, mémorisé dans le Status
+    //! \brief  Retourne les cases attaquées par l'adversaire, calculées une fois par position (Status)
     template<Color C> [[nodiscard]] Bitboard threats_from() const noexcept
     {
         assert(C == ~turn());
@@ -256,10 +200,6 @@ public:
 
     //! \brief  Détermine si le camp au trait est en échec dans la position actuelle
     [[nodiscard]] inline bool is_in_check() const noexcept { return get_status().checkers != 0; }
-
-    //! \brief  Détermine si le camp "C" attaque le roi ennemi
-    template<Color C>
-    [[nodiscard]] constexpr bool is_doing_check() const noexcept { return attackersButKing<C>(get_king_square<~C>()) != 0; }
 
     //! \brief  Génère les coups légaux pour le camp au trait
     //! \param[out] ml  MoveList de stockage des coups
@@ -603,26 +543,8 @@ public:
             static_assert(sizeof(C) == 0, "get_king_dest : Invalid Color/CastleSide");
     }
 
-    /* Le roque nécessite plusieurs conditions :
-
-    1) Toutes les cases qui séparent le roi de la tour doivent être vides.
-        Par conséquent, il n'est pas permis de prendre une pièce adverse en roquant ;
-    2) Ni le roi, ni la tour ne doivent avoir quitté leur position initiale.
-        Par conséquent, le roi et la tour doivent être dans la première rangée du joueur,
-        et chaque camp ne peut roquer qu'une seule fois par partie ;
-        en revanche, le roi peut déjà avoir subi des échecs, s'il s'est soustrait à ceux-ci sans se déplacer.
-    3) Aucune des cases (de départ, de passage ou d'arrivée) par lesquelles transite le roi lors du roque
-        ne doit être contrôlée par une pièce adverse.
-        Par conséquent, le roque n'est pas possible si le roi est en échec.
-    4) En revanche la tour, ainsi que sa case adjacente dans le cas du grand roque, peuvent être menacées.
-
-
-    A B C D E F G H
-    T       R     T
-    T         T R
-        R T
-
-    */
+    // Roque : cases entre roi et tour vides, droit intact, aucune case de passage du roi
+    // attaquée ; jamais en échec (legal_moves ne l'appelle pas alors)
 
     //=======================================================================
     //! \brief  Ajoute les coups du roque
@@ -673,9 +595,7 @@ public:
         return piece_at(sq) == Piece::PIECE_NONE;
     }
 
-    //! \brief  Retourne le type de la pièce située sur la case sq
-    //! Routine servant au debug
-    //! Sinon, utiliser piece_at
+    //! \brief  Retourne la pièce sur la case sq, relue dans les bitboards (debug ; sinon piece_at)
     //! \param[in]  sq  case à examiner
     //! \return pièce présente sur la case (PIECE_NONE si vide)
     [[nodiscard]] constexpr Piece piece_on(const SQUARE sq) const noexcept
@@ -774,18 +694,6 @@ public:
     }
 
 
-    //     /* position fen rnbq1rk1/pppp1ppn/4pb1p/8/2PP4/1P2PN2/PB2BPPP/RN1Q1RK1 b - - 0 8
-    //      *     moves d7d6 d1c2 b7b6 b1c3 c8b7 d4d5 f8e8 d5e6  | h7g6 h8g8 g1h2 b7c6 c2e2
-    //      *
-    //      *          1    2    3    4    5    6    7    8    9      10   11   12   13   14        StatusHistory.size()
-    //      *          0    1    2    3    4    5    6    7    8      9    10  >11<  12   13        gamemove_counter , 11 dans l'exemple
-    //      *                                   i         i       R   i         C                   R = root, C = position cherchée
-    //      *                                        0    1    2      3    4   >5<                  fiftymove_counter -> gamemove_counter - fiftymove_counter = 6
-    //      *                                   5         7           9                             i
-    //      *                                                   0     1    2   >3<   4    5         ply
-    //      */
-
-
     //=============================================================================
     //! \brief  Détermine si la position est nulle
     //! \param[in]  ply     profondeur actuelle de recherche
@@ -797,7 +705,8 @@ public:
 
 
     //=============================================================================
-    //! \brief  Ajoute une pièce à la case indiquée
+    //  Pièces seules, sans hash ni status : add_piece force les bits (lecture FEN),
+    //  set_piece (case vide) et remove_piece les basculent
     //-----------------------------------------------------------------------------
     void add_piece(const SQUARE square, const Color color, const Piece piece) noexcept;
     void set_piece(const SQUARE square, const Color color, const Piece piece) noexcept;
@@ -811,7 +720,7 @@ public:
     //===========================================================================
     //  Syzygy
 
-    void TBScore(const unsigned wdl, const unsigned dtz, int &score, int &bound) const;
+    void TBScore(const unsigned wdl, const unsigned ply, int &score, int &bound) const;
     bool probe_wdl(int &score, int &bound, int ply) const;
     MOVE convertPyrrhicMove(unsigned result) const;
     bool probe_root(MOVE& move) const;

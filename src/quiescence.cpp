@@ -21,7 +21,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
     assert(beta > alpha);
 
     //  Time-out
-    if (is_stopped() || timer.check_limits(iter_depth, index, nodes))    // ATTENTION on peut avoir depth <=0
+    if (is_stopped() || timer.check_limits(iter_depth, index, nodes))
     {
         signal_stop();
         return 0;
@@ -71,9 +71,8 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
     bool  tt_pv    = false;
     bool  tt_hit   = table->probe(board.get_key(), si->ply, tt_move16, tt_score, tt_eval, tt_bound, tt_depth, tt_pv);
 
-    // note : on ne teste pas la profondeur, car dans la Quiescence, elle est à 0
-    //        dans la cas de la Quiescence, on cut tous les coups, y compris la PV ????
-    if (tt_hit && !isPV)    //TODO tester isPV ou non ??
+    // Toute entrée de recherche a depth >= DEPTH_QS : pas de test de profondeur
+    if (tt_hit && !isPV)
     {
         if (   (tt_bound == BOUND_EXACT)
                || (tt_bound == BOUND_LOWER && tt_score >= beta)
@@ -95,8 +94,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
         raw_eval = (tt_hit && tt_eval != VALUE_NONE) ? tt_eval : evaluate(board);
         static_eval = si->static_eval = history.corrected_eval(board, raw_eval);
 
-        // le score est trop mauvais pour moi, on n'a pas besoin
-        // de chercher plus loin
+        // Stand pat : l'éval bat déjà beta
         if (static_eval >= beta)
             return static_eval;
 
@@ -132,13 +130,7 @@ int Search::quiescence(Board& board, Timer& timer, int alpha, int beta, SearchIn
             break;
 
 
-        /* Delta Pruning, une technique conceptuellement proche du futility pruning,
-            utilisée uniquement en quiescence search.
-            Principe : si l'évaluation est trop loin sous alpha, même avec une marge de
-            sécurité, une capture qui ne gagne rien ne renversera pas la position.
-            Inutile de l'explorer.
-        */
-
+        // Delta pruning : éval trop loin sous alpha, et la prise ne gagne rien à la SEE
         if (!isInCheck && Move::is_capturing(move) && futility <= alpha
             && !board.fast_see(move, 1))
         {

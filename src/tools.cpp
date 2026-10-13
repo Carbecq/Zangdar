@@ -28,7 +28,7 @@ std::vector<std::string> split(const std::string& s, char delimiter)
 //!         (placement, trait, roque, e.p.), sans les annotations (bm/am/id...)
 //!         ni les éventuels compteurs demi-coups/coups — ces derniers ne
 //!         changent ni les coups légaux ni le perft.
-//!         Sert à détecter les positions en double dans une suite de tests,
+//!         Sert à détecter les positions en double dans une suite de tests.
 //!
 //! \param[in]  epd_line  ligne EPD/FEN à analyser
 //!

@@ -43,23 +43,6 @@ template <Color C, bool divide=false>
     {
         move = (ml.mlmoves[index].move);
 
-        //        std::cout << "   " <<decal <<  Move::name(move) << " : " << std::endl;
-
-        //        const auto to       = Move::dest(move);
-        //        const auto from     = Move::from(move);
-        //        const auto piece    = Move::piece(move);
-        //        const auto captured = Move::captured(move);
-        //        const auto promo    = Move::promotion(move);
-
-        //        printf("move  = (%s) \n", Move::name(move).c_str());
-        //        binary_print(move, "message");
-        //        printf("from  = %s \n", square_name[from].c_str());
-        //        printf("dest  = %s \n", square_name[to].c_str());
-        //        printf("piece = %s \n", piece_name[piece].c_str());
-        //        printf("capt  = %s \n", piece_name[captured].c_str());
-        //        printf("promo = %s \n", piece_name[promo].c_str());
-        //        printf("flags = %d \n", Move::flags(move));
-
         if constexpr (divide == false)
         {
             board.make_move<C, false>(accum, move);

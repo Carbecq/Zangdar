@@ -2,7 +2,7 @@
 #include "Attacks.h"
 
 //===========================================================================
-//! \brief  Calcule les pièces donnant échec, et les pièces clouées
+//! \brief  Calcule les pièces donnant échec, et les pièces clouées des deux camps
 //---------------------------------------------------------------------------
 template <Color US>
 void Board::calculate_checkers_pinned() noexcept

@@ -28,10 +28,7 @@ void Board::legal_moves(MoveList& ml) const
     const Bitboard bq         = typePiecesBB[PieceType::BISHOP] | typePiecesBB[PieceType::QUEEN];
     const Bitboard rq         = typePiecesBB[PieceType::ROOK]   | typePiecesBB[PieceType::QUEEN];
 
-    //-----------------------------------------------------------------------------------------
-    //  Calcul des pièces clouées, et des échecs
-    //  algorithme de Surge
-    //-----------------------------------------------------------------------------------------
+    //  Échecs et clouages : calculés par calculate_checkers_pinned (algorithme de Surge)
 
     const Bitboard checkersBB = get_status().checkers;
     const Bitboard pinnedBB   = get_status().pinned[US];
@@ -52,8 +49,6 @@ void Board::legal_moves(MoveList& ml) const
     //-------------------------------------------------------------------------------------------
 
     ml.clear();
-
-    //    std::cout << "legal_gen 1 ; ch=%d " << BB::count_bit(checkersBB) << std::endl;
 
     // en échec : capturer ou bloquer l'unique pièce qui donne échec, s'il y en a une ;
     if (checkersBB)
@@ -136,29 +131,16 @@ void Board::legal_moves(MoveList& ml) const
 
 
     // common moves
-    //    std::cout << "legal_gen common " << std::endl;
 
     // enpassant capture
-    /*
-     *      p P
-     *
-     *        P
-     *
-     * ep_square = e3 = 20
-     * from      = d4 = 27
-     * to
-     *
-     */
     if constexpr (GenNoisy)
     {
         if (   get_status().ep_square != Square::SQUARE_NONE
             && (!checkersBB || x_checker == get_status().ep_square - pawn_push))
         {
-            // file : a...h
-
-            to = get_status().ep_square;             // e3 = 20
-            ep = to - pawn_push;        // 20 - (-8)  noirs = 28 = e4
-            from = ep - 1;              // 28 - 1 = 27 = d4
+            to = get_status().ep_square;
+            ep = to - pawn_push;        // case du pion pris
+            from = ep - 1;              // pion preneur à gauche
 
             Bitboard our_pawns = occupancy_cp<US, PieceType::PAWN>();
             if (SQ::file(to) > 0 && our_pawns & SQ::square_BB(from) )
@@ -174,7 +156,7 @@ void Board::legal_moves(MoveList& ml) const
                 }
             }
 
-            from = ep + 1;          // 28 + 1 = 29 = f4
+            from = ep + 1;          // pion preneur à droite
             if (SQ::file(to) < 7 && our_pawns & SQ::square_BB(from) )
             {
                 pieceBB = occupiedBB ^ SQ::square_BB(from) ^ SQ::square_BB(ep) ^ SQ::square_BB(to);
@@ -215,6 +197,7 @@ void Board::legal_moves(MoveList& ml) const
     else
         attackBB = (pieceBB >> 8) & emptyBB;
 
+    // promotions sans prise : rangées avec les coups tactiques
     if constexpr (GenNoisy)
     {
         push_quiet_promotions(ml, attackBB & PromotionRank[US], pawn_push, US);
@@ -264,17 +247,6 @@ void Board::legal_moves(MoveList& ml) const
     }
 
     // Roi
-    /* on enlève le roi de l'échiquier :
-     * Dans cette position
-     *   ..R...t.
-     *   12345678
-     *
-     *   Dans cette position, si le roi va à gauche, il est toujours attaqué par la tour ennemie.
-     *     car la case (2) sera attaquée par la tour noire.
-     *   Or, si on calcule les attaques de NOIR avec le roi BLANC,
-     *     la case (2) ne sera pas attaquée par la tour NOIRE.
-     *   Il faut donc calculer les attaques de NOIR sans le roi bLANC.
-     */
     // retirer le roi ne change que les glisseurs qui atteignent sa case, donc ceux qui font échec
     const Bitboard sliders = typePiecesBB[PieceType::BISHOP] | typePiecesBB[PieceType::ROOK] | typePiecesBB[PieceType::QUEEN];
     attackBB = (checkersBB & sliders)

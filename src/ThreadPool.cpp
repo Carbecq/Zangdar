@@ -138,9 +138,6 @@ void ThreadPool::start_thinking(const Board& board, const Timer& timer)
 
     MOVE best = Move::MOVE_NONE;
 
-    //  une ouverture est choisie par la GUI, depuis le book, et les moteurs jouent à partir de là
-    //  c'est ainsi que fonctionnent les tests de moteurs, ou les tournois
-
     // Probe Syzygy TableBases : joue directement le coup DTZ-optimal si la position est dans les TB.
     // Court-circuité par "go searchmoves" : le coup DTZ n'est pas forcément dans la liste demandée.
     if (useSyzygy && !has_searchMoves() && board.probe_root(best) == true)

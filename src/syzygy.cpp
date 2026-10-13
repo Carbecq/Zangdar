@@ -19,11 +19,11 @@ https://github.com/AndyGrant/Pyrrhic
 //=========================================================================
 //! \brief Convertit un tbresult en score
 //! \param[in]  wdl     résultat WDL renvoyé par Pyrrhic
-//! \param[in]  dtz     distance to zeroing (ply)
+//! \param[in]  ply     distance à la racine
 //! \param[out] score   score calculé à partir du résultat WDL
 //! \param[out] bound   type de borne associée au score (exact/lower/upper)
 //-------------------------------------------------------------------------
-void Board::TBScore(const unsigned wdl, const unsigned dtz, int& score, int& bound) const
+void Board::TBScore(const unsigned wdl, const unsigned ply, int& score, int& bound) const
 {
     // Convertit la valeur WDL en score. Les blessed losses et cursed wins
     // sont considérées comme des nulles, donc on met la valeur à zéro.
@@ -35,11 +35,11 @@ void Board::TBScore(const unsigned wdl, const unsigned dtz, int& score, int& bou
     switch (wdl)
     {
     case TB_WIN:
-        score = TBWIN - dtz;
+        score = TBWIN - ply;
         bound = BOUND_LOWER;
         break;
     case TB_LOSS:
-        score = -TBWIN + dtz;
+        score = -TBWIN + ply;
         bound = BOUND_UPPER;
         break;
     default:
@@ -60,10 +60,8 @@ void Board::TBScore(const unsigned wdl, const unsigned dtz, int& score, int& bou
 //-------------------------------------------------------------------------
 bool Board::probe_wdl(int& score, int& bound, int ply) const
 {
-    // Ne pas sonder à la racine, quand le roque est possible, ou quand la
-    // règle des 50 coups n'a pas été réinitialisée par le dernier coup.
-    // Enfin, cela n'a évidemment aucun sens s'il y a plus de pièces que ce
-    // que nos tables couvrent.
+    // Ni à la racine, ni avec un droit de roque, ni si le dernier coup n'a pas remis
+    // à zéro le compteur des 50 coups, ni au-delà des tables (ou de SyzygyProbeLimit)
 
     int probeLimit = threadPool.get_syzygyProbeLimit();
     int pieceCount = BB::count_bit(occupancy_all());
@@ -75,9 +73,7 @@ bool Board::probe_wdl(int& score, int& bound, int ply) const
         || (probeLimit > 0 && pieceCount > probeLimit))
         return false;
 
-    // Appel à l'API de Pyrrhic. Pyrrhic prend la représentation de l'échiquier,
-    // suivie de la case en passant (0 si aucune), puis du trait. Pyrrhic définit
-    // WHITE comme 1 et BLACK comme 0, soit l'inverse de la convention d'Ethereal
+    // Pyrrhic : bitboards, case e.p. (0 si aucune), trait avec WHITE = 1 (l'inverse de Zangdar)
 
     unsigned result = tb_probe_wdl(
         occupancy_c<WHITE>(),  occupancy_c<BLACK>(),
@@ -292,17 +288,14 @@ MOVE Board::convertPyrrhicMove(unsigned result) const
     unsigned to    = TB_GET_TO(result);
     unsigned from  = TB_GET_FROM(result);
     unsigned ep    = TB_GET_EP(result);
-    unsigned promo = TB_GET_PROMOTES(result);   // 1 = Dame ; 4 = Cavalier      syzygy
-                                                // 5          2                 moi
-
-    //TODO à vérifier
+    unsigned promo = TB_GET_PROMOTES(result);   // 1 = Dame ... 4 = Cavalier : 6 − promo = PieceType
 
     Piece piece = piece_square[from];
     Color color = Move::color(piece);
 
     // Conversion de la notation de coup. Attention : les flags de promotion de Pyrrhic sont inversés
     if (ep == 0u && promo == 0u)
-        return Move::CODE(from, to, piece_square[from], piece_square[to], Piece::PIECE_NONE, Move::FLAG_NONE); // MoveMake(from, to, NORMAL_MOVE);
+        return Move::CODE(from, to, piece_square[from], piece_square[to], Piece::PIECE_NONE, Move::FLAG_NONE);
     else if (ep != 0u)
         return Move::CODE(from, get_status().ep_square, piece, Move::make_piece(~color, PieceType::PAWN), Piece::PIECE_NONE, Move::FLAG_ENPASSANT_MASK);
     else /* if (promo != 0u) */

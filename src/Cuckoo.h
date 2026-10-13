@@ -8,15 +8,8 @@
 // Description de l'algorithme dans le papier suivant :
 // http://web.archive.org/web/20201107002606/https://marcelk.net/2013-04-06/paper/upcoming-rep-v2.pdf
 
-/*
-    Les tables cuckoo servent surtout à sécuriser un score de nulle quand on
-     est en train de perdre.
-    Si on a déjà mieux qu'une nulle (alpha > score_de_nulle), il faut quand même
-     continuer à chercher même si une répétition est "imminente" :
-     une répétition qui n'a pas encore eu lieu ne rend pas la position nulle pour autant.
-    La vraie règle des échecs (triple répétition déjà survenue), elle, adjuge réellement la partie.
-
-*/
+// Sert à s'assurer la nulle quand on perd ; une répétition à venir ne rend pas
+// pour autant la position nulle.
 
 namespace Cuckoo {
 

@@ -206,7 +206,7 @@ int Search::aspiration_window(Board& board, Timer& timer, SearchInfo* si, int pr
 //=====================================================
 //! \brief  Recherche du meilleur coup
 //!
-//!     Méthode Apha-Beta - Fail Soft
+//!     Méthode Alpha-Beta - Fail Soft
 //!
 //! \param[in,out]  board      position courante de la recherche
 //! \param[in,out]  timer      gestion du temps de la recherche
@@ -239,9 +239,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     // Hindsight : par défaut, ce nœud n'a encore réduit aucun coup enfant
     si->reduction     = 0;
 
-    /* On a atteint la fin de la recherche
-        Certains codes n'appellent la quiescence que si on n'est pas en échec
-        ceci amène à une explosion des coups recherchés */
+    // Profondeur épuisée : quiescence, même en échec (elle génère alors tous les coups)
     if (depth <= 0)
         return (quiescence<C>(board, timer, alpha, beta, si));
 
@@ -284,10 +282,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     const bool isExcluded = si->excluded != Move::MOVE_NONE;
     si->threats           = board.threats_from<THEM>();
 
-    // Pour la PVS, le nœud est un PV node si beta - alpha != 1 (full-window = pas une null window)
-    // On ne veut pas appliquer la plupart des techniques de pruning sur les PV nodes
-    // Ne pas confondre avec PV NODE (notation Knuth)
-    // Utiliser plutôt la notation : EXACT
+    // Nœud PV = fenêtre ouverte (beta - alpha > 1) : la plupart des élagages y sont exclus
     const bool isPV = ((beta - alpha) != 1);
 
      // Met à jour le compteur de nodes et la profondeur sélective
@@ -313,11 +308,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     bool  tt_pv    = false;
     bool  tt_hit   = isExcluded ? false : table->probe(board.get_key(), si->ply, tt_move16, tt_score, tt_eval, tt_bound, tt_depth, tt_pv);
 
-    // On fait confiance à la TT si ce n'est pas un pvnode et que la profondeur
-    // de l'entrée est suffisamment élevée.
-    // Dans les nœuds non-PV, on vérifie une coupure TT anticipée
-    //    (on ne retourne pas immédiatement sur une fenêtre PVS complète,
-    //     car cela raccourcirait la ligne PV)
+    // Coupure TT, hors nœuds PV (elle y raccourcirait la PV)
     if (tt_hit && !isPV && tt_depth >= depth)
     {
         if (   (tt_bound == BOUND_EXACT)
@@ -437,6 +428,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     //---------------------------------------------------------------------
     //  HINDSIGHT EXTENSION / REDUCTION
     //---------------------------------------------------------------------
+    // > 0 : le coup adverse précédent a dégradé sa position (évals de deux plies consécutifs)
     const int opp_worsening_rate = (isRoot || isInCheck)
                                  ? 0
                                  : si->static_eval + (si-1)->static_eval;
@@ -596,7 +588,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     const MOVE tt_move = table->move16_to_move(board, tt_move16);
 
     //---------------------------------------------------------------------
-    // Internal Iterative Deepening.
+    // Internal Iterative Reduction : sans coup de TT, un ply de moins
     //---------------------------------------------------------------------
     if ((isPV || cut_node) && depth >= 2+2*cut_node && tt_move == Move::MOVE_NONE)
     {
@@ -680,9 +672,6 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
         //-------------------------------------------------
         // History Pruning.
-        // L'idée : un coup quiet avec un historique très négatif est inutile à chercher :
-        // c'est un coup que le moteur a démontré comme mauvais dans des positions similaires.
-        // À faible profondeur, on le prune.
         //-------------------------------------------------
         if (   !isRoot
             && isQuiet
@@ -910,6 +899,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         history.update_prior_countermove(THEM, si-1, depth);
     }
 
+    // Correction history : hors échec et prises, si la borne situe best_score par rapport à l'éval
     if(   !isInCheck
           && !isExcluded
           && (best_move == Move::MOVE_NONE || !Move::is_capturing(best_move))
@@ -921,11 +911,6 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
     if (!is_stopped() && !isExcluded)
     {
-        //  si on est ici, c'est que l'on a trouvé au moins 1 coup
-        //  et de plus : score < beta
-        //  si score >  alpha    : c'est un bon coup : HASH_EXACT
-        //  si score <= alpha    : c'est un coup qui n'améliore pas alpha : HASH_ALPHA
-
         table->store(board.get_key(), best_move, best_score, raw_eval, bound, depth, si->ply, ttPV);
     }
 

@@ -25,18 +25,6 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
     const Piece captured = Move::captured(move);
     const Piece promoted = Move::promoted(move);
 
-    // printf("------------------------------------------make move \n");
-    // std::cout << display() << std::endl << std::endl;
-    //    printf("move  = (%s) \n", Move::name(move).c_str());
-    //    binary_print(move, "debut makemove");
-    //    printf("side  = %s \n", side_name[Us].c_str());
-    //    printf("from  = %s \n", square_name[from].c_str());
-    //    printf("dest  = %s \n", square_name[dest].c_str());
-    //    printf("piece = %c \n", pieceToChar(piece));
-    //    printf("capt  = %d : pièce prise=%c \n", Move::is_capturing(move), pieceToChar(captured));
-    //    printf("promo = %d : %c (%d) \n", Move::is_promoting(move), pieceToChar(promoted), Move::promoted(move));
-    //    printf("flags = %u \n", Move::flags(move));
-
     assert(Move::type(piece_square[get_king_square<US>()]) == PieceType::KING);
     assert(dest     != from);
     assert(piece    != Piece::PIECE_NONE);
@@ -45,15 +33,6 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
     assert(Move::type(promoted) != PieceType::PAWN);
     assert(Move::type(promoted) != PieceType::KING);
     assert(!statusHistory.empty());
-
-    /*
-              0b0fff PPPP CCCC MMMM DDDDDD FFFFFF
-     * 00000000      1110 1110 0000 010000 001000
-     *                         pion
-     *               Noir-None
-     *
-     *
-     */
 
     // On se sert des DirtyPieces pour accélérer la mise à niveau du réseau
     DirtyPieces& dp  = accum.dirtyPieces;
@@ -289,7 +268,6 @@ void Board::make_move(Accumulator& accum, const MOVE move) noexcept
             assert(Move::type(piece)    == PieceType::PAWN);
             assert(Move::type(captured) == PieceType::PAWN);
             assert(promoted == Piece::PIECE_NONE);
-            //TODO assert(SQ::file(dest) == SQ::file(ep_old));
             assert((US == Color::WHITE && SQ::rank(dest) == 5) || (US == Color::BLACK && SQ::rank(dest) == 2));
             assert((US == Color::WHITE && SQ::rank(from) == 4) || (US == Color::BLACK && SQ::rank(from) == 3));
             assert(SQ::file(dest) - SQ::file(from) == 1       || SQ::file(from) - SQ::file(dest) == 1);
@@ -524,7 +502,7 @@ void Board::add_piece(const SQUARE square, const Color color, const Piece piece)
 }
 
 //=============================================================================
-//! \brief  Bascule une pièce sur une case (toggle)
+//! \brief  Pose une pièce sur une case vide, en basculant les bitboards (undo_move)
 //!
 //! \param[in]  square  case concernée
 //! \param[in]  color   couleur de la pièce

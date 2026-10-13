@@ -57,21 +57,6 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
     // ajout d'un élément, il en faut au moins 1
     // il ne faut pas re-initialiser StatusHistory
 
-    /* position fen r2qk1nr/ppp2ppp/2nb4/4p3/2PpP3/5N1P/PPP2PP1/RNBQK2R b KQkq - 0 8 moves g8f6 b1d2 e8g8 a2a3 a7a5 b2b3 f6d7 e1g1 d7c5 d1e2 f8e8
-        i=0  move=a1-a1  50=0
-        i=1  move=Ng8-f6 50=1
-        i=2  move=Nb1-d2 50=2
-        i=3  move=Ke8-g8 50=3
-        i=4  move=Pa2-a3 50=0
-        i=5  move=Pa7-a5 50=0
-        i=6  move=Pb2-b3 50=0
-        i=7  move=Nf6-d7 50=1
-        i=8  move=Ke1-g1 50=2
-        i=9  move=Nd7-c5 50=3
-        i=10 move=Qd1-e2 50=4
-        i=11 move=Rf8-e8 50=5
-     */
-
     statusHistory.push_back(Status{});
 
     // est-ce une notation FEN ou EPD ?
@@ -356,7 +341,6 @@ void Board::set_fen(const std::string &fen, bool logTactics) noexcept
     }
 #endif
 
-    //   std::cout << display() << std::endl;
 }
 
 
@@ -618,7 +602,6 @@ void Board::mirror_fen(const std::string& fen, bool logTactics)
     get_status().non_pawn_key[WHITE] = non_pawn_key[WHITE];
     get_status().non_pawn_key[BLACK] = non_pawn_key[BLACK];
 
-    //   std::cout << display() << std::endl;
 }
 
 //============================================================

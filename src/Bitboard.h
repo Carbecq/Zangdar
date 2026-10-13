@@ -48,16 +48,7 @@ constexpr U32 PYRRHIC_pop_lsb(Bitboard* b) noexcept {
     return index;
 }
 
-//! \brief retourne la position du LSB
-//! Returns the number of consecutive 0 bits in the value of x, starting from the least significant bit (“right”).
-//!
-//!     countr_zero( 00000000 ) = 8
-//!     countr_zero( 11111111 ) = 0
-//!     countr_zero( 00011100 ) = 2
-//!     countr_zero( 00011101 ) = 0
-//!
-//!     Fonction aussi nommée : bitScanForward, getlsb
-//!     Remplace __builtin_ctzll à partir de C++20
+//! \brief  Retourne l'indice du bit de poids faible (64 si b est nul)
 [[nodiscard]] constexpr U32 get_lsb(Bitboard b) noexcept {
     return (std::countr_zero(b));
 }

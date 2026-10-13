@@ -7,7 +7,7 @@
 
 // https://www.chessprogramming.org/Node_Types
 
-static constexpr int BOUND_NONE  = 0;   //
+static constexpr int BOUND_NONE  = 0;   // aucune borne : entrée d'éval statique seule
 static constexpr int BOUND_UPPER = 1;   // All-nodes (Knuth's Type 3) : score <= alpha        ; appelé aussi FAIL-LOW
 static constexpr int BOUND_LOWER = 2;   // Cut-nodes (Knuth's Type 2) : score >= beta         ; appelé aussi FAIL-HIGH
 static constexpr int BOUND_EXACT = 3;   // PV-node   (Knuth's Type 1) : alpha < score < beta  ; la valeur stockée est EXACTE (pas une simple borne)
@@ -17,7 +17,6 @@ static constexpr int DEPTH_EVAL   = -7; // indique que l'entrée est une évalua
 static constexpr int DEPTH_QS     =  0; // profondeur utilisée pour la quiescence
 
 // La profondeur est stockée décalée : depth8 = DEPTH_OFFSET + depth
-// Idée reprise de Stockfish, et autres.
 //
 //   depth8 |  depth  |
 //   -------+---------+------------------------------------------------------
@@ -33,9 +32,6 @@ static constexpr int DEPTH_QS     =  0; // profondeur utilisée pour la quiescen
 // Le décalage vaut 8 et non 1 pour placer DEPTH_EVAL sous tout seuil auquel la
 // recherche compare une profondeur. Le plus bas est celui de ProbCut,
 // "tt_depth >= depth - 3", qui descend à -2 quand ProbCutDepth vaut 1.
-//
-// depth8 =  0 ,  1 , [8 ... 135]
-// depth  = -8 , -7 , [0 ... 127]
 
 class TranspositionTable;
 class Board;
@@ -234,9 +230,7 @@ public:
     }
 
     //==================================================
-    //! \brief  prefetch() précharge l'adresse donnée dans le cache L1/L2. C'est une
-    //!         fonction non bloquante qui n'immobilise pas le CPU en attente du
-    //!         chargement des données depuis la mémoire, ce qui peut être assez lent.
+    //! \brief  Précharge le cluster de la clé dans le cache, sans attendre
     //! \param[in]  key  clé de hachage (Zobrist) de la position à précharger
     //--------------------------------------------------
     inline void prefetch(const U64 key)

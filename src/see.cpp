@@ -13,7 +13,7 @@ int see_value(PieceType pt) noexcept
 //==========================================================================
 //! \brief  Détermine si le coup est avantageux :
 //! Teste si la valeur SEE du coup est supérieure ou égale au threshold.
-//! Basé sur l'algorithme "Swap"
+//! Basé sur l'algorithme "Swap" ; la promotion n'est pas comptée
 //!
 //! \param[in]  move       coup à évaluer (SEE)
 //! \param[in]  threshold  seuil à atteindre ou dépasser

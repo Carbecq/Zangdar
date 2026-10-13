@@ -114,10 +114,6 @@ void TranspositionTable::init_size(int mbsize)
     // clusters absurde, 4096 Mo en donne zéro (table vide, index hors bornes).
     size_t size  = (static_cast<size_t>(mbsize) * 1024 * 1024) / sizeof(HashCluster);
 
-    // L'index est calculé par : key & tt_mask
-    // if faut que le nombre de clusters soit un multiple de 2
-    // int keySize = static_cast<int>(std::log2(size));    // puissance de 2
-
     if (size != nbr_cluster)
     {
         // On alloue AVANT de libérer : si le système refuse, la table en place
@@ -228,9 +224,8 @@ void TranspositionTable::store(U64 key, MOVE move, int score, int eval, int boun
     if (depth == DEPTH_EVAL && gratuit == false)
         return;
 
-    // Approximativement le schéma de remplacement de SF
-    // On n'écrase pas une entrée de la même position, sauf si on a
-    // une borne exacte ou une profondeur presque aussi bonne que l'ancienne
+    // Approximativement le schéma de SF : une entrée de la même position et de l'âge courant
+    // n'est écrasée que par une borne exacte ou une profondeur presque aussi bonne
     if ((bound == BOUND_EXACT
          || key16 != replace->key16
          || replace->relative_age(tt_age)           // replace->age() != tt_age
@@ -268,7 +263,7 @@ bool TranspositionTable::probe(U64 key, int ply, U16& move16, int &score, int& e
     const HashCluster& cluster = tt_entries[index(key)];
     for (const HashEntry& entry : cluster.entries)
     {
-        // rejeter les entrées vierges (clé 16 bits nulle)
+        // une entrée vierge a key16 = 0 : la rejeter
         if (entry.key16 == key16 && entry.empty() == false)
         {
             move16 = entry.move16;
@@ -300,9 +295,7 @@ int TranspositionTable::hash_full() const
     {
         for (size_t j=0; j<CLUSTER_SIZE; j++)
         {
-            // Toute entrée écrite par la recherche en cours, évaluation statique comprise.
-            // Le test « sans coup » d'avant ratait aussi les fail low stockés
-            // sans meilleur coup. Convention de Stockfish, Obsidian et Ethereal.
+            // toute entrée de la recherche en cours, éval statique comprise (comme Stockfish)
             if (   !tt_entries[i].entries[j].empty()
                    && tt_entries[i].entries[j].age() == tt_age
                    )
@@ -320,10 +313,8 @@ int TranspositionTable::hash_full() const
 //!
 //! \param[out] physique       toute case écrite ; une case vierge porte la
 //!                            profondeur réservée 0, d'où le test sur empty()
-//! \param[out] age_courant    entrées de la recherche en cours, ou de celle qui
-//!                            vient de s'achever : ThreadPool::start_thinking
-//!                            avance l'âge AVANT de chercher, donc une
-//!                            interrogation post-recherche lit bien ce champ
+//! \param[out] age_courant    entrées de la recherche en cours ou de la dernière
+//!                            achevée (l'âge avance avant la recherche)
 //! \param[out] age_precedent  entrées de la recherche d'avant
 //! \param[out] eval_seule     entrées de l'évaluation statique, sans résultat de recherche
 //-----------------------------------------------------------------------

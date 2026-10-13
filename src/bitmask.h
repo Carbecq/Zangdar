@@ -165,7 +165,6 @@ template <Color C>
 //  Initialisations utilisant constexpr et lambda; nécessite C++17
 //================================================================================
 
-// une façon de faire
 constexpr std::array<Bitboard, N_SQUARES> RankMask64 = []() -> std::array<Bitboard, N_SQUARES> {
     std::array<Bitboard, N_SQUARES> b{};
     for (SQUARE sq = A1; sq < N_SQUARES; ++sq) {
@@ -174,7 +173,6 @@ constexpr std::array<Bitboard, N_SQUARES> RankMask64 = []() -> std::array<Bitboa
     return b;
 }();
 
-// une autrefaçon
 constexpr std::array<Bitboard, N_SQUARES> FileMask64 = [] {
     auto b = decltype(FileMask64){};
     for (SQUARE sq = A1; sq < N_SQUARES; ++sq) {

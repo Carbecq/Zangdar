@@ -202,7 +202,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
     // chaque thread a sa propre table, de façon à éviter
     // qu'un thread efface la TT pendant qu'un autre est en pleine recherche.
-    // TT réduite (4 MB vs 128 MB) : suffisant pour 5000 nodes, meilleure localité cache
+    // TT réduite (4 Mo) : suffisante pour 5000 nœuds
     std::unique_ptr<TranspositionTable> table_ptr = std::make_unique<TranspositionTable>(DATAGEN_HASH_SIZE);
     search->table = table_ptr.get();
 
@@ -224,7 +224,6 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
     // Ctrl-C (ou limite atteinte) → finit la partie en cours → écrit les fens → sort proprement.
     while (run.load())
     {
-        // printf("-----nouvelle partie : id=%d  \n", thread_id);
 
         board.initialisation();
         board.set_fen(START_FEN, false);
@@ -235,7 +234,6 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
         //  Initalisation random de l'échiquier
         //----------------------------------------------------
 
-        // printf("-------------------------------------------init random  \n");
 
         // Nombre de plies aléatoires tiré par partie dans [MIN,MAX] : alterne le camp
         // qui joue le premier coup réel (supprime un biais de parité de trait) + diversifie.
@@ -279,7 +277,6 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
                 continue;
         }
 
-        // printf("-------------------------------------------generated OK  \n");
 
         // Evaluation de la position, en fin des plies aléatoires
         // Si elle est trop déséquilibrée, on passe à une nouvelle partie
@@ -297,11 +294,9 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
             data_search<BLACK>(board, timer, *search, move, score);
         if (std::abs(score) > MAX_RANDOM_SCORE)
         {
-            // printf("-------------------------------------------score false  %d\n", score);
             continue;
         }
 
-        // printf("-------------------------------------------score OK  %d\n", score);
 
         //====================================================
         //  Boucle de jeu
@@ -315,7 +310,6 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
 
         while (true)
         {
-            // printf("----------------------------nouveau coup \n");
             search->nodes   = 0;
             search->stopped = false;
             search->table->update_age();
@@ -355,7 +349,6 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
             else
                 data_search<BLACK>(board, timer, *search, move, score);
 
-            // printf("----------------------------ajout (%d) \n", filtered);
 
             //  Filtrage de la position
             //  On cherche une position tranquille
@@ -366,7 +359,6 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
             {
                 fens[nbr_fens++] = { board.get_fen() , score * (1 - 2*board.turn()) };
             }
-            // printf("----------------------------ajout fin (%d) \n", ok_tb);
 
             // Si on utilise les tables Syzygy, inutile d'aller plus loin
             if (BB::count_bit(board.occupancy_all()) <= TB_LARGEST)
@@ -414,7 +406,6 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
             else
                 search->make_move<BLACK, true>(board, move);
         }
-        // printf("------------------fin de la partie \n");
 
         // Si on utilise les tables Syzygy, le résultat est exact.
         if (use_syzygy)
@@ -427,18 +418,7 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
                 board.get_status().ep_square == SQUARE_NONE ? 0 : board.get_status().ep_square,
                 board.turn() == WHITE ? 1 : 0);
 
-/*            Les tables Syzygy retournent le WDL du point de vue du camp qui doit jouer (board.turn()).
-
-              - TB_WIN → le camp qui joue gagne → COLOR_WIN[board.turn()]
-              - TB_LOSS → le camp qui joue perd → c'est l'adversaire qui gagne → COLOR_WIN[~board.turn()]
-              - sinon → nulle
-
-              L'opérateur ~ inverse la couleur (WHITE→BLACK, BLACK→WHITE).
-
-              Exemple concret : si c'est aux Noirs de jouer et que Syzygy dit TB_WIN :
-              - board.turn() = BLACK
-              - result = COLOR_WIN[BLACK] = "0.0" ✓
-*/
+            // WDL vu du camp au trait : TB_WIN, ce camp gagne ; TB_LOSS, l'autre
             if (wdl != TB_RESULT_FAILED)
             {
                 result = (wdl == TB_WIN)  ? COLOR_WIN[board.turn()] :
@@ -461,20 +441,12 @@ void DataGen::genfens(int thread_id, const std::string& str_file,
             file << fens[i].fen   << " | "
                  << fens[i].score << " | "
                  << result
-                    // <<  " | "
-                    // << "nbr_games=" << nbr_games <<  " | "
-                    // << "Noir gagne : 0.0 ; Blanc gagne : 1.0 "
                  << "\n";
         }
 
         total_fens.fetch_add(nbr_fens);   // total des fens de tous les threads
         file.flush();   // force l'écriture sur disque : protège contre Ctrl-C / crash
 
-        // file << "\n";
-        // file << "\n";
-        // file << "---- nbr_fens  " << nbr_fens << " \n";
-        // file << "\n";
-        // file << "\n";
 
     } // fin des parties
 
@@ -539,7 +511,6 @@ void DataGen::data_search(Board& board, Timer& timer, Search& search,
             break;
 
         // L'itération s'est terminée sans problème
-        // On peut mettre à jour les infos UCI
         search.best_depth = search.iter_depth;
 
         // Historique par profondeur
@@ -562,7 +533,7 @@ void DataGen::data_search(Board& board, Timer& timer, Search& search,
 #endif
         // Timer::update n'est pas utilisé car on est soit "par node", soit "par depth".
 
-        // Si une itération se termine après le temps optimal, on arrête la recherche
+        // Limite souple de nœuds (ou profondeur) atteinte : on arrête
         if (timer.finishOnThisDepth(elapsed, search.iter_depth, search.nodes, search.pv_scores, search.pv_moves))
             break;
 

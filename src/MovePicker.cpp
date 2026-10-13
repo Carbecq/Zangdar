@@ -28,7 +28,7 @@ MovePicker::MovePicker(Board& _board, const History& _history, const SearchInfo 
 //=====================================================
 //! \brief  Sélection du prochain coup
 //!
-//! \param[in]  skipQuiets  si vrai, saute les coups tranquilles (et les mauvaises captures)
+//! \param[in]  skipQuiets  si vrai, saute les coups tranquilles (killers et counter compris)
 //!
 //! \return Le coup sélectionné (MLMove{MOVE_NONE, 0} si aucun coup restant)
 //-----------------------------------------------------
@@ -293,12 +293,6 @@ size_t MovePicker::get_best(const MoveList& ml)
 //--------------------------------------------------------
 MLMove MovePicker::pop_move(MoveList& ml, size_t idx)
 {
-    /*
-    ---------------+-----------------+
-                   idx               count
-                                    count
-    */
-
     MLMove temp = ml.mlmoves[idx];
 
     ml.count--;

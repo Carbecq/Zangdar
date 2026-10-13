@@ -2,7 +2,7 @@
 #define HUGEPAGES_H
 
 //  Allocation d'un gros bloc aligné, sur des pages de 2 Mo quand le système
-//  les accorde. Repli silencieux sinon. Mesures et corpus : CHANGELOG 7.24.
+//  les accorde. Repli silencieux sinon.
 
 #include <cstddef>
 #include <cstdlib>

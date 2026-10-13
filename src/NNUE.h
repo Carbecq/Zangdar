@@ -32,7 +32,7 @@ constexpr size_t ALIGN_MAX = 64;
 //
 //  Le coût : l'accumulateur se met à jour coup par coup, pas les couches suivantes, qui
 //  relisent tout à chaque évaluation. D'où leur petite taille, et trois astuces :
-//    - produit par paires : neurone i × neurone i + 384, déjà un « et », moitié moins à lire ;
+//    - produit par paires : neurone i × neurone i + HL/2, déjà un « et », moitié moins à lire ;
 //    - on saute les zéros : la L1 ne lit que les produits non nuls, par blocs de 4 (find_nnz) ;
 //    - 8 jeux de couches selon le matériel restant (buckets de sortie), un seul calculé.
 //
@@ -49,8 +49,8 @@ constexpr size_t ALIGN_MAX = 64;
 //
 //  Calcul de l'évaluation (comme Alexandria 9 / Astra 7) :
 //    1. Accumulateur (I16) : acc[blanc/noir] = biais + Σ poids des pièces présentes
-//    2. Sortie FT, produit par paires : out[i] = (clamp(acc[i], 0, QA) × min(acc[i + 384], QA)) >> FT_SHIFT, négatif → 0
-//       → 384 octets par perspective, camp au trait d'abord = 768 octets
+//    2. Sortie FT, produit par paires : out[i] = (clamp(acc[i], 0, QA) × min(acc[i + HL/2], QA)) >> FT_SHIFT, négatif → 0
+//       → HL/2 octets par perspective, camp au trait d'abord = HL octets
 //    3. L1 (poids int8) : z = Σ out[i] × l1w[i] × L1_MUL + l1b, sur les seules entrées non nulles
 //       Double activation : clamp(z, 0, 1) et min(z², 1) → 32 float
 //    4. L2 (float) : SCReLU(in × l2w + l2b) → 32 float, SCReLU(x) = clamp(x, 0, 1)²
@@ -80,12 +80,11 @@ constexpr int FT_SHIFT = 10;    // décalage du produit par paires (résultat �
 constexpr float L1_MUL = float(1 << FT_SHIFT) / float(QA * QA * QB);
 
 // Pas de débordement dans Dpbusdx2 sans VNNI (cf. Alexandria) ; la borne ±1,98
-// des poids L1 est imposée à l'entraînement (zangdar_pretrain_ml.rs)
+// des poids L1 est imposée à l'entraînement (scripts bullet zangdar_*_ml*.rs)
 static_assert(127 * ((QA * QA) >> FT_SHIFT) * 4 <= 32767);
 
-// Couches L1 à L3 en SIMD : AVX2 minimum.
-// En SSE2, seul l'accumulateur reste en SIMD ; L1 à L3 passent par la version
-// scalaire (et les poids L1 gardent l'ordre du fichier).
+// Couches L1 à L3 en SIMD : AVX2 minimum. En dessous (sse2, sse41), seul l'accumulateur
+// est en SIMD ; L1 à L3 sont scalaires, poids L1 dans l'ordre du fichier.
 #if defined(USE_SIMD) && (defined(__AVX2__) || (defined(__AVX512F__) && defined(__AVX512BW__)))
   #define NNUE_DENSE_SIMD
 #endif
@@ -106,7 +105,7 @@ constexpr int KING_BUCKETS_COUNT = *std::ranges::max_element(king_buckets_map) +
 
 //-----------------------------------------------------------------------
 //  Layout du FICHIER réseau (sortie brute du save_format Bullet, via incbin).
-//  Sections dans l'ordre d'écriture du trainer (zangdar_pretrain_ml.rs) :
+//  Sections dans l'ordre d'écriture du trainer (scripts bullet zangdar_*_ml*.rs) :
 //  l0w, l0b (I16 ×QA) ; l1w (I8 ×QB, transposé [bucket][sortie][entrée]) ;
 //  l1b, l2w, l2b, l3w, l3b (float bruts, matrices transposées = row-major [sortie][entrée])
 struct Network {
@@ -153,6 +152,7 @@ struct SquarePiece {
     Piece  piece  = Piece::PIECE_NONE;
 };
 
+// Pièces du dernier coup : sub_1/add_1 = pièce jouée, sub_2 = pièce prise ou tour, add_2 = tour
 struct DirtyPieces {
     SquarePiece sub_1, add_1, sub_2, add_2;
 
@@ -169,7 +169,7 @@ struct DirtyPieces {
 class Accumulator
 {
 public:
-    //! \brief  Construit un accumulateur non initialisé (biais ajoutés via init_biases)
+    //! \brief  Construit un accumulateur à zéro (biais ajoutés par init_biases)
     Accumulator() {}
 
     alignas(ALIGN) std::array<I16, HIDDEN_LAYER_SIZE> white{};
@@ -195,6 +195,7 @@ private:
 //-----------------------------------------------------------------------
 //  Finny Tables
 //  https://www.chessprogramming.org/NNUE#Accumulator_Refresh_Table
+//  finny[miroir][bucket] ; bitboards et accumulateur rangés par perspective
 
 struct FinnyEntry {
     Array2D<Bitboard, N_COLORS, N_PIECE_TYPE> typePiecesBB  = {{}};
@@ -269,19 +270,17 @@ private:
                          Piece add_piece_2, SQUARE add_2,
                          SQUARE king);
 
-    //! \brief  Output bucket selon le nb de pièces restantes (MaterialCount).
-    //! count ∈ [2, 32] → bucket ∈ [0, 7]  (BUCKET_DIVISOR = 4)
-    //! count=2 → bucket=0 (finale), count=32 → bucket≤7 (partie pleine)
-    //! \param[in] count    nombre de pièces restantes sur l'échiquier
+    //! \brief  Output bucket : (count − 2) / 4, de 0 (2 pièces) à 7 (32 pièces)
+    //! \param[in] count    nombre de pièces sur l'échiquier
     //! \return Indice du bucket de sortie
     inline int get_bucket(size_t count) const {
         assert(count >= 2);
         return (count - 2) / BUCKET_DIVISOR;
     }
 
-     //! \brief Retourne la case relative à la perspective
-     //! \param[in] square   case à convertir
-     //! \return Case inchangée pour WHITE, miroir vertical pour BLACK
+    //! \brief Retourne la case relative à la perspective
+    //! \param[in] square   case à convertir
+    //! \return Case inchangée pour WHITE, miroir vertical pour BLACK
     template <Color side>
     inline SQUARE get_relative_square(SQUARE square) const {
         if constexpr (side == WHITE)
@@ -290,11 +289,10 @@ private:
             return SQ::mirrorVertically(square);
     }
 
-    //! \brief  Retourne la case, en tenant compte du Horizontal Mirroring
+    //! \brief  Retourne la case, en miroir horizontal si le roi est en colonne e à h
+    //! (convention de l'entraînement)
     //! \param[in] square       case à éventuellement mirrorer
-    //! \param[in] king_square  case du roi qui détermine le camp du miroir
-    //! \note Curieusement, le test inverse est pire (en elo)
-    //      king_SQUARE & 0b100 = 0 [FILE_A ... FILE_D] , 4 [FILE_D ... FILE_H]
+    //! \param[in] king_square  case du roi qui détermine le miroir
     inline SQUARE get_square(SQUARE square, SQUARE king_square) const {
         return king_square & 0b100 ? SQ::mirrorHorizontally(square) : square;
     }

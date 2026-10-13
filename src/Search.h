@@ -37,8 +37,8 @@ public:
     template <Color US, bool Update_NNUE> void make_move(Board& board, const MOVE move) noexcept;
     template <Color US, bool Update_NNUE> void undo_move(Board& board) noexcept;
 
-    U64         nodes;          // nombre de neuds recherchés
-    U64         tbhits;
+    U64         nodes;          // nombre de nœuds recherchés
+    U64         tbhits;         // sondages Syzygy réussis
 
     int         index;          // indice de la thread
     int         seldepth;       // selective depth
@@ -90,7 +90,7 @@ private:
         {0, 3, 4, 6, 8, 12, 20, 30}
     };
 
-    int Reductions[2][32][32];
+    int Reductions[2][32][32];  // [isQuiet][depth][move_count]
 
 }__attribute__((aligned(64)));
 

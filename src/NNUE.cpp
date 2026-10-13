@@ -10,19 +10,9 @@
 #include "Move.h"
 #include "Board.h"
 
-/*   INCBIN est une macro (de la bibliothèque incbin) qui insère le contenu brut du fichier EVALFILE
- *   directement dans une section de données de l'exécutable, au moment de la compilation.
- *   À partir du nom network qu'on lui donne, la macro génère trois symboles :
- *      - gnetworkData  : pointeur (const unsigned char*) vers le premier octet du fichier embarqué, aligné en mémoire ;
- *      - gnetworkEnd   : pointeur juste après le dernier octet ;
- *      - gnetworkSize  : la taille en octets.
- *
- *  Après le passage du préprocesseur, il existe donc trois identifiants distincts dans ce fichier :
- *      - Network       : le type, la struct définie dans NNUE.h ;
- *      - gnetworkxxx   : les 3 symboles générés par la macro ;
- *      - network       : pointeur sur le réseau
- *
- *  Tout est dans un namespace anonyme : network est privé à NNUE.cpp.
+/*  INCBIN embarque le fichier EVALFILE dans l'exécutable : gnetworkData, gnetworkEnd, gnetworkSize.
+ *  file_network pointe sur ces octets (FT lu sur place) ; network, sur les couches L1-L3
+ *  réordonnées par NNUE::init. Le namespace anonyme les rend privés à NNUE.cpp.
  */
 
 namespace {
@@ -42,8 +32,7 @@ const Network *file_network = reinterpret_cast<const Network *>(gnetworkData);
 RuntimeNetwork runtime_network;
 const RuntimeNetwork *network = &runtime_network;
 
-// Le fichier embarqué doit faire exactement la taille du struct (pas de padding :
-// toutes les sections précédentes sont des multiples de 64 octets)
+// Network n'a aucun bourrage intérieur : sa taille est celle des données du fichier
 static_assert(sizeof(Network) ==
               (KING_BUCKETS_COUNT * INPUT_LAYER_SIZE * HIDDEN_LAYER_SIZE + HIDDEN_LAYER_SIZE) * sizeof(I16)
             + OUTPUT_BUCKETS * L2_SIZE * FT_OUT_SIZE * sizeof(I08)
@@ -54,7 +43,6 @@ static_assert(sizeof(Network) ==
 //  Sert à lister les blocs d'entrées L1 non nuls (cf. Alexandria).
 struct NNZEntry {
     U16 indices[8];
-    int count;
 };
 std::array<NNZEntry, 256> nnz_table;
 
@@ -89,18 +77,16 @@ constexpr size_t packus_source(size_t pos)
 //------------------------------------------------------
 void NNUE::init()
 {
-    // Le fichier bullet = struct Network + padding final ("bullet" répété)
-    // jusqu'au multiple de 64 octets. Un fichier PLUS PETIT = mauvais réseau
-    // (mauvaise archi / mauvaises tailles) → refus net.
+    // Un fichier plus petit que Network vient d'une autre architecture (cf. verify_network)
     assert(gnetworkSize >= sizeof(Network));
 
     // Table NNZ
     for (int mask = 0; mask < 256; ++mask)
     {
-        nnz_table[mask].count = 0;
+        int count = 0;
         for (int bit = 0; bit < 8; ++bit)
             if (mask & (1 << bit))
-                nnz_table[mask].indices[nnz_table[mask].count++] = bit;
+                nnz_table[mask].indices[count++] = bit;
     }
 
     RuntimeNetwork& rt = runtime_network;
@@ -218,7 +204,6 @@ int find_nnz(const U08* in, U16* indices)
             const __m128i offsets = _mm_loadu_si128(reinterpret_cast<const __m128i*>(nnz_table[slice].indices));
             _mm_storeu_si128(reinterpret_cast<__m128i*>(&indices[count]), _mm_add_epi16(base, offsets));
 
-            // popcount plutôt que le compte de la table : ne dépend que du masque
             count += std::popcount(slice);
             base = _mm_add_epi16(base, increment);
         }
@@ -352,7 +337,7 @@ void propagate_l2(const float* in, int bucket, float* out)
 #else
 
 //=========================================================================
-//  Version scalaire (sans SIMD, ou SSE2 seul). Poids dans l'ordre du fichier.
+//  Version scalaire (sans AVX2). Poids dans l'ordre du fichier.
 //  Mêmes calculs, dans le même ordre, que la version SIMD : bench identique
 //  sur toutes les cibles.
 //=========================================================================
@@ -361,6 +346,7 @@ void propagate_l2(const float* in, int bucket, float* out)
 inline float min1(float x)   { return x < 1.0f ? x : 1.0f; }
 inline float clip01(float x) { return min1(x > 0.0f ? x : 0.0f); }
 
+//! \brief  Sortie FT d'une perspective (cf. version SIMD)
 void ft_activation(const std::array<I16, HIDDEN_LAYER_SIZE>& acc, U08* out)
 {
     for (size_t i = 0; i < HIDDEN_LAYER_SIZE / 2; ++i)
@@ -374,6 +360,7 @@ void ft_activation(const std::array<I16, HIDDEN_LAYER_SIZE>& acc, U08* out)
     }
 }
 
+//! \brief  L1 sur toute la sortie FT, puis double activation (cf. version SIMD)
 void propagate_l1(const U08* in, int bucket, float* out)
 {
     I32 sums[L2_SIZE] = {};
@@ -393,6 +380,7 @@ void propagate_l1(const U08* in, int bucket, float* out)
     }
 }
 
+//! \brief  L2 : 32 → 32, SCReLU (cf. version SIMD)
 void propagate_l2(const float* in, int bucket, float* out)
 {
     float sums[L3_SIZE];
@@ -443,12 +431,9 @@ float propagate_l3(const float* in, int bucket)
 } // namespace
 
 //======================================================
-//! \brief  Vérifie la taille du réseau embarqué (cf. NNUE.h)
-//!
-//! On compare à NETWORK_DATA_SIZE et non à sizeof(Network) : l'alignas ajoute un
-//! bourrage de queue que le fichier n'a pas. Seul un bourrage de QUEUE est toléré,
-//! celui que l'export a pu ajouter.
-//! Tout écart plus grand signale une autre architecture.
+//! \brief  Vérifie la taille du réseau embarqué
+//! Seul le bourrage de queue de l'export (< 64 octets) est toléré ;
+//! tout autre écart signale une autre architecture.
 //------------------------------------------------------
 void verify_network()
 {
@@ -590,7 +575,7 @@ void NNUE::pop()
 }
 
 //====================================================
-//! \brief  Re-initalise toutes les perspectives
+//! \brief  Réinitialise les deux perspectives
 //!
 //! \param[out] acc   accumulateur à réinitialiser (biais du réseau)
 //----------------------------------------------------
@@ -600,7 +585,7 @@ void NNUE::init_accumulator(Accumulator& acc)
 }
 
 //====================================================
-//! \brief  Re-initalise les tables Finny
+//! \brief  Réinitialise une entrée de table Finny
 //----------------------------------------------------
 void FinnyEntry::init()
 {
@@ -668,11 +653,10 @@ void NNUE::lazy_update(const Board &board, Accumulator& acc)
 
     for (int iter = int(head_idx) - 1; iter >= 0; --iter)
     {
-        // Recherche d'un accumulateur à raffraichir
+        // Changement de bucket ou de miroir en chemin ?
         if (NNUE::need_refresh<side>(stack[iter].king_square[side], king) == true)
         {
-            // Comme le cout d'un raffraichissement est important
-            // autant le faire sur le dernier accumulateur : acc
+            // un rafraîchissement coûte cher : le faire directement sur acc
             refresh_accumulator<side>(board, acc);
             break;
         }
@@ -695,7 +679,7 @@ void NNUE::lazy_update(const Board &board, Accumulator& acc)
 }
 
 //======================================================
-//! \brief  Faut-il raffraichir l'accumulateur ?
+//! \brief  Faut-il rafraîchir l'accumulateur ?
 //!
 //! \param[in] old_king     ancienne case du roi de cette perspective
 //! \param[in] new_king     nouvelle case du roi de cette perspective
@@ -775,16 +759,8 @@ void NNUE::update(const Accumulator& src, Accumulator& dst, SQUARE king)
 //------------------------------------------------------------------------
 std::pair<size_t, size_t> NNUE::get_indices(Piece piece, SQUARE square, SQUARE wking, SQUARE bking)
 {
-    // L'input Layer est rangée ainsi :
-    //  + Les blancs
-    //    + les pièces blanches
-    //      + Les cases de chaque pièce blanche
-    //  + les noirs
-    //    + les pièces noires
-    //      + Les cases de chaque pièce noire
-
-    //  Lorsque une entrée est modifiée par un coup, il faut retrouver
-    //  son indice.
+    // indice = bucket du roi × 768 + camp × 384 (celui de la perspective d'abord)
+    //        + type de pièce × 64 + case vue de la perspective
 
     assert(piece  != Piece::PIECE_NONE);
     assert(square != Square::SQUARE_NONE);
@@ -883,7 +859,6 @@ void NNUE::sub_add(const Accumulator& src, Accumulator& dst,
         if constexpr (side == WHITE)
         {
             auto cur_w  = simd::LoadEpi16(&src.white[i]);
-            //TODO sub_add ou add_sub ??
             cur_w       = simd::SubEpi16(cur_w, simd::LoadEpi16(&file_network->feature_weights[sub_idx * HIDDEN_LAYER_SIZE + i]));
             cur_w       = simd::AddEpi16(cur_w, simd::LoadEpi16(&file_network->feature_weights[add_idx * HIDDEN_LAYER_SIZE + i]));
             simd::StoreEpi16(&dst.white[i], cur_w);
@@ -891,7 +866,6 @@ void NNUE::sub_add(const Accumulator& src, Accumulator& dst,
         else
         {
             auto cur_w  = simd::LoadEpi16(&src.black[i]);
-            //TODO sub_add ou add_sub ??
             cur_w       = simd::SubEpi16(cur_w, simd::LoadEpi16(&file_network->feature_weights[sub_idx * HIDDEN_LAYER_SIZE + i]));
             cur_w       = simd::AddEpi16(cur_w, simd::LoadEpi16(&file_network->feature_weights[add_idx * HIDDEN_LAYER_SIZE + i]));
             simd::StoreEpi16(&dst.black[i], cur_w);
@@ -922,14 +896,13 @@ void NNUE::sub_add(const Accumulator& src, Accumulator& dst,
 
 //=================================================================================
 //! \brief  Update combiné : Ajout + Suppression + Suppression
-//! La pièce supprimée en dest appartient au camp ennemi
-//! Cette routine est utilisée pour la prise en passant
+//! Toute prise : simple, avec promotion ou en passant
 //! \param[in]  src             accumulateur source (précédent, à jour)
 //! \param[out] dst             accumulateur destination
 //! \param[in]  sub_piece_1     pièce supprimée de from
 //! \param[in]  sub_1           case de la pièce supprimée de from
-//! \param[in]  sub_piece_2     pièce ennemie supprimée de sub
-//! \param[in]  sub_2           case de la pièce ennemie supprimée
+//! \param[in]  sub_piece_2     pièce prise
+//! \param[in]  sub_2           case de la pièce prise (≠ add_1 en passant)
 //! \param[in]  add_piece_1     pièce ajoutée en dest
 //! \param[in]  add_1           case de la pièce ajoutée
 //! \param[in]  king            position du roi de couleur "US"
@@ -1078,7 +1051,7 @@ void NNUE::sub_sub_add_add(const Accumulator& src, Accumulator& dst,
 }
 
 //==========================================================================
-//! \brief  Raffaichissement de l'accumulateur
+//! \brief  Rafraîchissement de l'accumulateur
 //! De façon à minimiser le travail, on utilise les finny tables.
 //! Une seule passe : chaque tranche de l'entrée reste en registres pendant
 //! tous les retraits et ajouts, puis va dans l'entrée et dans l'accumulateur.

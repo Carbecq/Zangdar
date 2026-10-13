@@ -20,8 +20,6 @@ enum {
     STAGE_DONE
 };
 
-// https://www.nextptr.com/question/a6212599/passing-cplusplus-arrays-to-function-by-reference
-
 class MovePicker
 {
 public:
@@ -44,8 +42,6 @@ public:
     //! \brief Retourne l'étape courante du sélecteur de coups
     int  get_stage() const { return stage;}
 
-    bool hasNext() const;
-    MOVE getNext();
 
 
 private:
@@ -60,16 +56,16 @@ private:
     int     stage;         // étape courante du sélecteur
     bool    gen_noisy;     // a-t-on déjà généré les coups tactiques ?
     bool    gen_quiet;     // a-t-on déjà généré les coups tranquilles ?
-    int     threshold;
+    int     threshold;     // seuil SEE d'une bonne prise
 
     MOVE tt_move = Move::MOVE_NONE;
     MOVE killer1 = Move::MOVE_NONE;
     MOVE killer2 = Move::MOVE_NONE;
     MOVE counter = Move::MOVE_NONE;
 
-    MoveList mlq;
-    MoveList mln;
-    MoveList mlb;
+    MoveList mlq;          // coups tranquilles
+    MoveList mln;          // coups tactiques
+    MoveList mlb;          // mauvaises prises, sous le seuil SEE
 
 };
 

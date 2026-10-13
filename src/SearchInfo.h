@@ -2,12 +2,12 @@
 #define SEARCHINFO_H
 
 struct SearchInfo {
-    MOVE        excluded = Move::MOVE_NONE; // coup à éviter
+    MOVE        excluded = Move::MOVE_NONE; // coup exclu (recherche singulière)
     int         static_eval{};              // évaluation statique
-    MOVE        move = Move::MOVE_NONE;     // coup cherché
-    int         ply{};                      // profondeur de recherche
+    MOVE        move = Move::MOVE_NONE;     // coup joué à ce ply
+    int         ply{};                      // distance à la racine
     PVariation  pv{};                       // Principale Variation
-    int         doubleExtensions{};
+    int         doubleExtensions{};         // doubles extensions sur la ligne
     PieceTo*    cont_hist{};                // pointeur sur History::continuation_history[piece(info-x)][dest(info-x)]
     MOVE        killer1 = Move::MOVE_NONE;
     MOVE        killer2 = Move::MOVE_NONE;

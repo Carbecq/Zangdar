@@ -15,8 +15,8 @@ enum TimerMode {
 };
 
 struct Limits {
-    int  time[2];   // temps restant pour Noirs et Blancs
-    int  incr[2];   // incrément pour Noirs et Blancs
+    int  time[2];   // temps restant, par camp
+    int  incr[2];   // incrément, par camp
     int  movestogo; // coups restants
     int  depth;     // limite la recherche par profondeur
     U64  nodes;     // limite la recherche par nombre de nodes cherchés
@@ -85,14 +85,14 @@ private:
     int  mode;
     bool timeBased;              // mode TIME ou MOVETIME : évite deux comparaisons par noeud
     int  moveOverhead;           // temps de réserve pour l'interface (option UCI MoveOverhead)
-    I64  timeForThisDepth;       // temps pour "iterative deepening"
-    I64  timeForThisMove;        // temps pour une recherche "alpha-beta" ou "quiescence"
+    I64  timeForThisDepth;       // borne souple : pas de nouvelle itération au-delà
+    I64  timeForThisMove;        // borne dure : coupure en pleine recherche
     int  searchDepth;
-    U64  nodesForThisDepth;       // noeuds pour "iterative deepening"
-    U64  nodesForThisMove;        // noeuds pour une recherche "alpha-beta" ou "quiescence"
+    U64  nodesForThisDepth;       // borne souple, en nœuds
+    U64  nodesForThisMove;        // borne dure, en nœuds
 
-    std::array<U64, 4096>   MoveNodeCounts{};
-    U32                     pv_stability = 0;
+    std::array<U64, 4096>   MoveNodeCounts{};   // nœuds par coup racine, indexés par from/dest
+    U32                     pv_stability = 0;   // itérations avec le même meilleur coup (max 10)
 
 };
 

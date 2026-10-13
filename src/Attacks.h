@@ -116,7 +116,7 @@ constexpr int rook_relevant_bits[64] = {
     12, 11, 11, 11, 11, 11, 11, 12
 };
 
-// bits REELLEMENT utilises par le jeu de magics ci-dessous ("Best Magics so far")
+// bits RÉELLEMENT utilisés par le jeu de magics ci-dessous ("Best Magics so far")
 constexpr int bishop_used_bits[64] = {
      5,  4,  5,  5,  5,  5,  4,  5,
      4,  4,  5,  5,  5,  5,  4,  4,
@@ -266,7 +266,7 @@ alignas(64) extern Bitboard ROOK_ATTACKS[ROOK_ATTACKS_SIZE];
 
 #if defined USE_PEXT
 
-//! \brief  Données propre à une case, suffisant pour obtenir les attaques d'un fou ou d'une tour depuis cette case.
+//! \brief  Données propres à une case, suffisant pour obtenir les attaques d'un fou ou d'une tour depuis cette case.
 struct alignas(16) Magic
 {
     Bitboard           mask;      // cases pertinentes (hors bords)
@@ -295,7 +295,7 @@ constexpr std::array<Magic, N_SQUARES> make_magics(const Bitboard (&masks)[N_SQU
 
 #else
 
-//! \brief  Données propre à une case, suffisant pour obtenir les attaques d'un fou ou d'une tour depuis cette case.
+//! \brief  Données propres à une case, suffisant pour obtenir les attaques d'un fou ou d'une tour depuis cette case.
 struct alignas(32) Magic
 {
     Bitboard           mask;      // cases pertinentes (hors bords)

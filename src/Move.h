@@ -82,7 +82,7 @@ constexpr U32 FLAG_CASTLE_MASK    = 0b0100000000000000000000000000;
 //                                  0b0fffPPPPCCCCMMMMDDDDDDFFFFFF
 constexpr U32 MOVE_DEPL_MASK      = 0b0111111111110000000000000000;
 
-constexpr U32 MOVE_NULL           = 65; // 1000001
+constexpr U32 MOVE_NULL           = 65; // b1b1 : départ = arrivée, jamais un coup légal
 constexpr U32 MOVE_NONE           = 0;
 
 
@@ -224,16 +224,13 @@ constexpr U32 MOVE_NONE           = 0;
     return (move & (MOVE_CAPT_MASK | MOVE_PROMO_MASK | FLAG_ENPASSANT_MASK));
 }
 
+//! \brief  Coup réel : ni MOVE_NONE ni MOVE_NULL
 [[nodiscard]] constexpr inline bool is_ok(const MOVE m) noexcept {
   return m != Move::MOVE_NONE && m != Move::MOVE_NULL;
 }
 
 //=================================================
-//! \brief Affichage du coup
-//-------------------------------------------------
-// exemples :
-//  std::string s = Move::name(move) ;
-//  std::cout << Move::name(move) ;
+//! \brief  Coup en notation UCI (e2e4, e7e8q)
 //-------------------------------------------------
 [[nodiscard]] inline std::string name(U32 move) noexcept
 {
@@ -265,10 +262,8 @@ constexpr U32 MOVE_NONE           = 0;
     std::stringstream ss;
     std::string s;
 
-    // Le roque n'a pas de notation UCI dédiée (mode 4) : "e1g1" est déjà correct.
-    // Pour les autres modes, la notation SAN standard "O-O"/"O-O-O" remplace tout
-    // le reste, sinon show() produit un coup de roi ordinaire ("Kg1") qui ne
-    // correspondra jamais à un "bm"/"am" écrit en O-O dans un fichier EPD.
+    // Roque en SAN (O-O, O-O-O) hors UCI : sinon "Kg1" ne correspondrait jamais
+    // à un bm/am écrit O-O dans un fichier EPD
     if (Move::is_castling(move) && mode != 4)
     {
         ss << (SQ::file(Move::dest(move)) == 6 ? "O-O" : "O-O-O");

@@ -44,7 +44,7 @@ using CaptureHistory = I16[N_PIECE][2][2][N_SQUARES][N_PIECE_TYPE];     // [piè
 //============================================================================
 // Move Ordering : Countermove Heuristic
 // Cette heuristique suppose que beaucoup de coups ont une réponse "naturelle",
-//  indexée par [from][to] ou par [piece][to] du coup précédent
+//  indexée par [pièce][arrivée] du coup précédent
 //============================================================================
 using CounterMoveTable = MOVE[N_PIECE][N_SQUARES];
 
@@ -57,7 +57,7 @@ using CounterMoveTable = MOVE[N_PIECE][N_SQUARES];
  * n plies plus tôt et le coup courant.
  * Les continuation histories à 1 et 2 plies sont les plus utilisées et correspondent
  * respectivement à Counter Moves History et Follow Up History.
- * Zangdar cumule aussi la profondeur 4 plies (voir les 3 lignes ci-dessous) : elle capture
+ * Zangdar cumule aussi la profondeur 4 plies (voir get_quiet_history) : elle capture
  * le motif « ce coup répond bien au coup joué par le même camp il y a deux coups complets ».
  */
 //============================================================================
@@ -66,12 +66,16 @@ using ContinuationHistoryTable = I16[N_PIECE][N_SQUARES][N_PIECE][N_SQUARES];
 //============================================================================
 //  Correction History
 //
-//  Enregistre l'écart moyen entre éval statique (NNUE) et score de recherche,
-//  indexé par feature de position : pawn structure, et non-pawn structure
-//  par couleur. corrected_eval = raw_eval + corr_pawn + corr_npw + corr_npb.
+//  Enregistre l'écart entre score de recherche et éval statique DÉJÀ corrigée,
+//  indexé par le trait et par clé : structure de pions, et pièces hors pions
+//  de chaque camp.
+//    corrected_eval = raw_eval × (200 − compteur des 50 coups) / 200
+//                   + chaque terme / (MAX_HISTORY / CorrMax de sa table),
+//    borné à ±(TBWIN_IN_X − 1).
 //
 //  Affecte toutes les décisions basées sur l'éval statique :
-//  SNMP/RFP, NMP, razoring, futility pruning, LMR, singular extension.
+//  SNMP/RFP, NMP, razoring, ProbCut, futility pruning, stand pat de la quiescence,
+//  et improving (LMR, LMP, history pruning).
 //
 //  Mise à jour (gravity formula) :
 //    change = clamp(eval_diff * depth * scale / 64, ±max_value/4)
@@ -165,10 +169,7 @@ private:
     //-----------------------------------------------------
     inline void gravity(I16& entry, int bonus)
     {
-        // Formulation du WIKI :
-        // int clamped_bonus = std::clamp(bonus, -MAX_HISTORY, MAX_HISTORY);
-        // entry += clamped_bonus - (*entry) * abs(clamped_bonus) / MAX_HISTORY;
-
+        // pas d'écrêtage : |bonus| ≤ 8192 < MAX_HISTORY avec les bornes des Tunable
         entry += bonus - static_cast<int>(entry) * abs(bonus) / MAX_HISTORY;
     }
 
@@ -206,18 +207,18 @@ private:
     // tableau donnant le bonus/malus d'un coup quiet ayant provoqué un cutoff
     MainHistoryTable  main_history = {{{{{0}}}}};
 
-    //
+    // pawn history : [clé de pions][pièce][arrivée]
     PawnHistoryTable pawn_history = {{{0}}};
 
 
-    // tableau des coups qui ont causé un cutoff au ply précédent
+    // réfutation : coup tranquille qui a coupé en réponse au coup [pièce][arrivée] précédent
     CounterMoveTable counter_move = {{Move::MOVE_NONE}};
 
     // capture history  : [pièce jouée][threat from][threat to][case d'arrivée][type de pièce capturée]
     CaptureHistory capture_history = {{{{{0}}}}};
 
-    // Correction History
-    // Utilisé pour la correction de l'évaluation
+    // Correction History, utilisée pour la correction de l'évaluation :
+    // pions [trait][clé], pièces [camp des pièces][trait][clé]
     PawnCorrectionHistoryTable    pawn_correction_history = {{0}};
     NonPawnCorrectionHistoryTable non_pawn_correction_history[N_COLORS] = {{{0}}};
 };

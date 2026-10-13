@@ -84,8 +84,8 @@ constexpr std::initializer_list<PieceType> all_PIECE_TYPE = {
 };
 
 
-//  Ratios matériels, dans l'UNITÉ INTERNE de fast_see : ils ne sont comparés qu'à
-//  des seuils de la même unité (0, seeMargin). Sert aussi d'échelle au MVV.
+//  Ratios matériels, dans l'UNITÉ INTERNE de fast_see : comparés à des seuils de la même
+//  unité (seeMargin) ou mis à l'échelle (ProbCut). Sert aussi d'échelle au MVV.
 constexpr int SEE_VALUE[N_PIECE_TYPE] = {0, 100, 300, 300, 500, 900, 9999};
 
 
@@ -297,9 +297,6 @@ template <typename T>
 
 //==================================================
 
-
-//TODO : noisy : uniquement la promotion en dame
-//                la mettre avant les captures dans le choix du coup
 
 enum MoveGenType {
     NOISY = 1,              // captures, promotions, prise en passant

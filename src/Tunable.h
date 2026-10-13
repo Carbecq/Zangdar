@@ -114,18 +114,12 @@ PARAM(HistoryMalusMax,     1882, 1024, 4096);
 
 PARAM(FailLowMainHistCoef,   70,    0,  256);   // Bonus au coup adverse précédent sur fail low (constante de Clover, sur 128)
 
-//-------------------------------------------- Timer
-
-//   Peut-on tuner les valeurs du Timer ??
-//   Mais s'assurer de tuner les paramètres de time management uniquement à des cadences plus longues
-//   TC type 40/4 ou 10+0.1 minimum
-
 //-------------------------------------------- Autres
 
 // Aspiration Window
-PARAM(AspirationWindowsDepth,    6, 3, 10);     // 6
-PARAM(AspirationWindowsInitial, 12, 5, 30); // 12
-PARAM(AspirationWindowsDelta,   16, 8, 40);     // 16
+PARAM(AspirationWindowsDepth,    6, 3, 10);
+PARAM(AspirationWindowsInitial, 12, 5, 30);
+PARAM(AspirationWindowsDelta,   16, 8, 40);
 PARAM(AspirationWindowsExpand, 6667, 4000, 9000);
 
 // Quiescence

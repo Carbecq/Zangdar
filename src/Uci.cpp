@@ -30,15 +30,7 @@ void Uci::run()
     printlog(message);
 #endif
 
-    // Note de Stockfish
-
-    /// UCI::loop() attend une commande depuis stdin, l'analyse puis appelle la
-    /// fonction appropriée. Elle intercepte aussi une indication de fin de
-    /// fichier (EOF) sur stdin pour garantir une sortie propre si la GUI
-    /// meurt de façon inattendue.
-
-
-    // boucle principale
+    // boucle principale : EOF sur stdin (GUI disparue) vaut quit
     std::string token;
     std::string line;
     std::string fen  = START_FEN;
@@ -60,35 +52,15 @@ void Uci::run()
 
         if (token == "isready")
         {
-            /* "isready" sert à la fois de remplacement ping/pong ET signale que
-             * l'init est terminée ; la spec UCI cite explicitement l'init des
-             * tablebases comme exemple pouvant prendre du temps.
-             * Le moteur ne répond "readyok" qu'après avoir traité les commandes
-             * setoption en attente.
-             * Le seul cas où "isready" doit être répondu immédiatement, c'est
-             * après l'init et pendant la recherche : rien ne justifie alors
-             * que le moteur reste bloqué.
-             */
-
-            // synchronise le moteur avec la GUI
+            // répondu aussitôt, même pendant une recherche
             std::cout << "readyok" << std::endl;
         }
 
         else if (token == "uci")
         {
-            // "uciok" doit apparaître rapidement après que la GUI ait envoyé "uci",
-            // un init long n'est pas autorisé ici.
-
-            // affiche les infos du moteur
+            // infos du moteur et options ; uciok sans délai
             std::cout << "id name Zangdar " << VERSION  << std::endl;
             std::cout << "id author Philippe Chevalier" << std::endl;
-
-            // Cette commande indique à la GUI quels paramètres du moteur peuvent être modifiés.
-
-            // Quand dans Arena, on fait "Configure", on fait apparaitre une interface
-            // contenant les options données ici.
-            // Lorsque l'utilisateur va agir sur une de ces options,
-            // Arena va envoyer la commande "setoption.." au programme.
 
             std::cout << "option name Hash type spin default " << HASH_SIZE <<" min " << MIN_HASH_SIZE << " max " << MAX_HASH_SIZE << std::endl;
             std::cout << "option name Clear Hash type button" << std::endl;
@@ -552,9 +524,9 @@ void Uci::parse_go(std::istringstream& iss)
 
 
     // La recherche est lancée dans une ou plusieurs threads séparées
-    // Le programme principal contine dans la thread courante
+    // Le programme principal continue dans la thread courante
     // de façon à continuer à recevoir les commandes
-    // de UCI. Pax exemple : stop, quit.
+    // de UCI. Par exemple : stop, quit.
 #if defined DEBUG_LOG
     char message[100];
     sprintf(message, "UCI::start_thinking ");
@@ -573,24 +545,6 @@ void Uci::parse_go(std::istringstream& iss)
 //---------------------------------------------------------
 void Uci::parse_options(std::istringstream& iss)
 {
-
-    /*
-setoption name <id> [value <x>]
-    Cette commande est envoyée au moteur quand l'utilisateur veut changer un paramètre
-    interne du moteur. Pour le type "button", aucune valeur n'est nécessaire.
-    Une chaîne est envoyée par paramètre, et uniquement quand le moteur est en attente.
-    Le nom et la valeur de l'option dans <id> ne devraient pas être sensibles à la casse
-    et peuvent contenir des espaces.
-    Les sous-chaînes "value" et "name" devraient être évitées dans <id> et <x> pour permettre
-    une analyse non ambiguë, par exemple ne pas utiliser <name> = "draw value".
-    Voici quelques exemples de chaînes :
-       "setoption name Nullmove value true\n"
-       "setoption name Selectivity value 3\n"
-       "setoption name Style value Risky\n"
-       "setoption name Clear Hash\n"
-       "setoption name NalimovPath value c:\chess\tb\4;c:\chess\tb\5\n" *
-       "setoption name Hash value 16\n"
-     */
 
     std::string name;
     std::string value;
@@ -720,7 +674,7 @@ setoption name <id> [value <x>]
 
 //=================================================================
 //! \brief  Lancement d'une recherche sur une position
-//! \param[in]  abc      = code de la position à tester (s/k/q/f/w/r/p21/b1/b2) ou "n" pour garder la position courante
+//! \param[in]  abc      = code de la position à tester (s/k/q/f/w/r/p21) ou "n" pour garder la position courante
 //! \param[in]  fen      = fen à utiliser si abc ne correspond à aucun code connu
 //! \param[in]  dmax     = depth max
 //! \param[in]  tmax     = time max
@@ -734,9 +688,6 @@ void Uci::go_run(const std::string& abc, const std::string& fen, int dmax, int t
     printf("go_run : abc=%s fen=%s depth_max=%d time_max=%d node_max=%d threads=%d \n", abc.c_str(), fen.c_str(), dmax, tmax, nmax, nthreads);
     transpositionTable.clear();
     threadPool.reset();
-
-    // utiliser setoption name Clear Hash
-    // permet de controler l'utilisation de la table
 
     if (abc == "s")
         auxi = SILVER2;
@@ -752,10 +703,6 @@ void Uci::go_run(const std::string& abc, const std::string& fen, int dmax, int t
         auxi = START_FEN;
     else if (abc == "p21")
         auxi = POS_21;
-    else if (abc == "b1")
-        auxi = BUG_1;
-    else if (abc == "b2")
-        auxi = BUG_2;
     else
         auxi = fen;
 
@@ -786,9 +733,7 @@ void Uci::go_run(const std::string& abc, const std::string& fen, int dmax, int t
 //-----------------------------------------------------------------
 void Uci::go_test(int dmax, int tmax)
 {
-    // Détection de doublons de position sur TOUTE la suite (tous fichiers confondus) :
-    // hash set -> O(1) par position (au lieu de l'ancien std::find linéaire, O(n²)).
-    // On mémorise aussi la 1ʳᵉ apparition pour un message utile, et on saute le doublon.
+    // Doublons de position sur toute la suite, tous fichiers confondus : seule la 1ʳᵉ apparition est testée
     std::unordered_set<std::string>              seen_positions;
     std::unordered_map<std::string, std::string> first_location;
     int total_dup = 0;
@@ -825,7 +770,7 @@ void Uci::go_test(int dmax, int tmax)
 
     while (std::getline(f, str_line))
     {
-        // ATTENTION : fin de ligne différentre entre Unix (LF) et Windows (CRLF) !!
+        // ATTENTION : fin de ligne différente entre Unix (LF) et Windows (CRLF) !!
         if (!str_line.empty() && str_line.back() == '\r')
             str_line.pop_back();
 
@@ -935,7 +880,7 @@ void Uci::go_test(int dmax, int tmax)
 
 
 //=============================================================
-//! \brief Réalisaion d'un test tactique
+//! \brief Réalisation d'un test tactique
 //! et comparaison avec le résultat
 //!
 //! \param[in]      line          ligne EPD/FEN décrivant la position et le(s) coup(s) attendu(s)
@@ -1054,7 +999,7 @@ void Uci::go_tactics(const std::string& line, int dmax, int tmax, U64& total_nod
     }
 
     // Succès "bm" : on a trouvé le bon coup
-    // Succès "am" : aucun "bm" n'était attendu, et on évité le piège
+    // Succès "am" : aucun "bm" n'était attendu, et on a évité le piège
     bool success_bm = found_bm && avoid_am;
     bool success_am = uci_board.best_moves.empty() && avoid_am && !uci_board.avoid_moves.empty();
 
@@ -1083,7 +1028,7 @@ void Uci::go_tactics(const std::string& line, int dmax, int tmax, U64& total_nod
 
 //=================================================================
 //! \brief  Benchmark
-//!         Les tests du fichier bench.csv proviennent d'Ethereal
+//!         Les positions (bench.h) proviennent d'Ethereal
 //! commande : bench depth threads hash
 //!
 //! \param[in]  argCount  nombre d'arguments de la ligne de commande

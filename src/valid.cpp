@@ -5,8 +5,7 @@
 
 //==================================================================
 //! \brief  Vérifie la cohérence interne de la position
-//! Utilisé par les assertions en mode debug, et par set_fen pour refuser
-//! une position invalide venant d'une GUI ou d'un fichier de test.
+//! En debug seulement : assertions, et refus d'une FEN invalide par set_fen.
 //!
 //! \return true si la position est valide, false sinon (avec message d'erreur affiché)
 //------------------------------------------------------------------

@@ -53,19 +53,9 @@ Search::~Search()
 void Search::show_uci_result(I64 elapsed, const PVariation& pv) const
 {
     elapsed++; // évite une division par 0
-    // commande envoyée à UCI
-    // voir le document : uci_commands.txt
 
     std::stringstream stream;
 
-
-    /*  score
-     *      cp <x>
-     *          le score du point de vue du moteur, en centipions.
-     *      mate <y>
-     *          mat en y coups, pas en plies.
-     *          Si le moteur se fait mater, utiliser des valeurs négatives pour y.
-     */
 
     // Rassemble les infos sur les nodes de toutes les threads
     U64 all_nodes  = threadPool.get_all_nodes();
@@ -75,11 +65,6 @@ void Search::show_uci_result(I64 elapsed, const PVariation& pv) const
     stream << "info "
            << " depth "    << best_depth
            << " seldepth " << seldepth
-
-              // time     : le temps de recherche, en ms
-              // nodes    : noeuds calculés
-              // nps      : nodes par seconde recherchés
-
            << " time "       << elapsed
            << " nodes "      << all_nodes
            << " nps "        << all_nodes * 1000 / elapsed
@@ -116,7 +101,6 @@ void Search::show_uci_result(I64 elapsed, const PVariation& pv) const
 //---------------------------------------------------------
 void Search::show_uci_best(MOVE best_move) const
 {
-    // ATTENTION AU FORMAT D'AFFICHAGE
     std::cout << "bestmove " << Move::name(best_move) << std::endl;
 }
 
@@ -171,6 +155,7 @@ void Search::update_pv(SearchInfo* si, const MOVE move) const
     else
         value = nnue.evaluate<BLACK>(acc, BB::count_bit(board.occupancy_all()));
 
+    // Mise à l'échelle par le matériel : × (ScoreBias + phase) / ScoreDivisor
     constexpr int PawnScore    =   2;
     constexpr int KnightScore  =   3;
     constexpr int BishopScore  =   3;
@@ -219,7 +204,7 @@ void Search::make_move(Board& board, const MOVE move) noexcept
     // Précharge l'entrée TT
     table->prefetch(board.get_key());
 
-    // Empile le changement d'accumulateur
+    // Accumulateur à mettre à jour (lazy updates)
     accum.updated[WHITE] = false;
     accum.updated[BLACK] = false;
     accum.king_square    = board.king_square;

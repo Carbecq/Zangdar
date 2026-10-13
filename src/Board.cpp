@@ -116,12 +116,6 @@ std::string Board::display() const noexcept
     ss << "game counter : " << statusHistory.size() - 1 << "\n";
     ss << "full move    : " << get_fullmove_counter() << "\n";
 
-    // std::cout << std::hex << (get_key())
-    //           << "  shift32= " << (get_key() >> 32)
-    //           << "  cast32= " << (static_cast<U32>(get_key()))
-    //           << "  autre= " << ((get_key()>>32) ^ (get_key()&0xffffffff))
-    //           << std::dec << std::endl;
-
     return(ss.str());
 }
 
@@ -263,11 +257,8 @@ bool Board::upcoming_repetition(int ply) const
     int index = statusHistory.size() - 1;
 
     const Bitboard occupied = occupancy_all();
-    const U64 originalKey   = get_key();      // StatusHistory[StatusHistory.size() - 1].key
+    const U64 originalKey   = get_key();
 
-    /* StatusHistory : tableau des états de l'échiquier, pour tous les coups,
-     * y compris le dernier coup joué
-     */
     assert(originalKey == statusHistory[index].key);
 
     for (I32 d = 3; d <= distance; d += 2)
@@ -288,10 +279,8 @@ bool Board::upcoming_repetition(int ply) const
                 if (ply > d)
                     return true;
 
-                // Pour les nœuds avant ou à la racine, on vérifie que le coup est
-                // bien une répétition et non un coup menant à la position courante.
-                // Dans la table cuckoo, les coups Rc1c5 et Rc5c1 sont stockés au
-                // même emplacement, il faut donc choisir quelle case vérifier.
+                // Avant ou à la racine, rien n'est renvoyé : Stockfish y exige en plus
+                // une répétition déjà survenue. Le test de couleur ci-dessous est sans effet.
                 if (Move::color(piece_at( empty(from) ? dest : from)) != turn() )
                     continue;
             }

@@ -32,7 +32,7 @@ int main(int argCount, char* argValue[])
     verify_network();
     Attacks::init_masks();
     Cuckoo::init();
-    NNUE::init();   // copie + permutations du réseau embarqué (avant tout thread)
+    NNUE::init();   // réordonne les couches L1-L3 du réseau (avant tout thread)
 
     //  Benchmark
     //  appel : Zangdar bench [depth] [nbr_threads] [hash_size]

@@ -65,10 +65,7 @@ void test_suite(const std::string& abc, int dmax)
     char            tag = ';';
     char            tag2 = ' ';
 
-    // Détection de doublons de position (même principe que Uci::go_test) :
-    // hash set -> O(1) par position.
-    // On mémorise la 1ʳᵉ apparition pour un message utile, et on saute le doublon :
-    // un perft en double ne teste rien de plus et coûte cher.
+    // Doublons de position (comme Uci::go_test) : seule la 1ʳᵉ apparition est testée
 #ifndef NDEBUG
     std::unordered_set<std::string>           seen_positions;
     std::unordered_map<std::string, int>      first_location;
@@ -111,9 +108,6 @@ void test_suite(const std::string& abc, int dmax)
         }
         first_location[key] = numero;
 #endif
-
-        // int sc = CB->evaluate();
-        // printf("%d\n", sc);
 
         // nombre de profondeurs possibles
         int nbr_prof = liste1.size() - 1;
@@ -422,7 +416,6 @@ void test_syzygy(const std::string& fen)
 //----------------------------------------------------
 void test_mirror(void)
 {
-    // std::string     str_file = "tests/mirror.epd";
     std::string     str_file = "tests/1000.epd";
 
     std::cout << "[test_mirror]  " << str_file << std::endl;
@@ -513,9 +506,6 @@ bool test_mirror(Board& board, const std::string& line)
 
 #include "MovePicker.h"
 
-//========================================================
-//! \brief  Test de la Static Exchange Evaluation
-//--------------------------------------------------------
 //=========================================================================
 //! \brief  Évaluateur des attentes de tests/see.epd
 //!
@@ -637,6 +627,7 @@ private:
 
 } // namespace
 
+//! \brief  Vérifie fast_see sur les positions de tests/see.epd
 void test_see()
 {
     std::string   str_file = "tests/see.epd";
