@@ -262,9 +262,9 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     if (!isRoot && board.is_draw(si->ply))
         return VALUE_DRAW;
 
-    // On a atteint la limite en profondeur de recherche ?
+    // On a atteint la limite en profondeur de recherche ? En échec, l'éval n'a pas de sens
     if (si->ply >= MAX_PLY)
-        return evaluate(board);
+        return board.is_in_check() ? VALUE_DRAW : evaluate(board);
 
     // Mate distance pruning
     if (!isRoot)
@@ -294,8 +294,11 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     MOVE best_move  = Move::MOVE_NONE;  // meilleur coup local
 
 
+    // Extensions bornées en ply, sinon une suite d'échecs descend jusqu'à MAX_PLY
+    const bool canExtend = si->ply < 2*iter_depth;
+
     //  Check Extension
-    if (isInCheck == true && depth + 1 < MAX_PLY)
+    if (isInCheck==true && canExtend==true && depth + 1 < MAX_PLY)
         depth++;
 
 
@@ -436,7 +439,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     if (   !isRoot && !isInCheck && !isExcluded
         && abs((si-1)->static_eval) < TBWIN_IN_X)   // parent en échec → static_eval = -MATE+ply, à exclure
     {
-        if (   depth >= Tunable::HindsightExtMinDepth
+        if (   canExtend
+            && depth >= Tunable::HindsightExtMinDepth
             && (si-1)->reduction >= Tunable::HindsightExtMinReduction
             && opp_worsening_rate < Tunable::HindsightExtEvalDiff)
         {
@@ -519,7 +523,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             }
             // Hindsight NMP : le parent nous a réduits en LMR, mais le
             // null move échoue franchement → le nœud est sous-estimé, on rend un ply.
-            else if (   (si-1)->reduction
+            else if (   canExtend
+                     && (si-1)->reduction
                      && abs(null_score) < TBWIN_IN_X
                      && null_score < beta - Tunable::NMPHindsightMargin)
             {
