@@ -567,7 +567,7 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
 
                 // Si oui, alors on effectue une recherche normale, avec une profondeur réduite
                 if (pbScore >= betaCut)
-                    pbScore = -alpha_beta<~C>(board, timer, -betaCut, -betaCut+1, pb_depth, cut_node, si+1);
+                    pbScore = -alpha_beta<~C>(board, timer, -betaCut, -betaCut+1, pb_depth, !cut_node, si+1);
 
                 undo_move<C, true>(board);
 
