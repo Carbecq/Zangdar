@@ -102,12 +102,13 @@ beforehand with `make download-net`, or point to a local file with `EVALFILE=<pa
 ### Build variables
 
 Variables are passed on the `make` command line, e.g. `make ARCH=avx2 CXX=g++ STATIC=yes`.
+`make release` builds the same binary as `make`, statically linked, under its own name (`…-rel`).
 
 | Variable     | Values / example                    | Description                                                        |
 |--------------|-------------------------------------|--------------------------------------------------------------------|
 | `ARCH`       | `native` (default), `sse2`, `avx2`, `bmi2`, `avx512`, `arm64` | Target CPU architecture (see table below). |
 | `CXX`        | `clang++` (default), `g++`, `aarch64-linux-gnu-g++` | C++ compiler.                            |
-| `STATIC`     | `yes`, `no`                         | Static link on Linux: `no` by default, `yes` for the `pgo` target (releases). Always static on Windows. |
+| `STATIC`     | `yes`, `no`                         | Static link on Linux: `no` by default, `yes` for the `release` and `pgo` targets. Always static on Windows. |
 | `COMP`       | `mingw`                             | Force Windows target mode. Only needed when cross-compiling from Linux — under MSYS2 it is detected automatically. |
 | `EVALFILE`   | `<path to .bin>`                    | Override the embedded NNUE network.                                |
 | `EXTRA_DEFS` | `-DUSE_TUNING`, `-DDEBUG_LOG`, …    | Extra preprocessor defines.                                        |

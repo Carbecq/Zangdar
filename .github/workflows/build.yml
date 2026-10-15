@@ -86,11 +86,11 @@ jobs:
           echo "$out" | grep -qE '# Passed +778' \
             || { echo "::error::778 positions attendues"; exit 1; }
 
-      # Les releases sont liées en statique (cible pgo) : le lien doit passer.
+      # Cible release (COUT, tournois ; pgo pour les binaires publiés) : lien statique.
       # Mêmes .o, make ne fait que relier.
-      - name: Lien statique
+      - name: Lien statique (release)
         run: |
-          make -j$(nproc) CXX=${{ matrix.cxx }} ARCH=${{ matrix.arch }} STATIC=yes
+          make -j$(nproc) release CXX=${{ matrix.cxx }} ARCH=${{ matrix.arch }}
           file -L Zangdar_dev | grep -q 'statically linked' \
             || { echo "::error::Zangdar_dev n'est pas lié en statique"; file -L Zangdar_dev; exit 1; }
           nodes=$(./Zangdar_dev bench | grep 'total nodes' | tr -dc '0-9')
