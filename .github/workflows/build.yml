@@ -23,12 +23,12 @@ jobs:
         cxx:  [g++, clang++]
         arch: [avx2, sse41, sse2]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Le réseau est une release publique de Carbecq/Zangdar-Networks ; on le
       # met en cache pour ne pas le retélécharger à chaque exécution.
       - name: Cache du réseau NNUE
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: networks
           key: net-${{ hashFiles('VERSION.txt') }}
@@ -106,13 +106,13 @@ jobs:
       matrix:
         arch: [avx2, sse41, sse2]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Installation de mingw-w64
         run: sudo apt-get update && sudo apt-get install -y g++-mingw-w64-x86-64
 
       - name: Cache du réseau NNUE
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: networks
           key: net-${{ hashFiles('VERSION.txt') }}
@@ -133,7 +133,7 @@ jobs:
     name: cohérence doc / code
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Installation de doxygen
         run: sudo apt-get update && sudo apt-get install -y doxygen
       # Ne produit pas de documentation : vérifie que les blocs //! collent aux
@@ -147,9 +147,9 @@ jobs:
     name: compilation sans avertissement
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Cache du réseau NNUE
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: networks
           key: net-${{ hashFiles('VERSION.txt') }}
