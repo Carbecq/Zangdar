@@ -240,9 +240,15 @@ LDFLAGS_REL  = -s
 #   Targets
 #---------------------------------------------------------------------
 
-# Statique par défaut (Windows, Linux) : un binaire Linux dynamique exige la glibc
-# de la machine qui l'a compilé. STATIC=no pour un lien dynamique. Jamais pour ASan/TSan.
-STATIC ?= yes
+# Linux : dynamique par défaut, comme les autres moteurs. OpenBench compile sur chaque worker,
+# et -static exige libc.a et libstdc++.a, absentes de certaines distributions (Fedora).
+# pgo, cible des releases : statique, un binaire dynamique exige la glibc de la machine qui l'a compilé.
+# Windows : toujours statique. STATIC=yes|no force le choix. Jamais pour ASan/TSan.
+ifneq ($(filter pgo,$(MAKECMDGOALS)),)
+    STATIC ?= yes
+else
+    STATIC ?= no
+endif
 LDFLAGS_STATIC =
 
 ifeq ($(target_windows),yes)

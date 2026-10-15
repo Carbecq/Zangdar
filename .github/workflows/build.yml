@@ -86,6 +86,18 @@ jobs:
           echo "$out" | grep -qE '# Passed +778' \
             || { echo "::error::778 positions attendues"; exit 1; }
 
+      # Les releases sont liées en statique (cible pgo) : le lien doit passer.
+      # Mêmes .o, make ne fait que relier.
+      - name: Lien statique
+        run: |
+          make -j$(nproc) CXX=${{ matrix.cxx }} ARCH=${{ matrix.arch }} STATIC=yes
+          file -L Zangdar_dev | grep -q 'statically linked' \
+            || { echo "::error::Zangdar_dev n'est pas lié en statique"; file -L Zangdar_dev; exit 1; }
+          nodes=$(./Zangdar_dev bench | grep 'total nodes' | tr -dc '0-9')
+          attendu=$(git log -1 --format=%B | grep -oP 'total nodes = \K\d+' | head -1)
+          [ -z "$attendu" ] || [ "$nodes" = "$attendu" ] \
+            || { echo "::error::en statique, le binaire rend $nodes au lieu de $attendu"; exit 1; }
+
   windows-cross:
     name: windows (mingw, compilation seule)
     runs-on: ubuntu-latest

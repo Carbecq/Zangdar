@@ -107,7 +107,7 @@ Variables are passed on the `make` command line, e.g. `make ARCH=avx2 CXX=g++ ST
 |--------------|-------------------------------------|--------------------------------------------------------------------|
 | `ARCH`       | `native` (default), `sse2`, `avx2`, `bmi2`, `avx512`, `arm64` | Target CPU architecture (see table below). |
 | `CXX`        | `clang++` (default), `g++`, `aarch64-linux-gnu-g++` | C++ compiler.                            |
-| `STATIC`     | `yes`                               | Statically link the binary (Linux; always static on Windows).      |
+| `STATIC`     | `yes`, `no`                         | Static link on Linux: `no` by default, `yes` for the `pgo` target (releases). Always static on Windows. |
 | `COMP`       | `mingw`                             | Force Windows target mode. Only needed when cross-compiling from Linux — under MSYS2 it is detected automatically. |
 | `EVALFILE`   | `<path to .bin>`                    | Override the embedded NNUE network.                                |
 | `EXTRA_DEFS` | `-DUSE_TUNING`, `-DDEBUG_LOG`, …    | Extra preprocessor defines.                                        |
@@ -155,7 +155,7 @@ stay comparable.
 ```bash
 # in the MSYS2 CLANG64 shell
 pacman -S mingw-w64-clang-x86_64-clang mingw-w64-clang-x86_64-lld make
-make -j$(nproc) release ARCH=avx2
+make -j$(nproc) ARCH=avx2
 ```
 
 Nothing else to pass: Windows defines the `OS=Windows_NT` environment variable,
@@ -170,7 +170,7 @@ works, they simply produce different binaries. Check that the result is
 self-contained (with libc++, `-static` must also absorb `libc++`/`libunwind`):
 
 ```bash
-ldd Zangdar-7-avx2-clang-rel.exe    # should list only system DLLs
+ldd Zangdar-<version>-avx2-clang.exe    # should list only system DLLs
 ```
 
 > Cross-compiling from Linux with `x86_64-w64-mingw32-g++` also works
@@ -181,7 +181,7 @@ ldd Zangdar-7-avx2-clang-rel.exe    # should list only system DLLs
 
 ### Producing the release binaries
 
-Released binaries use the `pgo` target, not `release`. Each build must be
+Released binaries use the `pgo` target, linked statically on Linux by default. Each build must be
 preceded by `make clean` (see the warning below), and the result moved out of
 the way — `clean` deletes every `Zangdar-*`, including the binary produced by
 the previous iteration.
