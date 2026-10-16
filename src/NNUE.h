@@ -63,7 +63,7 @@ constexpr size_t ALIGN_MAX = 64;
 // https://www.chessprogramming.org/NNUE#Output_Buckets
 
 constexpr size_t INPUT_LAYER_SIZE  = N_COLORS * 6 * N_SQUARES;   // = 768
-constexpr size_t HIDDEN_LAYER_SIZE = 768;                         // neurones par perspective (FT)
+constexpr size_t HIDDEN_LAYER_SIZE = 1024;                        // neurones par perspective (FT)
 constexpr size_t FT_OUT_SIZE       = HIDDEN_LAYER_SIZE;           // sortie FT totale : (HL/2 par perspective) × 2
 constexpr size_t L2_SIZE           = 16;                          // largeur physique de L1
 constexpr size_t EFFECTIVE_L2_SIZE = 2 * L2_SIZE;                 // = 32 après dual activation
