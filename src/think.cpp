@@ -294,12 +294,8 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
     MOVE best_move  = Move::MOVE_NONE;  // meilleur coup local
 
 
-    // Extensions bornées en ply, sinon une suite d'échecs descend jusqu'à MAX_PLY
+    // Extensions bornées en ply, sinon une suite d'extensions descend jusqu'à MAX_PLY
     const bool canExtend = si->ply < 2*iter_depth;
-
-    //  Check Extension
-    if (isInCheck==true && canExtend==true && depth + 1 < MAX_PLY)
-        depth++;
 
 
     //  Recherche de la position actuelle dans la table de transposition
@@ -706,12 +702,12 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
         int extension = 0;
 
         if (   depth > Tunable::SEDepth
-               && si->ply < 2 * depth
+               && canExtend
                && !isExcluded  // évite une recherche singulière récursive
                && !isRoot
                && move == tt_move
-               && tt_depth > depth - 3
-               && tt_bound == BOUND_LOWER
+               && tt_depth >= depth - 3
+               && (tt_bound & BOUND_LOWER)   // LOWER ou EXACT
                && abs(tt_score) < TBWIN_IN_X)
         {
             // Recherche à profondeur réduite avec une zero window un peu sous ttScore
@@ -745,11 +741,11 @@ int Search::alpha_beta(Board& board, Timer& timer, int alpha, int beta, int dept
             else if (tt_score >= beta)
             {
                 // negative extension!
-                extension = -3 + isPV;
+                extension = -2 + isPV;
             }
             else if (cut_node)
             {
-                extension = -2;
+                extension = -1;
             }
         }
 
